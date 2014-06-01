@@ -1,0 +1,19 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Weather Monitor Dock App
+GenericName=Weather
+Comment=Monitor weather conditions
+Icon=GNUstep3D
+TryExec=/usr/bin/wmWeather
+Exec=wmWeather -s CYEG
+Terminal=false
+Categories=DockApp;WMAKER;
+OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+StartupNotify=false
+Actions=CYEG;
+
+[Desktop Action CYEG]
+Name=Metar Station CYEG
+Icon=GNUstep3D
+Exec=wmWeather -s CYEG

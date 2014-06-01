@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Idesk
+Comment=Place icons on the desktop
+Exec=idesk
+TryExec=idesk
+Icon=folder_home.png
+Terminal=false
+Type=Application
+Categories=Application;Utility;
+StartupNotify=false
+OnlyShowIn=FLUXBOX;BLACKBOX;ICEWM;OPENBOX;JWM;PEKWM;ADWM;
+X-GNOME-Autostart-enabled=true
+Hidden=true
+# full of memory leaks, drags at desktop performance

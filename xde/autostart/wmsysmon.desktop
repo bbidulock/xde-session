@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=System Monitor
+GenericName=Monitor
+Comment=Monitor system in a dock app
+Icon=GNUstep3D
+TryExec=/usr/bin/wmsysmon
+Exec=wmsysmon
+Terminal=false
+Categories=DockApp;WMAKER;
+OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+StartupNotify=false

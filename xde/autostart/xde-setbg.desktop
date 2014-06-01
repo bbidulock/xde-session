@@ -1,0 +1,15 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=XDE Background
+GenericName=Input
+Comment=Provide themed multiple backgrounds
+Icon=keyboard
+Exec=xde-setbg
+TryExec=xde-setbg
+Terminal=false
+Categories=Settings
+StartupNotify=false
+#NoDisplay=true
+NotShowIn=GNOME;KDE;XFCE;LXDE;WMAKER;
+X-GNOME-Autostart-enabled=false

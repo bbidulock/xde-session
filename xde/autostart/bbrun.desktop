@@ -1,0 +1,18 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=BlackBox Run Command
+GenericName=Launcher
+Comment=Run Command DockApp
+Icon=system-run
+TryExec=/usr/bin/bbrun
+Exec=bbrun -a -w
+Terminal=false
+Categories=System;Utility;DockApp;WMAKER;
+OnlyShowIn=BLACKBOX;
+StartupNotify=false
+StartupWMClass=bbrun
+X-GNOME-Autostart-enabled=true
+Hidden=true
+# Always crashes if you press ENTER instead of OK
+X-Arch-Package=bbrun

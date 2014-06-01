@@ -1,0 +1,19 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=PNMixer
+Name[de]=PNMixer
+Name[fr]=PNMixer
+GenericName=System Tray Mixer
+GenericName[de]=Benachrichtigungsfeld Mixer
+GenericName[fr]=Zone de Notification Mixeur
+Comment=An audio mixer for the system tray
+Comment[de]=Ein Audiomixer für das Benachrichtigungsfeld
+Comment[fr]=Un Mixeur Audio pour la Zone de Notification
+Exec=pnmixer
+Icon=multimedia-volume-control
+Terminal=false
+Categories=TrayIcon;
+StartupNotify=false
+NotShowIn=GNOME;KDE;XFCE;LXDE;OPENBOX;ICEWM;WMAKER;JWM;
+X-GNOME-Autostart-enable=true

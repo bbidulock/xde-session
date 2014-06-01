@@ -1,0 +1,165 @@
+=pod
+
+=head1 NAME
+
+xde-xchooser - A GTK2 XDMCP Host chooser replacement.
+
+=head1 SYNOPSIS
+
+ /usr/lib/X11/xdm/xde-xchooser [options] {ADDRESSES ...}
+
+=head1 DESCRIPTION
+
+B<xde-xchooser> is a GTK2 replacement for the horribly ugly Athena
+Widget Set chooser that comes with Xorg X Display Manager.  It is
+designed to let L<xdm(1)> do the heavy lifting of coordinating the
+majority of the XDMCP protocol while providing a more aesthetic
+appearance.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item I<ADDRESSES ...>
+
+Provides the human-readable (decimal and dot notation, host names)
+specification of the display managers to query to determine whether they
+are willing to manage a display.  In additional to all manner of textual
+IP addresses, the special value C<BROADCAST> can be specified to
+indicate to the chooser that it should (also) broadcast queries to
+discover display managers.
+
+=back
+
+=head1 OPTIONS
+
+No options are necessary.  When launched by L<xdm(1)>, it will provide
+the appropriate arguments.  B<xde-xchooser> can be launched directly on
+the command line of an x-terminal to test its appearance and operation.
+In this mode arguments are still required but no options.  Absence of
+the B<-xdmaddress>, B<-clientaddress> and B<-connectionType> options
+indicates to B<xde-xchooser> that it was not launched by L<xdm(1)> or an
+L<xdm(1)> workalike.
+
+=over 4
+
+=item B<-banner> I<PNGFILE>
+
+Specifies the banner graphic to display in the left pane of the host
+menu.  L<xdm(1)> does not provide this option, but it can easily be
+invoked by a shell script invoked by L<xdm(1)> that adds the options.
+For example:
+
+ #!/bin/sh
+ /usr/lib/X11/xdm/xde-xchooser -banner /usr/lib/X11/xdm/banner.png $@
+
+=item B<-welcome> I<TEXT>
+
+Specifies the pango markup text that is to be displayed in the title
+area of the host menu.  As with the B<-banner> option, this option can
+easily be supplied by a shell script between L<xdm(1)> and
+B<xde-xchooser> that adds the options:
+
+ #!/bin/sh
+ /usr/lib/X11/xdm/xde-xchooser -welcome "Welcome to X!" \
+	 -banner /usr/lib/X11/xdm/banner.png $@
+
+=item B<-xdmaddress> I<ADDRESS>
+
+Specifies the address of a TCP socket upon which L<xdm(1)> is awaiting
+instructions for the server.  L<xdm(1)> encodes this as I<ADDRESS> as a
+string of hexadecimal characters (with no 0x prefix) representing the
+binary socket address.  The first two bytes are a host-byte-order 16-bit
+address family (e.g. AF_INET); the second and third bytes are the
+host-byte-order 16-bit port number; and the remaining 4 or 16 bytes are
+the IPv4 or IPv6 network-byte-order IP address.
+
+B<xde-xchooser> uses this option to communicate the selection back to L<xdm(1)>.
+
+=item B<-clientaddress> I<IPADDR>
+
+Specifies the client IP address I<IPADDR> that initiated the request.
+L<xdm(1)> encodes this as a string of hexadecimal characters (with no 0x
+prefix) representing the 4- or 16-byte IPv4 or IPv6 network-byte-order
+IP address.
+
+B<xde-xchooser> uses this option to identify the originating client back
+to L<xdm(1)> when a selection is made.
+
+=item B<-connectionType> I<TYPE>
+
+Specifies the connection type supported by the client as a decimal
+number, I<TYPE>.
+
+B<xde-xchooser> uses this option to filter the list of willing display
+managers to those that suport this connection type.  The three types of
+interest to L<xdm(1)> (see F</usr/include/X11/Xdmcp.h> are:
+
+=over 4
+
+=item 0 - B<FamilyInternet> (AF_INET addresses only)
+
+=item 6 - B<FamilyInternet6> (AF_INET6 addresses only)
+
+=item 256 - B<FamilyLocal> (AF_UNIX addresses only)
+
+=back
+
+=back
+
+=head1 CONFIGURATION
+
+B<xde-xchooser> has no configuration of its own.  If you want to change
+its look or behaviour, you are welcome to hack the code.  It is only
+about 600 lines of C<C>.  There is a F<banner.png> file used that is
+installed by default in F</usr/lib/X11/xdm/banner.png>.
+
+=over 4
+
+=item B<DisplayManager>.I<DISPLAY>.B<chooser>
+
+This option, described in L<xdm(1)>, is use to tell L<xdm(1)> which
+program to run as a chooser.  This should be set to
+F</usr/lib/X11/xdm/xde-xchooser>.  See the B<CHOOSER> section of the
+L<xdm(1)> manual page.
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F</usr/lib/X11/xdm/xde-xchooser>
+
+The default location of the B<xde-xchooser> executable.
+
+=item F</usr/lib/X11/xdm/banner.png>
+
+The default location of the banner graphic.
+
+=back
+
+=head1 HISTORY
+
+This program was originally written as a GTK2-perl script, but I don't
+like running GTK2-perl scripts as root, do you?  Also, I wanted to
+permit the program to redirect a user X session, or to redirect a Xephyr
+session, and this close interaction with the X server was not available
+in perl.  You can check out the original perl version at
+L<http://github.com/bbidulock/gchooser>.
+
+=head1 AUTHOR
+
+Brian F. G. Bidulock L<email:bidulock@openss7.org> for B<Unexicon>.
+
+=head1 SEE ALSO
+
+L<xdm(1)>, L<Xnest(1)>, L<Xephyr(1)>, X Display Manager Control Protocol
+Specification.
+
+=head1 LICENSE
+
+See the F<COPYING> file in the distribution or use the B<--copying> flag
+to display copying permissions.
+
+=cut

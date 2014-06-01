@@ -36,6 +36,43 @@ TODO: TODO.in
 dist_noinst_SCRIPTS = autogen.sh
 
 nobase_dist_xdgconf_DATA = \
+	xde/autostart/bbrun.desktop \
+	xde/autostart/cbatticon.desktop \
+	xde/autostart/compton.desktop \
+	xde/autostart/compton-fluxbox.desktop \
+	xde/autostart/dhcpcd-gtk.desktop \
+	xde/autostart/docker.desktop \
+	xde/autostart/gatotray.desktop \
+	xde/autostart/icewmtray.desktop \
+	xde/autostart/idesk.desktop \
+	xde/autostart/lxpanel.desktop \
+	xde/autostart/menutray.desktop \
+	xde/autostart/nm-applet.desktop \
+	xde/autostart/pnmixer.desktop \
+	xde/autostart/remmina-applet.desktop \
+	xde/autostart/retrovol.desktop \
+	xde/autostart/smproxy.desktop \
+	xde/autostart/wmappl.desktop \
+	xde/autostart/wmbattery.desktop \
+	xde/autostart/wmblob.desktop \
+	xde/autostart/wmbubble.desktop \
+	xde/autostart/wmCalClock.desktop \
+	xde/autostart/wmclockmon.desktop \
+	xde/autostart/wmcore.desktop \
+	xde/autostart/wmcpuload.desktop \
+	xde/autostart/wmmixer.desktop \
+	xde/autostart/wmnd.desktop \
+	xde/autostart/wmnet.desktop \
+	xde/autostart/wmsysmon.desktop \
+	xde/autostart/wmsystemtray.desktop \
+	xde/autostart/wmtimer.desktop \
+	xde/autostart/wmWeather.desktop \
+	xde/autostart/wmweather+.desktop \
+	xde/autostart/xde-input.desktop \
+	xde/autostart/xde-panel.desktop \
+	xde/autostart/xde-setbg.desktop
+
+nobase_dist_xdgconf_DATA += \
 	xde/adwm/adwmrc \
 	xde/adwm/keysrc \
 	xde/adwm/stylerc \

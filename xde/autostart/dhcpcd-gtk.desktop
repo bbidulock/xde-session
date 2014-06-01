@@ -1,0 +1,14 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=DHCP Client Daemon Applet
+GenericName=dhcpcd-ui 0.6.0
+Comment=System Tray DHCP client daemon applet.
+Icon=network-transmit-receive
+TryExec=dhcpcd-gtk
+Exec=dhcpcd-gtk
+Terminal=false
+Categories=TrayIcon;System;Network;
+StartupNotify=true
+NotShowIn=GNOME;KDE;XFCE;
+X-GNOME-Autostart-enabled=true

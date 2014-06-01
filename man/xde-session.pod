@@ -1,0 +1,380 @@
+=head1 NAME
+
+ xde-session - start a window-manager session
+
+=head1 SYNOPSIS
+
+ xde-session [ COMMAND ] [ OPTIONS ] [ I<SESSION> ]
+ xde-session --help
+
+ xde-session help
+ xde-session edit    [ OPTIONS ]
+ xde-session run     [ OPTIONS ] COMMAND ARG ...
+ xde-session start   [ OPTIONS ] [ I<SESSION> ]
+ xde-session restart [ OPTIONS ] [ I<SESSION> ]
+
+=head1 DESCRIPTION
+
+B<xde-session> starts a new X session, optionally launches a window
+manager, and optionallly starts any additional applications or XDG
+autostart applications as specified by the I<XDG Desktop Specification>. 
+
+See the L</USAGE> section for usage examples.
+
+=head1 COMMANDS
+
+Command options that control the major behaviour of B<xde-session> are as
+follows:
+
+=over 4
+
+=item B<--help>, B<help>
+
+Print a brief usage message to stdout and then exit.
+
+=item B<--test>, B<test>
+
+Regardless of the other options, do not launch any tasks or perform any
+other actions that would conflict with another running B<xde-session>.
+Also, do not guarantee that the running B<xde-session> is unique for the
+display.  This is for testing, to see visually what B<xde-session> would
+do and to allow for the testing and development of the task monitor and
+session editor.
+
+=item B<--edit>, B<-m>, B<edit>
+
+Invoke the session editor dialog on the running lxsession (or a new
+editor when B<--test> is specified or no xde-session is running).
+
+Most of the command line options are intended for use by X
+initialization scripts (such as those in L<xmd(1)>) that invoke the X
+session.  Many additional options are available only through the
+configuration file or the editor.
+
+=item B<--run>, B<-u>, B<exec>
+
+Ask a running B<xde-session> instance to launch and manage a program
+
+=item B<--restart>, B<-r>
+
+=back
+
+=head1 ARGUMENTS
+
+=over
+
+=item I<SESSION>
+
+B<xde-session> only recognizes a single optional non-option argument,
+I<SESSION>.  When specified this argument has the same effect as the
+B<--session> argument and overrides the setting of both the B<--session>
+argument, the B<XDG_CURRENT_DESKTOP> and the B<DESKTOP_SESSION>
+environment variables.
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--display>, B<-d> I<DISPLAY>
+
+Specifies the display to use.  This is not normally necessary as the
+display is obtained from the B<DISPLAY> environment variable when this
+option is not specified.
+
+=item B<--desktop>, B<-e> I<DESKTOP>
+
+Specify the desktop environment (DE) to use, I<DESKTOP>, e.g.
+C<FLUXBOX>, C<BLACKBOX>, C<ICEWM>, C<LXDE>.  The default value when not
+specified is C<FLUXBOX>.  The desktop environment must be specified when
+B<--autostart> is specified.
+
+In L<lxsession(1)> compatability mode, this is equivalent to the B<-e>
+option to L<lxsession(1)>.  This option may also be specified using the
+B<XDG_CURRENT_DESKTOP> or B<FBXDG_DE> environment variables described
+below.
+
+=item B<--session>, B<-s> I<SESSION>
+
+Invokes L<lxsession(1)> compatability mode, and specifies the session
+profile to use for emulating L<lxsession(1)>.  This is equivalent to the
+B<-s> option to L<lxsession(1)>.  This option may also be specified
+using the B<DESKTOP_SESSION> environment variable as described below.
+
+=item B<--startwm>, B<-m> I<EXECUTE>
+
+Execute the command string, I<EXECUTE>, to start a window manager.
+Shell characters will be interpreted.  When specified, the window
+manager will be started before all other tasks.
+
+When not specified, this option will be determined from the
+L<session.conf> file in the F<SESSION> subdirectory under
+F<$XDG_CONFIG_HOME/xde-session>, where F<SESSION> is specified by the
+B<-s> option, or by the first non-option argument.
+
+In L<lxsession(1)> compatability mode, this option will be determined
+from the L<lxsession(1)> F<desktop.conf> file in the F<SESSION>
+subdirectory under F<$XDG_CONFIG_HOME/lxsession>, where F<SESSION> is
+specified with the B<-s> option.
+
+=item B<--file>, B<-f> I<FILE>
+
+Execute the commands contained in the file, I<FILE>, after executing the
+window manager, but before executing any other commands or autostarting
+tasks.  File is compatible with the L<lxsession(1)> F<autostart> file.
+Each line of the file contains a shell command to execute, optionally
+prefixed with a C<@> to indicate that the process should be restarted
+when it exits abnormally.  Tasks executed from this file will be started
+before any specified by the B<-x> option, or autostarted from XDG
+autostart desktop files.
+
+In L<lxsession(1)> compatablity mode, this option will default to the
+F<autostart> file in the F<SESSION> subdirectory under
+F<$XDG_CONFIG_HOME/lxsession>, where F<SESSION> is specified with the
+B<-s> option.
+
+=item B<--setup>, I<COMMAND>
+
+Execute the command string, I<COMMAND>, to setup the window manager
+before it is invoked.  This option defaults to executing the shell setup
+program in F<$XDG_DATA_{HOME,DIRS}/\LDESKTOP\E/setup.sh> if such a shell
+exists.  The option may be repeated to execute a number of commands in the
+order specified.  These commands are executed in the foreground, one after
+the other, before the window manager or any other task is started.  The
+session will die if any of these commands exit with a non-zero exit status
+or terminal on a signal.
+
+=item B<--exec>, B<-x> I<COMMAND>
+
+Execute the command string, I<COMMAND>, to start applications after the
+window manager, and before autostart tasks are executed.  This option
+defaults to none.  The option may be repeated to execute a number of
+commands the order specified.  It is possible to prefix the I<COMMAND>
+string with a single C<@> that will indicate that the task should be
+restarted when it exits abnormally.
+
+=item B<--autostart>, B<--noautostart>, B<-a>
+
+Specifies whether (or not) to autostart XDG applications in accordance
+with the I<Desktop Application Autostart Specification>.  The inverted
+sense of the B<-a> flag is for compatablity with L<lxsession(1)>.
+
+=item B<--wait>, B<-w>, B<--nowait>
+
+Specifies whether (or not) to wait for a EWMH/NetWM compatible window
+manager to take control of the root window of the default screen of the
+display before starting further applications.  This option takes effect
+regardless of whether the B<--startwm> option has been specified.
+
+=item B<--pause>, B<-p> [I<PAUSE>]
+
+Specifies the interval of time, I<PAUSE>, in seconds to wait after the
+window manager initialization phase before starting the first
+applications.  If I<PAUSE> is not specified, it defaults to 2 seconds.
+The default when the option is not specified is not to pause at all.
+The pause can be explicitly disable by using a I<PAUSE> value of zero
+(0).
+
+=item B<--splash>, B<-l> [I<IMAGE>]
+
+Specifies that a splash window is to be generated and optionally
+populated with an image from the file, I<IMAGE>, (that can be in XPM or
+PNG format).  The splash window will display the icons of the XDG
+compliant F<*.desktop> files as they are started.  The I<IMAGE> is for
+optional branding.
+
+=back
+
+=head1 USAGE
+
+B<xde-session> is intended on being launched by the L<xdg_session(8)>
+shell script.  See the L<xdg_session(8)> manual page for details on its
+operation.
+
+When used directly, B<xde-session> will launch the following window
+managers (and likely others as a variation on a theme) successfully:
+
+=over 4
+
+=item B<FLUXBOX>
+
+Simply execute B<xde-session> as the only command in your
+F<~/.fluxbox/startup> file.  The execution line should look like:
+
+ xde-session --desktop FLUXBOX --startwm "fluxbox -rc ~/.fluxbox/init"
+
+where F<~/.fluxbox/init> is just the default.  Use B<xde-session-edit(1)>
+to autostart the programs that you would otherwise start from your
+F<startup> script.  Therefore the above command bypasses the normal
+F<startup> script, which is likely unaware of B<xde-session>.
+
+=item B<BLACKBOX>
+
+Where you would invoke L<blackbox(1)>, invoke the following:
+
+ xde-session --desktop BLACKBOX --startwm "blackbox -rc ~/.blackboxrc"
+
+where F<~/.blackboxrc> is just the default.
+
+=item B<ICEWM>
+
+L<icewm(1)> user normally either launch L<icewm(1)> alone or
+L<icewm-session(1)>.  L<icewm-session(1)> provides some limited
+autostarting of applications (it forks L<icewwmtray(1)> and
+L<icewmbg(1)> as well as L<icewm(1)> itself), but does not support XDG
+Autostart, XSETTINGS and Startup Notification.
+
+=item B<OPENBOX>
+
+L<openbox(1)> is typically started either using L<openbox-session(1)>
+directly, or under LXDE using L<lxdestart(1)>.
+
+=item B<WMAKER>
+
+L<wmaker(1)> has its own non-XDG compliant session management.  This
+means that if B<xde-session> is used to launch WindowMaker, it should be
+made to suppress XDG autostart tasks using the B<--noautostart> or B<-a>
+option, such as:
+
+ xde-session --noautostart --desktop WMAKER --startwm wmaker
+
+=back
+
+=head1 EXAMPLES
+
+=head1 FILES
+
+=over
+
+=item F<$XDG_CONFIG_{HOME,DIRS}/lxsession/SESSION/autostart>
+
+The default F<autostart> files in L<lxsession(1)> compatability mode.
+Note that the values from B<all> autostart files will be used.
+
+=item F<$XDG_CONFIG_{HOME,DIRS}/lxsession/SESSION/desktop.conf>
+
+The default F<desktop.conf> file in L<lxsession(1)> compatability mode.
+Note that the values from only the file in the "most important"
+directory will be used.
+
+=back
+
+=head1 ENVIRONMENT
+
+The following environment variables are examined or set by B<xde-session>:
+
+=over 4
+
+=item B<HOME>
+
+Will be used to determined the user's home directory for the purpose of
+calculating the default value for C<XDG_CONFIG_HOME> when required.
+
+=item B<XDG_CONFIG_HOME>
+
+When set, C<$XDG_CONFIG_HOME/autostart> will be examined for
+C<*.desktop> files.  The variable defaults to C<$HOME/.config>.
+
+=item B<XDG_CONFIG_DIRS>
+
+When set, C<DIRECTORY/autostart> will be examined for each C<DIRECTORY>
+in the colon separated list of directories contained in
+C<XDG_CONFIG_DIRS>.  The variable defaults to C</etc/xdg>.
+
+=item B<XDG_CURRENT_DESKTOP>
+
+When the C<--desktop> option is not specified, C<XDG_CURRENT_DESKTOP> is
+examined to determine the current desktop.  C<XDG_CURRENT DESKTOP> is
+set to the value that resulted from option and environment variable
+processing for children of the session.
+
+=item B<FBXDG_DE>
+
+To emulate L<fbautostart>, the C<FBXDG_DE> environment variable is
+examined when the C<--desktop> option is not specified and the
+C<XDG_CURRENT_DESKTOP> environment variable is not set.  C<FBXDG_DE> is
+set to the value that resulted from option and environment variable
+processing for children of the session.
+
+=item B<DESKTOP_SESSION>
+
+To emulate L<lxsession(1)>, the C<DESKTOP_SESSION> environment variable
+is set to the value that resulted from potion and enviroment variable
+processing for children of the session.
+
+=item B<XDG_SESSION_PID>
+
+C<XDG_SESSION_PID> is set to the PID of B<xde-session>, the process group
+leader responsible for launching all tasks under the X session manager.
+The X session can be terminated by killing this process.
+
+=item B<_LXSESSION_PID>
+
+To emulate L<lxsession(1)>, the C<_LXSESSION_PID> environment variable
+is set to the PID of B<xde-session>, the process group leader responsible
+for launching all tasks under the X session manager.  The X session can
+be terminated by killing this process.
+
+=back
+
+=head1 SIGNALS
+
+=over
+
+=item I<SIGTERM>
+
+A I<SIGTERM> signal sent to the C<$XDG_SESSION_PID> or
+C<$_LXSESSION_PID> will terminate the entire session.  This should be
+avoided when the window manager does not properly catch termination
+signals and save its configuration before terminating.
+
+When the B<--startwm> option is specified or implied, B<xde-session> will
+also terminate when the window manager exits normally.
+
+=back
+
+=head1 CAVEATS
+
+When in L<lxsession(1)> compatability mode, B<xde-session> cannot act as
+an Xsettings daemon in accordance with the Xsettings specification.
+L<lxsession(1)> can.
+
+=head1 HISTORY
+
+I wrote B<xde-session> due to the deficiencies of B<fbautostart(1)> and
+L<lxsession(1)> when launching XDG-compliant applications and desktop
+environments over NWM/ENWM compliant light-weight window managers.
+
+=head1 AUTHOR
+
+Brian Bidulock <bidulock@openss7.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2013 by OpenSS7 Corporation.  All rights reserved.
+
+This program is free software; you basically stole it, and you can,
+therefore, do what you want with it, but we take no responsibility in
+that.
+
+=head1 SEE ALSO
+
+L<lxsession(1)>, L<Standards(7)>,
+
+L<Basedir|http://www.freedesktop.org/wiki/Specifications/basedir-spec>,
+
+L<Desktop Entry Specification|http://www.freedesktop.org/wiki/Specifications/desktop-entry-spec>,
+
+L<Desktop Application Autostart Specification|http://www.freedesktop.org/wiki/Specifications/autostart-spec>,
+
+L<Desktop Menu Specification|http://www.freedesktop.org/wiki/Specifications/menu-spec>,
+
+L<Startup Notification|http://www.freedesktop.org/wiki/Specifications/startup-notification-spec>,
+
+L<XSETTINGS|http://www.freedesktop.org/wiki/Specifications/xsettings-spec>,
+
+L<System Tray|http://www.freedesktop.org/wiki/Specifications/systemtray-spec>.
+
+=cut
+

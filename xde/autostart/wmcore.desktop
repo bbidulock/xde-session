@@ -1,0 +1,15 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Core CPU Load
+GenericName=Clock
+Comment=Show the usage of each core
+Icon=GNUstep3D
+TryExec=/usr/bin/wmcore
+Exec=wmcore
+Terminal=false
+Categories=DockApp;WMAKER;
+OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+StartupNotify=false
+StartupWMClass=wmcore
+X-Arch-Package=wmcore

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Battery Status Icon
+GenericName=cbatticon
+Comment=System Tray battery status applet.
+Icon=battery
+Exec=cbatticon
+Termnal=false
+Categories=TrayIcon;System;
+StartupNotify=false
+NotShowIn=GNOME;KDE;XFCE;
+X-GNOME-Autostart-enabled=true

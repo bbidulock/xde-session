@@ -1,0 +1,15 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=IceWM Tray
+GenericName=System Tray
+Comment=System tray for the IceWM
+Icon=starred
+Exec=icewmtray
+TryExec=icewmtray
+Terminal=false
+Categories=ICEWM;System;Utility;
+OnlyShowIn=ICEWM;
+StartupNotify=false
+Hidden=true
+# We normally launch this using icewm-session

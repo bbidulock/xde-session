@@ -1,0 +1,294 @@
+=head1 NAME
+
+ xde-logout - Log out of an X Session
+
+=head1 SYNOPSIS
+
+ xde-logout [OPTIONS]
+
+=head1 DESCRIPTION
+
+B<xde-logout> logs the user out of the current XDG compliant session.
+The script detects when running under L<lxsession(1)> or L<fbsession(1)>
+and performs the appropriate actions.
+
+By default, B<xde-logout> presents a menu that includes:
+
+=over
+
+=item I<Logout>
+
+Logging out of the current X Session.
+
+=item I<SwitchUser>
+
+Switch the logged in user.
+
+=item I<SwitchDesk>
+
+Switch the current desktop environment (X Session manager and window
+manager) to another.  A list of sessions is presented.
+
+=back
+
+Power-related options are only presented when the user has the privilege
+necessary to perform the actions.  Also, when the B<DISPLAY> environment
+variable indicates that the X Session is a remote session, these options
+are not activated.  The option is also only present if the hardware is
+capable of performing the action.
+
+B<xde-logout> uses I<systemd> on the I<D-Bus> to determine whether the
+user and computer are capable of performing these actions.  It also
+checks whether some of these actions are inhibited and provides the
+inhibiting message when inhibited.
+
+In contrast, B<lxsession-logout(1)> attempts to use console-kit.
+
+=over
+
+=item I<PowerOff>
+
+Power off the computer.
+
+=item I<Reboot>
+
+Reboot the computer.
+
+=item I<Suspend>
+
+Suspend the computer.
+
+=item I<Hibernate>
+
+Hibernate the computer.
+
+=item I<HybridSleep>
+
+Perform a hybrid sleep on the computer.
+
+=back
+
+=head1 OPTIONS
+
+B<xde-logout> options are compatible with L<lxsession-logout(1)>
+options.
+The following options are recognized:
+
+=over
+
+=item B<--help>, B<-h>
+
+Print brief usage information to standard error with the known defaults
+of all values and then exit.
+
+=item B<--verbose>, B<-v>
+
+Print debugging information to standard error during operation.
+
+=item B<--prompt>, B<-p> I<PROMPT>
+
+Specifies a custom prompt message.  The prompt message is displayed
+above the buttons that specify the action to take.
+This option is compatible with L<lxsession-logout(1)>.
+
+=item B<--banner>, B<-b> I<BANNER>
+
+Specifies a custom logout logo.  When unspecified,
+L<lxsession-logout(1)> will use the (ugliest ever) LXDE logo.  Is it a
+claw?  Is it a sparrow?
+When unspecified, B<xde-logout> will use a branded logo that depends on
+environment variables.
+This option is compatible with L<lxsession-logout(1)>.
+
+L<lxde-logout(1)> sets this option to
+F</usr/share/lxde/images/logout-banner.png> which is a 352x125 PNG
+image.
+
+=item B<--side>, B<-s> {B<left>|B<top>|B<right>|B<bottom>}
+
+Specifies the side of the window on which the logo will be placed.
+
+L<lxde-logout(1)> sets this option to B<top>.
+
+=back
+
+=head1 X RESOURCES
+
+B<xde-logout> examines and interprets the following X Resources:
+
+=over
+
+=item B<_BLACKBOX_PID>
+
+When B<_BLACKBOX_PID> is set on the root window of the display, it
+represents the PID of the Fluxbox window manager running on the display.
+(I know, Blackbox doesn't even set this value.)  This is not necessarily
+the PID of the machine on which B<xde-logout> is running, if
+B<xde-logout> is run from a client on a different host.
+
+=item B<_OPENBOX_PID>
+
+When B<_OPENBOX_PID> is set on the root window of the display, it
+represents the PID of the Openbox window manager running on the display.
+Additional resources set by the Openbox window manager include
+B<_OB_CONFIG_FILE> and B<_OB_VERSION>.
+
+=item B<_NET_SUPPORTING_WM_CHECK>
+
+This resource is set on the root window of the display by all window
+managers except TWM.  This is set to the window used for communications
+with the window manager.  That window will typically have
+B<_NET_WM_NAME> set to the name of the window manager (except for
+WindowMaker).  IceWM also sets the B<_NET_WM_PID> of that window to the
+PID of the IceWM window manager running on the display.
+
+=back
+
+=head1 ENVIRONMENT
+
+B<xde-logout> examines the following environment variables:
+
+=over
+
+=item B<DISPLAY>
+
+Set, of course, to the X display.
+B<xde-logout> uses this value to determine whether the X Display is on
+the local machine or is remote.  When the B<DISPLAY> begins with a
+colon, C<:>, the display is local to the machine on which B<xde-logout>
+is running.  Otherwise, it is remote.
+
+When the B<DISPLAY> begins with a colon, C<:>, the X Display may still
+be tunnelled through a SSH tunnel; however, there is no B<XDG_VTNR> in
+that case and the I<systemd> login service knows the difference.
+
+=item B<XDG_CURRENT_DESKTOP>, B<FBXDG_DE>, B<DESKTOP_SESSION>
+
+Specifies the current XDG Desktop Environment.  Typically, this is set
+by the X Session manager, L<fbsession(1)>, L<lxsession(1)> or others to
+the desktop manager in use.  Typical values are C<FLUXBOX>, C<LXDE>,
+C<BLACKBOX>, etc.  When unspecified, it is considered an error.
+
+B<FBXDG_DE> is set by L<fbautostart(1)> and L<fbsession(1)> to indicate
+the fluxbox desktop environment.  It may be used when
+B<XDG_CURRENT_DESKTOP> is unset.
+
+=item B<XDG_SEAT>
+
+Set by the XDM or X Server to the seat used by the display.  A typical
+values is C<seat0>.
+
+=item B<XDG_VTNR>
+
+Set by the XDM or X Server to the virtual terminal number used by the
+display.  A typical value for XDM is C<7>.
+
+=item B<XDG_SESSION_ID>
+
+Set by the XDM or X Server to indicate the active session within the
+seat as specified by B<XDG_SEAT>.  A typical value is C<1>.
+
+=item B<XDG_RUNTIME_DIR>
+
+Set by the XDM or X Server to indicate the runtime directory.  A typical
+value is F</run/user/1000>.
+
+=item B<XDG_SESSION_PID>, B<_LXSESSION_PID>
+
+Set by L<fbsession(1)> to its main PID.
+B<_LXSESSION_PID> is set to the main session PID by L<lxsession(1)> and
+is also set by L<fbsession(1)>.
+
+=item B<XDG_VENDOR_ID>
+
+This value is only set by L<fbsession(1)>.  It is set to the
+vendor-specific ID that is also typically used (with a dash, C<->,
+appended) as the B<XDG_MENU_PREFIX>.  B<xde-logout> uses this
+information to determine default branding (splash logos).  When
+unspecified, B<xde-logout> will try to derive this value from
+B<XDG_MENU_PREFIX> if it is set.
+
+=item B<XDG_MENU_PREFIX>
+
+Specifies the prefix for the XDG applications menu that is sought in
+F<@XDG_DATA_DIRS/menus/${XDG_MENU_PREFIX}applications.menu>.
+
+=item B<DBUS_SESSION_BUS_ADDRESS>
+
+=item B<DBUS_SESSION_BUS_PID>
+
+=item B<XDG_CONFIG_HOME>
+
+Specifies the user configuration directory.  When unspecified, it
+defaults to F<$HOME/.config> in accordance with XDG specifications.
+
+=item B<XDG_CONFIG_DIRS>
+
+Specifies the system configuration directories.  When unspecified, it
+defaults to F</etc/xdg> in accordance with XDG specifications.
+
+=item B<XDG_DATA_HOME>
+
+Specifies the user data directory.  When unspecified, it defaults to
+F<$HOME/.local/share> in accordance with XDG specifications.
+
+=item B<XDG_DATA_DIRS>
+
+Specifies the system data directories.  When unspecified, it defaults to
+F</usr/local/share:/usr/share> in accordance with XDG specifications.
+
+=item B<XDG_DESKTOP_DIR>
+
+Specifies the user Desktop directory.  When unspecified, it defaults to
+F<$HOME/Desktop> in accordance with XDG specifications.
+
+=back
+
+=head1 HISTORY
+
+One of my purposes in writing B<xde-logout> was to avoid some of the
+idiosynchrasies of L<lxsession-logout(1)> and L<lxde-logout(1)>.  There
+are several problems with those programs as follows:
+
+=over
+
+=item 1.
+
+They use ugly LXDE branding and have only minor support for custom
+branding.
+
+=item 2.
+
+They have a very crude layout.
+
+=item 3.
+
+They attempt to use consolekit to determine the privilege for power
+functions.  Consolekit is obsolete on I<Arch Linux> and the preferred
+mechanism is the I<systemd> login D-Bus service instead.
+
+=item 4.
+
+They cannot switch window managers nor users without the bloated GDM.
+
+=back
+
+=head1 AUTHOR
+
+Brian Bidulock <bidulock@openss7.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2013 by OpenSS7 Corporation.
+All rights reserved.
+
+This program is free software; you basically stole it, and you can,
+therefore, do what you want with it, but we take no responsibility in
+that.
+
+=head1 SEE ALSO
+
+L<fbsession(1)>, L<lxsession(1)>, L<lxsession-logout(1)>,
+L<lxde-logout(1)>.
+
+=cut

@@ -1,0 +1,15 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=CPU Load Dock App
+GenericName=Load Monitor
+Comment=Show the CPU load
+Icon=GNUstep3D
+TryExec=/usr/bin/wmcpuload
+Exec=wmcpuload
+Terminal=false
+Categories=DockApp;WMAKER;
+OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+StartupNotify=false
+StartupWMClass=wmcpuload
+X-Arch-Package=wmcpuload

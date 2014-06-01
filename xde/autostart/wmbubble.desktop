@@ -1,0 +1,15 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Bubble Monitor Dock App
+GenericName=System Monitor
+Comment=Bubble monitor system monitor dock app
+Icon=GNUstep3D
+TryExec=/usr/bin/wmbubble
+Exec=wmbubble
+Terminal=false
+Categories=DockApp;WMAKER;
+OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+StartupNotify=false
+StartupWMClass=wmbubble
+X-Arch-Package=wmbubble

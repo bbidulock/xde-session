@@ -1,0 +1,15 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=Application
+Name=Launcher Dock App
+GenericName=Launcher
+Comment=A simple application launcher dock app
+Icon=GNUstep3D
+Exec=wmappl
+TryExec=wmappl
+Terminal=false
+Categories=DockApp;WMAKER;
+OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+StartupNotify=false
+StartupWMClass=wmappl
+X-Arch-Package=wmappl
