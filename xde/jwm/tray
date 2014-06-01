@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+
+<JWM>
+   <!-- Additional tray attributes: autohide, width, border, layer, layout -->
+   <Tray  x="0" y="-1" height="26" autohide="false">
+
+      <!-- Additional TrayButton attribute: label -->
+      <TrayButton label="Start">root:1</TrayButton>
+
+      <TrayButton border="true" label="" popup="Web Browser" icon="/usr/share/icons/gnome/16x16/apps/web-browser.png">exec:firefox</TrayButton>
+      <TrayButton border="true" label="" popup="File Manager" icon="/usr/share/icons/gnome/16x16/apps/file-manager.png">exec:pcmanfm</TrayButton>
+      <TrayButton border="true" label="" popup="Terminal" icon="/usr/share/icons/gnome/16x16/apps/terminal.png">exec:roxterm</TrayButton>
+      <TrayButton border="true" label="" popup="Visual Editor" icon="/usr/share/icons/gnome/16x16/apps/text-editor.png">exec:gvim</TrayButton>
+      <TrayButton border="true" label="" popup="Run Command" icon="/usr/share/icons/gnome/16x16/actions/gtk-execute.png">exec:xde-run</TrayButton>
+      <TrayButton border="true" label="" popup="Calculator" icon="/usr/share/icons/gnome/16x16/apps/accessories-calculator.png">exec:calculator</TrayButton>
+      <TrayButton border="true" label="" popup="Network" icon="/usr/share/icons/gnome/16x16/places/gtk-network.png">exec:pcmanfm ~/Network</TrayButton>
+      <TrayButton border="true" label="" popup="Logout" icon="/usr/share/icons/gnome/16x16/actions/system-log-out.png">exec:xde-logout</TrayButton>
+      <TrayButton border="true" label="" popup="Show Desktop" icon="/usr/share/icons/gnome/16x16/actions/go-down.png">showdesktop</TrayButton>
+
+      <!-- Additional Pager attribute: labeled -->
+      <Pager labeled="true"/>
+
+      <TaskList maxwidth="256"/>
+
+      <Dock/>
+
+      <!-- Additional Swallow attribute: height -->
+<!--
+      <Swallow name="xload" width="64">
+         xload -nolabel -bg black -fg red -hl white
+      </Swallow>
+-->
+<!--
+      <Swallow name="trayusermount" width="0">
+	 trayusermount
+      </Swallow>
+-->
+<!--
+      <Swallow name="traykeymap" width="0">
+	 traykeymap
+      </Swallow>
+-->
+      <Swallow name="traymonitor" width="0">
+	 traymonitor
+      </Swallow>
+<!--
+      <Swallow name="trayvolume-alsa" width="0">
+	 trayvolume-alsa
+      </Swallow>
+-->
+
+      <Clock>xclock</Clock>
+
+   </Tray>
+</JWM>

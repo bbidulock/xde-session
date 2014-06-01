@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+
+<JWM>
+   <!-- Key bindings -->
+   <Key key="Up">up</Key>
+   <Key key="Down">down</Key>
+   <Key key="Right">right</Key>
+   <Key key="Left">left</Key>
+   <Key key="h">left</Key>
+   <Key key="j">down</Key>
+   <Key key="k">up</Key>
+   <Key key="l">right</Key>
+   <Key key="Return">select</Key>
+   <Key key="Escape">escape</Key>
+
+   <Key mask="A" key="Tab">nextstacked</Key>
+   <Key mask="AS" key="Tab">prevstacked</Key>
+   <Key mask="A" key="F4">close</Key>
+   <Key mask="A" key="#">desktop#</Key>
+   <Key mask="A" key="F1">root:1</Key>
+   <Key mask="A" key="F2">window</Key>
+   <Key mask="A" key="F10">maximize</Key>
+   <Key mask="CA" key="Right">rdesktop</Key>
+   <Key mask="CA" key="Left">ldesktop</Key>
+   <Key mask="CA" key="Up">udesktop</Key>
+   <Key mask="CA" key="Down">ddesktop</Key>
+
+   <Key mask="4" key="m">window</Key>
+   <Key mask="4" key="e">exec:pcmanfm</Key>
+   <Key mask="4" key="r">exec:gmrun</Key>
+
+   <Key mask="A" key="F4">close</Key>
+   <Key mask="A" key="F5">exec:xdotool getactivewindow windowkill</Key>
+   <Key mask="A" key="F9">minimize</Key>
+   <Key mask="A" key="F10">maximize</Key>
+   <Key mask="A" key="F11">fullscreen</Key>
+
+   <Key mask="A" key="q">close</Key>
+   <Key mask="A" key="m">minimize</Key>
+   <Key mask="A" key="s">shade</Key>
+   <Key mask="A" key="Up">exec:wmctrl -a :ACTIVE:</Key>
+   <!-- <Key mask="A" key="Down">lower</Key> -->
+   <Key mask="A" key="space">window</Key>
+   <Key mask="CA" key="Delete">exit</Key>
+
+   <Key mask="CS" key="Up">exec:wmctrl -r :ACTIVE: -b toggle,maximized_vert</Key>
+   <Key mask="CS" key="Right">exec:wmctrl -r :ACTIVE: -b toggle,maximized_horz</Key>
+   <Key mask="CS" key="Left">maximize</Key>
+   <Key mask="CS" key="Return">stick</Key>
+
+   <Key mask="CA" key="t">exec:roxterm</Key>
+   <Key mask="CA" key="n">exec:roxterm --geometry=90x70</Key>
+   <Key mask="CA" key="x">exec:uxterm -ls -geometry 90x70</Key>
+   <Key mask="CA" key="v">exec:gvim -geometry 90x70</Key>
+   <Key mask="CA" key="s">exec:uxterm -ls -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-50-iso646.1991-irv -fb -schumacher-clean-medium-r-bold--8-80-75-75-c-50-iso646.1991-irv -geometry 146x143 -sl 15000</Key>
+   <Key mask="CA" key="y">exec:uxterm -ls -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-60-iso646.1991-irv -fb -schumacher-clean-bold-r-normal--8-80-75-75-c-60-iso646.1991-irv -geometry 120x143 -sl 15000</Key>
+   <Key mask="CA" key="l">exec:uxterm -ls -fn 6x13 -fb 6x13bold -geometry 120x88 -sl 15000</Key>
+   <Key mask="CA" key="b">exec:uxterm -ls -fn 7x13 -fb 7x13bold -geometry 104x88 -sl 15000</Key>
+   <Key mask="CA" key="h">exec:uxterm -ls -fn 9x15 -fb 9x15bold -geometry  81x76 -sl 15000</Key>
+
+   <Key mask="4" key="r">exec:xde-run</Key>
+   <Key mask="4" key="t">exec:roxterm</Key>
+   <Key mask="4" key="w">exec:firefox</Key>
+   <Key mask="4" key="v">exec:gvim</Key>
+   <Key mask="4" key="f">exec:pcmanfm</Key>
+
+   <Key mask="C" key="F1">exec:wmctrl -s 0</Key>
+   <Key mask="C" key="F2">exec:wmctrl -s 1</Key>
+   <Key mask="C" key="F3">exec:wmctrl -s 2</Key>
+   <Key mask="C" key="F4">exec:wmctrl -s 3</Key>
+   <Key mask="C" key="F5">exec:wmctrl -s 4</Key>
+   <Key mask="C" key="F6">exec:wmctrl -s 5</Key>
+   <Key mask="C" key="F7">exec:wmctrl -s 6</Key>
+   <Key mask="C" key="F8">exec:wmctrl -s 7</Key>
+   <Key mask="C" key="F9">exec:wmctrl -s 8</Key>
+   <Key mask="C" key="F10">exec:wmctrl -s 9</Key>
+   <Key mask="C" key="F11">exec:wmctrl -s 10</Key>
+   <Key mask="C" key="F12">exec:wmctrl -s 11</Key>
+
+   <Key mask="A" key="1">exec:wmctrl -s 0</Key>
+   <Key mask="A" key="2">exec:wmctrl -s 1</Key>
+   <Key mask="A" key="3">exec:wmctrl -s 2</Key>
+   <Key mask="A" key="4">exec:wmctrl -s 3</Key>
+   <Key mask="A" key="5">exec:wmctrl -s 4</Key>
+   <Key mask="A" key="6">exec:wmctrl -s 5</Key>
+   <Key mask="A" key="7">exec:wmctrl -s 6</Key>
+   <Key mask="A" key="8">exec:wmctrl -s 7</Key>
+   <Key mask="A" key="9">exec:wmctrl -s 8</Key>
+   <Key mask="A" key="0">exec:wmctrl -s 9</Key>
+
+   <Key mask="4" key="F1">exec:wmctrl -r :ACTIVE: -t 0</Key>
+   <Key mask="4" key="F2">exec:wmctrl -r :ACTIVE: -t 1</Key>
+   <Key mask="4" key="F3">exec:wmctrl -r :ACTIVE: -t 2</Key>
+   <Key mask="4" key="F4">exec:wmctrl -r :ACTIVE: -t 3</Key>
+   <Key mask="4" key="F5">exec:wmctrl -r :ACTIVE: -t 4</Key>
+   <Key mask="4" key="F6">exec:wmctrl -r :ACTIVE: -t 5</Key>
+   <Key mask="4" key="F7">exec:wmctrl -r :ACTIVE: -t 6</Key>
+   <Key mask="4" key="F8">exec:wmctrl -r :ACTIVE: -t 7</Key>
+   <Key mask="4" key="F9">exec:wmctrl -r :ACTIVE: -t 8</Key>
+   <Key mask="4" key="F10">exec:wmctrl -r :ACTIVE: -t 9</Key>
+   <Key mask="4" key="F11">exec:wmctrl -r :ACTIVE: -t 10</Key>
+   <Key mask="4" key="F12">exec:wmctrl -r :ACTIVE: -t 11</Key>
+
+   <Key mask="C4" key="F1">exec:wmctrl -r :ACTIVE: -t 0; wmctrl -s 0</Key>
+   <Key mask="C4" key="F2">exec:wmctrl -r :ACTIVE: -t 1; wmctrl -s 1</Key>
+   <Key mask="C4" key="F3">exec:wmctrl -r :ACTIVE: -t 2; wmctrl -s 2</Key>
+   <Key mask="C4" key="F4">exec:wmctrl -r :ACTIVE: -t 3; wmctrl -s 3</Key>
+   <Key mask="C4" key="F5">exec:wmctrl -r :ACTIVE: -t 4; wmctrl -s 4</Key>
+   <Key mask="C4" key="F6">exec:wmctrl -r :ACTIVE: -t 5; wmctrl -s 5</Key>
+   <Key mask="C4" key="F7">exec:wmctrl -r :ACTIVE: -t 6; wmctrl -s 6</Key>
+   <Key mask="C4" key="F8">exec:wmctrl -r :ACTIVE: -t 7; wmctrl -s 7</Key>
+   <Key mask="C4" key="F9">exec:wmctrl -r :ACTIVE: -t 8; wmctrl -s 8</Key>
+   <Key mask="C4" key="F10">exec:wmctrl -r :ACTIVE: -t 9; wmctrl -s 9</Key>
+   <Key mask="C4" key="F11">exec:wmctrl -r :ACTIVE: -t 10; wmctrl -s 10</Key>
+   <Key mask="C4" key="F12">exec:wmctrl -r :ACTIVE: -t 11; wmctrl -s 11</Key>
+</JWM>

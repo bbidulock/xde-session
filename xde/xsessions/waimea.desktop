@@ -1,0 +1,29 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=Waimea
+Icon=waimea
+Exec=waimea
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=An X11 window manager design for maximum efficiency
+Categories=WindowManager;Application;System;
+StartupNotify=false
+NoDisplay=true
+X-GNOME-WMName=waimea
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=false
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop WAIMEA -startwm start-waimea
+Comment=Waimea under an XDE session
+
+[Window Manager]
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

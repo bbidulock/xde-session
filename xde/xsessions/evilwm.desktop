@@ -1,0 +1,29 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=evilwm
+Icon=evilwm
+Exec=evilwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Categories=WindowManager;Application;System;
+StartupNotify=false
+NoDisplay=true
+X-GNOME-WMName=evilwm
+# evilwm doesn't talk XSMP yet, so don't start in the WindowManager phase:
+X-GNOME-Autostart-Phase=Applications
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=false
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop EVILWM -startwm start-evilwm
+Comment=evilwm in an XDE session
+
+[Window Manager]
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=false

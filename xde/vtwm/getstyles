@@ -1,0 +1,58 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export VTWM_TYPE=${1:-${VTWM_TYPE:-vtwm}}
+if [ ! -x "`which $VTWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable vtwm program" >&2
+    exit 1;
+fi
+export VTWM_CONFIG_HOME=${VTWM_CONFIG_HOME:-${HOME:-~}/.$VTWM_TYPE}
+export VTWM_CONFIG_SDIR=${VTWM_CONFIG_SDIR:-/usr/share/$VTWM_TYPE}
+
+getstyles() {
+    setstyle="$here/setstyle"
+    [ -x "$setstyle" ] || setstyle="$VTWM_CONFIG_HOME/setstyle"
+    [ -x "$setstyle" ] || setstyle="$VTWM_CONFIG_SDIR/setstyle"
+    [ -x "$setstyle" ] || { echo "ERROR: missing setstyle program" >&2; exit 1; }
+    setstyle=$(echo "$setstyle"|sed "s,$VTWM_CONFIG_HOME,TWM_CONFIG_HOME,;s,$VTWM_CONFIG_SDIR,TWM_CONFIG_SDIR,")
+
+    echo "divert(FUNCTIONS)dnl"
+    echo "divert(MENUS)dnl"
+
+    echo "Menu \"twmstyles\" twm_MenuColor"
+    echo "{"
+
+    echo -e "    \"System Styles\"\t\tf.title"
+    find -L "$VTWM_CONFIG_SDIR/styles" -name stylerc 2>/dev/null | sort | while read f
+    do
+	styledir=$(echo "$f"|sed 's,/stylerc$,,;s,'"$VTWM_CONFIG_SDIR"',TWM_CONFIG_SDIR,')
+	style=$(echo "$styledir"|sed 's,^.*/,,')
+	echo "divert(FUNCTIONS)dnl"
+	echo "Function \"set-system-style-$style\" { f.exec \"$setstyle TWM_TYPE $styledir\" f.function \"reconfig\" }"
+	echo "divert(MENUS)dnl"
+	echo -e "    \"$style\"\t\tf.function \"set-system-style-$style\""
+    done
+
+    echo -e "    \"User Styles\"\t\tf.title"
+    find -L "$VTWM_CONFIG_HOME/styles" -name stylerc 2>/dev/null | sort | while read f
+    do
+	styledir=$(echo "$f"|sed 's,/stylerc$,,;s,'"$VTWM_CONFIG_HOME"',TWM_CONFIG_HOME,')
+	style=$(echo "$styledir"|sed 's,^.*/,,')
+	echo "divert(FUNCTIONS)dnl"
+	echo "Function \"set-user-style-$style\" { f.exec \"$setstyle TWM_TYPE $styledir\" f.function \"reconfig\" }"
+	echo "divert(MENUS)dnl"
+	echo -e "    \"$style\"\t\tf.function \"set-user-style-$style\""
+    done
+
+    echo "}"
+    echo "divert(-1)"
+    echo "dnl vim: ft=m4"
+}
+
+getstyles >"$VTWM_CONFIG_HOME/stylemenu"
+
+# vim: sw=4

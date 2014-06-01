@@ -1,0 +1,49 @@
+#!/bin/bash
+
+here="$(dirname $0)"
+case "$here" in /*) ;; *) here=`(cd "$here"; pwd)` ;; esac
+
+name=waimea
+
+[ -n "$XDG_CONFIG_HOME" ] || XDG_CONFIG_HOME="$HOME/.config"
+[ -n "$XDG_DATA_HOME"   ] || XDG_DATA_HOME="$HOME/.local/share"
+[ -n "$XDG_CONFIG_DIRS" ] || XDG_CONFIG_DIRS="/etc/xdg"
+[ -n "$XDG_DATA_DIRS"   ] || XDG_DATA_DIRS="/usr/local/share:/usr/share"
+
+prog=${1:-${XDE_WM_TYPE:-$name}}
+if [ ! -x "`which $prog 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable $prog program" >&2
+    exit 1
+fi
+vers=${2:-${XDE_WM_VERSION}}
+if [ -z "$vers" ]; then
+    if $prog --version >/dev/null 2>&1; then
+	vers=$(LANG= $prog --version 2>/dev/null|awk '/waimea/{print$2;exit}')
+    else
+	vers="0.5.0"
+    fi
+fi
+sdir="${XDE_WM_CONFIG_SDIR:-/usr/share/$prog}"
+if [ -z "$XDG_USE_XDG_HOME" ]; then
+    path="${XDE_WM_CONFIG_HOME:-${HOME:-~}/.$prog}"
+else
+    path="${XDE_WM_CONFIG_HOME:-${XDG_CONFIG_HOME:-${HOME:-~}/.config}/$prog}"
+fi
+export XDE_WM_TYPE="$prog"
+export XDE_WM_VERSION="$vers"
+export XDE_WM_CONFIG_HOME="$path"
+export XDE_WM_CONFIG_SDIR="$sdir"
+export XDE_WM_CONFIG_EDIR="$here"
+
+xprop -root -format _NET_WM_PID 32c -set _NET_WM_PID $$
+xprop -root -format _NET_WM_NAME 8u -set _NET_WM_NAME "$prog $vers"
+
+if [ -z "$XDE_NOEXEC" ]; then
+    exec $prog --config "$path/config"
+else
+    echo "exec $prog --config \"$path/config\"" >&2
+fi
+
+exit 1
+
+# vim: set ft=sh sw=4:

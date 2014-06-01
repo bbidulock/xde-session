@@ -1,0 +1,42 @@
+[app] (name=fbrun) (class=FbRun)
+  [Position]	(CENTER)	{0 0}
+  [Layer]	{2}
+[end]
+[app] (name=cairo-clock) (class=Cairo-clock)
+  [Dimensions]	{12% 17%}
+  [Position]	(UPPERLEFT)	{88% 1%}
+  [Layer]	{12}
+  [Close]	{yes}
+  [Alpha]	{255}
+[end]
+[app] (name=Conky) (class=Conky)
+  [Layer]	{10}
+  [Close]	{yes}
+  [Alpha]	{255}
+[end]
+[app] (name=lxpanel) (class=Lxpanel)
+  [Hidden]	{yes}
+  [Layer]	{4}
+  [Close]	{yes}
+  [Alpha]	{255 220}
+[end]
+[app] (name=xde-panel) (class=Xde-panel)
+  [Hidden]	{yes}
+  [Layer]	{2}
+  [Close]	{yes}
+  [Alpha]	{255 237}
+[end]
+[app] (name=xlogo) (class=XLogo)
+  [Dimensions]	{29% 40%}
+  [Position]	(UPPERLEFT)	{49% 20%}
+  [Sticky]	{yes}
+  [Layer]	{10}
+  [Close]	{yes}
+[end]
+[app] (name=xclock) (class=XClock)
+  [Dimensions]	{9% 12%}
+  [Position]	(UPPERRIGHT)	{0% 0%}
+  [Deco]	{BORDER}
+  [Sticky]	{yes}
+  [Layer]	{10}
+[end]

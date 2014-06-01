@@ -1,0 +1,298 @@
+[begin] (Menu)
+[submenu] (Applications) </usr/share/icons/Mist/16x16/apps/start-here.png>
+    [exec] (1\) Web Browser) {firefox} </usr/share/icons/gnome/16x16/apps/web-browser.png>
+    [exec] (2\) File Manager) {pcmanfm} </usr/share/icons/gnome/16x16/apps/file-manager.png>
+    [exec] (3\) Text Editor) {gvim -f} </usr/share/icons/gnome/16x16/apps/text-editor.png>
+    [exec] (4\) Terminal) {lxterminal} </usr/share/icons/gnome/16x16/apps/terminal.png>
+    [exec] (5\) Run Command) {xde-run} </usr/share/icons/gnome/16x16/actions/system-run.png>
+    [separator]
+    [submenu] (Unexicon) {Unexicon Menu} <>
+    [end] # (Unexicon)
+    [submenu] (Archlinux) {Archlinux Menu} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (AUR) {xdg-open https://aur.archlinux.org} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (Bugs) {xdg-open https://bugs.archlinux.org} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (Developers) {xdg-open http://www.archlinux.org/developers/} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (Documentation) {xdg-open https://wiki.archlinux.org/index.php/Official_Arch_Linux_Install_Guide} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (Donate) {xdg-open http://www.archlinux.org/donate/} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (Forum) {xdg-open https://bbs.archlinux.org} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (Homepage) {xdg-open http://www.archlinux.org} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (SVN) {xdg-open http://projects.archlinux.org/svntogit/} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (Schwag) {xdg-open http://www.zazzle.com/archlinux/} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+        [exec] (Wiki) {xdg-open https://wiki.archlinux.org} </usr/share/icons/hicolor/scalable/apps/arch-logo.svg>
+    [end] # (Archlinux)
+    [submenu] (Accessibility) {Accessibility Menu} </usr/share/icons/gnome/16x16/apps/accessibility-directory.png>
+    [end] # (Accessibility)
+    [submenu] (Accessories) {Accessories Menu} </usr/share/icons/gnome/16x16/categories/gnome-util.png>
+        [exec] (7-Zip FM) {7zFM} </usr/share/icons/hicolor/32x32/apps/p7zip.png>
+        [exec] (AllTray 0.7.5.1dev) {alltray -a} </home/brian/.icons/alltray.png>
+        [exec] (Application Finder) {xfce4-appfinder} </usr/share/icons/gnome/16x16/actions/gtk-find.png>
+        [exec] (BlackBox Pager) {/usr/bin/bbpager} </usr/share/icons/hicolor/16x16/apps/blackbox.png>
+        [exec] (Calculator) {ede-calc} </usr/share/icons/gnome/16x16/mimetypes/empty.png>
+        [exec] (EDE Tips) {ede-tip} </usr/share/icons/gnome/16x16/status/dialog-information.png>
+        [exec] (FOX Calculator) {calculator} </usr/share/icons/gnome/16x16/apps/accessories-calculator.png>
+        [exec] (FOX Text Editor) {adie} </usr/share/icons/gnome/16x16/apps/accessories-text-editor.png>
+        [exec] (File Manager PCManFM) {pcmanfm} </usr/share/icons/gnome/16x16/apps/system-file-manager.png>
+        [exec] (Font Viewer) {gnome-font-viewer} </usr/share/icons/gnome/16x16/apps/preferences-desktop-font.png>
+        [exec] (Gtk VNC Viewer) {/usr/bin/gvncviewer} </usr/share/icons/gnome/16x16/apps/gnome-remote-desktop.png>
+        [exec] (Gxmessage) {gxmessage} </usr/share/icons/hicolor/48x48/apps/gxmessage.png>
+        [exec] (LXTerminal) {lxterminal} </home/brian/.icons/lxterminal.png>
+        [exec] (MacSlow's Cairo-Clock) {cairo-clock} </usr/share/pixmaps/cairo-clock.png>
+        [exec] (Mount-gtk) {mount-gtk} </usr/share/icons/gnome/16x16/devices/drive-removable-media.png>
+        [exec] (Pacman Express) {/opt/pacmanexpress/ssx /opt/pacmanexpress/pacmanexpress} </usr/share/pixmaps/pacmanexpress.png>
+        [exec] (Root Terminal) {gksu -l gnome-terminal} </home/brian/.icons/gksu-root-terminal.png>
+        [exec] (Vi IMproved) {gvim -f} </home/brian/.icons/gvim.png>
+        [exec] (X11 Terminal) {xterm -fn 9x15} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (Xarchiver) {xarchiver} </usr/share/icons/hicolor/16x16/apps/xarchiver.png>
+        [exec] (Xcalc Calculator) {xcalc} </usr/share/icons/gnome/16x16/apps/accessories-calculator.png>
+        [exec] (Xfi) {xfi} </usr/share/pixmaps/xfi.png>
+        [exec] (Xfp) {xfp} </usr/share/pixmaps/xfp.png>
+        [exec] (Xfv) {xfv} </usr/share/pixmaps/xfv.png>
+        [exec] (Xfw) {xfw} </usr/share/pixmaps/xfw.png>
+        [exec] (compton) {compton} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+    [end] # (Accessories)
+    [submenu] (Education) {Education Menu} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+    [end] # (Education)
+    [submenu] (Games) {Games Menu} </usr/share/icons/gnome/16x16/categories/gnome-joystick.png>
+        [exec] (XGalaga) {xgalaga} </usr/share/pixmaps/xgalaga.png>
+        [exec] (aafire) {aafire} <>
+    [end] # (Games)
+    [submenu] (Graphics) {Graphics Menu} </usr/share/icons/gnome/16x16/categories/gnome-graphics.png>
+        [exec] (Blender) {blender} </usr/share/icons/hicolor/16x16/apps/blender.png>
+        [exec] (Feh) {feh} </usr/share/feh/images/feh.png>
+        [exec] (G3DViewer) {g3dviewer} </usr/share/pixmaps/g3dviewer.png>
+        [exec] (GNU Image Manipulation Program) {gimp-2.8} </usr/share/icons/hicolor/16x16/apps/gimp.png>
+        [exec] (GQview) {gqview -r} </usr/share/pixmaps/gqview.png>
+        [exec] (GV) {gv} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Gaw Gtk Analog Wave viewer) {gaw} </usr/share/pixmaps/gaw.png>
+        [exec] (Geeqie) {geeqie -r} </home/brian/.icons/geeqie.png>
+        [exec] (Image Viewer) {gpicview} </usr/share/icons/hicolor/48x48/apps/gpicview.png>
+        [exec] (Image Viewer) {ede-image-view} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Inkscape) {inkscape} </usr/share/icons/hicolor/16x16/apps/inkscape.png>
+        [exec] (Konstruktor) {konstruktor} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (LibreOffice Draw) {libreoffice --draw} </usr/share/icons/gnome/16x16/apps/libreoffice-draw.png>
+        [exec] (Stopmotion) {/usr/bin/stopmotion} </usr/share/pixmaps/stopmotion.png>
+        [exec] (Wings3d) {wings3d} </usr/share/pixmaps/wings3d.png>
+        [exec] (xfig) {/usr/bin/xfig} </home/brian/.icons/xfig.png>
+        [exec] (xzgv) {xzgv} </usr/share/pixmaps/xzgv.xpm>
+    [end] # (Graphics)
+    [submenu] (Internet) {Internet Menu} </usr/share/icons/gnome/16x16/categories/gnome-globe.png>
+        [exec] (Avahi SSH Server Browser) {/usr/bin/bssh} </usr/share/icons/gnome/16x16/devices/network-wired.png>
+        [exec] (Avahi VNC Server Browser) {/usr/bin/bvnc} </usr/share/icons/gnome/16x16/devices/network-wired.png>
+        [exec] (DHCP Client Daemon Applet) {/usr/bin/dhcpcd-gtk} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Ekiga Softphone) {ekiga} </usr/share/icons/hicolor/16x16/apps/ekiga.png>
+        [exec] (Ettercap) {ettercap-pkexec -G} </home/brian/.icons/ettercap.png>
+        [exec] (Firefox) {/usr/lib/firefox/firefox} </usr/share/icons/hicolor/16x16/apps/firefox.png>
+        [exec] (Links) {xlinks -g} </usr/share/pixmaps/links_32x32.xpm>
+        [exec] (OpenNX Connection Wizard) {/usr/bin/opennx --wizard} </usr/share/icons/hicolor/16x16/apps/opennx-wizard.png>
+        [exec] (OpenNX Session Administrator) {/usr/bin/opennx --admin} </usr/share/icons/hicolor/16x16/apps/opennx-admin.png>
+        [exec] (OpenNX client) {/usr/bin/opennx} </usr/share/icons/hicolor/16x16/apps/nx.png>
+        [exec] (Remmina Remote Desktop Client) {remmina} </usr/share/icons/hicolor/16x16/apps/remmina.png>
+        [exec] (X11VNC Server) {x11vnc -gui tray=setpass -rfbport PROMPT -bg -o %HOME/.x11vnc.log.%VNCDISPLAY} </usr/share/icons/Mist/16x16/devices/computer.png>
+        [exec] (Zenmap) {zenmap} </usr/share/zenmap/pixmaps/zenmap.png>
+        [exec] (Zenmap (as root\)) {/usr/share/zenmap/su-to-zenmap.sh} </usr/share/zenmap/pixmaps/zenmap.png>
+    [end] # (Internet)
+    [submenu] (Office) {Office Menu} </usr/share/icons/gnome/16x16/categories/gnome-applications.png>
+        [exec] (Adobe Reader 9) {/opt/Adobe/Reader9/bin/acroread} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (GV) {gv} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (LibreOffice Base) {libreoffice --base} </usr/share/icons/gnome/16x16/apps/libreoffice-base.png>
+        [exec] (LibreOffice Calc) {libreoffice --calc} </usr/share/icons/gnome/16x16/apps/libreoffice-calc.png>
+        [exec] (LibreOffice Draw) {libreoffice --draw} </usr/share/icons/gnome/16x16/apps/libreoffice-draw.png>
+        [exec] (LibreOffice Impress) {libreoffice --impress} </usr/share/icons/gnome/16x16/apps/libreoffice-impress.png>
+        [exec] (LibreOffice Writer) {libreoffice --writer} </usr/share/icons/gnome/16x16/apps/libreoffice-writer.png>
+        [exec] (RAKT PDF Viewer) {raktpdf} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Xpdf) {xpdf} </home/brian/.icons/xpdf.xpm>
+        [exec] (Zathura) {zathura} <>
+        [exec] (apvlv) {apvlv} <>
+    [end] # (Office)
+    [submenu] (Programming) {Programming Menu} </usr/share/icons/gnome/16x16/categories/gnome-devel.png>
+        [exec] (CMake) {cmake-gui} </home/brian/.icons/CMakeSetup32.png>
+        [exec] (Eeschema) {eeschema} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (FLUID) {fluid} </usr/share/icons/hicolor/16x16/apps/fluid.png>
+        [exec] (GNU Octave) {xterm -T "GNU Octave" -e /usr/bin/octave} </usr/share/octave/3.6.4/imagelib/octave-logo.svg>
+        [exec] (KiCad) {kicad} </usr/share/icons/hicolor/scalable/apps/kicad.svg>
+        [exec] (Qt4 Assistant ) {assistant-qt4} </usr/share/icons/hicolor/32x32/apps/assistant-qt4.png>
+        [exec] (Qt4 Designer) {designer-qt4} </usr/share/icons/hicolor/128x128/apps/designer-qt4.png>
+        [exec] (Qt4 Linguist ) {linguist-qt4} </usr/share/icons/hicolor/16x16/apps/linguist-qt4.png>
+        [exec] (Qt4 QDbusViewer ) {qdbusviewer-qt4} </usr/share/icons/hicolor/32x32/apps/qdbusviewer-qt4.png>
+        [exec] (Vi IMproved) {gvim -f} </home/brian/.icons/gvim.png>
+    [end] # (Programming)
+    [submenu] (Science & Math) {Science & Math Menu} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (GNU Octave) {xterm -T "GNU Octave" -e /usr/bin/octave} </usr/share/octave/3.6.4/imagelib/octave-logo.svg>
+        [exec] (GSpiceUI) {gspiceui} <>
+    [end] # (Science & Math)
+    [submenu] (Sound & Video) {Sound & Video Menu} </usr/share/icons/gnome/16x16/categories/gnome-multimedia.png>
+        [exec] (Alsaplayer) {alsaplayer} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Audacious) {audacious} </usr/share/icons/hicolor/scalable/apps/audacious.svg>
+        [exec] (Audacious2) {audacious2} </usr/share/icons/hicolor/scalable/apps/audacious2.svg>
+        [exec] (Audio Mixer) {xfce4-mixer} </usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png>
+        [exec] (Consonance) {consonance} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (FFADO Mixer) {ffado-mixer} </usr/share/pixmaps/ffado.png>
+        [exec] (GTK sound mixer) {/usr/bin/aumix} </usr/share/aumix/aumix.xpm>
+        [exec] (Goggles Music Manager) {gogglesmm} </usr/share/icons/hicolor/16x16/apps/gogglesmm.png>
+        [exec] (Guayadeque Music Player) {guayadeque} </usr/share/pixmaps/guayadeque.png>
+        [exec] (Music Player) {lxmusic} </usr/share/pixmaps/lxmusic.png>
+        [exec] (PNMixer) {pnmixer} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Qt V4L2 test Utility) {qv4l2} </usr/share/icons/hicolor/16x16/apps/qv4l2.png>
+        [exec] (SimpleBurn) {simpleburn} </home/brian/.icons/simpleburn.png>
+        [exec] (Stopmotion) {/usr/bin/stopmotion} </usr/share/pixmaps/stopmotion.png>
+        [exec] (Videos) {totem} </usr/share/icons/hicolor/16x16/apps/totem.png>
+        [exec] (Xfburn) {xfburn} </usr/share/icons/gnome/16x16/devices/media-cdrom.png>
+    [end] # (Sound & Video)
+    [submenu] (System Tools) {System Tools Menu} </usr/share/icons/gnome/16x16/categories/gnome-system.png>
+        [exec] (Avahi Zeroconf Browser) {/usr/bin/avahi-discover} </usr/share/icons/gnome/16x16/devices/network-wired.png>
+        [exec] (Bulk Rename) {/usr/lib/Thunar/ThunarBulkRename} </usr/share/icons/hicolor/16x16/apps/Thunar.png>
+        [exec] (Cairo Composite Manager) {cairo-compmgr} </usr/share/pixmaps/cairo-compmgr/cairo-compmgr.png>
+        [exec] (Conky Status Display) {conky} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (DHCP Client Daemon Applet) {/usr/bin/dhcpcd-gtk} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Fluxbox Panel) {fbpanel} </usr/share/fbpanel/images/logo.png>
+        [exec] (Fluxbox Tray Menu.) {/usr/bin/ftmenu} </usr/share/icons/Mist/16x16/apps/start-here.png>
+        [exec] (Fluxbox XKB Switcher) {fbxkb} </usr/share/icons/gnome/16x16/devices/keyboard.png>
+        [exec] (GSmartControl) {/usr/bin/gsmartcontrol} </usr/share/icons/hicolor/16x16/apps/gsmartcontrol.png>
+        [exec] (Htop) {xterm -T "Htop" -e htop} </home/brian/.icons/htop.png>
+        [exec] (LSHW) {/usr/sbin/gtk-lshw} </usr/share/lshw/artwork/logo.svg>
+        [exec] (LXDE Panel) {lxpanel} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Lock Screen) {slock} </usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png>
+        [exec] (Manage Printing) {/usr/bin/xdg-open http://localhost:631/} </usr/share/icons/hicolor/16x16/apps/cups.png>
+        [exec] (Nepomuk Backup) {nepomukbackup} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Nepomuk Cleaner) {nepomukcleaner} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Pango Viewer) {pango-view -t "Hello world!"} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (ROX Filer) {rox} </usr/share/pixmaps/rox.png>
+        [exec] (ROXTerm) {roxterm} </usr/share/icons/hicolor/scalable/apps/roxterm.svg>
+        [exec] (Run Command) {gmrun} </usr/share/icons/gnome/16x16/actions/system-run.png>
+        [exec] (Run Command) {fbrun} </usr/share/icons/gnome/16x16/actions/system-run.png>
+        [exec] (Run Command) {xde-run} </usr/share/icons/gnome/16x16/actions/system-run.png>
+        [exec] (Services) {systemadm} </usr/share/icons/gnome/16x16/categories/applications-system.png>
+        [exec] (Software) {gpk-application} </usr/share/icons/gnome/16x16/apps/system-software-install.png>
+        [exec] (Software Update) {gpk-update-viewer} </usr/share/icons/gnome/16x16/apps/system-software-update.png>
+        [exec] (Task Manager) {lxtask} </usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png>
+        [exec] (Terminal) {gnome-terminal} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (Thunar File Manager) {thunar} </usr/share/icons/hicolor/16x16/apps/Thunar.png>
+        [exec] (UXTerm) {uxterm} </home/brian/.icons/xterm-color_48x48.xpm>
+        [exec] (Unclutter) {/usr/bin/unclutter} </home/brian/.icons/wmaker-keyboard.png>
+        [exec] (Wireshark) {wireshark} </usr/share/icons/hicolor/16x16/apps/wireshark.png>
+        [exec] (XDE Panel) {xde-panel} </usr/share/icons/hicolor/48x48/apps/perlpanel-panel.png>
+        [exec] (XTerm) {xterm} </home/brian/.icons/xterm-color_48x48.xpm>
+        [exec] (Xfce Terminal) {xfce4-terminal} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (Xfe) {xfe} </usr/share/pixmaps/xfe.png>
+        [exec] (dconf Editor) {dconf-editor} </usr/share/icons/hicolor/16x16/apps/dconf-editor.png>
+        [exec] (urxvt) {urxvt} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (urxvt (client\)) {urxvtc} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (urxvt (tabbed\)) {urxvt-tabbed} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+    [end] # (System Tools)
+    [submenu] (Web Applications) {Web Applications Menu} </usr/share/icons/gnome/16x16/categories/applications-internet.png>
+    [end] # (Web Applications)
+    [separator]
+    [submenu] (X11 Tools) {X11 Tools Menu} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (Openbox Window Properties) {obxprop|gxmessage -name obxprop -geometry 400x400 -font 'Liberation Mono 8' -title 'X Window Properties' -file -} </usr/share/icons/gnome/16x16/categories/preferences-desktop.png>
+        [exec] (X Clock) {xclock -geometry 164x164} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Display Atoms) {xlsatoms | gxmessage -name xlsatoms -geometry 400x400 -font 'Liberation Mono 8' -title 'X Display Atoms' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Display Clients) {xlsclients -a -l | gxmessage -name xlsclients -geometry 400x400 'Liberation Mono 8' -title 'X Display Clients' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Display Properties) {xdpyinfo|gxmessage -name xdpyinfo -geometry 450x450 -font 'Liberation Mono 8' -title 'X Display Properties' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Display Refresh) {xrefresh} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Events) {xterm -T 'X Events' -e xev} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Font Select) {xfontsel} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Input) {xinput|gxmessage -name xinput -font 'Liberation Mono 8' -title 'X Input Information' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Keyboard LEDs) {xkbvleds} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Keyboard State) {xkbwatch} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Kill) {xkill} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Mod Key Mapping) {xmodmap|gxmessage -name xmodmap -font 'Liberation Mono 8' -title 'X Mod Key Information' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X RandR) {xrandr|gxmessage -name xrandr -font 'Liberation Mono 8' -title 'X Window Properties' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Resource Editor) {editres} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Resource Top) {xterm -T "X Resource Top" -e xrestop} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Settings) {xset -q|gxmessage -name xset -geometry 600x420 -wrap -font 'Liberation Mono 8' -title 'X Settings' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Video Information) {xvinfo|gxmessage -name xvinfo -font 'Liberation Mono 8' -title 'X Video Information' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Window Dump) {bash -c "set -e; xwd>`zenity --entry --text Filename`"} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Window Dump Display) {bash -c "set -e; xwd>`zenity --entry --text Filename`"} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Window Information) {xwininfo -root -all -frame|gxmessage -name xwininfo -geometry 750x500 -font 'Liberation Mono 8' -title 'X Windows' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Window Properties) {xprop|gxmessage -name xprop -geometry 400x400 -font 'Liberation Mono 8' -title 'X Window Properties' -file -} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+    [end] # (X11 Tools)
+    [submenu] (Dock Apps) {Dock Apps Menu} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Alarm Clock Dock App) {wmclockmon} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Alsa Mixer) {AlsaMixer.app} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Analog and Digital Clock) {wmtime} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Audio Mixer) {wmmixer -w} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Battery Dock App) {wmbattery} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Binary Clock Dock App) {wmBinClock} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Blob Dock App) {wmblob} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Bubble Monitor) {bubblemon} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (CPU Load Dock App) {wmcpuload} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (CPU Load Dock App (bars\)) {wmcpu} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Calculator Dock App) {wmcalc} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Calendar Clock Dock App) {wmCalClock} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Calendar Clock Keyboard Dock App) {wmCalClockKbd} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Clock Dock App) {lal} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Core CPU Load) {wmcore} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Launcher Dock App) {wmappl} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Monitoring Dock App) {allin1} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Network Device Monitor) {wmnd} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Network Monitor) {wmnet} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (System Monitor) {wmsysmon} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Timer Dock App) {wmtimer} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Trash Can Dock App) {wmtrash} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Weather Monitor Dock App) {wmWeather} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Wifi Monitor) {wmwave} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Wifi Monitor (LED\)) {wmwifi} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+    [end] # (Dock Apps)
+    [submenu] (Other) {Other Menu} </usr/share/icons/gnome/16x16/categories/gnome-other.png>
+        [exec] (About EDE) {ede-about} </usr/share/icons/gnome/16x16/actions/help-about.png>
+        [exec] (E16) {e16} </usr/share/e16/icons/e16.png>
+        [exec] (Font Viewer) {gfontview} </usr/share/pixmaps/gfontview.png>
+        [exec] (Help) {ede-help} </usr/share/icons/gnome/16x16/apps/help-browser.png>
+        [exec] (Retrovol sound mixer) {/usr/bin/retrovol} </home/brian/.icons/wmaker-sound_mixer.png>
+        [exec] (Run Program...) {ede-launch} </usr/share/icons/gnome/16x16/actions/system-run.png>
+        [exec] (Screen Lock) {ede-screen-lock} </usr/share/icons/gnome/16x16/actions/system-lock-screen.png>
+        [exec] (Simple Tray XKB Indicator) {sbxkb} </home/brian/.icons/wmaker-keyboard.png>
+        [exec] (TigerVNC viewer) {/usr/bin/vncviewer} </usr/share/icons/hicolor/16x16/apps/tigervnc.png>
+        [exec] (gEDA Attribute Editor) {gattrib} </usr/share/icons/hicolor/scalable/apps/geda-gattrib.svg>
+        [exec] (gEDA Schematic Editor) {gschem} </usr/share/icons/hicolor/scalable/apps/geda-gschem.svg>
+    [end] # (Other)
+    [separator]
+    [submenu] (Preferences) {Preferences Menu} </usr/share/icons/gnome/16x16/categories/preferences-desktop.png>
+        [exec] (Adobe Flash Player) {flash-player-properties} </usr/share/icons/hicolor/16x16/apps/flash-player-properties.png>
+        [exec] (Configure EDE) {ede-conf} </usr/share/icons/Mist/16x16/devices/computer.png>
+        [exec] (Customize Look and Feel) {lxappearance} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (Desktop Preferences) {pcmanfm --desktop-pref} </usr/share/icons/Mist/16x16/places/user-desktop.png>
+        [exec] (File Manager) {thunar-settings} </usr/share/icons/gnome/16x16/apps/system-file-manager.png>
+        [exec] (Firewall Builder) {fwbuilder} </usr/share/icons/hicolor/16x16/apps/fwbuilder.png>
+        [exec] (Gtk Theme Switch 2) {gtk-theme-switch2} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (Gtk2 Change Theme) {gtk-chtheme} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (Gtk2 Preferences) {gtk2_prefs} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (Keyboard Settings) {lxkb_config} </usr/share/icons/gnome/16x16/apps/preferences-desktop-keyboard.png>
+        [exec] (Keyboard and Mouse) {xde-input -editor} </usr/share/icons/gnome/16x16/devices/input-keyboard.png>
+        [exec] (LXDE Panel Settings) {lxpanelctl config} </usr/share/icons/gnome/16x16/categories/preferences-desktop.png>
+        [exec] (Monitor Settings) {lxrandr} </usr/share/icons/Mist/16x16/devices/display.png>
+        [exec] (Network Connections) {nm-connection-editor} </usr/share/icons/gnome/16x16/categories/preferences-system-network.png>
+        [exec] (Openbox Configuration Manager) {obconf} </home/brian/.icons/obconf.png>
+        [exec] (Panel tint2) {tint2conf} </usr/share/pixmaps/tint2conf.png>
+        [exec] (Pop-Up Notifications) {/usr/bin/notification-properties} </usr/share/icons/hicolor/16x16/apps/notification-properties.png>
+        [exec] (Preferred Applications) {libfm-pref-apps} </usr/share/icons/gnome/16x16/categories/preferences-desktop.png>
+        [exec] (Preferred Applications) {ede-preferred-applications} </usr/share/icons/gnome/16x16/mimetypes/empty.png>
+        [exec] (Removable Drives and Media) {thunar-volman-settings} </usr/share/icons/gnome/16x16/devices/drive-removable-media.png>
+    [end] # (Preferences)
+[end] # (Applications)
+  [separator]
+  [config] (Configuration)
+    [workspaces] (Workspace)
+    [submenu] (System Styles) {Choose a style...}
+      [sytlesdir] (/usr/share/openbox/styles)
+    [end] # (System Styles)
+    [submenu] (User Styles) {Choose a style...}
+      [sytlesdir] (~/.openbox/styles)
+      [sytlesdir] (~/.config/openbox/styles)
+    [end] # (User Styles)
+    [separator]
+    [submenu] (Window Managers)
+      [restart] (Fluxbox) {/usr/bin/fluxbox}
+      [restart] (Blackbox) {/usr/bin/blackbox}
+      [restart] (Openbox) {/usr/bin/openbox}
+      [restart] (WindowMaker) {/usr/bin/wmaker}
+      [restart] (IceWM) {/usr/bin/icewm-session}
+      [restart] (LXDE) {/usr/bin/startlxde}
+    [end] # (Window Managers)
+    [separator]
+    [exec] (Run Command) {bbrun -a -w}
+    [exec] (Lock Screen) {xlock}
+    [restart] (Restart) {}
+    [exit] (Logout)
+  [end] # (Configuration)
+[end] # (Menu)

@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+
+<JWM>
+   <Group>
+      <Class>Pidgin</Class>
+      <Option>sticky</Option>
+   </Group>
+
+   <Group>
+      <Name>gkrellm</Name>
+      <Option>nolist</Option>
+      <Option>sticky</Option>
+   </Group>
+
+   <Group>
+      <Name>xterm</Name>
+      <Option>vmax</Option>
+      <Option>icon:terminal.png</Option>
+   </Group>
+
+   <Group>
+	<Name>lxterminal</Name>
+	<Class>Lxterminal</Class>
+	<Option>vmax</Option>
+	<Option>icon:terminal.png</Option>
+	<Option>tiled</Option>
+   </Group>
+
+   <Group>
+	<Name>roxterm</Name>
+	<Class>Roxterm</Class>
+	<Option>vmax</Option>
+	<Option>icon:terminal.png</Option>
+	<Option>tiled</Option>
+   </Group>
+
+   <Group>
+	<Name>gvim</Name>
+	<Class>Gvim</Class>
+	<Option>vmax</Option>
+	<Option>tiled</Option>
+   </Group>
+
+   <Group>
+	<Name>Conky</Name>
+	<Class>Conky</Class>
+	<Option>nopager</Option>
+	<Option>nolist</Option>
+	<Option>noborder</Option>
+	<Option>layer:below</Option>
+   </Group>
+</JWM>

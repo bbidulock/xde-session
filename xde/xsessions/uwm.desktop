@@ -1,0 +1,29 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=μwm
+Icon=uwm16x16
+Exec=uwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Micro (μ) Window Manger
+Categories=WindowManager;Application;System;
+StartupNotify=false
+NoDisplay=true
+X-GNOME-WMName=uwm
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=false
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop UWM -startwm uwm
+Comment=Micro (μ) Window Manger under an XDE session
+
+[Window Manager]
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

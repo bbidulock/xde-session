@@ -1,0 +1,19 @@
+grandr
+firefox
+wmCalClock
+wmblob
+/u2/code/xde-tools/xde-tools/xde-traymenu
+lxterminal
+compton
+gvim
+wmsystemtray
+lxpanel -p PEKWM
+ssh -Y habeascorpus sol
+perlpanel
+xde-traymenu
+xde-panel ~/.config/xde-panel/PEKWM/rc.xml
+xgalaga-hyperspace
+Lower
+Maximize-h
+MaximizeHorz
+Maximize

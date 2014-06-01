@@ -1,0 +1,29 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=adwm
+Icon=adwm
+Exec=adwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=An advanced dynamic window manager for X
+Categories=WindowManager;Application;System;
+StartupNotify=true
+NoDisplay=true
+X-GNOME-WMName=ADWM
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=true
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop ADWM -startwm start-adwm
+Comment=adwm in an XDE session
+
+[Window Manager]
+SessionManaged=false
+StartupNotification=true
+X-XDE-Managed=true

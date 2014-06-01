@@ -1,0 +1,46 @@
+divert(VARIABLES)dnl
+`##' included file SINCLUDE
+MoveDelta 3
+divert(FUNCTIONS)dnl
+`##' included file SINCLUDE
+#
+# Define some useful functions for motion-based actions.
+#
+Function "move-or-lower" { f.move f.deltastop f.lower }
+Function "move-or-raise" { f.move f.deltastop f.raise }
+Function "move-or-iconify" { f.move f.deltastop f.iconify }
+divert(BUTTONS)dnl
+`##' included file SINCLUDE
+#
+# Set some useful bindings.  Sort of uwm-ish, sort of simple-button-ish
+#
+#Button1 =	: root		: f.menu "Main"
+Button2 =       : root          : f.menu "TwmWindows"
+Button3 = 	: root		: f.menu "defops"
+
+Button1 = m	: window|icon	: f.function "move-or-lower"
+Button2 = m	: window|icon	: f.iconify
+Button3 = m	: icon		: f.function "move-or-raise"
+Button3 = m	: window	: f.resize
+
+Button1 =	: title		: f.function "move-or-raise"
+Button2 =	: title		: f.raiselower
+Button3 =	: title		: f.menu "windowops"
+
+Button1 =	: icon		: f.function "move-or-iconify"
+Button2 =	: icon		: f.iconify
+
+Button1 =	: iconmgr	: f.iconify
+Button2 =	: iconmgr	: f.iconify
+
+Button1 =	: frame		: f.move
+Button1 = m	: frame		: f.forcemove
+Button2 =	: frame		: f.raiselower
+Button3 =	: frame		: f.resize
+Button3 = m	: frame		: f.resize
+ifelse(TWM_TYPE,`ctwm',`
+Button1 = m4	: frame|window|icon	: f.movepack
+Button1 = m4|c	: frame|window|icon	: f.movepush
+')
+divert(-1)
+dnl vim: ft=m4

@@ -1,0 +1,8 @@
+prog "File Manager" /usr/share/icons/gnome/16x16/apps/file-manager.png pcmanfm
+prog "Web Browser" /usr/share/icons/gnome/16x16/apps/web-browser.png /usr/lib/firefox/firefox
+prog "Terminal" /usr/share/icons/gnome/16x16/apps/terminal.png roxterm
+prog "Graphical Editor" /usr/share/icons/gnome/16x16/apps/text-editor.png gvim -f
+prog "Calculator" /usr/share/icons/gnome/16x16/apps/accessories-calculator.png calculator
+prog "Run Command" /usr/share/icons/gnome/16x16/actions/gtk-execute.png xde-run
+prog "Network" /usr/share/icons/gnome/16x16/places/gtk-network.png pcmanfm ~/Network
+prog "Logout" /usr/share/icons/gnome/16x16/actions/system-log-out.png xde-logout

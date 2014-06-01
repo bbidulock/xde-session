@@ -1,0 +1,18 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=i3 (with debug log)
+Icon=i3
+Exec=i3-with-shmlog
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=improved dynamic tiling window manager
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+NoDisplay=true
+X-GNOME-WMName=i3
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=false

@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+
+<JWM>
+   <!-- Virtual Desktops -->
+   <!-- Desktop tags can be contained within Desktops for desktop names. -->
+   <Desktops width="4" height="2">
+      <!-- Default background. Note that a Background tag can be
+           contained within a Desktop tag to give a specific background
+           for that desktop.
+       -->
+      <!--
+      <Background type="image">/export0/images/formulae.jpg</Background>
+       -->
+      <!--
+      <Desktop name="1">
+         <Background type="image">/usr/share/images/towers/tower_bluesky4.jpg</Background>
+      </Desktop>
+      <Desktop name="2">
+         <Background type="image">/usr/share/images/towers/tower_field1.jpg</Background>
+      </Desktop>
+      <Desktop name="3">
+         <Background type="image">/usr/share/images/towers/hoghorns_sillouette6.jpg</Background>
+      </Desktop>
+      <Desktop name="4">
+         <Background type="image">/usr/share/images/towers/tower_sky2.jpg</Background>
+      </Desktop>
+      <Desktop name="5">
+         <Background type="image">/usr/share/images/towers/tower_backlit1.jpg</Background>
+      </Desktop>
+      <Desktop name="6">
+         <Background type="image">/usr/share/images/towers/tower_clouds1.jpg</Background>
+      </Desktop>
+      <Desktop name="7">
+         <Background type="image">/usr/share/images/towers/tower_sillouette3.jpg</Background>
+      </Desktop>
+      <Desktop name="8">
+         <Background type="image">/usr/share/images/towers/tower_greysky3.jpg</Background>
+      </Desktop>
+       -->
+   </Desktops>
+</JWM>

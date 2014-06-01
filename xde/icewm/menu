@@ -1,0 +1,406 @@
+   prog "1) Web Browser" /usr/share/icons/gnome/16x16/apps/web-browser.png xdg-launch preferred-web-browser
+   prog "2) File Manager" /usr/share/icons/gnome/16x16/apps/file-manager.png xdg-launch preferred-file-manager
+   prog "3) Text Editor" /usr/share/icons/gnome/16x16/apps/text-editor.png xdg-launch preferred-text-editor
+   prog "4) Terminal" /usr/share/icons/gnome/16x16/apps/terminal.png xdg-launch preferred-terminal
+   prog "5) Run Command" /usr/share/icons/gnome/16x16/actions/system-run.png xdg-launch preferred-execute
+   menu "Unexicon" /usr/share/icons/Mist/16x16/places/folder.png {
+   }
+   menu "Archlinux" /usr/share/icons/hicolor/16x16/apps/arch-logo.png {
+     prog "AUR" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-AUR
+     prog "Bugs" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-Bugs
+     prog "Developers" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-Developers
+     prog "Documentation" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-Documentation
+     prog "Donate" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-Donate
+     prog "Forum" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-Forum
+     prog "Homepage" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-Homepage
+     prog "SVN" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-SVN
+     prog "Schwag" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-Schwag
+     prog "Wiki" /usr/share/icons/hicolor/16x16/apps/arch-logo.png xdg-launch Arch-Wiki
+  }
+  menu "Accessibility" /usr/share/icons/gnome/16x16/apps/accessibility-directory.png {
+  }
+   menu "Accessories" /usr/share/icons/gnome/16x16/categories/applications-accessories.png {
+     prog "7-Zip FM" /usr/share/icons/hicolor/32x32/apps/p7zip.png xdg-launch 7zFM
+     prog "AfterStep Terminal" /usr/share/icons/hicolor/22x22/apps/aterm.png xdg-launch aterm
+     prog "AllTray 0.7.5.1dev" /usr/share/pixmaps/alltray.png xdg-launch alltray
+     prog "Application Finder" /usr/share/icons/gnome/16x16/actions/gtk-find.png xdg-launch xfce4-appfinder
+     prog "BlackBox Pager" /usr/share/icons/hicolor/16x16/apps/blackbox.png xdg-launch bbpager
+     prog "Bvi" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch bvi
+     prog "Bvi Plus" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch bviplus
+     prog "Calculator" /usr/share/icons/gnome/16x16/mimetypes/empty.png xdg-launch ede-calc
+     prog "Desktop Search" /usr/share/icons/gnome/16x16/actions/system-search.png xdg-launch tracker-needle
+     prog "EDE Tips" /usr/share/icons/gnome/16x16/status/dialog-information.png xdg-launch ede-tip
+     prog "FLTK Editor" /usr/share/pixmaps/fltk-editor.xpm xdg-launch fltk-editor
+     prog "FOX Calculator" /usr/share/pixmaps/calculator.png xdg-launch calculator
+     prog "FOX Text Editor" /usr/share/icons/gnome/16x16/apps/accessories-text-editor.png xdg-launch adie
+     prog "File Manager PCManFM" /usr/share/icons/gnome/16x16/apps/system-file-manager.png xdg-launch pcmanfm
+     prog "Font Viewer" /usr/share/icons/gnome/16x16/apps/preferences-desktop-font.png xdg-launch gnome-font-viewer
+     prog "Gtk VNC Viewer" /usr/share/icons/gnome/16x16/apps/gnome-remote-desktop.png xdg-launch gvncviewer
+     prog "LXTerminal" /usr/share/pixmaps/lxterminal.png xdg-launch lxterminal
+     prog "MacSlow's Cairo-Clock" /usr/share/pixmaps/cairo-clock.png xdg-launch cairo-clock
+     prog "Mount-gtk" /usr/share/icons/gnome/16x16/devices/drive-removable-media.png xdg-launch mount-gtk
+     prog "Nano" /usr/share/icons/hicolor/22x22/apps/nano.png xdg-launch nano
+     prog "Pacman Express" /usr/share/pixmaps/pacmanexpress.png xdg-launch pacmanexpress
+     prog "Plank" /usr/share/icons/hicolor/16x16/apps/plank.svg xdg-launch plank
+     prog "Root Terminal" /usr/share/pixmaps/gksu-root-terminal.png xdg-launch gksu
+     prog "SpaceFM File Search" /usr/share/icons/hicolor/48x48/apps/spacefm-find.png xdg-launch spacefm-find
+     prog "VI" /usr/share/pixmaps/gvim.png xdg-launch vi
+     prog "VIM" /usr/share/pixmaps/gvim.png xdg-launch vim
+     prog "Vi IMproved" /usr/share/pixmaps/gvim.png xdg-launch gvim
+     prog "X11 Terminal" /usr/share/icons/gnome/16x16/apps/utilities-terminal.png xdg-launch ede-xterm
+     prog "XTerm (Unicode)" /usr/share/pixmaps/xterm-color_32x32.xpm xdg-launch xterm-(unicode)
+     prog "Xarchiver" /usr/share/icons/hicolor/16x16/apps/xarchiver.png xdg-launch xarchiver
+     prog "Xcalc Calculator" /usr/share/icons/gnome/16x16/apps/accessories-calculator.png xdg-launch xcalc
+     prog "Xedit" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch xedit
+     prog "Xfburn" /usr/share/icons/gnome/16x16/devices/media-cdrom.png xdg-launch xfburn
+     prog "Xfi" /usr/share/pixmaps/xfi.png xdg-launch xfi
+     prog "Xfp" /usr/share/pixmaps/xfp.png xdg-launch xfp
+     prog "Xfv" /usr/share/pixmaps/xfv.png xdg-launch xfv
+     prog "Xfw" /usr/share/pixmaps/xfw.png xdg-launch xfw
+     prog "Zalc" /usr/share/pixmaps/zalc.png xdg-launch zalc
+     prog "xplanetFX" /usr/share/pixmaps/xplanetFX.svg xdg-launch xplanetFX
+   }
+   menu "Education" /usr/share/icons/gnome/16x16/categories/applications-engineering.png {
+     prog "Calcoo" /usr/share/pixmaps/calcoo.png xdg-launch calcoo
+     prog "LibreOffice Math" /usr/share/icons/gnome/16x16/apps/libreoffice-math.png xdg-launch libreoffice-math
+     prog "Qucs" /usr/share/qucs/bitmaps/big.qucs.xpm xdg-launch qucs
+     prog "StarPlot Star Chart Viewer" /usr/share/pixmaps/starplot32x32.xpm xdg-launch starplot
+   }
+   menu "Games" /usr/share/icons/gnome/16x16/categories/applications-games.png {
+     prog "Block Attack!" /usr/share/icons/hicolor/32x32/apps/blocks.png xdg-launch blocks
+     prog "Checkers" /usr/share/icons/hicolor/32x32/apps/checkers.png xdg-launch checkers
+     prog "Chess" /usr/share/icons/hicolor/16x16/apps/gnome-chess.png xdg-launch gnome-chess
+     prog "Internet Chess Club" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch internet-chess-club
+     prog "Pingus" /usr/share/pingus/images/core/editor/actions.png xdg-launch pingus
+     prog "Sudoku" /usr/share/icons/hicolor/32x32/apps/sudoku.png xdg-launch sudoku
+     prog "XBill" /usr/share/xbill/pixmaps/wingdows.xpm xdg-launch xbill
+     prog "XGalaga" /usr/share/pixmaps/xgalaga.png xdg-launch xgalaga
+     prog "Xboard" /usr/share/icons/hicolor/scalable/apps/xboard.svg xdg-launch xboard-ics
+     prog "Xboard" /usr/share/icons/hicolor/scalable/apps/xboard.svg xdg-launch xboard
+     prog "Xtetris" /usr/share/pixmaps/xtetris.png xdg-launch xtetris
+     prog "aafire" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch aafire
+     prog "cacafire" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch cacafire
+   }
+   menu "Graphics" /usr/share/icons/gnome/16x16/categories/applications-graphics.png {
+     prog "Blender" /usr/share/icons/hicolor/16x16/apps/blender.png xdg-launch blender
+     prog "Feh" /usr/share/feh/images/feh.png xdg-launch feh
+     prog "G3DViewer" /usr/share/pixmaps/g3dviewer.png xdg-launch g3dviewer
+     prog "GNU Image Manipulation Program" /usr/share/icons/hicolor/16x16/apps/gimp.png xdg-launch gimp
+     prog "GQview" /usr/share/pixmaps/gqview.png xdg-launch gqview
+     prog "GV" /usr/share/pixmaps/gv.png xdg-launch gv
+     prog "Gaw Gtk Analog Wave viewer" /usr/share/pixmaps/gaw.png xdg-launch gaw
+     prog "Geeqie" /usr/share/pixmaps/geeqie.png xdg-launch geeqie
+     prog "Image Viewer" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch ede-image-view
+     prog "Image Viewer" /usr/share/icons/hicolor/48x48/apps/gpicview.png xdg-launch gpicview
+     prog "ImageMagick" /usr/share/icons/Mist/16x16/devices/display.png xdg-launch imagemagick
+     prog "ImageMagick Image Viewer" /usr/share/pixmaps/imagic.png xdg-launch display
+     prog "Inkscape" /usr/share/icons/hicolor/16x16/apps/inkscape.png xdg-launch inkscape
+     prog "Konstruktor" /usr/share/icons/hicolor/16x16/apps/konstruktor.png xdg-launch konstruktor
+     prog "LibreOffice Draw" /usr/share/icons/gnome/16x16/apps/libreoffice-draw.png xdg-launch libreoffice-draw
+     prog "Stopmotion" /usr/share/pixmaps/stopmotion.png xdg-launch stopmotion
+     prog "The GIMP" /usr/share/icons/hicolor/16x16/apps/gimp.png xdg-launch the-gimp
+     prog "Window Magnifier" /usr/share/WindowMaker/Icons/Magnify.xpm xdg-launch wmagnify
+     prog "Wings3D" /usr/share/pixmaps/wings3d.png xdg-launch wings3d
+     prog "X Window Snapshot" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch x-window-snapshot
+     prog "XPaint" /usr/share/pixmaps/XPaintIcon.xpm xdg-launch xpaint
+     prog "XV Image Viewer" /usr/share/pixmaps/xv.png xdg-launch xv
+     prog "Xfig" /usr/share/pixmaps/xfig.png xdg-launch xfig
+     prog "flPhoto" /usr/share/pixmaps/flphoto.png xdg-launch flphoto
+     prog "gThumb" /usr/share/icons/hicolor/16x16/apps/gthumb.png xdg-launch gthumb
+     prog "xzgv" /usr/share/pixmaps/xzgv.xpm xdg-launch xzgv
+   }
+   menu "Internet" /usr/share/icons/gnome/16x16/categories/applications-internet.png {
+     prog "Avahi SSH Server Browser" /usr/share/icons/gnome/16x16/devices/network-wired.png xdg-launch bssh
+     prog "Avahi VNC Server Browser" /usr/share/icons/gnome/16x16/devices/network-wired.png xdg-launch bvnc
+     prog "DHCP Client Daemon Applet" /usr/share/icons/gnome/16x16/status/network-transmit-receive.png xdg-launch dhcpcd-gtk
+     prog "ELinks" /usr/share/icons/gnome/16x16/mimetypes/html.png xdg-launch elinks
+     prog "Ekiga Softphone" /usr/share/icons/hicolor/16x16/apps/ekiga.png xdg-launch ekiga
+     prog "Ettercap" /usr/share/pixmaps/ettercap.svg xdg-launch ettercap
+     prog "Firefox" /usr/share/icons/hicolor/16x16/apps/firefox.png xdg-launch mozilla-firefox
+     prog "Firefox" /usr/share/icons/hicolor/16x16/apps/firefox.png xdg-launch firefox
+     prog "IP Telephony, VoIP and Video Conferencing" /usr/share/icons/hicolor/16x16/apps/ekiga.png xdg-launch gnome-ekiga
+     prog "Links" /usr/share/pixmaps/links_32x32.xpm xdg-launch links
+     prog "Midori" /usr/share/icons/hicolor/16x16/apps/midori.png xdg-launch midori
+     prog "Midori Private Browsing" /usr/share/icons/hicolor/16x16/apps/midori.png xdg-launch midori-private
+     prog "Mutt" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch mutt
+     prog "OpenNX Connection Wizard" /usr/share/icons/hicolor/16x16/apps/opennx-wizard.png xdg-launch innovidata-opennx-wizard
+     prog "OpenNX Session Administrator" /usr/share/icons/hicolor/16x16/apps/opennx-admin.png xdg-launch innovidata-opennx-admin
+     prog "OpenNX client" /usr/share/icons/hicolor/16x16/apps/nx.png xdg-launch innovidata-opennx
+     prog "Remmina Remote Desktop Client" /usr/share/icons/hicolor/16x16/apps/remmina.png xdg-launch remmina
+     prog "Telnet" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch telnet
+     prog "Tightvnc" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch mandriva-tightvnc
+     prog "Wireshark Network Analyzer" /usr/share/icons/hicolor/16x16/apps/wireshark.png xdg-launch redhat-wireshark
+     prog "X11VNC Server" /usr/share/icons/Mist/16x16/devices/computer.png xdg-launch x11vnc
+     prog "Xbiff" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch xbiff
+     prog "Zenmap" /usr/share/zenmap/pixmaps/zenmap.png xdg-launch zenmap
+     prog "Zenmap (as root)" /usr/share/zenmap/pixmaps/zenmap.png xdg-launch zenmap-root
+     prog "wpa_gui" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch wpa_gui
+   }
+   menu "Office" /usr/share/icons/gnome/16x16/categories/applications-office.png {
+     prog "GV" /usr/share/pixmaps/gv.png xdg-launch gv
+     prog "GXditview" /usr/share/icons/hicolor/24x24/apps/postscript-viewer.png xdg-launch gxditview
+     prog "LibreOffice" /usr/share/icons/gnome/16x16/apps/libreoffice-startcenter.png xdg-launch libreoffice-startcenter
+     prog "LibreOffice Base" /usr/share/icons/gnome/16x16/apps/libreoffice-base.png xdg-launch libreoffice-base
+     prog "LibreOffice Calc" /usr/share/icons/gnome/16x16/apps/libreoffice-calc.png xdg-launch libreoffice-calc
+     prog "LibreOffice Draw" /usr/share/icons/gnome/16x16/apps/libreoffice-draw.png xdg-launch libreoffice-draw
+     prog "LibreOffice Impress" /usr/share/icons/gnome/16x16/apps/libreoffice-impress.png xdg-launch libreoffice-impress
+     prog "LibreOffice Math" /usr/share/icons/gnome/16x16/apps/libreoffice-math.png xdg-launch libreoffice-math
+     prog "LibreOffice Writer" /usr/share/icons/gnome/16x16/apps/libreoffice-writer.png xdg-launch libreoffice-writer
+     prog "RAKT PDF Viewer" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch raktpdf
+     prog "X PDF" /usr/share/pixmaps/xpdf.xpm xdg-launch xpdf
+     prog "XDvi" /usr/share/pixmaps/xdvi.png xdg-launch xdvi
+     prog "Xditview" /usr/share/icons/hicolor/24x24/apps/postscript-viewer.png xdg-launch xditview
+     prog "Zat" /usr/share/pixmaps/zat.png xdg-launch zat
+     prog "Zathura" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch zathura
+     prog "apvlv" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch apvlv
+   }
+   menu "Programming" /usr/share/icons/gnome/16x16/categories/applications-development.png {
+     prog "CMake" /usr/share/pixmaps/CMakeSetup32.png xdg-launch CMake
+     prog "Eeschema" /usr/share/icons/hicolor/16x16/apps/eeschema.png xdg-launch eeschema
+     prog "FLUID" /usr/share/icons/hicolor/16x16/apps/fluid.png xdg-launch fluid
+     prog "KiCad" /usr/share/icons/hicolor/scalable/apps/kicad.svg xdg-launch kicad
+     prog "Qt Assistant" /usr/share/icons/hicolor/32x32/apps/assistant.png xdg-launch assistant
+     prog "Qt Designer" /usr/share/icons/hicolor/128x128/apps/designer.png xdg-launch designer
+     prog "Qt Linguist" /usr/share/icons/hicolor/16x16/apps/linguist.png xdg-launch linguist
+     prog "Qt QDbusViewer" /usr/share/icons/hicolor/32x32/apps/qdbusviewer.png xdg-launch qdbusviewer
+     prog "Qt3 Assistant" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch qt-assistant3
+     prog "Qt3 Linguist" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch qt-linguist3
+     prog "Qt4 Assistant" /usr/share/icons/hicolor/32x32/apps/assistant-qt4.png xdg-launch assistant-qt4
+     prog "Qt4 Designer" /usr/share/icons/hicolor/128x128/apps/designer-qt4.png xdg-launch designer-qt4
+     prog "Qt4 Designer" /usr/share/icons/hicolor/128x128/apps/designer.png xdg-launch qt4-designer
+     prog "Qt4 Linguist" /usr/share/icons/hicolor/16x16/apps/linguist-qt4.png xdg-launch linguist-qt4
+     prog "Qt4 Linguist" /usr/share/icons/hicolor/16x16/apps/linguist.png xdg-launch qt4-linguist
+     prog "Qt4 QDbusViewer" /usr/share/icons/hicolor/32x32/apps/qdbusviewer-qt4.png xdg-launch qdbusviewer-qt4
+     prog "Scratch" /usr/share/icons/hicolor/32x32/apps/scratch.png xdg-launch scratch
+     prog "Vi IMproved" /usr/share/pixmaps/gvim.png xdg-launch gvim
+   }
+   menu "Science & Math" /usr/share/icons/gnome/16x16/categories/applications-science.png {
+     prog "Bc" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch bc
+     prog "Dc" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch dc
+     prog "GNUplot" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch gnuplot
+     prog "GSpiceUI" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch gspiceui
+   }
+   menu "Sound & Video" /usr/share/icons/gnome/16x16/categories/applications-multimedia.png {
+     prog "ALSA Mixer" /usr/share/icons/gnome/16x16/apps/gnome-mixer.png xdg-launch alsamixer
+     prog "Alsaplayer" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch alsaplayer
+     prog "Audacious" /usr/share/icons/hicolor/scalable/apps/audacious.svg xdg-launch audacious
+     prog "Audacious (GTKui)" /usr/share/icons/hicolor/scalable/apps/audacious.svg xdg-launch audacious2-gtkui
+     prog "Audacious2" /usr/share/icons/hicolor/scalable/apps/audacious2.svg xdg-launch audacious2
+     prog "Audio Mixer" /usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png xdg-launch xfce4-mixer
+     prog "Aumix" /usr/share/aumix/aumix.xpm xdg-launch aumix
+     prog "Consonance" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch consonance
+     prog "FFADO Mixer" /usr/share/pixmaps/ffado.png xdg-launch ffadomixer
+     prog "FlBurn" /usr/share/pixmaps/flburn.png xdg-launch flburn
+     prog "Flmusic" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch flmusic
+     prog "Goggles Music Manager" /usr/share/icons/hicolor/16x16/apps/gogglesmm.png xdg-launch gogglesmm
+     prog "Guayadeque Music Player" /usr/share/pixmaps/guayadeque.png xdg-launch guayadeque
+     prog "Music Player" /usr/share/pixmaps/lxmusic.png xdg-launch lxmusic
+     prog "Pragha" /usr/share/icons/hicolor/128x128/apps/pragha.png xdg-launch pragha
+     prog "Qt V4L2 test Utility" /usr/share/icons/hicolor/16x16/apps/qv4l2.png xdg-launch qv4l2
+     prog "SimpleBurn" /usr/share/pixmaps/simpleburn.png xdg-launch simpleburn
+     prog "Stopmotion" /usr/share/pixmaps/stopmotion.png xdg-launch stopmotion
+     prog "Videos" /usr/share/icons/hicolor/16x16/apps/totem.png xdg-launch totem
+     prog "Xfburn" /usr/share/icons/gnome/16x16/devices/media-cdrom.png xdg-launch xfburn
+     prog "moc-tray" /usr/share/pixmaps/moc-tray.png xdg-launch moc-tray
+   }
+   menu "System Tools" /usr/share/icons/gnome/16x16/categories/applications-system.png {
+     prog "Atop" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch atop
+     prog "Avahi Zeroconf Browser" /usr/share/icons/gnome/16x16/devices/network-wired.png xdg-launch avahi-discover
+     prog "Battery Status Icon" /usr/share/icons/gnome/16x16/devices/battery.png xdg-launch cbatticon
+     prog "Bluetooth Control" /usr/share/icons/hicolor/16x16/apps/bluetooth.png xdg-launch bluetoothctl
+     prog "Bulk Rename" /usr/share/icons/hicolor/16x16/apps/Thunar.png xdg-launch Thunar-bulk-rename
+     prog "Cairo Composite Manager" /usr/share/pixmaps/cairo-compmgr/cairo-compmgr.png xdg-launch cairo-compmgr
+     prog "Conky Status Display" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch conky
+     prog "DHCP Client Daemon Applet" /usr/share/icons/gnome/16x16/status/network-transmit-receive.png xdg-launch dhcpcd-gtk
+     prog "Fluff" /usr/share/pixmaps/fluff.png xdg-launch fluff
+     prog "Fluxbox Tray Menu." /usr/share/icons/Mist/16x16/apps/start-here.png xdg-launch ftmenu
+     prog "Fluxbox XKB Switcher" /usr/share/icons/gnome/16x16/devices/keyboard.png xdg-launch fbxkb
+     prog "GSmartControl" /usr/share/icons/hicolor/16x16/apps/gsmartcontrol.png xdg-launch gsmartcontrol
+     prog "Htop" /usr/share/pixmaps/htop.png xdg-launch htop
+     prog "LSHW" /usr/share/lshw/artwork/logo.svg xdg-launch gtk-lshw
+     prog "Lock Screen" /usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png xdg-launch slock
+     prog "Manage Printing" /usr/share/icons/hicolor/16x16/apps/cups.png xdg-launch cups
+     prog "New Login in a Window" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch gdmflexiserver-xnest
+     prog "Package Updater" /usr/share/icons/gnome/16x16/apps/system-software-update.png xdg-launch gpk-update-viewer
+     prog "Pango Viewer" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch pango-view
+     prog "PathFinder" /usr/share/pixmaps/PathFinder.png xdg-launch PathFinder
+     prog "Procinfo" /usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png xdg-launch procinfo
+     prog "Pstree" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch pstree
+     prog "ROX" /usr/share/pixmaps/rox.png xdg-launch mandriva-rox
+     prog "ROX Filer" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch rox-filer
+     prog "ROX Filer" /usr/share/pixmaps/rox.png xdg-launch rox
+     prog "ROXTerm" /usr/share/icons/hicolor/scalable/apps/roxterm.svg xdg-launch roxterm
+     prog "Run Command" /usr/share/icons/gnome/16x16/actions/system-run.png xdg-launch xde-run
+     prog "Run Command" /usr/share/icons/gnome/16x16/actions/system-run.png xdg-launch gmrun
+     prog "SpaceFM" /usr/share/icons/hicolor/48x48/apps/spacefm.png xdg-launch spacefm
+     prog "System Profiler and Benchmark" /usr/share/hardinfo/pixmaps/logo.png xdg-launch hardinfo
+     prog "Task Manager" /usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png xdg-launch lxtask
+     prog "TeXconfig" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch texconfig
+     prog "Terminal" /usr/share/icons/gnome/16x16/apps/utilities-terminal.png xdg-launch gnome-terminal
+     prog "Thunar File Manager" /usr/share/icons/hicolor/16x16/apps/Thunar.png xdg-launch Thunar
+     prog "Top CPU Processes" /usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png xdg-launch top
+     prog "UXTerm" /usr/share/pixmaps/xterm-color_48x48.xpm xdg-launch uxterm
+     prog "Unclutter" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch unclutter
+     prog "Vifm" /usr/share/pixmaps/vifm.png xdg-launch vifm
+     prog "Wireshark" /usr/share/icons/hicolor/16x16/apps/wireshark.png xdg-launch wireshark
+     prog "X Load" /usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png xdg-launch xload
+     prog "X-Terminal as root (GKsu)" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch terminal-as-root-(gksu)
+     prog "XTerm" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch mageia-xterm
+     prog "XTerm" /usr/share/pixmaps/xterm-color_48x48.xpm xdg-launch xterm
+     prog "XTerm" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch mandriva-xterm
+     prog "Xfce Terminal" /usr/share/icons/gnome/16x16/apps/utilities-terminal.png xdg-launch xfce4-terminal
+     prog "Xfe" /usr/share/pixmaps/xfe.png xdg-launch xfe
+     prog "Xsensors" /usr/share/pixmaps/xsensors.png xdg-launch xsensors
+     prog "dconf Editor" /usr/share/icons/hicolor/16x16/apps/dconf-editor.png xdg-launch dconf-editor
+     prog "emelFM2" /usr/share/pixmaps/emelfm2.png xdg-launch emelfm2
+     prog "mc" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch mc
+     prog "stalonetray" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch stalonetray
+     prog "urxvt" /usr/share/icons/gnome/16x16/apps/utilities-terminal.png xdg-launch urxvt
+     prog "urxvt (client)" /usr/share/icons/gnome/16x16/apps/utilities-terminal.png xdg-launch urxvtc
+     prog "urxvt (tabbed)" /usr/share/icons/gnome/16x16/apps/utilities-terminal.png xdg-launch urxvt-tabbed
+  }
+  menu "Web Applications" /usr/share/icons/gnome/16x16/categories/applications-internet.png {
+  }
+   menu "X11 Tools" /usr/share/icons/hicolor/16x16/apps/xlogo.png {
+     prog "Openbox Window Properties" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch obxprop
+     prog "Session Manager Proxy" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch smproxy
+     prog "X Clipboard" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xclipboard
+     prog "X Clock" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xclock
+     prog "X Color Selector" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xcolorsel
+     prog "X Console" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xconsole
+     prog "X Display Atoms" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xlsatoms
+     prog "X Display Clients" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xlsclients
+     prog "X Display Properties" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xdpyinfo
+     prog "X Display Refresh" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xrefresh
+     prog "X Events" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xev
+     prog "X Eyes" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xeyes
+     prog "X Font Select" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xfontsel
+     prog "X Input" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xinput
+     prog "X Keyboard LEDs" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xkbvleds
+     prog "X Keyboard State" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xkbwatch
+     prog "X Kill" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xkill
+     prog "X Magnifier" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xmag
+     prog "X Manual Page" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xman
+     prog "X Mod Key Mapping" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xmodmap
+     prog "X RandR" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xrandr
+     prog "X Resource Editor" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch editres
+     prog "X Resource Top" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xrestop
+     prog "X Settings" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xset
+     prog "X Video Information" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xvinfo
+     prog "X Video Tuner" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xvidtune
+     prog "X Window Dump" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xwd
+     prog "X Window Dump Display" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xwud
+     prog "X Window Information" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xwininfo
+     prog "X Window Properties" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xprop
+   }
+   menu "Dock Apps" /usr/share/icons/hicolor/16x16/apps/GNUstep3D.png {
+     prog "Flipse Dock" /usr/share/icons/hicolor/16x16/apps/GNUstep3D.png xdg-launch flipse
+     prog "wmMoonClock" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch wmMoonClock
+   }
+   menu "Other" /usr/share/icons/gnome/16x16/categories/applications-other.png {
+     prog "About EDE" /usr/share/icons/gnome/16x16/actions/help-about.png xdg-launch ede-about
+     prog "Bash" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch bash
+     prog "Dash" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch dash
+     prog "E16" /usr/share/e16/icons/e16.png xdg-launch e16
+     prog "Font Viewer" /usr/share/pixmaps/gfontview.png xdg-launch gfontview
+     prog "GnuChess" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch gnuchess
+     prog "Help" /usr/share/icons/gnome/16x16/apps/help-browser.png xdg-launch ede-help
+     prog "Info" /usr/share/icons/gnome/16x16/status/info.png xdg-launch info
+     prog "Oclock" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch oclock
+     prog "Run Program..." /usr/share/icons/gnome/16x16/actions/system-run.png xdg-launch ede-launch
+     prog "Screen Lock" /usr/share/icons/gnome/16x16/actions/system-lock-screen.png xdg-launch ede-screen-lock
+     prog "Sh" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch sh
+     prog "Simple Tray XKB Indicator" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch sbxkb
+     prog "TeXdoctk" /usr/share/icons/gnome/16x16/mimetypes/exec.png xdg-launch texdoctk
+     prog "TigerVNC viewer" /usr/share/icons/hicolor/16x16/apps/tigervnc.png xdg-launch vncviewer
+     prog "X Fishtank" /usr/share/icons/gnome/16x16/apps/wallpaper.png xdg-launch xfishtank
+     prog "X Snow" /usr/share/icons/gnome/16x16/apps/wallpaper.png xdg-launch xsnow
+     prog "XDG Tray Menu" /usr/share/icons/Mist/16x16/apps/start-here.png xdg-launch xdg-traymenu
+     prog "Xlock" /usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png xdg-launch xlockmore
+     prog "Xlogo" /usr/share/icons/hicolor/16x16/apps/xlogo.png xdg-launch xlogo
+     prog "gEDA Attribute Editor" /usr/share/icons/hicolor/scalable/apps/geda-gattrib.svg xdg-launch geda-gattrib
+     prog "gEDA Schematic Editor" /usr/share/icons/hicolor/scalable/apps/geda-gschem.svg xdg-launch geda-gschem
+     prog "mcedit" /usr/share/icons/gnome/16x16/apps/text-editor.png xdg-launch mcedit
+  }
+  menu "Preferences" /usr/share/icons/gnome/16x16/categories/preferences-desktop.png {
+     prog "Adobe Flash Player" /usr/share/icons/hicolor/16x16/apps/flash-player-properties.png xdg-launch flash-player-properties
+     prog "ChBg" /usr/share/pixmaps/chbg_64x64.xpm xdg-launch chbg
+     prog "Configure EDE" /usr/share/icons/Mist/16x16/devices/computer.png xdg-launch ede-conf
+     prog "Customize Look and Feel" /usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png xdg-launch lxappearance
+     prog "Desktop Preferences" /usr/share/icons/Mist/16x16/places/user-desktop.png xdg-launch pcmanfm-desktop-pref
+     prog "FOX Desktop Setup" /usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png xdg-launch ControlPanel
+     prog "File Manager" /usr/share/icons/gnome/16x16/apps/system-file-manager.png xdg-launch thunar-settings
+     prog "Firewall Builder" /usr/share/icons/hicolor/16x16/apps/fwbuilder.png xdg-launch fwbuilder
+     prog "Gtk Theme Switch 2" /usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png xdg-launch gtk-theme-switch2
+     prog "Gtk2 Change Theme" /usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png xdg-launch gtk-chtheme
+     prog "Gtk2 Preferences" /usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png xdg-launch gtk2_prefs
+     prog "Keyboard Settings" /usr/share/icons/gnome/16x16/apps/preferences-desktop-keyboard.png xdg-launch lxkb-config
+     prog "Keyboard and Mouse" /usr/share/icons/gnome/16x16/devices/input-keyboard.png xdg-launch xde-input
+     prog "LXDE Panel Settings" /usr/share/icons/gnome/16x16/categories/preferences-desktop.png xdg-launch lxpanelctl
+     prog "Monitor Settings" /usr/share/icons/Mist/16x16/devices/display.png xdg-launch lxrandr
+     prog "Network Connections" /usr/share/icons/gnome/16x16/categories/preferences-system-network.png xdg-launch nm-connection-editor
+     prog "Openbox Configuration Manager" /usr/share/pixmaps/obconf.png xdg-launch obconf
+     prog "Packages" /usr/share/icons/gnome/16x16/apps/system-software-install.png xdg-launch gpk-application
+     prog "Panel tint2" /usr/share/pixmaps/tint2conf.png xdg-launch tint2conf
+     prog "Plank Config" /usr/share/icons/hicolor/scalable/apps/plank-config.svg xdg-launch plank-config
+     prog "Pop-Up Notifications" /usr/share/icons/hicolor/16x16/apps/notification-properties.png xdg-launch notification-properties
+     prog "Preferred Applications" /usr/share/icons/gnome/16x16/categories/preferences-desktop.png xdg-launch libfm-pref-apps
+     prog "Preferred Applications" /usr/share/icons/gnome/16x16/mimetypes/empty.png xdg-launch ede-preferred-applications
+     prog "Print Settings" /usr/share/icons/gnome/16x16/devices/printer.png xdg-launch system-config-printer
+     prog "Printing" /usr/share/icons/gnome/16x16/devices/printer.png xdg-launch redhat-system-config-printer
+     prog "Removable Drives and Media" /usr/share/icons/gnome/16x16/devices/drive-removable-media.png xdg-launch thunar-volman-settings
+     prog "Search and Indexing" /usr/share/icons/hicolor/16x16/apps/tracker.png xdg-launch tracker-preferences
+     prog "XDE Background" /usr/share/icons/gnome/16x16/devices/keyboard.png xdg-launch xde-setbg
+     prog "systemadm" /usr/share/icons/gnome/16x16/categories/applications-system.png xdg-launch systemadm
+   }
+  menu "Window Managers" /usr/share/icons/gnome/16x16/actions/gtk-quit.png {
+    restart "Restart" /usr/share/icons/gnome/16x16/actions/gtk-refresh.png
+    restart "Start 2bwm" /usr/share/icons/hicolor/16x16/apps/2bWM.png 2bwm
+    restart "Start adwm" /usr/share/icons/hicolor/16x16/apps/adwm.png adwm
+    restart "Start AEWM" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png aewm
+    restart "Start AEWM++" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png aewm++
+    restart "Start AfterStep" /usr/share/icons/hicolor/48x48/apps/AfterStep.png afterstep
+    restart "Start awesome" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png awesome
+    restart "Start Blackbox" /usr/share/icons/hicolor/16x16/apps/blackbox.png blackbox
+    restart "Start bspwm" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png bspwm
+    restart "Start CTWM" /usr/share/icons/hicolor/16x16/apps/ctwm.png ctwm
+    restart "Start cwm" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png cwm
+    restart "Start Dwm" /usr/share/icons/hicolor/16x16/apps/dwm.png dwm
+    restart "Start E16" /usr/share/e16/icons/e16.png /usr/share/e16/misc/starte16
+    restart "Start echinus" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png echinus
+    restart "Start EDE" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png startede
+    restart "Start evilwm" /usr/share/icons/hicolor/16x16/apps/evilwm.png evilwm
+    restart "Start failsafewm" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png failsafewm
+    restart "Start Fluxbox" /usr/share/icons/hicolor/16x16/apps/fluxbox.png startfluxbox
+    restart "Start FLWM" /usr/share/pixmaps/flwm.png flwm
+    restart "Start Fvwm" /usr/share/icons/hicolor/16x16/apps/fvwm.png fvwm2
+    restart "Start FVWM-Crystal" /usr/share/icons/hicolor/16x16/apps/fvwm-crystal.png fvwm-crystal
+    restart "Start herbstluftwm" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png herbstluftwm
+    restart "Start i3" /usr/share/icons/hicolor/16x16/apps/i3.png i3
+    restart "Start Jwm" /usr/share/icons/hicolor/16x16/apps/jwm.png jwm
+    restart "Start larswm" /usr/share/icons/hicolor/16x16/apps/larswm.png larswm
+    restart "Start LXDE" /usr/share/pixmaps/lxde-icon.png startlxde
+    restart "Start mantis-wm" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png mantis-wm
+    restart "Start matwm2" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png matwm2
+    restart "Start Metacity" /usr/share/pixmaps/metacity.png metacity
+    restart "Start Mutter" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png mutter
+    restart "Start MWM" /usr/share/icons/hicolor/16x16/apps/mwm.png mwm
+    restart "Start Openbox" /usr/share/pixmaps/openbox.png openbox-session
+    restart "Start pawm" /usr/share/icons/hicolor/16x16/apps/pawm.png pawm
+    restart "Start Pekwm" /usr/share/icons/hicolor/16x16/apps/pekwm.png pekwm
+    restart "Start spectrwm" /usr/share/icons/hicolor/16x16/apps/spectrwm.png spectrwm
+    restart "Start TWM" /usr/share/icons/hicolor/16x16/apps/twm.png twm
+    restart "Start μwm" /usr/share/pixmaps/uwm16x16.xpm uwm
+    restart "Start velox" /usr/share/icons/hicolor/16x16/apps/velox.png velox
+    restart "Start VTWM" /usr/share/icons/hicolor/16x16/apps/vtwm.png vtwm
+    restart "Start Waimea" /usr/share/icons/gnome/16x16/apps/preferences-system-windows.png waimea
+    restart "Start Wind" /usr/share/icons/hicolor/16x16/apps/windwm.png wind
+    restart "Start wm2" /usr/share/icons/hicolor/16x16/apps/wm2.png wm2
+    restart "Start WindowMaker" /usr/share/icons/hicolor/16x16/apps/wmaker.png wmaker
+    restart "Start wmii" /usr/share/icons/hicolor/16x16/apps/wmii.png wmii
+    restart "Start wmx" /usr/share/icons/hicolor/16x16/apps/wmx.png wmx
+    restart "Start XDWM" /usr/share/icons/hicolor/16x16/apps/xdwm.png xdwm-session
+    restart "Start Xfce Session" /usr/share/icons/hicolor/16x16/apps/archlinux-wm-xfce.png startxfce4
+    restart "Start yeahwm" /usr/share/icons/hicolor/16x16/apps/yeahwm.png yeahwm
+  }
+prog "Refresh Menu" /usr/share/icons/gnome/16x16/actions/gtk-refresh.png xdg-menugen -format icewm -launch >/home/brian/.icewm/menu

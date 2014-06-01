@@ -1,0 +1,37 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=FVWM
+Icon=fvwm
+Exec=fvwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=The FVWM window manager
+Categories=WindowManager;Application;System;
+StartupNotify=true
+NoDisplay=true
+# name of loadable control center module
+X-GNOME-WMSettingsModule=Fvwm
+# name we put on the WM spec check window
+X-GNOME-WMName=Fvwm
+# back compat only 
+X-GnomeWMSettingsLibrary=Fvwm
+X-GNOME-Bugzilla-Bugzilla=GNOME
+X-GNOME-Bugzilla-Product=Fvwm
+X-GNOME-Bugzilla-Component=general
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=true
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop FVWM -startwm fvwm
+Comment=FVWM in an XDE session
+
+[Window Manager]
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+if [ $# -gt 1 ] ; then
+    TWM_TYPE=${1:-${TWM_TYPE:-twm}}
+    styledir="$2"
+else
+    TWM_TYPE=${TWM_TYPE:-twm}
+    styledir="$1"
+fi
+
+[ -n "$styledir" ] || { echo "ERROR" >&2; exit 1; }
+[ -d "$styledir" ] || { echo "ERROR" >&2; exit 1; }
+
+TWM_CONFIG_HOME=${TWM_CONFIG_HOME:-${HOME:-~}/.$TWM_TYPE}
+
+[ -d "$TWM_CONFIG_HOME" ] || mkdir -p "$TWM_CONFIG_HOME"
+
+rm -f "$TWM_CONFIG_HOME/stylerc"
+ln -s "$styledir/stylerc" "$TWM_CONFIG_HOME/"
+
+exit 0
+
+# vim: sw=4
+

@@ -1,0 +1,19 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=GNOME/Openbox
+Icon=openbox
+Exec=openbox-gnome-session
+TryExec=gnome-session
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Use the Openbox window manager inside of the GNOME desktop environment
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=true
+NoDisplay=true
+X-GNOME-WMName=openbox
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=true

@@ -1,0 +1,139 @@
+divert(VARIABLES)dnl
+`##' included file SINCLUDE
+ifelse(TWM_TYPE,`vtwm',`
+`##' No default keyboard or pointer bindings.
+NoDefaultMouseOrKeyboardBindings
+')
+divert(FUNCTIONS)dnl
+`##' included file SINCLUDE
+Function "next-cycle-focus" { f.forwiconmgr f.raise }
+Function "prev-cycle-focus" { f.backiconmgr f.raise }
+divert(BINDINGS)dnl
+`##' included file SINCLUDE
+`"Tab"	    = m		: all		: f.function "next-cycle-focus"'
+`"Tab"	    = m | s	: all		: f.function "prev-cycle-focus"'
+
+`"F1"	    = m		: all		: f.exec "exec uxterm &"'
+`"F2"	    = m		: all		: f.exec "exec fbrun &"'
+
+`"XF86AudioRaiseVolume"	= : all		: f.exec "amixer sset Master,0 1+"'
+`"XF86AudioLowerVolume"	= : all		: f.exec "amixer sset Master,0 1-"'
+`"XF86AudioMut"		= : all		: f.exec "amixer sset Master,0 toggle"'
+
+`"Up"	    = c | s	: window	: f.zoom'
+`"Right"    = c | s	: window	: f.horizoom'
+`"Left"	    = c | s	: window	: f.fullzoom'
+ifelse(TWM_TYPE,`ctwm',`
+`"Right"    = c | m4	: window	: f.changesize "right +10"'
+`"Left"	    = c | m4	: window	: f.changesize "right -10"'
+`"Up"	    = c | m4	: window	: f.changesize "bottom +10"'
+`"Down"	    = c | m4	: window	: f.changesize "bottom -10"'
+`"Right"    = c|s | m4	: window	: f.changesize "left +10"'
+`"Left"	    = c|s | m4	: window	: f.changesize "left -10"'
+`"Up"	    = c|s | m4	: window	: f.changesize "top +10"'
+`"Down"	    = c|s | m4	: window	: f.changesize "top -10"'
+
+`"Right"    = s | m4	: window	: f.fill "right"'
+`"Left"	    = s | m4	: window	: f.fill "left"'
+`"Up"	    = s | m4	: window	: f.fill "top"'
+`"Down"	    = s | m4	: window	: f.fill "bottom"'
+
+`"Right"    = m4	: window	: f.jumpright "1"'
+`"Left"	    = m4	: window	: f.jumpleft "1"'
+`"Up"	    = m4	: window	: f.jumpup "1"'
+`"Down"	    = m4	: window	: f.jumpdown "1"'
+')
+`"t"	    = c | m	: all		: f.exec "exec roxterm --disable-sm &"'
+`"n"	    = c | m	: all		: f.exec "exec roxterm --geometry=90x70 &"'
+`"x"	    = c | m	: all		: f.exec "exec uxterm -geometry 90x70 &"'
+`"v"	    = c | m	: all		: f.exec "exec gvim -geometry 90x70 &"'
+`"r"	    = c | m	: all		: f.function "reconfig"'
+`"s"	    = c | m	: all		: f.exec "exec uxterm -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-50-iso646.1991-irv -fb -schumacher-clean-medium-r-bold--8-80-75-75-c-50-iso646.1991-irv -geometry 146x143 -sl 15000"'
+`"y"	    = c | m	: all		: f.exec "exec uxterm -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-60-iso646.1991-irv -fb -schumacher-clean-bold-r-normal--8-80-75-75-c-60-iso646.1991-irv -geometry 120x143 -sl 15000"'
+`"l"	    = c | m	: all		: f.exec "exec uxterm -fn 6x13 -fb 6x13bold -geometry 120x88 -sl 15000"'
+`"b"	    = c | m	: all		: f.exec "exec uxterm -fn 7x13 -fb 7x13bold -geometry 104x88 -sl 15000"'
+`"h"	    = c | m	: all		: f.exec "exec uxterm -fn 9x15 -fb 9x15bold -geometry  81x76 -sl 15000"'
+`"w"	    = c | m	: all		: f.exec "exec firefox &"'
+`"f"	    = c | m	: all		: f.exec "exec pcmanfm &"'
+
+# for fun
+`"m"	    = c | m4	: all		: f.menu "TwmWindows"'
+
+# keys from LXDE
+`"e"	    = m4	: all		: f.exec "exec pcmanfm &"'
+`"r"	    = m4	: all		: f.exec "exec lxpanelctrl run &"'
+`#"F1"	    = m		: all		: f.exec "exec lxpanelctrl run &"'
+`"Escape"   = c		: all		: f.exec "exec lxpanelctrl menu &"'
+
+# current window commands
+`"F4"	    = m		: window|icon	: 'ifelse(TWM_TYPE,`ctwm',`f.deleteordestroy',`f.delete')
+`"F5"	    = m		: window|icon	: f.destroy'
+`"F9"	    = m		: window|icon	: f.iconify'
+`"F10"	    = m		: window	: f.zoom'
+`"F11"	    = m		: window	: f.fullzoom'
+
+`"m"	    = m		: window|icon	: f.iconify'
+`"q"	    = m		: window|icon	: 'ifelse(TWM_TYPE,`ctwm',`f.deleteordestroy',`f.delete')
+`#"s"	    = m		: window	: f.squeeze'
+`"Up"	    = m		: window	: f.raise'
+`"Down"	    = m		: window	: f.lower'
+`"Space"    = m		: window|icon	: f.menu "windowops"'
+
+# m4 is the windows key
+`"F4"	    = m4	: window|icon	: 'ifelse(TWM_TYPE,`ctwm',`f.deleteordestroy',`f.delete')
+`"F5"	    = m4	: window|icon	: f.destroy'
+`"F9"	    = m4	: window|icon	: f.iconify'
+`"F10"	    = m4	: window	: f.zoom'
+`"F11"	    = m4	: window	: f.fullzoom'
+
+`"m"	    = m4	: window|icon	: f.iconify'
+`"q"	    = m4	: window|icon	: 'ifelse(TWM_TYPE,`ctwm',`f.deleteordestroy',`f.delete')
+`#"s"	    = m4	: window	: f.squeeze'
+`"Up"	    = m4	: window	: f.raise'
+`"Down"	    = m4	: window	: f.lower'
+`"Space"    = m4	: window|icon	: f.menu "windowops"'
+
+# exit twm
+`"Delete"   = c | m	: all		: f.quit'
+ifelse(TWM_TYPE,`ctwm',`
+`#' send the current dinwo to previous/next workspace
+`"Left"	    = m4	: window	: f.movetoprevworkspace'
+`"Right"    = m4	: window	: f.movetonextworkspace'
+
+`#' send the current window and follow it to previous/next workspace
+`"Left"	    = m4 | c	: window	: f.movetoprevworkspaceandfollow'
+`"Right"    = m4 | c	: window	: f.movetonextworkspaceandfollow'
+
+`#' change to previous/next workspace
+`"Left"	    = c | m	: all		: f.leftworkspace'
+`"Right"    = c | m	: all		: f.rightworkspace'
+`"Up"	    = c | m	: all		: f.upworkspace'
+`"Down"     = c | m	: all		: f.downworkspace'
+
+`#' change to a specific workspace
+`"F1"	    = c		: all		: f.gotoworkspace "1"'
+`"F2"	    = c		: all		: f.gotoworkspace "2"'
+`"F3"	    = c		: all		: f.gotoworkspace "3"'
+`"F4"	    = c		: all		: f.gotoworkspace "4"'
+`"F5"	    = c		: all		: f.gotoworkspace "5"'
+`"F6"	    = c		: all		: f.gotoworkspace "6"'
+`"F7"	    = c		: all		: f.gotoworkspace "7"'
+`"F8"	    = c		: all		: f.gotoworkspace "8"'
+`"F9"	    = c		: all		: f.gotoworkspace "9"'
+`"F10"	    = c		: all		: f.gotoworkspace "10"'
+`"F11"	    = c		: all		: f.gotoworkspace "11"'
+`"F12"	    = c		: all		: f.gotoworkspace "12"'
+
+`"1"	    = m		: all		: f.gotoworkspace "1"'
+`"2"	    = m		: all		: f.gotoworkspace "2"'
+`"3"	    = m		: all		: f.gotoworkspace "3"'
+`"4"	    = m		: all		: f.gotoworkspace "4"'
+`"5"	    = m		: all		: f.gotoworkspace "5"'
+`"6"	    = m		: all		: f.gotoworkspace "6"'
+`"7"	    = m		: all		: f.gotoworkspace "7"'
+`"8"	    = m		: all		: f.gotoworkspace "8"'
+`"9"	    = m		: all		: f.gotoworkspace "9"'
+`"0"	    = m		: all		: f.gotoworkspace "10"'
+')
+divert(-1)
+dnl vim: ft=m4

@@ -1,0 +1,44 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=Openbox
+Icon=openbox
+Exec=openbox-session
+TryExec=openbox
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Log in using the Openbox window manager
+Categories=WindowManager;Application;System
+StartupNotify=true
+NoDisplay=true
+# name we put on the WM spec check window
+X-GNOME-WMName=Openbox
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=true
+Actions=XDE;Gnome;KDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop OPENBOX -startwm start-openbox
+Comment=Openbox under an XDE session
+
+[Desktop Action Gnome]
+Name=Gnome
+Icon=gnome
+Exec=openbox-gnome-session
+Comment=Use the Openbox window manager inside of the GNOME desktop environment
+
+[Desktop Action KDE]
+Name=KDE
+Icon=kde
+Exec=openbox-kde-session
+TryExec=startkde
+Comment=Use the Openbox window manager inside of the K Desktop Environment
+
+[Window Manager]
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=true

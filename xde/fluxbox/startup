@@ -1,0 +1,197 @@
+# fluxbox startup-script:
+#
+# Lines starting with a '#' are ignored.
+
+#
+# This startup file is in the event that the user executes startfluxbox
+# directly (e.g. out of .xinitrc).  When equipped with xde-startup, we
+# will simply execute that with the correct session parameters.
+#
+
+if [ -x "`which xde-startup 2>/dev/null`" ]; then
+	exec xde-startup -vendor unexicon -desktop FLUXBOX -startwm fluxbox
+fi
+
+[ -n "$XDG_CONFIG_HOME"     ] || export XDG_CONFIG_HOME="$HOME/.config"
+[ -n "$XDG_DATA_HOME"       ] || export XDG_DATA_HOME="$HOME/.local/share"
+[ -n "$XDG_DATA_DIRS"       ] || export XDG_DATA_DIRS="/usr/local/share:/usr/share"
+
+[ -n "$XDG_MENU_PREFIX"     ] || export XDG_MENU_PREFIX='arch-'
+[ -n "$XDG_CURRENT_DESKTOP" ] || export XDG_CURRENT_DESKTOP="FLUXBOX"
+
+export XDG_UTILS_DEBUG_LEVEL=7
+
+# Ensure the existence of the pcmanfm config file
+PCMANFM_CONF_DIR="$XDG_CONFIG_HOME/pcmanfm/FLUXBOX"
+if [ ! -f "$PCMANFM_CONF_DIR/pcmanfm.conf" ]; then
+	[ -d "$PCMANFM_CONF_DIR" ] || mkdir -p "$PCMANFM_CONF_DIR"
+	cp /etc/xdg/pcmanfm/default/pcmanfm.conf "$PCMANFM_CONF_DIR/pcmanfm.conf"
+fi
+
+# Ensure the existence of the 'Desktop' folder
+if [ ! -e "$XDG_CONFIG_HOME/user-dirs.dirs" ]; then
+	if [ -x "`which xdg-user-dirs-update 2>/dev/null`" ]; then
+		xdg-user-dirs-update
+	fi
+fi
+[ -e $XDG_CONFIG_HOME/user-dirs.dirs ] && . $XDG_CONFIG_HOME/user-dirs.dirs
+[ -n "$XDG_DESKTOP_DIR" ] || XDG_DESKTOP_DIR="$HOME/Desktop"
+[ -d "$XDG_DESKTOP_DIR" ] || mkdir -p "$XDG_DESKTOP_DIR"
+
+# Enable GTK+2 integration for OpenOffice.org, if available
+export SAL_USE_VCLPLUGIN=gtk
+
+
+# You can set your favourite wallpaper here if you don't want
+# to do it from your style.
+#
+# fbsetbg -f ~/pictures/wallpaper.png
+#
+# This sets a black background
+
+#/usr/bin/fbsetroot -solid black
+
+# This shows the fluxbox-splash-screen
+# fbsetbg -C /usr/share/fluxbox/splash.jpg
+
+# Other examples. Check man xset for details.
+#
+# Turn off beeps:
+xset b off
+#
+# Increase the keyboard repeat-rate:
+xset r rate 350 55
+#
+# Your own fonts-dir:
+# xset +fp "~/.fonts"
+#
+# Your favourite mouse cursor:
+# xsetroot -cursor_name right_ptr
+#
+# Change your keymap:
+# xmodmap "~/.Xmodmap"
+
+# one should already be running at this point
+if [ -x "`which dbus-launch 2>/dev/null`" -a -z "$DBUS_SESSION_BUS_ADDRESS" ] ; then
+	eval "$(dbus-launch --sh-syntax --exit-with-session)"
+fi
+
+# regenerate the menu in the background
+if [ -x "`which fbmenugen 2>/dev/null`" ] ; then
+	fbmenugen -d -i &
+elif [ -x "`which unexicon-generate_menu 2>/dev/null`" ] ; then
+	unexicon-generate_menu &
+elif [ -x "`which fluxbox-generate_menu 2>/dev/null`" ] ; then
+	fluxbox-generate_menu &
+fi
+
+# Applications you want to run with fluxbox.
+# MAKE SURE THAT APPS THAT KEEP RUNNING HAVE AN ''&'' AT THE END.
+#
+
+# run the slitlist
+
+(
+sleep 2
+if [ -x "`which wmmon 2>/dev/null`" ] ; then
+	wmmon &
+fi
+if [ -x "`which wmblob 2>/dev/null`" ] ; then
+	wmblob &
+fi
+if [ -x "`which wmpinboard 2>/dev/null`" ] ; then
+	wmpinboard -w &
+fi
+if [ -x "`which wmclock 2>/dev/null`" ] ; then
+	wmclock &
+fi
+if [ -x "`which wmnet 2>/dev/null`" ] ; then
+	for e in /sys/class/net/{eth,usb,enp}* ; do
+		if [ -d $e ] ; then
+			wmnet -w -W $(basename $e) -x $(cat $e/speed)000000 -l &
+		fi
+	done
+fi
+if [ -x "`which wmnd 2>/dev/null`" ] ; then
+	wmnd &
+fi
+if [ -x "`which wmsysmon 2>/dev/null`" ] ; then
+	wmsysmon &
+fi
+if [ -x "`which wmfsm 2>/dev/null`" ] ; then
+	wmfsm &
+fi
+if [ -x "`which wmtimer 2>/dev/null`" ] ; then
+	wmtimer &
+fi
+if [ -x "`which wmmixer 2>/dev/null`" ] ; then
+	wmmixer -w &
+fi
+if [ -x "`which wmCalClock 2>/dev/null`" ] ; then
+	wmCalClock &
+fi
+if [ -x "`which wmmount 2>/dev/null`" ] ; then
+	wmmount -- -w -s &
+fi
+if [ -x "`which wmmail 2>/dev/null`" ] ; then
+	wmmail &
+fi
+if [ -x "`which wmWeather 2>/dev/null`" ] ; then
+	wmWeather -s CYEG &
+fi
+if [ -x "`which wmclockmon 2>/dev/null`" ] ; then
+	wmclockmon &
+fi
+if [ -x "`which wmcore 2>/dev/null`" ] ; then
+	wmcore &
+fi
+if [ -x "`which wmcpuload 2>/dev/null`" ] ; then
+	wmcpuload &
+fi
+if [ -x "`which wmweather+ 2>/dev/null`" ] ; then
+	wmweather+ -s CYEG &
+fi
+) &
+
+# Set up the root window and launch systray applets
+
+(
+sleep 1
+if [ -x "`which idesk 2>/dev/null`" ] ; then
+	idesk &
+fi
+if [ -x "`which conky 2>/dev/null`" ] ; then
+	if [ -s $HOME/.conkyrc.`hostname` ]; then
+		conky -c $HOME/.conkyrc.`hostname` &
+	else
+		conky &
+	fi
+fi
+if [ -x "`which unclutter 2>/dev/null`" ] ; then
+	unclutter -idle 2 &
+fi
+if [ -x "`which dhcpcd-gtk 2>/dev/null`" ] ; then
+	dhcpcd-gtk &
+fi
+#if [ -x "`which nm-applet 2>/dev/null`" ] ; then
+#	nm-applet &
+#fi
+if [ -x "`which retrovol 2>/dev/null`" ] ; then
+	retrovol &
+fi
+if [ -x "`which menutray 2>/dev/null`" ] ; then
+	menutray -d -i &
+fi
+
+) &
+
+
+# And last but not least we start fluxbox.
+# Because it is the last app you have to run it with ''exec'' before it.
+
+# exec /usr/bin/fluxbox
+# or if you want to keep a log:
+exec /usr/bin/fluxbox -log "$HOME/.fluxbox/log"
+#exec /usr/bin/lxsession -s FLUXBOX -e LXDE
+# vim: ft=sh
+

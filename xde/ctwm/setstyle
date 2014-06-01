@@ -1,0 +1,29 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+if [ $# -gt 1 ] ; then
+    CTWM_TYPE=${1:-${CTWM_TYPE:-ctwm}}
+    styledir="$2"
+else
+    CTWM_TYPE=${CTWM_TYPE:-ctwm}
+    styledir="$1"
+fi
+
+[ -n "$styledir" ] || { echo "ERROR" >&2; exit 1; }
+[ -d "$styledir" ] || { echo "ERROR" >&2; exit 1; }
+
+CTWM_CONFIG_HOME=${CTWM_CONFIG_HOME:-${HOME:-~}/.$CTWM_TYPE}
+
+[ -d "$CTWM_CONFIG_HOME" ] || mkdir -p "$CTWM_CONFIG_HOME"
+
+rm -f "$CTWM_CONFIG_HOME/stylerc"
+ln -s "$styledir/stylerc" "$CTWM_CONFIG_HOME/"
+
+exit 0
+
+# vim: sw=4
+

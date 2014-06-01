@@ -12,7 +12,7 @@ AC_USE_SYSTEM_EXTENSIONS
 DATE=`date -uI`
 AC_SUBST([DATE])
 
-AM_INIT_AUTOMAKE([gnits 1.14 dist-xz no-dist-gzip std-options -Wall color-tests silent-rules tar-pax])
+AM_INIT_AUTOMAKE([subdir-objects gnits 1.14 dist-xz no-dist-gzip std-options -Wall color-tests silent-rules tar-pax])
 AM_MAINTAINER_MODE
 
 # Checks for programs.
@@ -91,12 +91,24 @@ AC_MSG_CHECKING([for debug support])
 AC_MSG_RESULT([${enable_debug:-no}])
 
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
+
 sharedir="$datadir"
 eval "sharedir=\"$sharedir\""
 eval "sharedir=\"$sharedir\""
 eval "sharedir=\"$sharedir\""
-
 AC_SUBST([sharedir])
+
+xdgconfdir="$sysconfdir/xdg"
+eval "xdgconfdir=\"$xdgconfdir\""
+eval "xdgconfdir=\"$xdgconfdir\""
+eval "xdgconfdir=\"$xdgconfdir\""
+AC_SUBST([xdgconfdir])
+
+xdgdatadir="$sharedir"
+eval "xdgdatadir=\"$xdgdatadir\""
+eval "xdgdatadir=\"$xdgdatadir\""
+eval "xdgdatadir=\"$xdgdatadir\""
+AC_SUBST([xdgdatadir])
 
 AC_CONFIG_FILES([Makefile
 		 src/Makefile

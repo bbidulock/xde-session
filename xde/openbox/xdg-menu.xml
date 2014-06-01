@@ -1,0 +1,464 @@
+ <menu id="Accessories" label="Accessories">
+      <item label="AllTray 0.7.5.1dev" icon="/usr/share/pixmaps/alltray.png">
+       <action name="Execute"><execute>alltray -a</execute></action>
+     </item>
+      <item label="BlackBox Pager">
+       <action name="Execute"><execute>/usr/bin/bbpager</execute></action>
+     </item>
+      <item label="File Manager PCManFM">
+       <action name="Execute"><execute>pcmanfm </execute></action>
+     </item>
+      <item label="Font Viewer">
+       <action name="Execute"><execute>gnome-font-viewer </execute></action>
+     </item>
+      <item label="Gtk VNC Viewer">
+       <action name="Execute"><execute>/usr/bin/gvncviewer</execute></action>
+     </item>
+      <item label="Gxmessage">
+       <action name="Execute"><execute>gxmessage</execute></action>
+     </item>
+      <item label="Image Viewer" icon="/usr/share/pixmaps/gpicview.png">
+       <action name="Execute"><execute>gpicview </execute></action>
+     </item>
+      <item label="LXTerminal" icon="/usr/share/pixmaps/lxterminal.png">
+       <action name="Execute"><execute>lxterminal</execute></action>
+     </item>
+      <item label="MacSlow's Cairo-Clock" icon="/usr/share/pixmaps/cairo-clock.png">
+       <action name="Execute"><execute>cairo-clock</execute></action>
+     </item>
+      <item label="Mount-gtk">
+       <action name="Execute"><execute>mount-gtk</execute></action>
+     </item>
+      <item label="Root Terminal" icon="/usr/share/pixmaps/gksu-root-terminal.png">
+       <action name="Execute"><execute>gksu -l gnome-terminal</execute></action>
+     </item>
+      <item label="Vi IMproved" icon="/usr/share/pixmaps/gvim.png">
+       <action name="Execute"><execute>gvim -f </execute></action>
+     </item>
+      <item label="Xarchiver">
+       <action name="Execute"><execute>xarchiver</execute></action>
+     </item>
+      <item label="Xcalc Calculator">
+       <action name="Execute"><execute>xcalc</execute></action>
+     </item>
+ </menu> <!-- Accessories -->
+ <menu id="Archlinux" label="Archlinux">
+      <item label="AUR">
+       <action name="Execute"><execute>xdg-open https://aur.archlinux.org</execute></action>
+     </item>
+      <item label="Bugs">
+       <action name="Execute"><execute>xdg-open https://bugs.archlinux.org</execute></action>
+     </item>
+      <item label="Developers">
+       <action name="Execute"><execute>xdg-open http://www.archlinux.org/developers/</execute></action>
+     </item>
+      <item label="Documentation">
+       <action name="Execute"><execute>xdg-open https://wiki.archlinux.org/index.php/Official_Arch_Linux_Install_Guide</execute></action>
+     </item>
+      <item label="Donate">
+       <action name="Execute"><execute>xdg-open http://www.archlinux.org/donate/</execute></action>
+     </item>
+      <item label="Forum">
+       <action name="Execute"><execute>xdg-open https://bbs.archlinux.org</execute></action>
+     </item>
+      <item label="Homepage">
+       <action name="Execute"><execute>xdg-open http://www.archlinux.org</execute></action>
+     </item>
+      <item label="SVN">
+       <action name="Execute"><execute>xdg-open http://projects.archlinux.org/svntogit/</execute></action>
+     </item>
+      <item label="Schwag">
+       <action name="Execute"><execute>xdg-open http://www.zazzle.com/archlinux/</execute></action>
+     </item>
+      <item label="Wiki">
+       <action name="Execute"><execute>xdg-open https://wiki.archlinux.org</execute></action>
+     </item>
+ </menu> <!-- Archlinux -->
+ <menu id="Graphics" label="Graphics">
+      <item label="GNU Image Manipulation Program">
+       <action name="Execute"><execute>gimp-2.8 </execute></action>
+     </item>
+      <item label="GQview" icon="/usr/share/pixmaps/gqview.png">
+       <action name="Execute"><execute>gqview -r </execute></action>
+     </item>
+      <item label="GV" icon="/usr/share/pixmaps/gv.xbm">
+       <action name="Execute"><execute>gv</execute></action>
+     </item>
+      <item label="Geeqie" icon="/usr/share/pixmaps/geeqie.png">
+       <action name="Execute"><execute>geeqie -r </execute></action>
+     </item>
+      <item label="Image Viewer" icon="/usr/share/pixmaps/gpicview.png">
+       <action name="Execute"><execute>gpicview </execute></action>
+     </item>
+      <item label="Inkscape">
+       <action name="Execute"><execute>inkscape </execute></action>
+     </item>
+      <item label="LibreOffice Draw">
+       <action name="Execute"><execute>libreoffice --draw </execute></action>
+     </item>
+      <item label="MuPDF" icon="/usr/share/pixmaps/mupdf.xpm">
+       <action name="Execute"><execute>mupdf </execute></action>
+     </item>
+      <item label="Xfig" icon="/usr/share/pixmaps/xfig.png">
+       <action name="Execute"><execute>xfig</execute></action>
+     </item>
+ </menu> <!-- Graphics -->
+ <menu id="Internet" label="Internet">
+      <item label="Avahi SSH Server Browser">
+       <action name="Execute"><execute>/usr/bin/bssh</execute></action>
+     </item>
+      <item label="Avahi VNC Server Browser">
+       <action name="Execute"><execute>/usr/bin/bvnc</execute></action>
+     </item>
+      <item label="Ekiga Softphone">
+       <action name="Execute"><execute>ekiga</execute></action>
+     </item>
+      <item label="EtherApe" icon="/usr/share/pixmaps/etherape.png">
+       <action name="Execute"><execute>etherape</execute></action>
+     </item>
+      <item label="Firefox">
+       <action name="Execute"><execute>/usr/lib/firefox/firefox </execute></action>
+     </item>
+      <item label="Links" icon="/usr/share/pixmaps/links_32x32.xpm">
+       <action name="Execute"><execute>xlinks -g</execute></action>
+     </item>
+      <item label="OpenNX Connection Wizard">
+       <action name="Execute"><execute>/usr/bin/opennx --wizard</execute></action>
+     </item>
+      <item label="OpenNX Session Administrator">
+       <action name="Execute"><execute>/usr/bin/opennx --admin</execute></action>
+     </item>
+      <item label="OpenNX client">
+       <action name="Execute"><execute>/usr/bin/opennx</execute></action>
+     </item>
+      <item label="TightVNC Viewer" icon="/usr/share/pixmaps/tightvnc.png">
+       <action name="Execute"><execute>vncviewer</execute></action>
+     </item>
+      <item label="X11VNC Server">
+       <action name="Execute"><execute>x11vnc -gui tray=setpass -rfbport PROMPT -bg -o %HOME/.x11vnc.log.%VNCDISPLAY</execute></action>
+     </item>
+      <item label="Zenmap" icon="///usr/share/zenmap/pixmaps/zenmap.png">
+       <action name="Execute"><execute>zenmap </execute></action>
+     </item>
+      <item label="Zenmap (as root)" icon="///usr/share/zenmap/pixmaps/zenmap.png">
+       <action name="Execute"><execute>/usr/share/zenmap/su-to-zenmap.sh </execute></action>
+     </item>
+ </menu> <!-- Internet -->
+ <menu id="Office" label="Office">
+      <item label="Adobe Reader 9">
+       <action name="Execute"><execute>/opt/Adobe/Reader9/bin/acroread </execute></action>
+     </item>
+      <item label="Evolution">
+       <action name="Execute"><execute>evolution </execute></action>
+     </item>
+      <item label="GV" icon="/usr/share/pixmaps/gv.xbm">
+       <action name="Execute"><execute>gv</execute></action>
+     </item>
+      <item label="LibreOffice">
+       <action name="Execute"><execute>libreoffice </execute></action>
+     </item>
+      <item label="LibreOffice Base">
+       <action name="Execute"><execute>libreoffice --base </execute></action>
+     </item>
+      <item label="LibreOffice Calc">
+       <action name="Execute"><execute>libreoffice --calc </execute></action>
+     </item>
+      <item label="LibreOffice Draw">
+       <action name="Execute"><execute>libreoffice --draw </execute></action>
+     </item>
+      <item label="LibreOffice Impress">
+       <action name="Execute"><execute>libreoffice --impress </execute></action>
+     </item>
+      <item label="LibreOffice Writer">
+       <action name="Execute"><execute>libreoffice --writer </execute></action>
+     </item>
+      <item label="RAKT PDF Viewer">
+       <action name="Execute"><execute>raktpdf</execute></action>
+     </item>
+      <item label="Xpdf" icon="/usr/share/pixmaps/xpdf.xpm">
+       <action name="Execute"><execute>xpdf </execute></action>
+     </item>
+      <item label="Zathura">
+       <action name="Execute"><execute>zathura </execute></action>
+     </item>
+ </menu> <!-- Office -->
+ <menu id="Other" label="Other">
+      <item label="Adobe Flash Player">
+       <action name="Execute"><execute>flash-player-properties</execute></action>
+     </item>
+      <item label="Alarm Clock Dock App">
+       <action name="Execute"><execute>wmclockmon</execute></action>
+     </item>
+      <item label="Audio Mixer">
+       <action name="Execute"><execute>wmmixer</execute></action>
+     </item>
+      <item label="Battery Dock App">
+       <action name="Execute"><execute>wmbattery</execute></action>
+     </item>
+      <item label="BlackBox Run Command">
+       <action name="Execute"><execute>/usr/bin/bbrun</execute></action>
+     </item>
+      <item label="Blob Dock App">
+       <action name="Execute"><execute>wmblob</execute></action>
+     </item>
+      <item label="Bluetooth Manager">
+       <action name="Execute"><execute>blueman-manager</execute></action>
+     </item>
+      <item label="CPU Load Dock App">
+       <action name="Execute"><execute>wmcpuload</execute></action>
+     </item>
+      <item label="Calendar Clock Dock App">
+       <action name="Execute"><execute>wmCalClock</execute></action>
+     </item>
+      <item label="Core CPU Load">
+       <action name="Execute"><execute>wmcore</execute></action>
+     </item>
+      <item label="Customize Look and Feel">
+       <action name="Execute"><execute>lxappearance</execute></action>
+     </item>
+      <item label="DHCP Client Daemon Applet">
+       <action name="Execute"><execute>/usr/bin/dhcpcd-gtk</execute></action>
+     </item>
+      <item label="Desktop Preferences">
+       <action name="Execute"><execute>pcmanfm --desktop-pref</execute></action>
+     </item>
+      <item label="Desktop Session Settings">
+       <action name="Execute"><execute>lxsession-edit</execute></action>
+     </item>
+      <item label="Firewall Builder">
+       <action name="Execute"><execute>fwbuilder</execute></action>
+     </item>
+      <item label="Fluxbox Tray Menu.">
+       <action name="Execute"><execute>/usr/bin/ftmenu</execute></action>
+     </item>
+      <item label="Fluxbox XKB Switcher">
+       <action name="Execute"><execute>/usr/bin/fbxkb</execute></action>
+     </item>
+      <item label="Keyboard Settings">
+       <action name="Execute"><execute>lxkb_config</execute></action>
+     </item>
+      <item label="LXDE Panel Settings">
+       <action name="Execute"><execute>/usr/bin/lxpanelctl config</execute></action>
+     </item>
+      <item label="Launcher Dock App">
+       <action name="Execute"><execute>wmappl</execute></action>
+     </item>
+      <item label="Monitor Settings">
+       <action name="Execute"><execute>lxrandr</execute></action>
+     </item>
+      <item label="Network Connections">
+       <action name="Execute"><execute>nm-connection-editor</execute></action>
+     </item>
+      <item label="Network Device Monitor">
+       <action name="Execute"><execute>wmnd</execute></action>
+     </item>
+      <item label="Network Monitor">
+       <action name="Execute"><execute>wmnet</execute></action>
+     </item>
+      <item label="Openbox Configuration Manager" icon="/usr/share/pixmaps/obconf.png">
+       <action name="Execute"><execute>obconf </execute></action>
+     </item>
+      <item label="Openbox Window Properties">
+       <action name="Execute"><execute>obxprop | gxmessage -wrap -font 'monospace 10' -title 'X Window Properties' -file -</execute></action>
+     </item>
+      <item label="Preferred Applications">
+       <action name="Execute"><execute>libfm-pref-apps</execute></action>
+     </item>
+      <item label="Retrovol sound mixer">
+       <action name="Execute"><execute>/usr/bin/retrovol</execute></action>
+     </item>
+      <item label="Simple Tray XKB Indicator">
+       <action name="Execute"><execute>sbxkb</execute></action>
+     </item>
+      <item label="System Monitor">
+       <action name="Execute"><execute>wmsysmon</execute></action>
+     </item>
+      <item label="Timer Dock App">
+       <action name="Execute"><execute>wmtimer</execute></action>
+     </item>
+      <item label="Weather Monitor Dock App">
+       <action name="Execute"><execute>wmWeather</execute></action>
+     </item>
+      <item label="X Clock">
+       <action name="Execute"><execute>xclock -geometry 164x164</execute></action>
+     </item>
+      <item label="X Display Properties">
+       <action name="Execute"><execute>xdpyinfo|gxmessage -file - -title 'X Display Properties'</execute></action>
+     </item>
+      <item label="X Display Refresh">
+       <action name="Execute"><execute>xrefresh</execute></action>
+     </item>
+      <item label="X Events">
+       <action name="Execute"><execute>xterm -T 'X Events' -e xev</execute></action>
+     </item>
+      <item label="X Font Select">
+       <action name="Execute"><execute>xfontsel</execute></action>
+     </item>
+      <item label="X Input">
+       <action name="Execute"><execute>bash -c "xinput | gxmessage -font 'monospace 10' -file - -title 'X Input Information'"</execute></action>
+     </item>
+      <item label="X Keyboard LEDs">
+       <action name="Execute"><execute>xkbvleds</execute></action>
+     </item>
+      <item label="X Keyboard State">
+       <action name="Execute"><execute>xkbwatch</execute></action>
+     </item>
+      <item label="X Kill">
+       <action name="Execute"><execute>xkill</execute></action>
+     </item>
+      <item label="X Mod Key Mapping">
+       <action name="Execute"><execute>bash -c "xmodmap | gxmessage -font 'monospace 10' -file - -title 'X Mod Key Information'"</execute></action>
+     </item>
+      <item label="X RandR">
+       <action name="Execute"><execute>xrandr | gxmessage -font 'monospace 10' -title 'X Window Properties' -file -</execute></action>
+     </item>
+      <item label="X Settings">
+       <action name="Execute"><execute>xset -q|gxmessage -font 'monospace 10' -file - -title 'X Settings'</execute></action>
+     </item>
+      <item label="X Video Information">
+       <action name="Execute"><execute>xvinfo|gxmessage -font 'monospace 10' -file - -title 'X Video Information'</execute></action>
+     </item>
+      <item label="X Window Dump">
+       <action name="Execute"><execute>bash -c "set -e; xwd>`zenity --entry --text Filename`"</execute></action>
+     </item>
+      <item label="X Window Dump Display">
+       <action name="Execute"><execute>bash -c "set -e; xwd>`zenity --entry --text Filename`"</execute></action>
+     </item>
+      <item label="X Window Properties">
+       <action name="Execute"><execute>xprop | gxmessage -font 'monospace 10' -title 'X Window Properties' -file -</execute></action>
+     </item>
+      <item label="icewm">
+       <action name="Execute"><execute>icewm</execute></action>
+     </item>
+ </menu> <!-- Other -->
+ <menu id="Programming" label="Programming">
+      <item label="CMake" icon="/usr/share/pixmaps/CMakeSetup32.png">
+       <action name="Execute"><execute>cmake-gui </execute></action>
+     </item>
+      <item label="Eeschema">
+       <action name="Execute"><execute>eeschema</execute></action>
+     </item>
+      <item label="FLUID">
+       <action name="Execute"><execute>fluid </execute></action>
+     </item>
+      <item label="GNU Octave" icon="///usr/share/octave/3.6.3/imagelib/octave-logo.svg">
+       <action name="Execute"><execute>xterm -e /usr/bin/octave</execute></action>
+     </item>
+      <item label="KiCad">
+       <action name="Execute"><execute>kicad</execute></action>
+     </item>
+      <item label="Qt4 Assistant ">
+       <action name="Execute"><execute>assistant-qt4</execute></action>
+     </item>
+      <item label="Qt4 Designer">
+       <action name="Execute"><execute>designer-qt4</execute></action>
+     </item>
+      <item label="Qt4 Linguist ">
+       <action name="Execute"><execute>linguist-qt4</execute></action>
+     </item>
+ </menu> <!-- Programming -->
+ <menu id="Sound &amp; Video" label="Sound &amp; Video">
+      <item label="Alsaplayer">
+       <action name="Execute"><execute>alsaplayer</execute></action>
+     </item>
+      <item label="Music Player" icon="/usr/share/pixmaps/lxmusic.png">
+       <action name="Execute"><execute>lxmusic</execute></action>
+     </item>
+      <item label="PNMixer">
+       <action name="Execute"><execute>pnmixer</execute></action>
+     </item>
+      <item label="QT V4L2 test Utility">
+       <action name="Execute"><execute>qv4l2</execute></action>
+     </item>
+      <item label="Videos">
+       <action name="Execute"><execute>totem </execute></action>
+     </item>
+      <item label="Xfburn">
+       <action name="Execute"><execute>xfburn</execute></action>
+     </item>
+ </menu> <!-- Sound & Video -->
+ <menu id="System Tools" label="System Tools">
+      <item label="Avahi Zeroconf Browser">
+       <action name="Execute"><execute>/usr/bin/avahi-discover</execute></action>
+     </item>
+      <item label="Blackbox Window Manager">
+       <action name="Execute"><execute>/usr/bin/blackbox</execute></action>
+     </item>
+      <item label="Conky Status Display">
+       <action name="Execute"><execute>/usr/bin/conky</execute></action>
+     </item>
+      <item label="EtherApe" icon="/usr/share/pixmaps/etherape.png">
+       <action name="Execute"><execute>etherape</execute></action>
+     </item>
+      <item label="Fluxbox Panel">
+       <action name="Execute"><execute>/usr/bin/fbpanel</execute></action>
+     </item>
+      <item label="Fluxbox Run Command">
+       <action name="Execute"><execute>/usr/bin/fbrun</execute></action>
+     </item>
+      <item label="Fluxbox Window Manager">
+       <action name="Execute"><execute>fluxbox</execute></action>
+     </item>
+      <item label="GSmartControl" icon="/usr/share/pixmaps/gsmartcontrol.png">
+       <action name="Execute"><execute>/usr/bin/gsmartcontrol</execute></action>
+     </item>
+      <item label="Htop" icon="/usr/share/pixmaps/htop.png">
+       <action name="Execute"><execute>xterm -e htop</execute></action>
+     </item>
+      <item label="LXDE Panel">
+       <action name="Execute"><execute>/usr/bin/lxpanel</execute></action>
+     </item>
+      <item label="Lock Screen">
+       <action name="Execute"><execute>slock</execute></action>
+     </item>
+      <item label="Manage Printing">
+       <action name="Execute"><execute>/usr/bin/xdg-open http://localhost:631/</execute></action>
+     </item>
+      <item label="Openbox Window Manager">
+       <action name="Execute"><execute>openbox</execute></action>
+     </item>
+      <item label="Pango Viewer">
+       <action name="Execute"><execute>pango-view -t "Hello world!"</execute></action>
+     </item>
+      <item label="ROX Filer" icon="/usr/share/pixmaps/rox.png">
+       <action name="Execute"><execute>rox</execute></action>
+     </item>
+      <item label="Services">
+       <action name="Execute"><execute>systemadm</execute></action>
+     </item>
+      <item label="Software">
+       <action name="Execute"><execute>gpk-application</execute></action>
+     </item>
+      <item label="Task Manager">
+       <action name="Execute"><execute>lxtask</execute></action>
+     </item>
+      <item label="UXTerm" icon="/usr/share/pixmaps/xterm-color_48x48.xpm">
+       <action name="Execute"><execute>uxterm</execute></action>
+     </item>
+      <item label="Unclutter">
+       <action name="Execute"><execute>/usr/bin/unclutter</execute></action>
+     </item>
+      <item label="Wireshark">
+       <action name="Execute"><execute>wireshark </execute></action>
+     </item>
+      <item label="XTerm" icon="/usr/share/pixmaps/xterm-color_48x48.xpm">
+       <action name="Execute"><execute>xterm</execute></action>
+     </item>
+      <item label="dconf Editor">
+       <action name="Execute"><execute>dconf-editor</execute></action>
+     </item>
+      <item label="urxvt">
+       <action name="Execute"><execute>urxvt</execute></action>
+     </item>
+      <item label="urxvt (client)">
+       <action name="Execute"><execute>urxvtc</execute></action>
+     </item>
+      <item label="urxvt (tabbed)">
+       <action name="Execute"><execute>urxvt-tabbed</execute></action>
+     </item>
+ </menu> <!-- System Tools -->
+ <menu id="Utilities" label="Utilities">
+      <item label="Font Viewer" icon="/usr/share/pixmaps/gfontview.png">
+       <action name="Execute"><execute>gfontview</execute></action>
+     </item>
+ </menu> <!-- Utilities -->

@@ -1,0 +1,31 @@
+;
+;	window menu (FIXME: not yet used)
+;
+window-menu = [
+    [ text = "Maximize-y" maximize-vertical = true ]
+    [ text = "Maximize-x" maximize-horizontal = true ]
+    [ text = "Maximize" toggle-maximize = true ]
+    [ text = "Unmaximize" toggle-maximize = true ]
+
+    [ text = "Restore" restore = true ]
+    [ text = "Unshade" toggle-shade = true ]
+    [ text = "Shade" toggle-shade = true ]
+    [ text = "Minimize" minimize = true ]
+
+    [ text = "Send to" sendto = [] ]
+    [ text = "Unstick" toggle-sticky = true ]
+    [ text = "Stick" toggle-sticky = true ]
+
+    [ text = "Layer" layer = [] ]
+    [ text = "Raise" raise = true ]
+    [ text = "Lower" lower = true ]
+
+    [ text = "Move" move = true ]
+    [ text = "Resize" resize = true ]
+
+    [ separator = true ]
+
+    [ text = "Close" close = true ]
+    [ text = "Kill" kill = true ]
+]
+

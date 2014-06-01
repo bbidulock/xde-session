@@ -1,0 +1,12 @@
+fbdesk.doubleClickInterval:	200
+fbdesk.font:	Liberation Sans:size=9:bold
+fbdesk.iconAlpha:	255
+fbdesk.iconFile:	~/.fluxbox/fbdesk.icons
+fbdesk.lockPositions:	true
+fbdesk.snapX:	80
+fbdesk.snapY:	64
+fbdesk.textAlpha:	255
+fbdesk.textBackground:	white
+fbdesk.textColor:	black
+fbdesk.textPlacement:	Bottom
+session.styleFile:	/usr/share/fluxbox/styles/Penguins

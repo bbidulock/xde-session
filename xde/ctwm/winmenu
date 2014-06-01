@@ -1,0 +1,64 @@
+divert(VARIABLES)dnl
+`##' included file SINCLUDE
+DontMoveOff
+divert(MENUS)dnl
+`##' included file SINCLUDE
+menu "zoomops" twm_MenuColor
+{
+    "Zoom Ops"			f.title
+    "Full zoom"			f.fullzoom
+    "Horizontal zoom"		f.horizoom
+ifelse(TWM_TYPE,`ctwm',
+`    ""				f.separator',
+`    "------------------------"	f.nop')
+    "Vertical zoom"		f.zoom
+    "Top zoom"			f.topzoom
+    "Bottom zoom"		f.bottomzoom
+    "Left zoom"			f.leftzoom
+    "Right zoom"		f.rightzoom
+ifelse(TWM_TYPE,`ctwm',
+`    ""				f.separator
+    "Left expand"		f.fill "left"
+    "Right expand"		f.fill "right"
+    "Top expand"		f.fill "top"
+    "Bottom expand"		f.fill "bottom"')
+}
+
+menu "moveops" twm_MenuColor
+{
+    "Move Ops"			f.title
+    "Move"			f.move
+    "Forced Move"		f.forcemove
+ifelse(TWM_TYPE,`ctwm',`
+    ""				f.separator
+    "Left pack"			f.pack "left"
+    "Right pack"		f.pack "right"
+    "Top pack"			f.pack "top"
+    "Bottom pack"		f.pack "bottom"
+')
+}
+
+menu "windowops" twm_MenuColor
+{
+    "Window Ops"		f.title
+    "(De)Iconify"		f.iconify
+    "Refresh"			f.winrefresh
+    "Info..."			f.identify
+    "Resize"			f.resize
+    "Zoom"			f.menu "zoomops"
+    "Move"			f.menu "moveops"
+    "(No)AutoRaise"		f.autoraise
+ifelse(TWM_TYPE,`ctwm',`    "(No)AutoLower"		f.autolower
+')dnl
+    "Circle Up"			f.circleup
+    "Circle Down"		f.circledown
+    "Lower"			f.lower
+    "Raise"			f.raise
+    "Raise/Lower"		f.raiselower
+    "(Un)Focus"			f.focus
+    "Save"			f.saveyourself
+    "Close"			f.delete
+    "Kill"			f.destroy
+}
+divert(-1)
+dnl vim: ft=m4

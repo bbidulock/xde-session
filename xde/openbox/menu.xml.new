@@ -1,0 +1,1723 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<openbox_menu xmlns="http://openbox.org/3.4/menu">
+
+<menu id="root-menu" label="Openbox 3">
+    <item label="1) Web Browser" icon="/usr/share/icons/gnome/16x16/apps/web-browser.png">
+      <action name="Execute">
+        <command>firefox</command>
+        <startupnotify>
+          <enabled>yes</enabled>
+          <wmclass>Firefox-bin</wmclass>
+          <name>1) Web Browser</name>
+          <icon>/usr/share/icons/gnome/16x16/apps/web-browser.png</icon>
+        </startupnotify>
+      </action>
+    </item>
+    <item label="2) File Manager" icon="/usr/share/icons/gnome/16x16/apps/file-manager.png">
+      <action name="Execute">
+        <command>pcmanfm</command>
+        <startupnotify>
+          <enabled>yes</enabled>
+          <name>2) File Manager</name>
+          <icon>/usr/share/icons/gnome/16x16/apps/file-manager.png</icon>
+        </startupnotify>
+      </action>
+    </item>
+    <item label="3) Text Editor" icon="/usr/share/icons/gnome/16x16/apps/text-editor.png">
+      <action name="Execute">
+        <command>gvim -f</command>
+      </action>
+    </item>
+    <item label="4) Terminal" icon="/usr/share/icons/gnome/16x16/apps/terminal.png">
+      <action name="Execute">
+        <command>lxterminal</command>
+      </action>
+    </item>
+    <item label="5) Run Command" icon="/usr/share/icons/gnome/16x16/actions/system-run.png">
+      <action name="Execute">
+        <command>xde-run</command>
+        <startupnotify>
+          <enabled>yes</enabled>
+          <wmclass>xde-run</wmclass>
+          <name>5) Run Command</name>
+          <icon>/usr/share/icons/gnome/16x16/actions/system-run.png</icon>
+        </startupnotify>
+      </action>
+    </item>
+    <separator />
+    <menu id="Archlinux Menu" label="Archlinux" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+        <item label="AUR" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open https://aur.archlinux.org</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>AUR</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Bugs" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open https://bugs.archlinux.org</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Bugs</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Developers" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open http://www.archlinux.org/developers/</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Developers</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Documentation" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open https://wiki.archlinux.org/index.php/Official_Arch_Linux_Install_Guide</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Documentation</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Donate" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open http://www.archlinux.org/donate/</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Donate</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Forum" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open https://bbs.archlinux.org</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Forum</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Homepage" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open http://www.archlinux.org</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Homepage</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="SVN" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open http://projects.archlinux.org/svntogit/</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>SVN</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Schwag" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open http://www.zazzle.com/archlinux/</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Schwag</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Wiki" icon="/usr/share/icons/hicolor/32x32/apps/arch-logo.png">
+          <action name="Execute">
+            <command>xdg-open https://wiki.archlinux.org</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Wiki</name>
+              <icon>/usr/share/icons/hicolor/32x32/apps/arch-logo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+    </menu> <!-- Archlinux -->
+    <menu id="Accessories Menu" label="Accessories" icon="/usr/share/icons/gnome/16x16/categories/gnome-util.png">
+        <item label="7-Zip FM" icon="/usr/share/icons/hicolor/32x32/apps/p7zip.png">
+          <action name="Execute">
+            <command>7zFM</command>
+          </action>
+        </item>
+        <item label="AllTray 0.7.5.1dev" icon="/home/brian/.icons/alltray.png">
+          <action name="Execute">
+            <command>alltray -a</command>
+          </action>
+        </item>
+        <item label="Application Finder" icon="/usr/share/icons/gnome/16x16/actions/gtk-find.png">
+          <action name="Execute">
+            <command>xfce4-appfinder</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Application Finder</name>
+              <icon>/usr/share/icons/gnome/16x16/actions/gtk-find.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="BlackBox Pager" icon="/usr/share/icons/hicolor/16x16/apps/blackbox.png">
+          <action name="Execute">
+            <command>/usr/bin/bbpager</command>
+            <startupnotify>
+              <wmclass>bbager</wmclass>
+              <name>BlackBox Pager</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/blackbox.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Calculator" icon="/usr/share/icons/gnome/16x16/mimetypes/empty.png">
+          <action name="Execute">
+            <command>ede-calc</command>
+          </action>
+        </item>
+        <item label="EDE Tips" icon="/usr/share/icons/gnome/16x16/status/dialog-information.png">
+          <action name="Execute">
+            <command>ede-tip</command>
+          </action>
+        </item>
+        <item label="FOX Calculator" icon="/usr/share/icons/gnome/16x16/apps/accessories-calculator.png">
+          <action name="Execute">
+            <command>calculator</command>
+            <startupnotify>
+              <wmclass>Calculator</wmclass>
+              <name>FOX Calculator</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/accessories-calculator.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="FOX Text Editor" icon="/usr/share/icons/gnome/16x16/apps/accessories-text-editor.png">
+          <action name="Execute">
+            <command>adie</command>
+            <startupnotify>
+              <wmclass>Adie</wmclass>
+              <name>FOX Text Editor</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/accessories-text-editor.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="File Manager PCManFM" icon="/usr/share/icons/gnome/16x16/apps/system-file-manager.png">
+          <action name="Execute">
+            <command>pcmanfm</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>File Manager PCManFM</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/system-file-manager.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Font Viewer" icon="/usr/share/icons/gnome/16x16/apps/preferences-desktop-font.png">
+          <action name="Execute">
+            <command>gnome-font-viewer</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Font Viewer</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/preferences-desktop-font.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Gtk VNC Viewer" icon="/usr/share/icons/gnome/16x16/apps/gnome-remote-desktop.png">
+          <action name="Execute">
+            <command>/usr/bin/gvncviewer</command>
+          </action>
+        </item>
+        <item label="Gxmessage" icon="/usr/share/icons/hicolor/48x48/apps/gxmessage.png">
+          <action name="Execute">
+            <command>gxmessage</command>
+          </action>
+        </item>
+        <item label="LXTerminal" icon="/home/brian/.icons/lxterminal.png">
+          <action name="Execute">
+            <command>lxterminal</command>
+          </action>
+        </item>
+        <item label="MacSlow's Cairo-Clock" icon="/usr/share/pixmaps/cairo-clock.png">
+          <action name="Execute">
+            <command>cairo-clock</command>
+          </action>
+        </item>
+        <item label="Mount-gtk" icon="/usr/share/icons/gnome/16x16/devices/drive-removable-media.png">
+          <action name="Execute">
+            <command>mount-gtk</command>
+          </action>
+        </item>
+        <item label="Pacman Express" icon="/usr/share/pixmaps/pacmanexpress.png">
+          <action name="Execute">
+            <command>/opt/pacmanexpress/ssx /opt/pacmanexpress/pacmanexpress</command>
+          </action>
+        </item>
+        <item label="Root Terminal" icon="/home/brian/.icons/gksu-root-terminal.png">
+          <action name="Execute">
+            <command>gksu -l gnome-terminal</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Root Terminal</name>
+              <icon>/home/brian/.icons/gksu-root-terminal.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Vi IMproved" icon="/home/brian/.icons/gvim.png">
+          <action name="Execute">
+            <command>gvim -f</command>
+          </action>
+        </item>
+        <item label="X11 Terminal" icon="/usr/share/icons/gnome/16x16/apps/utilities-terminal.png">
+          <action name="Execute">
+            <command>xterm -fn 9x15</command>
+          </action>
+        </item>
+        <item label="Xarchiver" icon="/usr/share/icons/hicolor/16x16/apps/xarchiver.png">
+          <action name="Execute">
+            <command>xarchiver</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xarchiver</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/xarchiver.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Xcalc Calculator" icon="/usr/share/icons/gnome/16x16/apps/accessories-calculator.png">
+          <action name="Execute">
+            <command>xcalc</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xcalc Calculator</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/accessories-calculator.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Xfi" icon="/usr/share/pixmaps/xfi.png">
+          <action name="Execute">
+            <command>xfi</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xfi</name>
+              <icon>/usr/share/pixmaps/xfi.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Xfp" icon="/usr/share/pixmaps/xfp.png">
+          <action name="Execute">
+            <command>xfp</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xfp</name>
+              <icon>/usr/share/pixmaps/xfp.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Xfv" icon="/usr/share/pixmaps/xfv.png">
+          <action name="Execute">
+            <command>xfv</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xfv</name>
+              <icon>/usr/share/pixmaps/xfv.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Xfw" icon="/usr/share/pixmaps/xfw.png">
+          <action name="Execute">
+            <command>xfw</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xfw</name>
+              <icon>/usr/share/pixmaps/xfw.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="compton" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>compton</command>
+          </action>
+        </item>
+    </menu> <!-- Accessories -->
+    <menu id="Games Menu" label="Games" icon="/usr/share/icons/gnome/16x16/categories/gnome-joystick.png">
+        <item label="XGalaga" icon="/usr/share/pixmaps/xgalaga.png">
+          <action name="Execute">
+            <command>xgalaga</command>
+          </action>
+        </item>
+        <item label="aafire" icon="">
+          <action name="Execute">
+            <command>aafire</command>
+          </action>
+        </item>
+    </menu> <!-- Games -->
+    <menu id="Graphics Menu" label="Graphics" icon="/usr/share/icons/gnome/16x16/categories/gnome-graphics.png">
+        <item label="Blender" icon="/usr/share/icons/hicolor/16x16/apps/blender.png">
+          <action name="Execute">
+            <command>blender</command>
+          </action>
+        </item>
+        <item label="Feh" icon="/usr/share/feh/images/feh.png">
+          <action name="Execute">
+            <command>feh</command>
+          </action>
+        </item>
+        <item label="G3DViewer" icon="/usr/share/pixmaps/g3dviewer.png">
+          <action name="Execute">
+            <command>g3dviewer</command>
+          </action>
+        </item>
+        <item label="GNU Image Manipulation Program" icon="/usr/share/icons/hicolor/16x16/apps/gimp.png">
+          <action name="Execute">
+            <command>gimp-2.8</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>GNU Image Manipulation Program</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/gimp.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="GQview" icon="/usr/share/pixmaps/gqview.png">
+          <action name="Execute">
+            <command>gqview -r</command>
+          </action>
+        </item>
+        <item label="GV" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>gv</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>GV</name>
+              <icon>/usr/share/icons/gnome/16x16/mimetypes/exec.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Gaw Gtk Analog Wave viewer" icon="/usr/share/pixmaps/gaw.png">
+          <action name="Execute">
+            <command>gaw</command>
+          </action>
+        </item>
+        <item label="Geeqie" icon="/home/brian/.icons/geeqie.png">
+          <action name="Execute">
+            <command>geeqie -r</command>
+          </action>
+        </item>
+        <item label="Image Viewer" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>ede-image-view</command>
+          </action>
+        </item>
+        <item label="Image Viewer" icon="/home/brian/.icons/gpicview.png">
+          <action name="Execute">
+            <command>gpicview</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Image Viewer</name>
+              <icon>/home/brian/.icons/gpicview.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Inkscape" icon="/usr/share/icons/hicolor/16x16/apps/inkscape.png">
+          <action name="Execute">
+            <command>inkscape</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Inkscape</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/inkscape.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Konstruktor" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>konstruktor</command>
+          </action>
+        </item>
+        <item label="LibreOffice Draw" icon="/usr/share/icons/gnome/16x16/apps/libreoffice-draw.png">
+          <action name="Execute">
+            <command>libreoffice --draw</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>libreoffice-draw</wmclass>
+              <name>LibreOffice Draw</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/libreoffice-draw.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Stopmotion" icon="/usr/share/pixmaps/stopmotion.png">
+          <action name="Execute">
+            <command>/usr/bin/stopmotion</command>
+          </action>
+        </item>
+        <item label="Wings3d" icon="/usr/share/pixmaps/wings3d.png">
+          <action name="Execute">
+            <command>wings3d</command>
+          </action>
+        </item>
+        <item label="xfig" icon="/home/brian/.icons/xfig.png">
+          <action name="Execute">
+            <command>/usr/bin/xfig</command>
+          </action>
+        </item>
+        <item label="xzgv" icon="/usr/share/pixmaps/xzgv.xpm">
+          <action name="Execute">
+            <command>xzgv</command>
+          </action>
+        </item>
+    </menu> <!-- Graphics -->
+    <menu id="Internet Menu" label="Internet" icon="/usr/share/icons/gnome/16x16/categories/gnome-globe.png">
+        <item label="Avahi SSH Server Browser" icon="/usr/share/icons/gnome/16x16/devices/network-wired.png">
+          <action name="Execute">
+            <command>/usr/bin/bssh</command>
+          </action>
+        </item>
+        <item label="Avahi VNC Server Browser" icon="/usr/share/icons/gnome/16x16/devices/network-wired.png">
+          <action name="Execute">
+            <command>/usr/bin/bvnc</command>
+          </action>
+        </item>
+        <item label="DHCP Client Daemon Applet" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>/usr/bin/dhcpcd-gtk</command>
+          </action>
+        </item>
+        <item label="Ekiga Softphone" icon="/usr/share/icons/hicolor/16x16/apps/ekiga.png">
+          <action name="Execute">
+            <command>ekiga</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Ekiga Softphone</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/ekiga.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Ettercap" icon="/home/brian/.icons/ettercap.png">
+          <action name="Execute">
+            <command>ettercap-pkexec -G</command>
+          </action>
+        </item>
+        <item label="Firefox" icon="/usr/share/icons/hicolor/16x16/apps/firefox.png">
+          <action name="Execute">
+            <command>/usr/lib/firefox/firefox</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Firefox</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/firefox.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Links" icon="/usr/share/pixmaps/links_32x32.xpm">
+          <action name="Execute">
+            <command>xlinks -g</command>
+          </action>
+        </item>
+        <item label="OpenNX Connection Wizard" icon="/usr/share/icons/hicolor/16x16/apps/opennx-wizard.png">
+          <action name="Execute">
+            <command>/usr/bin/opennx --wizard</command>
+          </action>
+        </item>
+        <item label="OpenNX Session Administrator" icon="/usr/share/icons/hicolor/16x16/apps/opennx-admin.png">
+          <action name="Execute">
+            <command>/usr/bin/opennx --admin</command>
+          </action>
+        </item>
+        <item label="OpenNX client" icon="/usr/share/icons/hicolor/16x16/apps/nx.png">
+          <action name="Execute">
+            <command>/usr/bin/opennx</command>
+          </action>
+        </item>
+        <item label="Remmina Remote Desktop Client" icon="/usr/share/icons/hicolor/16x16/apps/remmina.png">
+          <action name="Execute">
+            <command>remmina</command>
+          </action>
+        </item>
+        <item label="X11VNC Server" icon="/usr/share/icons/Mist/16x16/devices/computer.png">
+          <action name="Execute">
+            <command>x11vnc -gui tray=setpass -rfbport PROMPT -bg -o %HOME/.x11vnc.log.%VNCDISPLAY</command>
+          </action>
+        </item>
+        <item label="Zenmap" icon="/usr/share/zenmap/pixmaps/zenmap.png">
+          <action name="Execute">
+            <command>zenmap</command>
+          </action>
+        </item>
+        <item label="Zenmap (as root)" icon="/usr/share/zenmap/pixmaps/zenmap.png">
+          <action name="Execute">
+            <command>/usr/share/zenmap/su-to-zenmap.sh</command>
+          </action>
+        </item>
+    </menu> <!-- Internet -->
+    <menu id="Office Menu" label="Office" icon="/usr/share/icons/gnome/16x16/categories/gnome-applications.png">
+        <item label="Adobe Reader 9" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>/opt/Adobe/Reader9/bin/acroread</command>
+          </action>
+        </item>
+        <item label="GV" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>gv</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>GV</name>
+              <icon>/usr/share/icons/gnome/16x16/mimetypes/exec.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="LibreOffice Base" icon="/usr/share/icons/gnome/16x16/apps/libreoffice-base.png">
+          <action name="Execute">
+            <command>libreoffice --base</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>libreoffice-base</wmclass>
+              <name>LibreOffice Base</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/libreoffice-base.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="LibreOffice Calc" icon="/usr/share/icons/gnome/16x16/apps/libreoffice-calc.png">
+          <action name="Execute">
+            <command>libreoffice --calc</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>libreoffice-calc</wmclass>
+              <name>LibreOffice Calc</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/libreoffice-calc.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="LibreOffice Draw" icon="/usr/share/icons/gnome/16x16/apps/libreoffice-draw.png">
+          <action name="Execute">
+            <command>libreoffice --draw</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>libreoffice-draw</wmclass>
+              <name>LibreOffice Draw</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/libreoffice-draw.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="LibreOffice Impress" icon="/usr/share/icons/gnome/16x16/apps/libreoffice-impress.png">
+          <action name="Execute">
+            <command>libreoffice --impress</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>libreoffice-impress</wmclass>
+              <name>LibreOffice Impress</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/libreoffice-impress.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="LibreOffice Writer" icon="/usr/share/icons/gnome/16x16/apps/libreoffice-writer.png">
+          <action name="Execute">
+            <command>libreoffice --writer</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>libreoffice-writer</wmclass>
+              <name>LibreOffice Writer</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/libreoffice-writer.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="RAKT PDF Viewer" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>raktpdf</command>
+          </action>
+        </item>
+        <item label="Xpdf" icon="/home/brian/.icons/xpdf.xpm">
+          <action name="Execute">
+            <command>xpdf</command>
+          </action>
+        </item>
+        <item label="Zathura" icon="">
+          <action name="Execute">
+            <command>zathura</command>
+          </action>
+        </item>
+        <item label="apvlv" icon="">
+          <action name="Execute">
+            <command>apvlv</command>
+          </action>
+        </item>
+    </menu> <!-- Office -->
+    <menu id="Programming Menu" label="Programming" icon="/usr/share/icons/gnome/16x16/categories/gnome-devel.png">
+        <item label="CMake" icon="/home/brian/.icons/CMakeSetup32.png">
+          <action name="Execute">
+            <command>cmake-gui</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>CMake</name>
+              <icon>/home/brian/.icons/CMakeSetup32.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Eeschema" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>eeschema</command>
+          </action>
+        </item>
+        <item label="FLUID" icon="/usr/share/icons/hicolor/16x16/apps/fluid.png">
+          <action name="Execute">
+            <command>fluid</command>
+          </action>
+        </item>
+        <item label="GNU Octave" icon="/usr/share/octave/3.6.4/imagelib/octave-logo.svg">
+          <action name="Execute">
+            <command>xterm -T "GNU Octave" -e /usr/bin/octave</command>
+          </action>
+        </item>
+        <item label="KiCad" icon="/usr/share/icons/hicolor/48x48/apps/kicad.png">
+          <action name="Execute">
+            <command>kicad</command>
+          </action>
+        </item>
+        <item label="Qt4 Assistant " icon="/usr/share/icons/hicolor/32x32/apps/assistant-qt4.png">
+          <action name="Execute">
+            <command>assistant-qt4</command>
+          </action>
+        </item>
+        <item label="Qt4 Designer" icon="/usr/share/icons/hicolor/128x128/apps/designer-qt4.png">
+          <action name="Execute">
+            <command>designer-qt4</command>
+          </action>
+        </item>
+        <item label="Qt4 Linguist " icon="/usr/share/icons/hicolor/16x16/apps/linguist-qt4.png">
+          <action name="Execute">
+            <command>linguist-qt4</command>
+          </action>
+        </item>
+        <item label="Qt4 QDbusViewer " icon="/usr/share/icons/hicolor/32x32/apps/qdbusviewer-qt4.png">
+          <action name="Execute">
+            <command>qdbusviewer-qt4</command>
+          </action>
+        </item>
+        <item label="Vi IMproved" icon="/home/brian/.icons/gvim.png">
+          <action name="Execute">
+            <command>gvim -f</command>
+          </action>
+        </item>
+    </menu> <!-- Programming -->
+    <menu id="Science & Math Menu" label="Science & Math" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+        <item label="GNU Octave" icon="/usr/share/octave/3.6.4/imagelib/octave-logo.svg">
+          <action name="Execute">
+            <command>xterm -T "GNU Octave" -e /usr/bin/octave</command>
+          </action>
+        </item>
+        <item label="GSpiceUI" icon="">
+          <action name="Execute">
+            <command>gspiceui</command>
+          </action>
+        </item>
+    </menu> <!-- Science & Math -->
+    <menu id="Sound & Video Menu" label="Sound & Video" icon="/usr/share/icons/gnome/16x16/categories/gnome-multimedia.png">
+        <item label="Alsaplayer" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>alsaplayer</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Alsaplayer</name>
+              <icon>/usr/share/icons/gnome/16x16/mimetypes/exec.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Audacious" icon="/usr/share/icons/hicolor/48x48/apps/audacious.png">
+          <action name="Execute">
+            <command>audacious</command>
+          </action>
+        </item>
+        <item label="Audacious2" icon="/usr/share/icons/hicolor/48x48/apps/audacious2.png">
+          <action name="Execute">
+            <command>audacious2</command>
+          </action>
+        </item>
+        <item label="Audio Mixer" icon="/usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png">
+          <action name="Execute">
+            <command>xfce4-mixer</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Audio Mixer</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Consonance" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>consonance</command>
+          </action>
+        </item>
+        <item label="FFADO Mixer" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>ffado-mixer</command>
+          </action>
+        </item>
+        <item label="GTK sound mixer" icon="/usr/share/aumix/aumix.xpm">
+          <action name="Execute">
+            <command>/usr/bin/aumix</command>
+          </action>
+        </item>
+        <item label="Goggles Music Manager" icon="/usr/share/icons/hicolor/16x16/apps/gogglesmm.png">
+          <action name="Execute">
+            <command>gogglesmm</command>
+          </action>
+        </item>
+        <item label="Guayadeque Music Player" icon="/usr/share/pixmaps/guayadeque.png">
+          <action name="Execute">
+            <command>guayadeque</command>
+          </action>
+        </item>
+        <item label="Music Player" icon="/usr/share/pixmaps/lxmusic.png">
+          <action name="Execute">
+            <command>lxmusic</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Music Player</name>
+              <icon>/usr/share/pixmaps/lxmusic.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="PNMixer" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>pnmixer</command>
+          </action>
+        </item>
+        <item label="QT V4L2 test Utility" icon="/usr/share/icons/hicolor/16x16/apps/qv4l2.png">
+          <action name="Execute">
+            <command>qv4l2</command>
+          </action>
+        </item>
+        <item label="SimpleBurn" icon="/home/brian/.icons/simpleburn.png">
+          <action name="Execute">
+            <command>simpleburn</command>
+          </action>
+        </item>
+        <item label="Stopmotion" icon="/usr/share/pixmaps/stopmotion.png">
+          <action name="Execute">
+            <command>/usr/bin/stopmotion</command>
+          </action>
+        </item>
+        <item label="Videos" icon="/usr/share/icons/hicolor/16x16/apps/totem.png">
+          <action name="Execute">
+            <command>totem</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Videos</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/totem.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Xfburn" icon="/usr/share/icons/gnome/16x16/devices/media-cdrom.png">
+          <action name="Execute">
+            <command>xfburn</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xfburn</name>
+              <icon>/usr/share/icons/gnome/16x16/devices/media-cdrom.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+    </menu> <!-- Sound & Video -->
+    <menu id="System Tools Menu" label="System Tools" icon="/usr/share/icons/gnome/16x16/categories/gnome-system.png">
+        <item label="Avahi Zeroconf Browser" icon="/usr/share/icons/gnome/16x16/devices/network-wired.png">
+          <action name="Execute">
+            <command>/usr/bin/avahi-discover</command>
+          </action>
+        </item>
+        <item label="Bulk Rename" icon="/usr/share/icons/hicolor/16x16/apps/Thunar.png">
+          <action name="Execute">
+            <command>/usr/lib/Thunar/ThunarBulkRename</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Bulk Rename</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/Thunar.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Cairo Composite Manager" icon="/usr/share/pixmaps/cairo-compmgr/cairo-compmgr.png">
+          <action name="Execute">
+            <command>cairo-compmgr</command>
+          </action>
+        </item>
+        <item label="Conky Status Display" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>conky</command>
+          </action>
+        </item>
+        <item label="DHCP Client Daemon Applet" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>/usr/bin/dhcpcd-gtk</command>
+          </action>
+        </item>
+        <item label="Fluxbox Tray Menu." icon="/usr/share/icons/Mist/16x16/apps/start-here.png">
+          <action name="Execute">
+            <command>/usr/bin/ftmenu</command>
+          </action>
+        </item>
+        <item label="Fluxbox XKB Switcher" icon="/usr/share/icons/gnome/16x16/devices/keyboard.png">
+          <action name="Execute">
+            <command>fbxkb</command>
+          </action>
+        </item>
+        <item label="GSmartControl" icon="/usr/share/icons/hicolor/16x16/apps/gsmartcontrol.png">
+          <action name="Execute">
+            <command>/usr/bin/gsmartcontrol</command>
+          </action>
+        </item>
+        <item label="Htop" icon="/home/brian/.icons/htop.png">
+          <action name="Execute">
+            <command>xterm -T "Htop" -e htop</command>
+          </action>
+        </item>
+        <item label="LSHW" icon="/usr/share/lshw/artwork/logo.svg">
+          <action name="Execute">
+            <command>/usr/sbin/gtk-lshw</command>
+          </action>
+        </item>
+        <item label="LXDE Panel" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>lxpanel</command>
+            <startupnotify>
+              <wmclass>lxpanel</wmclass>
+              <name>LXDE Panel</name>
+              <icon>/usr/share/icons/gnome/16x16/mimetypes/exec.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Lock Screen" icon="/usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png">
+          <action name="Execute">
+            <command>slock</command>
+          </action>
+        </item>
+        <item label="Manage Printing" icon="/usr/share/icons/hicolor/16x16/apps/cups.png">
+          <action name="Execute">
+            <command>/usr/bin/xdg-open http://localhost:631/</command>
+          </action>
+        </item>
+        <item label="Nepomuk Backup" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>nepomukbackup</command>
+          </action>
+        </item>
+        <item label="Nepomuk Cleaner" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>nepomukcleaner</command>
+          </action>
+        </item>
+        <item label="Pango Viewer" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>pango-view -t "Hello world!"</command>
+          </action>
+        </item>
+        <item label="ROX Filer" icon="/usr/share/pixmaps/rox.png">
+          <action name="Execute">
+            <command>rox</command>
+          </action>
+        </item>
+        <item label="ROXTerm" icon="/usr/share/icons/gnome/16x16/mimetypes/exec.png">
+          <action name="Execute">
+            <command>roxterm</command>
+          </action>
+        </item>
+        <item label="Run Command" icon="/usr/share/icons/gnome/16x16/actions/system-run.png">
+          <action name="Execute">
+            <command>gmrun</command>
+            <startupnotify>
+              <wmclass>gmrun</wmclass>
+              <name>Run Command</name>
+              <icon>/usr/share/icons/gnome/16x16/actions/system-run.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Run Command" icon="/usr/share/icons/gnome/16x16/actions/system-run.png">
+          <action name="Execute">
+            <command>xde-run</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>xde-run</wmclass>
+              <name>Run Command</name>
+              <icon>/usr/share/icons/gnome/16x16/actions/system-run.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Services" icon="/usr/share/icons/gnome/16x16/categories/applications-system.png">
+          <action name="Execute">
+            <command>systemadm</command>
+          </action>
+        </item>
+        <item label="Software" icon="/usr/share/icons/gnome/16x16/apps/system-software-install.png">
+          <action name="Execute">
+            <command>gpk-application</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Software</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/system-software-install.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Software Update" icon="/usr/share/icons/gnome/16x16/apps/system-software-update.png">
+          <action name="Execute">
+            <command>gpk-update-viewer</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Software Update</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/system-software-update.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Task Manager" icon="/usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png">
+          <action name="Execute">
+            <command>lxtask</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Task Manager</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Terminal" icon="/usr/share/icons/gnome/16x16/apps/utilities-terminal.png">
+          <action name="Execute">
+            <command>gnome-terminal</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Terminal</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/utilities-terminal.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Thunar File Manager" icon="/usr/share/icons/hicolor/16x16/apps/Thunar.png">
+          <action name="Execute">
+            <command>thunar</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Thunar File Manager</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/Thunar.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="UXTerm" icon="/home/brian/.icons/xterm-color_48x48.xpm">
+          <action name="Execute">
+            <command>uxterm</command>
+          </action>
+        </item>
+        <item label="Unclutter" icon="/home/brian/.icons/wmaker-keyboard.png">
+          <action name="Execute">
+            <command>/usr/bin/unclutter</command>
+          </action>
+        </item>
+        <item label="Wireshark" icon="/usr/share/icons/hicolor/16x16/apps/wireshark.png">
+          <action name="Execute">
+            <command>wireshark</command>
+          </action>
+        </item>
+        <item label="XDE Panel" icon="/usr/share/icons/hicolor/48x48/apps/perlpanel-panel.png">
+          <action name="Execute">
+            <command>xde-panel</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>xde-panel</wmclass>
+              <name>XDE Panel</name>
+              <icon>/usr/share/icons/hicolor/48x48/apps/perlpanel-panel.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="XTerm" icon="/home/brian/.icons/xterm-color_48x48.xpm">
+          <action name="Execute">
+            <command>xterm</command>
+          </action>
+        </item>
+        <item label="Xfce Terminal" icon="/usr/share/icons/gnome/16x16/apps/utilities-terminal.png">
+          <action name="Execute">
+            <command>xfce4-terminal</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xfce Terminal</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/utilities-terminal.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Xfe" icon="/usr/share/pixmaps/xfe.png">
+          <action name="Execute">
+            <command>xfe</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Xfe</name>
+              <icon>/usr/share/pixmaps/xfe.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="dconf Editor" icon="/usr/share/icons/hicolor/16x16/apps/dconf-editor.png">
+          <action name="Execute">
+            <command>dconf-editor</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>dconf Editor</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/dconf-editor.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="urxvt" icon="/usr/share/icons/gnome/16x16/apps/utilities-terminal.png">
+          <action name="Execute">
+            <command>urxvt</command>
+          </action>
+        </item>
+        <item label="urxvt (client)" icon="/usr/share/icons/gnome/16x16/apps/utilities-terminal.png">
+          <action name="Execute">
+            <command>urxvtc</command>
+          </action>
+        </item>
+        <item label="urxvt (tabbed)" icon="/usr/share/icons/gnome/16x16/apps/utilities-terminal.png">
+          <action name="Execute">
+            <command>urxvt-tabbed</command>
+          </action>
+        </item>
+    </menu> <!-- System Tools -->
+    <separator />
+    <menu id="X11 Tools Menu" label="X11 Tools" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+        <item label="Openbox Window Properties" icon="/usr/share/icons/gnome/16x16/categories/preferences-desktop.png">
+          <action name="Execute">
+            <command>obxprop|gxmessage -name obxprop -geometry 400x400 -font 'Liberation Mono 8' -title 'X Window Properties' -file -</command>
+          </action>
+        </item>
+        <item label="X Clock" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xclock -geometry 164x164</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>xclock</wmclass>
+              <name>X Clock</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/xlogo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="X Display Atoms" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xlsatoms | gxmessage -name xlsatoms -geometry 400x400 -font 'Liberation Mono 8' -title 'X Display Atoms' -file -</command>
+          </action>
+        </item>
+        <item label="X Display Clients" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xlsclients -a -l | gxmessage -name xlsclients -geometry 400x400 'Liberation Mono 8' -title 'X Display Clients' -file -</command>
+          </action>
+        </item>
+        <item label="X Display Properties" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xdpyinfo|gxmessage -name xdpyinfo -geometry 450x450 -font 'Liberation Mono 8' -title 'X Display Properties' -file -</command>
+          </action>
+        </item>
+        <item label="X Display Refresh" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xrefresh</command>
+          </action>
+        </item>
+        <item label="X Events" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xterm -T 'X Events' -e xev</command>
+          </action>
+        </item>
+        <item label="X Font Select" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xfontsel</command>
+          </action>
+        </item>
+        <item label="X Input" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xinput|gxmessage -name xinput -font 'Liberation Mono 8' -title 'X Input Information' -file -</command>
+          </action>
+        </item>
+        <item label="X Keyboard LEDs" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xkbvleds</command>
+          </action>
+        </item>
+        <item label="X Keyboard State" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xkbwatch</command>
+          </action>
+        </item>
+        <item label="X Kill" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xkill</command>
+          </action>
+        </item>
+        <item label="X Mod Key Mapping" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xmodmap|gxmessage -name xmodmap -font 'Liberation Mono 8' -title 'X Mod Key Information' -file -</command>
+          </action>
+        </item>
+        <item label="X RandR" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xrandr|gxmessage -name xrandr -font 'Liberation Mono 8' -title 'X Window Properties' -file -</command>
+          </action>
+        </item>
+        <item label="X Resource Editor" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>editres</command>
+            <startupnotify>
+              <wmclass>editres</wmclass>
+              <name>X Resource Editor</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/xlogo.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="X Resource Top" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xterm -T "X Resource Top" -e xrestop</command>
+          </action>
+        </item>
+        <item label="X Settings" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xset -q|gxmessage -name xset -geometry 600x420 -wrap -font 'Liberation Mono 8' -title 'X Settings' -file -</command>
+          </action>
+        </item>
+        <item label="X Video Information" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xvinfo|gxmessage -name xvinfo -font 'Liberation Mono 8' -title 'X Video Information' -file -</command>
+          </action>
+        </item>
+        <item label="X Window Dump" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>bash -c "set -e; xwd>`zenity --entry --text Filename`"</command>
+          </action>
+        </item>
+        <item label="X Window Dump Display" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>bash -c "set -e; xwd>`zenity --entry --text Filename`"</command>
+          </action>
+        </item>
+        <item label="X Window Information" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xwininfo -root -all -frame|gxmessage -name xwininfo -geometry 750x500 -font 'Liberation Mono 8' -title 'X Windows' -file -</command>
+          </action>
+        </item>
+        <item label="X Window Properties" icon="/usr/share/icons/hicolor/16x16/apps/xlogo.png">
+          <action name="Execute">
+            <command>xprop|gxmessage -name xprop -geometry 400x400 -font 'Liberation Mono 8' -title 'X Window Properties' -file -</command>
+          </action>
+        </item>
+    </menu> <!-- X11 Tools -->
+    <menu id="Dock Apps Menu" label="Dock Apps" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+        <item label="Alarm Clock Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmclockmon</command>
+            <startupnotify>
+              <wmclass>wmclockmon</wmclass>
+              <name>Alarm Clock Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Alsa Mixer" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>AlsaMixer.app</command>
+            <startupnotify>
+              <wmclass>alsamixer_app</wmclass>
+              <name>Alsa Mixer</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Analog and Digital Clock" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmtime</command>
+            <startupnotify>
+              <wmclass>wmtime</wmclass>
+              <name>Analog and Digital Clock</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Audio Mixer" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmmixer -w</command>
+            <startupnotify>
+              <wmclass>wmmixer</wmclass>
+              <name>Audio Mixer</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Battery Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmbattery</command>
+            <startupnotify>
+              <wmclass>wmbattery</wmclass>
+              <name>Battery Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Binary Clock Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmBinClock</command>
+            <startupnotify>
+              <wmclass>wmBinClock</wmclass>
+              <name>Binary Clock Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Blob Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmblob</command>
+            <startupnotify>
+              <wmclass>wmblob</wmclass>
+              <name>Blob Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Bubble Monitor" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>bubblemon</command>
+            <startupnotify>
+              <wmclass>bubblemon</wmclass>
+              <name>Bubble Monitor</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="CPU Load Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmcpuload</command>
+            <startupnotify>
+              <wmclass>wmcpuload</wmclass>
+              <name>CPU Load Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="CPU Load Dock App (bars)" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmcpu</command>
+            <startupnotify>
+              <wmclass>wmcpu</wmclass>
+              <name>CPU Load Dock App (bars)</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Calculator Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmcalc</command>
+            <startupnotify>
+              <wmclass>wmcalc</wmclass>
+              <name>Calculator Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Calendar Clock Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmCalClock</command>
+            <startupnotify>
+              <wmclass>wmCalClock</wmclass>
+              <name>Calendar Clock Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Calendar Clock Keyboard Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmCalClockKbd</command>
+            <startupnotify>
+              <wmclass>wmCalClockKbd</wmclass>
+              <name>Calendar Clock Keyboard Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Clock Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>lal</command>
+          </action>
+        </item>
+        <item label="Core CPU Load" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmcore</command>
+            <startupnotify>
+              <wmclass>wmcore</wmclass>
+              <name>Core CPU Load</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Launcher Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmappl</command>
+            <startupnotify>
+              <wmclass>wmappl</wmclass>
+              <name>Launcher Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Monitoring Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>allin1</command>
+            <startupnotify>
+              <wmclass>allin1</wmclass>
+              <name>Monitoring Dock App</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Network Device Monitor" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmnd</command>
+          </action>
+        </item>
+        <item label="Network Monitor" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmnet</command>
+          </action>
+        </item>
+        <item label="System Monitor" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmsysmon</command>
+          </action>
+        </item>
+        <item label="Timer Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmtimer</command>
+          </action>
+        </item>
+        <item label="Trash Can Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmtrash</command>
+          </action>
+        </item>
+        <item label="Weather Monitor Dock App" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmWeather</command>
+          </action>
+        </item>
+        <item label="Wifi Monitor" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmwave</command>
+          </action>
+        </item>
+        <item label="Wifi Monitor (LED)" icon="/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png">
+          <action name="Execute">
+            <command>wmwifi</command>
+          </action>
+        </item>
+    </menu> <!-- Dock Apps -->
+    <menu id="Other Menu" label="Other" icon="/usr/share/icons/gnome/16x16/categories/gnome-other.png">
+        <item label="About EDE" icon="/usr/share/icons/gnome/16x16/actions/help-about.png">
+          <action name="Execute">
+            <command>ede-about</command>
+          </action>
+        </item>
+        <item label="E16" icon="/usr/share/e16/icons/e16.png">
+          <action name="Execute">
+            <command>e16</command>
+          </action>
+        </item>
+        <item label="Font Viewer" icon="/usr/share/pixmaps/gfontview.png">
+          <action name="Execute">
+            <command>gfontview</command>
+          </action>
+        </item>
+        <item label="Help" icon="/usr/share/icons/gnome/16x16/apps/help-browser.png">
+          <action name="Execute">
+            <command>ede-help</command>
+          </action>
+        </item>
+        <item label="Retrovol sound mixer" icon="/home/brian/.icons/wmaker-sound_mixer.png">
+          <action name="Execute">
+            <command>/usr/bin/retrovol</command>
+          </action>
+        </item>
+        <item label="Run Program..." icon="/usr/share/icons/gnome/16x16/actions/system-run.png">
+          <action name="Execute">
+            <command>ede-launch</command>
+          </action>
+        </item>
+        <item label="Screen Lock" icon="/usr/share/icons/gnome/16x16/actions/system-lock-screen.png">
+          <action name="Execute">
+            <command>ede-screen-lock</command>
+          </action>
+        </item>
+        <item label="Simple Tray XKB Indicator" icon="/home/brian/.icons/wmaker-keyboard.png">
+          <action name="Execute">
+            <command>sbxkb</command>
+          </action>
+        </item>
+        <item label="TigerVNC viewer" icon="/usr/share/icons/hicolor/16x16/apps/tigervnc.png">
+          <action name="Execute">
+            <command>/usr/bin/vncviewer</command>
+          </action>
+        </item>
+        <item label="gEDA Attribute Editor" icon="/usr/share/icons/hicolor/48x48/apps/geda-gattrib.png">
+          <action name="Execute">
+            <command>gattrib</command>
+          </action>
+        </item>
+        <item label="gEDA Schematic Editor" icon="/usr/share/icons/hicolor/48x48/apps/geda-gschem.png">
+          <action name="Execute">
+            <command>gschem</command>
+          </action>
+        </item>
+    </menu> <!-- Other -->
+    <separator />
+    <menu id="Preferences Menu" label="Preferences" icon="/usr/share/icons/gnome/16x16/categories/preferences-desktop.png">
+        <item label="Adobe Flash Player" icon="/usr/share/icons/hicolor/16x16/apps/flash-player-properties.png">
+          <action name="Execute">
+            <command>flash-player-properties</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Adobe Flash Player</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/flash-player-properties.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Configure EDE" icon="/usr/share/icons/Mist/16x16/devices/computer.png">
+          <action name="Execute">
+            <command>ede-conf</command>
+          </action>
+        </item>
+        <item label="Customize Look and Feel" icon="/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png">
+          <action name="Execute">
+            <command>lxappearance</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Customize Look and Feel</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Desktop Preferences" icon="/usr/share/icons/Mist/16x16/places/user-desktop.png">
+          <action name="Execute">
+            <command>pcmanfm --desktop-pref</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Desktop Preferences</name>
+              <icon>/usr/share/icons/Mist/16x16/places/user-desktop.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="File Manager" icon="/usr/share/icons/gnome/16x16/apps/system-file-manager.png">
+          <action name="Execute">
+            <command>thunar-settings</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>File Manager</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/system-file-manager.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Firewall Builder" icon="/usr/share/icons/hicolor/16x16/apps/fwbuilder.png">
+          <action name="Execute">
+            <command>fwbuilder</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Firewall Builder</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/fwbuilder.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Gtk Theme Switch 2" icon="/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png">
+          <action name="Execute">
+            <command>gtk-theme-switch2</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Gtk Theme Switch 2</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Gtk2 Change Theme" icon="/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png">
+          <action name="Execute">
+            <command>gtk-chtheme</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Gtk2 Change Theme</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Gtk2 Preferences" icon="/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png">
+          <action name="Execute">
+            <command>gtk2_prefs</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Gtk2 Preferences</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Keyboard Settings" icon="/usr/share/icons/gnome/16x16/apps/preferences-desktop-keyboard.png">
+          <action name="Execute">
+            <command>lxkb_config</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Keyboard Settings</name>
+              <icon>/usr/share/icons/gnome/16x16/apps/preferences-desktop-keyboard.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Keyboard and Mouse" icon="/usr/share/icons/gnome/16x16/devices/input-keyboard.png">
+          <action name="Execute">
+            <command>xde-input -editor</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <wmclass>xde-input</wmclass>
+              <name>Keyboard and Mouse</name>
+              <icon>/usr/share/icons/gnome/16x16/devices/input-keyboard.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="LXDE Panel Settings" icon="/usr/share/icons/gnome/16x16/categories/preferences-desktop.png">
+          <action name="Execute">
+            <command>lxpanelctl config</command>
+            <startupnotify>
+              <wmclass>lxpanel</wmclass>
+              <name>LXDE Panel Settings</name>
+              <icon>/usr/share/icons/gnome/16x16/categories/preferences-desktop.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Monitor Settings" icon="/usr/share/icons/Mist/16x16/devices/display.png">
+          <action name="Execute">
+            <command>lxrandr</command>
+          </action>
+        </item>
+        <item label="Network Connections" icon="/usr/share/icons/gnome/16x16/categories/preferences-system-network.png">
+          <action name="Execute">
+            <command>nm-connection-editor</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Network Connections</name>
+              <icon>/usr/share/icons/gnome/16x16/categories/preferences-system-network.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Openbox Configuration Manager" icon="/home/brian/.icons/obconf.png">
+          <action name="Execute">
+            <command>obconf</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Openbox Configuration Manager</name>
+              <icon>/home/brian/.icons/obconf.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Panel tint2" icon="/usr/share/pixmaps/tint2conf.png">
+          <action name="Execute">
+            <command>tint2conf</command>
+          </action>
+        </item>
+        <item label="Pop-Up Notifications" icon="/usr/share/icons/hicolor/16x16/apps/notification-properties.png">
+          <action name="Execute">
+            <command>/usr/bin/notification-properties</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Pop-Up Notifications</name>
+              <icon>/usr/share/icons/hicolor/16x16/apps/notification-properties.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Preferred Applications" icon="/usr/share/icons/gnome/16x16/mimetypes/empty.png">
+          <action name="Execute">
+            <command>ede-preferred-applications</command>
+          </action>
+        </item>
+        <item label="Preferred Applications" icon="/usr/share/icons/gnome/16x16/categories/preferences-desktop.png">
+          <action name="Execute">
+            <command>libfm-pref-apps</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Preferred Applications</name>
+              <icon>/usr/share/icons/gnome/16x16/categories/preferences-desktop.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+        <item label="Removable Drives and Media" icon="/usr/share/icons/gnome/16x16/devices/drive-removable-media.png">
+          <action name="Execute">
+            <command>thunar-volman-settings</command>
+            <startupnotify>
+              <enabled>yes</enabled>
+              <name>Removable Drives and Media</name>
+              <icon>/usr/share/icons/gnome/16x16/devices/drive-removable-media.png</icon>
+            </startupnotify>
+          </action>
+        </item>
+    </menu> <!-- Preferences -->
+  <separator />
+  <menu id="Openbox" label="Openbox" icon="/home/brian/.icons/openbox.png" >
+    <menu id="client-list-menu" label="Desktops" icon="/usr/share/icons/Mist/16x16/apps/preferences-desktop-display.png" />
+    <menu id="client-list-combined-menu" label="Windows" icon="/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png" />
+    <menu id="Window Managers" label="Window Managers" icon="/usr/share/icons/gnome/16x16/actions/gtk-quit.png" >
+      <item label="Blackbox" icon="/usr/share/icons/hicolor/16x16/apps/blackbox.png" >
+        <action name="Restart">
+          <command>blackbox</command>
+        </action>
+      </item>
+      <item label="Fluxbox" icon="/usr/share/icons/hicolor/16x16/apps/fluxbox.png" >
+        <action name="Restart">
+          <command>fluxbox</command>
+        </action>
+      </item>
+      <item label="FVWM" icon="/usr/share/icons/hicolor/16x16/apps/fvwm.png" >
+        <action name="Restart">
+          <command>fvwm2</command>
+        </action>
+      </item>
+      <item label="IceWM" icon="/usr/share/icons/hicolor/16x16/apps/icewm.png" >
+        <action name="Restart">
+          <command>icewm</command>
+        </action>
+      </item>
+      <item label="JWM" icon="/usr/share/icons/hicolor/16x16/apps/archlinux-wm-jwm.png" >
+        <action name="Restart">
+          <command>jwm</command>
+        </action>
+      </item>
+      <item label="Openbox" icon="/home/brian/.icons/openbox.png" >
+        <action name="Restart">
+          <command>openbox</command>
+        </action>
+      </item>
+      <item label="TWM" icon="/usr/share/icons/hicolor/16x16/apps/twm.png" >
+        <action name="Restart">
+          <command>twm</command>
+        </action>
+      </item>
+      <item label="WindowMaker" icon="/usr/share/icons/hicolor/16x16/apps/wmaker.png" >
+        <action name="Restart">
+          <command>wmaker</command>
+        </action>
+      </item>
+      <item label="Terminal" icon="/usr/share/icons/gnome/16x16/apps/terminal.png" >
+        <action name="Restart">
+          <command>roxterm-</command>
+        </action>
+      </item>
+      <separator />
+      <item label="Reload" icon="/usr/share/icons/gnome/16x16/actions/gtk-redo-ltr.png" >
+        <action name="Reconfigure" />
+      </item>
+      <item label="Restart" icon="/usr/share/icons/gnome/16x16/actions/gtk-refresh.png" >
+        <action name="Restart" />
+      </item>
+      <item label="Exit" icon="/usr/share/icons/gnome/16x16/actions/gtk-quit.png" >
+        <action name="Exit" />
+      </item>
+    </menu>
+  </menu>
+  <item label="Reload" icon="/usr/share/icons/gnome/16x16/actions/gtk-redo-ltr.png" >
+    <action name="Reconfigure" />
+  </item>
+  <item label="Restart" icon="/usr/share/icons/gnome/16x16/actions/gtk-refresh.png" >
+    <action name="Restart" />
+  </item>
+  <separator />
+  <item label="Exit" icon="/usr/share/icons/gnome/16x16/actions/gtk-quit.png" >
+    <action name="Exit" />
+  </item>
+</menu>
+
+</openbox_menu>

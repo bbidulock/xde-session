@@ -1,0 +1,106 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export JWM_TYPE=${1:-${JWM_TYPE:-jwm}}
+if [ ! -x "`which $JWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable $JWM_TYPE program" >&2
+    exit 1;
+fi
+if [ -z "$JWM_VERSION" ]; then
+    if $JWM_TYPE -v >/dev/null 2>&1; then
+	JWM_VERSION=$($JWM_TYPE -v|head -1|ask '{print$2}'|sed 's,v,,' 2>/dev/null)
+    else
+	JWM_VERSION='2.2.0'
+    fi
+fi
+export JWM_VERSION=${2:-$JWM_VERSION}
+export JWM_CONFIG_HOME=${JWM_CONFIG_HOME:-${HOME:-~}/.$JWM_TYPE}
+export JWM_CONFIG_SDIR=${JWM_CONFIG_SDIR:-/usr/share/$JWM_TYPE}
+
+getstyles() {
+    icon='/usr/share/icons/gnome/16x16/apps/style.png'
+    setstyle="$here/setstyle"
+    [ -x "$setstyle" ] || setstyle="$JWM_CONFIG_HOME/setstyle"
+    [ -x "$setstyle" ] || setstyle="$JWM_CONFIG_SDIR/setstyle"
+    [ -x "$setstyle" ] || { echo "ERROR: missing setstyle program" >&2; exit 1; }
+    echo "<?xml version=\"1.0\"?>"
+    echo "<JWM>"
+    menu=
+    syst=
+    user=
+    find "$JWM_CONFIG_HOME/themes" -name style 2>/dev/null | sort | while read f
+    do
+	if [ ! "$menu" = yes ]; then
+	    echo "   <Menu icon=\"$icon\" label="Themes">"
+	    menu='yes'
+	fi
+	if [ "$syst" = yes -a ! "$user" = yes ]; then
+	    echo "      <Separator/>"
+	    user='yes'
+	fi
+	styledir=$(echo "$f"|sed 's,/style$,,')
+	style=$(echo "$styledir"|sed 's,^.*/,,')
+	echo "      <Program icon=\"$icon\" label=\"$style\">$setstyle $f</Program>"
+    done
+    find "$JWM_CONFIG_SDIR/themes" -name style 2>/dev/null | sort | while read f
+    do
+	if [ ! "$menu" = yes ]; then
+	    echo "   <Menu icon=\"$icon\" label="Themes">"
+	    menu='yes'
+	fi
+	if [ "$user" = yes -a ! "$syst" = yes ]; then
+	    echo "      <Separator/>"
+	    syst='yes'
+	fi
+	styledir=$(echo "$f"|sed 's,/style$,,')
+	style=$(echo "$styledir"|sed 's,^.*/,,')
+	echo "      <Program icon=\"$icon\" label=\"$style\">$setstyle $f</Program>"
+    done
+    if [ "$menu" = yes ]; then
+	echo "   </Menu>"
+    fi
+    menu=
+    syst=
+    user=
+    find "$JWM_CONFIG_HOME/styles" -name style 2>/dev/null | sort | while read f
+    do
+	if [ ! "$menu" = yes ]; then
+	    echo "   <Menu icon=\"$icon\" label="Styles">"
+	    menu='yes'
+	fi
+	if [ "$syst" = yes -a ! "$user" = yes ]; then
+	    echo "      <Separator/>"
+	    user='yes'
+	fi
+	styledir=$(echo "$f"|sed 's,/style$,,')
+	style=$(echo "$styledir"|sed 's,^.*/,,')
+	echo "      <Program icon=\"$icon\" label=\"$style\">$setstyle $f</Program>"
+    done
+    find "$JWM_CONFIG_SDIR/styles" -name style 2>/dev/null | sort | while read f
+    do
+	if [ ! "$menu" = yes ]; then
+	    echo "   <Menu icon=\"$icon\" label="Styles">"
+	    menu='yes'
+	fi
+	if [ "$user" = yes -a ! "$syst" = yes ]; then
+	    echo "      <Separator/>"
+	    syst='yes'
+	fi
+	styledir=$(echo "$f"|sed 's,/style$,,')
+	style=$(echo "$styledir"|sed 's,^.*/,,')
+	echo "      <Program icon=\"$icon\" label=\"$style\">$setstyle $f</Program>"
+    done
+    if [ "$menu" = yes ]; then
+	echo "   </Menu>"
+    fi
+    echo "</JWM>"
+}
+
+getstyles |tee "$JWM_CONFIG_HOME/stylemenu"
+
+
+# vim: sw=4

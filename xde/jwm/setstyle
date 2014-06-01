@@ -1,0 +1,13 @@
+#!/bin/bash
+
+style="$1"
+
+if test -n "$style" -a -f "$style"; then
+	cat >$HOME/.jwm/style<<EOF
+<?xml version="1.0"?>
+<JWM>
+   <Include>$style</Include>
+</JWM>
+EOF
+	jwm -restart
+fi

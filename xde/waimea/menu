@@ -1,0 +1,494 @@
+[start] (rootmenu)
+    [exec] (1\) Web Browser) {xdg-launch preferred-web-browser}
+    [exec] (2\) File Manager) {xdg-launch preferred-file-manager}
+    [exec] (3\) Text Editor) {xdg-launch preferred-text-editor}
+    [exec] (4\) Terminal) {xdg-launch preferred-terminal}
+    [exec] (5\) Run Command) {xdg-launch preferred-execute}
+    [nop] (--------------------------------) {}
+    [submenu] (Archlinux) {Archlinux Menu}
+        [exec] (AUR) {xdg-launch Arch-AUR}
+        [exec] (Bugs) {xdg-launch Arch-Bugs}
+        [exec] (Developers) {xdg-launch Arch-Developers}
+        [exec] (Documentation) {xdg-launch Arch-Documentation}
+        [exec] (Donate) {xdg-launch Arch-Donate}
+        [exec] (Forum) {xdg-launch Arch-Forum}
+        [exec] (Homepage) {xdg-launch Arch-Homepage}
+        [exec] (SVN) {xdg-launch Arch-SVN}
+        [exec] (Schwag) {xdg-launch Arch-Schwag}
+        [exec] (Wiki) {xdg-launch Arch-Wiki}
+    [end]
+    [submenu] (Accessories) {Accessories Menu}
+        [exec] (7-Zip FM) {xdg-launch 7zFM}
+        [exec] (AfterStep Terminal) {xdg-launch aterm}
+        [exec] (AllTray 0.7.5.1dev) {xdg-launch alltray}
+        [exec] (Application Finder) {xdg-launch xfce4-appfinder}
+        [exec] (BlackBox Pager) {xdg-launch bbpager}
+        [exec] (Bvi) {xdg-launch bvi}
+        [exec] (Bvi Plus) {xdg-launch bviplus}
+        [exec] (Calculator) {xdg-launch ede-calc}
+        [exec] (Desktop Search) {xdg-launch tracker-needle}
+        [exec] (EDE Tips) {xdg-launch ede-tip}
+        [exec] (FLTK Editor) {xdg-launch fltk-editor}
+        [exec] (FOX Calculator) {xdg-launch calculator}
+        [exec] (FOX Text Editor) {xdg-launch adie}
+        [exec] (File Manager PCManFM) {xdg-launch pcmanfm}
+        [exec] (Font Viewer) {xdg-launch gnome-font-viewer}
+        [exec] (Gtk VNC Viewer) {xdg-launch gvncviewer}
+        [exec] (LXTerminal) {xdg-launch lxterminal}
+        [exec] (MacSlow's Cairo-Clock) {xdg-launch cairo-clock}
+        [exec] (Mount-gtk) {xdg-launch mount-gtk}
+        [exec] (Nano) {xdg-launch nano}
+        [exec] (Pacman Express) {xdg-launch pacmanexpress}
+        [exec] (Plank) {xdg-launch plank}
+        [exec] (Root Terminal) {xdg-launch gksu}
+        [exec] (SpaceFM File Search) {xdg-launch spacefm-find}
+        [exec] (VI) {xdg-launch vi}
+        [exec] (VIM) {xdg-launch vim}
+        [exec] (Vi IMproved) {xdg-launch gvim}
+        [exec] (X11 Terminal) {xdg-launch ede-xterm}
+        [exec] (XTerm (Unicode\)) {xdg-launch xterm-(unicode)}
+        [exec] (Xarchiver) {xdg-launch xarchiver}
+        [exec] (Xcalc Calculator) {xdg-launch xcalc}
+        [exec] (Xedit) {xdg-launch xedit}
+        [exec] (Xfburn) {xdg-launch xfburn}
+        [exec] (Xfi) {xdg-launch xfi}
+        [exec] (Xfp) {xdg-launch xfp}
+        [exec] (Xfv) {xdg-launch xfv}
+        [exec] (Xfw) {xdg-launch xfw}
+        [exec] (Zalc) {xdg-launch zalc}
+        [exec] (xplanetFX) {xdg-launch xplanetFX}
+    [end]
+    [submenu] (Education) {Education Menu}
+        [exec] (Calcoo) {xdg-launch calcoo}
+        [exec] (LibreOffice Math) {xdg-launch libreoffice-math}
+        [exec] (Qucs) {xdg-launch qucs}
+        [exec] (StarPlot Star Chart Viewer) {xdg-launch starplot}
+    [end]
+    [submenu] (Games) {Games Menu}
+        [exec] (Block Attack!) {xdg-launch blocks}
+        [exec] (Checkers) {xdg-launch checkers}
+        [exec] (Chess) {xdg-launch gnome-chess}
+        [exec] (Internet Chess Club) {xdg-launch internet-chess-club}
+        [exec] (Pingus) {xdg-launch pingus}
+        [exec] (Sudoku) {xdg-launch sudoku}
+        [exec] (XBill) {xdg-launch xbill}
+        [exec] (XGalaga) {xdg-launch xgalaga}
+        [exec] (Xboard) {xdg-launch xboard-ics}
+        [exec] (Xboard) {xdg-launch xboard}
+        [exec] (Xtetris) {xdg-launch xtetris}
+        [exec] (aafire) {xdg-launch aafire}
+        [exec] (cacafire) {xdg-launch cacafire}
+    [end]
+    [submenu] (Graphics) {Graphics Menu}
+        [exec] (Blender) {xdg-launch blender}
+        [exec] (Feh) {xdg-launch feh}
+        [exec] (G3DViewer) {xdg-launch g3dviewer}
+        [exec] (GNU Image Manipulation Program) {xdg-launch gimp}
+        [exec] (GQview) {xdg-launch gqview}
+        [exec] (GV) {xdg-launch gv}
+        [exec] (Gaw Gtk Analog Wave viewer) {xdg-launch gaw}
+        [exec] (Geeqie) {xdg-launch geeqie}
+        [exec] (Image Viewer) {xdg-launch ede-image-view}
+        [exec] (Image Viewer) {xdg-launch gpicview}
+        [exec] (ImageMagick) {xdg-launch imagemagick}
+        [exec] (ImageMagick Image Viewer) {xdg-launch display}
+        [exec] (Inkscape) {xdg-launch inkscape}
+        [exec] (Konstruktor) {xdg-launch konstruktor}
+        [exec] (LibreOffice Draw) {xdg-launch libreoffice-draw}
+        [exec] (Stopmotion) {xdg-launch stopmotion}
+        [exec] (The GIMP) {xdg-launch the-gimp}
+        [exec] (Window Magnifier) {xdg-launch wmagnify}
+        [exec] (Wings3D) {xdg-launch wings3d}
+        [exec] (X Window Snapshot) {xdg-launch x-window-snapshot}
+        [exec] (XPaint) {xdg-launch xpaint}
+        [exec] (XV Image Viewer) {xdg-launch xv}
+        [exec] (Xfig) {xdg-launch xfig}
+        [exec] (flPhoto) {xdg-launch flphoto}
+        [exec] (gThumb) {xdg-launch gthumb}
+        [exec] (xzgv) {xdg-launch xzgv}
+    [end]
+    [submenu] (Internet) {Internet Menu}
+        [exec] (Avahi SSH Server Browser) {xdg-launch bssh}
+        [exec] (Avahi VNC Server Browser) {xdg-launch bvnc}
+        [exec] (DHCP Client Daemon Applet) {xdg-launch dhcpcd-gtk}
+        [exec] (ELinks) {xdg-launch elinks}
+        [exec] (Ekiga Softphone) {xdg-launch ekiga}
+        [exec] (Ettercap) {xdg-launch ettercap}
+        [exec] (Firefox) {xdg-launch firefox}
+        [exec] (Firefox) {xdg-launch mozilla-firefox}
+        [exec] (IP Telephony, VoIP and Video Conferencing) {xdg-launch gnome-ekiga}
+        [exec] (Links) {xdg-launch links}
+        [exec] (Midori) {xdg-launch midori}
+        [exec] (Midori Private Browsing) {xdg-launch midori-private}
+        [exec] (Mutt) {xdg-launch mutt}
+        [exec] (OpenNX Connection Wizard) {xdg-launch innovidata-opennx-wizard}
+        [exec] (OpenNX Session Administrator) {xdg-launch innovidata-opennx-admin}
+        [exec] (OpenNX client) {xdg-launch innovidata-opennx}
+        [exec] (Remmina Remote Desktop Client) {xdg-launch remmina}
+        [exec] (Telnet) {xdg-launch telnet}
+        [exec] (Tightvnc) {xdg-launch mandriva-tightvnc}
+        [exec] (Wireshark Network Analyzer) {xdg-launch redhat-wireshark}
+        [exec] (X11VNC Server) {xdg-launch x11vnc}
+        [exec] (Xbiff) {xdg-launch xbiff}
+        [exec] (Zenmap) {xdg-launch zenmap}
+        [exec] (Zenmap (as root\)) {xdg-launch zenmap-root}
+        [exec] (wpa_gui) {xdg-launch wpa_gui}
+    [end]
+    [submenu] (Office) {Office Menu}
+        [exec] (GV) {xdg-launch gv}
+        [exec] (GXditview) {xdg-launch gxditview}
+        [exec] (LibreOffice) {xdg-launch libreoffice-startcenter}
+        [exec] (LibreOffice Base) {xdg-launch libreoffice-base}
+        [exec] (LibreOffice Calc) {xdg-launch libreoffice-calc}
+        [exec] (LibreOffice Draw) {xdg-launch libreoffice-draw}
+        [exec] (LibreOffice Impress) {xdg-launch libreoffice-impress}
+        [exec] (LibreOffice Math) {xdg-launch libreoffice-math}
+        [exec] (LibreOffice Writer) {xdg-launch libreoffice-writer}
+        [exec] (RAKT PDF Viewer) {xdg-launch raktpdf}
+        [exec] (X PDF) {xdg-launch xpdf}
+        [exec] (XDvi) {xdg-launch xdvi}
+        [exec] (Xditview) {xdg-launch xditview}
+        [exec] (Zat) {xdg-launch zat}
+        [exec] (Zathura) {xdg-launch zathura}
+        [exec] (apvlv) {xdg-launch apvlv}
+    [end]
+    [submenu] (Programming) {Programming Menu}
+        [exec] (CMake) {xdg-launch CMake}
+        [exec] (Eeschema) {xdg-launch eeschema}
+        [exec] (FLUID) {xdg-launch fluid}
+        [exec] (KiCad) {xdg-launch kicad}
+        [exec] (Qt Assistant) {xdg-launch assistant}
+        [exec] (Qt Designer) {xdg-launch designer}
+        [exec] (Qt Linguist) {xdg-launch linguist}
+        [exec] (Qt QDbusViewer) {xdg-launch qdbusviewer}
+        [exec] (Qt3 Assistant) {xdg-launch qt-assistant3}
+        [exec] (Qt3 Linguist) {xdg-launch qt-linguist3}
+        [exec] (Qt4 Assistant) {xdg-launch assistant-qt4}
+        [exec] (Qt4 Designer) {xdg-launch designer-qt4}
+        [exec] (Qt4 Designer) {xdg-launch qt4-designer}
+        [exec] (Qt4 Linguist) {xdg-launch linguist-qt4}
+        [exec] (Qt4 Linguist) {xdg-launch qt4-linguist}
+        [exec] (Qt4 QDbusViewer) {xdg-launch qdbusviewer-qt4}
+        [exec] (Scratch) {xdg-launch scratch}
+        [exec] (Vi IMproved) {xdg-launch gvim}
+    [end]
+    [submenu] (Science & Math) {Science & Math Menu}
+        [exec] (Bc) {xdg-launch bc}
+        [exec] (Dc) {xdg-launch dc}
+        [exec] (GNUplot) {xdg-launch gnuplot}
+        [exec] (GSpiceUI) {xdg-launch gspiceui}
+    [end]
+    [submenu] (Sound & Video) {Sound & Video Menu}
+        [exec] (ALSA Mixer) {xdg-launch alsamixer}
+        [exec] (Alsaplayer) {xdg-launch alsaplayer}
+        [exec] (Audacious) {xdg-launch audacious}
+        [exec] (Audacious (GTKui\)) {xdg-launch audacious2-gtkui}
+        [exec] (Audacious2) {xdg-launch audacious2}
+        [exec] (Audio Mixer) {xdg-launch xfce4-mixer}
+        [exec] (Aumix) {xdg-launch aumix}
+        [exec] (Consonance) {xdg-launch consonance}
+        [exec] (FFADO Mixer) {xdg-launch ffadomixer}
+        [exec] (FlBurn) {xdg-launch flburn}
+        [exec] (Flmusic) {xdg-launch flmusic}
+        [exec] (Goggles Music Manager) {xdg-launch gogglesmm}
+        [exec] (Guayadeque Music Player) {xdg-launch guayadeque}
+        [exec] (Music Player) {xdg-launch lxmusic}
+        [exec] (Pragha) {xdg-launch pragha}
+        [exec] (Qt V4L2 test Utility) {xdg-launch qv4l2}
+        [exec] (SimpleBurn) {xdg-launch simpleburn}
+        [exec] (Stopmotion) {xdg-launch stopmotion}
+        [exec] (Videos) {xdg-launch totem}
+        [exec] (Xfburn) {xdg-launch xfburn}
+        [exec] (moc-tray) {xdg-launch moc-tray}
+    [end]
+    [submenu] (System Tools) {System Tools Menu}
+        [exec] (Atop) {xdg-launch atop}
+        [exec] (Avahi Zeroconf Browser) {xdg-launch avahi-discover}
+        [exec] (Battery Status Icon) {xdg-launch cbatticon}
+        [exec] (Bluetooth Control) {xdg-launch bluetoothctl}
+        [exec] (Bulk Rename) {xdg-launch Thunar-bulk-rename}
+        [exec] (Cairo Composite Manager) {xdg-launch cairo-compmgr}
+        [exec] (Conky Status Display) {xdg-launch conky}
+        [exec] (DHCP Client Daemon Applet) {xdg-launch dhcpcd-gtk}
+        [exec] (Fluff) {xdg-launch fluff}
+        [exec] (Fluxbox Tray Menu.) {xdg-launch ftmenu}
+        [exec] (Fluxbox XKB Switcher) {xdg-launch fbxkb}
+        [exec] (GSmartControl) {xdg-launch gsmartcontrol}
+        [exec] (Htop) {xdg-launch htop}
+        [exec] (LSHW) {xdg-launch gtk-lshw}
+        [exec] (Lock Screen) {xdg-launch slock}
+        [exec] (Manage Printing) {xdg-launch cups}
+        [exec] (New Login in a Window) {xdg-launch gdmflexiserver-xnest}
+        [exec] (Package Updater) {xdg-launch gpk-update-viewer}
+        [exec] (Pango Viewer) {xdg-launch pango-view}
+        [exec] (PathFinder) {xdg-launch PathFinder}
+        [exec] (Procinfo) {xdg-launch procinfo}
+        [exec] (Pstree) {xdg-launch pstree}
+        [exec] (ROX) {xdg-launch mandriva-rox}
+        [exec] (ROX Filer) {xdg-launch rox}
+        [exec] (ROX Filer) {xdg-launch rox-filer}
+        [exec] (ROXTerm) {xdg-launch roxterm}
+        [exec] (Run Command) {xdg-launch xde-run}
+        [exec] (Run Command) {xdg-launch gmrun}
+        [exec] (SpaceFM) {xdg-launch spacefm}
+        [exec] (System Profiler and Benchmark) {xdg-launch hardinfo}
+        [exec] (Task Manager) {xdg-launch lxtask}
+        [exec] (TeXconfig) {xdg-launch texconfig}
+        [exec] (Terminal) {xdg-launch gnome-terminal}
+        [exec] (Thunar File Manager) {xdg-launch Thunar}
+        [exec] (Top CPU Processes) {xdg-launch top}
+        [exec] (UXTerm) {xdg-launch uxterm}
+        [exec] (Unclutter) {xdg-launch unclutter}
+        [exec] (Vifm) {xdg-launch vifm}
+        [exec] (Wireshark) {xdg-launch wireshark}
+        [exec] (X Load) {xdg-launch xload}
+        [exec] (X-Terminal as root (GKsu\)) {xdg-launch terminal-as-root-(gksu)}
+        [exec] (XDE Panel) {xdg-launch xde-panel}
+        [exec] (XTerm) {xdg-launch mageia-xterm}
+        [exec] (XTerm) {xdg-launch mandriva-xterm}
+        [exec] (XTerm) {xdg-launch xterm}
+        [exec] (Xfce Terminal) {xdg-launch xfce4-terminal}
+        [exec] (Xfe) {xdg-launch xfe}
+        [exec] (Xsensors) {xdg-launch xsensors}
+        [exec] (dconf Editor) {xdg-launch dconf-editor}
+        [exec] (emelFM2) {xdg-launch emelfm2}
+        [exec] (mc) {xdg-launch mc}
+        [exec] (stalonetray) {xdg-launch stalonetray}
+        [exec] (urxvt) {xdg-launch urxvt}
+        [exec] (urxvt (client\)) {xdg-launch urxvtc}
+        [exec] (urxvt (tabbed\)) {xdg-launch urxvt-tabbed}
+    [end]
+    [nop] (--------------------------------) {}
+    [submenu] (X11 Tools) {X11 Tools Menu}
+        [exec] (Openbox Window Properties) {xdg-launch obxprop}
+        [exec] (Session Manager Proxy) {xdg-launch smproxy}
+        [exec] (X Clipboard) {xdg-launch xclipboard}
+        [exec] (X Clock) {xdg-launch xclock}
+        [exec] (X Color Selector) {xdg-launch xcolorsel}
+        [exec] (X Console) {xdg-launch xconsole}
+        [exec] (X Display Atoms) {xdg-launch xlsatoms}
+        [exec] (X Display Clients) {xdg-launch xlsclients}
+        [exec] (X Display Properties) {xdg-launch xdpyinfo}
+        [exec] (X Display Refresh) {xdg-launch xrefresh}
+        [exec] (X Events) {xdg-launch xev}
+        [exec] (X Eyes) {xdg-launch xeyes}
+        [exec] (X Font Select) {xdg-launch xfontsel}
+        [exec] (X Input) {xdg-launch xinput}
+        [exec] (X Keyboard LEDs) {xdg-launch xkbvleds}
+        [exec] (X Keyboard State) {xdg-launch xkbwatch}
+        [exec] (X Kill) {xdg-launch xkill}
+        [exec] (X Magnifier) {xdg-launch xmag}
+        [exec] (X Manual Page) {xdg-launch xman}
+        [exec] (X Mod Key Mapping) {xdg-launch xmodmap}
+        [exec] (X RandR) {xdg-launch xrandr}
+        [exec] (X Resource Editor) {xdg-launch editres}
+        [exec] (X Resource Top) {xdg-launch xrestop}
+        [exec] (X Settings) {xdg-launch xset}
+        [exec] (X Video Information) {xdg-launch xvinfo}
+        [exec] (X Video Tuner) {xdg-launch xvidtune}
+        [exec] (X Window Dump) {xdg-launch xwd}
+        [exec] (X Window Dump Display) {xdg-launch xwud}
+        [exec] (X Window Information) {xdg-launch xwininfo}
+        [exec] (X Window Properties) {xdg-launch xprop}
+    [end]
+    [submenu] (Dock Apps) {Dock Apps Menu}
+        [exec] (ASClock) {xdg-launch asclock}
+        [exec] (Alarm Clock Dock App) {xdg-launch wmclockmon}
+        [exec] (Alsa Mixer) {xdg-launch AlsaMixer.app}
+        [exec] (Analog and Digital Clock) {xdg-launch wmtime}
+        [exec] (Audacious Dock App) {xdg-launch wmauda}
+        [exec] (Audio Mixer) {xdg-launch wmsmixer}
+        [exec] (Audio Mixer) {xdg-launch wmmixer}
+        [exec] (Battery Dock App) {xdg-launch wmbattery}
+        [exec] (Battery Dock App (ACPI\)) {xdg-launch wmacpi}
+        [exec] (Binary Clock Dock App) {xdg-launch wmBinClock}
+        [exec] (Blob Dock App) {xdg-launch wmblob}
+        [exec] (Blue CPU Monitor Dock App) {xdg-launch wmbluecpu}
+        [exec] (Blue Clock Dock App) {xdg-launch wmblueclock}
+        [exec] (Blue GPU Temperature Monitor Dock App) {xdg-launch wmbluegpu}
+        [exec] (Blue Memory Monitor Dock App) {xdg-launch wmbluemem}
+        [exec] (Bubble Monitor) {xdg-launch bubblemon}
+        [exec] (Bubble Monitor Dock App) {xdg-launch wmbubble}
+        [exec] (CPU Load Dock App) {xdg-launch wmcpuload}
+        [exec] (CPU Load Dock App (bars\)) {xdg-launch wmcpu}
+        [exec] (Calculator Dock App) {xdg-launch wmcalc}
+        [exec] (Calendar Clock Dock App) {xdg-launch wmCalClock}
+        [exec] (Calendar Clock Keyboard Dock App) {xdg-launch wmCalClockKbd}
+        [exec] (Clip History Dock App) {xdg-launch wmcliphist}
+        [exec] (Clock Dock App) {xdg-launch lal}
+        [exec] (Core CPU Load) {xdg-launch wmcore}
+        [exec] (Disk Monitor Dock App) {xdg-launch wmdiskmon}
+        [exec] (Filesystem Mounting Dock App) {xdg-launch wmudmount}
+        [exec] (Launcher Dock App) {xdg-launch wmappl}
+        [exec] (Mandelbrot Set Browser Dock App) {xdg-launch wmMand}
+        [exec] (Monitoring Dock App) {xdg-launch allin1}
+        [exec] (Network Device Monitor) {xdg-launch wmnd}
+        [exec] (Network Monitor) {xdg-launch wmnet}
+        [exec] (System Monitor) {xdg-launch wmsysmon}
+        [exec] (Timer Dock App) {xdg-launch wmtimer}
+        [exec] (Trash Can Dock App) {xdg-launch wmtrash}
+        [exec] (WMMaiLoad) {xdg-launch wmmaiload}
+        [exec] (WMMail) {xdg-launch wmmail}
+        [exec] (WMbiff) {xdg-launch wmbiff}
+        [exec] (Weather Monitor Dock App) {xdg-launch wmWeather}
+        [exec] (Weather Monitor Dock App Plus) {xdg-launch wmweather+}
+        [exec] (Wifi Monitor) {xdg-launch wmwave}
+        [exec] (Wifi Monitor (LED\)) {xdg-launch wmwifi}
+        [exec] (Wmclock) {xdg-launch wmclock}
+        [exec] (wmITime) {xdg-launch wmitime}
+        [exec] (wmInet) {xdg-launch wminet}
+        [exec] (wmMoonClock) {xdg-launch wmMoonClock}
+        [exec] (wmMoonClock) {xdg-launch wmmoonclock}
+        [exec] (wmStickyNotes) {xdg-launch wmstickynotes}
+        [exec] (wmTop) {xdg-launch wmtop}
+        [exec] (wmbatteries) {xdg-launch wmbatteries}
+        [exec] (wmfire) {xdg-launch wmfire}
+        [exec] (wmwork) {xdg-launch wmwork}
+    [end]
+    [submenu] (Other) {Other Menu}
+        [exec] (About EDE) {xdg-launch ede-about}
+        [exec] (Bash) {xdg-launch bash}
+        [exec] (Dash) {xdg-launch dash}
+        [exec] (E16) {xdg-launch e16}
+        [exec] (Font Viewer) {xdg-launch gfontview}
+        [exec] (GnuChess) {xdg-launch gnuchess}
+        [exec] (Help) {xdg-launch ede-help}
+        [exec] (Info) {xdg-launch info}
+        [exec] (Oclock) {xdg-launch oclock}
+        [exec] (PNMixer) {xdg-launch pnmixer}
+        [exec] (Run Program...) {xdg-launch ede-launch}
+        [exec] (Screen Lock) {xdg-launch ede-screen-lock}
+        [exec] (Sh) {xdg-launch sh}
+        [exec] (Simple Tray XKB Indicator) {xdg-launch sbxkb}
+        [exec] (TeXdoctk) {xdg-launch texdoctk}
+        [exec] (TigerVNC viewer) {xdg-launch vncviewer}
+        [exec] (X Fishtank) {xdg-launch xfishtank}
+        [exec] (X Snow) {xdg-launch xsnow}
+        [exec] (XDG Tray Menu) {xdg-launch xdg-traymenu}
+        [exec] (Xlock) {xdg-launch xlockmore}
+        [exec] (Xlogo) {xdg-launch xlogo}
+        [exec] (gEDA Attribute Editor) {xdg-launch geda-gattrib}
+        [exec] (gEDA Schematic Editor) {xdg-launch geda-gschem}
+        [exec] (mcedit) {xdg-launch mcedit}
+    [end]
+    [nop] (--------------------------------) {}
+    [submenu] (Preferences) {Preferences Menu}
+        [exec] (Adobe Flash Player) {xdg-launch flash-player-properties}
+        [exec] (ChBg) {xdg-launch chbg}
+        [exec] (Configure EDE) {xdg-launch ede-conf}
+        [exec] (Customize Look and Feel) {xdg-launch lxappearance}
+        [exec] (Desktop Preferences) {xdg-launch pcmanfm-desktop-pref}
+        [exec] (FOX Desktop Setup) {xdg-launch ControlPanel}
+        [exec] (File Manager) {xdg-launch thunar-settings}
+        [exec] (Firewall Builder) {xdg-launch fwbuilder}
+        [exec] (Gtk Theme Switch 2) {xdg-launch gtk-theme-switch2}
+        [exec] (Gtk2 Change Theme) {xdg-launch gtk-chtheme}
+        [exec] (Gtk2 Preferences) {xdg-launch gtk2_prefs}
+        [exec] (Keyboard Settings) {xdg-launch lxkb-config}
+        [exec] (Keyboard and Mouse) {xdg-launch xde-input}
+        [exec] (LXDE Panel Settings) {xdg-launch lxpanelctl}
+        [exec] (Monitor Settings) {xdg-launch lxrandr}
+        [exec] (Network Connections) {xdg-launch nm-connection-editor}
+        [exec] (Openbox Configuration Manager) {xdg-launch obconf}
+        [exec] (Packages) {xdg-launch gpk-application}
+        [exec] (Panel tint2) {xdg-launch tint2conf}
+        [exec] (Plank Config) {xdg-launch plank-config}
+        [exec] (Pop-Up Notifications) {xdg-launch notification-properties}
+        [exec] (Preferred Applications) {xdg-launch ede-preferred-applications}
+        [exec] (Preferred Applications) {xdg-launch libfm-pref-apps}
+        [exec] (Print Settings) {xdg-launch system-config-printer}
+        [exec] (Printing) {xdg-launch redhat-system-config-printer}
+        [exec] (Removable Drives and Media) {xdg-launch thunar-volman-settings}
+        [exec] (Search and Indexing) {xdg-launch tracker-preferences}
+        [exec] (XDE Background) {xdg-launch xde-setbg}
+        [exec] (systemadm) {xdg-launch systemadm}
+    [end]
+  [nop] (--------------------------------) {}
+  [submenu] (Waimea)
+    [workspaces] (Workspace List)
+    [submenu] (Tools)
+      [exec] (Window name) {xprop WM_CLASS|cut -d \" -f 2|gxmessage -file - -center}
+      [exec] (Screenshot - JPG) {import screenshot.jpg && display -resize 50% screenshot.jpg}
+      [exec] (Screenshot - PNG) {import screenshot.png && display -resize 50% screenshot.png}
+      [exec] (Run) {fbrun -font 10x20 -fg grey -bg black -title run}
+      [exec] (Run Command) {bbrun -a -w}
+    [end]
+    [config] (Configuration)
+    [submenu] (Styles) {Choose a style...}
+      [exec] (Squared blue) {xde-style -s -u 'Squared-blue'}
+      [exec] (Squared cadet) {xde-style -s -u 'Squared-cadet'}
+      [exec] (Squared green) {xde-style -s -u 'Squared-green'}
+      [exec] (Squared grey) {xde-style -s -u 'Squared-grey'}
+      [nop] (--------------------------------) {}
+      [exec] (Archlinux) {xde-style -s -y 'Archlinux'}
+      [exec] (Aviation) {xde-style -s -y 'Aviation'}
+      [exec] (Blackbirds) {xde-style -s -y 'Blackbirds'}
+      [exec] (Circuits) {xde-style -s -y 'Circuits'}
+      [exec] (Default) {xde-style -s -y 'Default.style'}
+      [exec] (Dishes) {xde-style -s -y 'Dishes'}
+      [exec] (Pedestals) {xde-style -s -y 'Pedestals'}
+      [exec] (Penguins) {xde-style -s -y 'Penguins'}
+      [exec] (Radar) {xde-style -s -y 'Radar'}
+      [exec] (Squared blue) {xde-style -s -y 'Squared-blue'}
+      [exec] (Squared cadet) {xde-style -s -y 'Squared-cadet'}
+      [exec] (Squared green) {xde-style -s -y 'Squared-green'}
+      [exec] (Squared grey) {xde-style -s -y 'Squared-grey'}
+      [exec] (Telcom) {xde-style -s -y 'Telcom'}
+      [exec] (Towers) {xde-style -s -y 'Towers'}
+    [end]
+    [sub] (Processes) <!procinfo.pl>
+    [submenu] (Window Managers)
+      [restart] (Restart)
+      [restart] (Start 2bwm) {2bwm}
+      [restart] (Start adwm) {/u2/custompkgs/ubs/adwm-git/working/src/adwm}
+      [restart] (Start AEWM) {aewm}
+      [restart] (Start AEWM++) {aewm++}
+      [restart] (Start AfterStep) {afterstep}
+      [restart] (Start awesome) {awesome}
+      [restart] (Start Blackbox) {blackbox}
+      [restart] (Start bspwm) {bspwm}
+      [restart] (Start CTWM) {ctwm}
+      [restart] (Start cwm) {cwm}
+      [restart] (Start Dwm) {dwm}
+      [restart] (Start E16) {/usr/share/e16/misc/starte16}
+      [restart] (Start echinus) {echinus}
+      [restart] (Start EDE) {startede}
+      [restart] (Start evilwm) {evilwm}
+      [restart] (Start failsafewm) {failsafewm}
+      [restart] (Start Fluxbox) {startfluxbox}
+      [restart] (Start FLWM) {flwm}
+      [restart] (Start FVWM) {fvwm}
+      [restart] (Start FVWM-Crystal) {fvwm-crystal}
+      [restart] (Start herbstluftwm) {herbstluftwm}
+      [restart] (Start i3) {i3}
+      [restart] (Start IceWM) {icewm}
+      [restart] (Start Jwm) {jwm}
+      [restart] (Start larswm) {larswm}
+      [restart] (Start LXDE) {startlxde}
+      [restart] (Start mantis-wm) {mantis-wm}
+      [restart] (Start matwm2) {matwm2}
+      [restart] (Start Metacity) {metacity}
+      [restart] (Start Mutter) {mutter}
+      [restart] (Start MWM) {mwm}
+      [restart] (Start Openbox) {openbox-session}
+      [restart] (Start pawm) {pawm}
+      [restart] (Start Pekwm) {pekwm}
+      [restart] (Start spectrwm) {spectrwm}
+      [restart] (Start TWM) {twm}
+      [restart] (Start velox) {velox}
+      [restart] (Start VTWM) {vtwm}
+      [restart] (Start WindowMaker) {wmaker}
+      [restart] (Start wm2) {wm2}
+      [restart] (Start wmii) {wmii}
+      [restart] (Start wmx) {wmx}
+      [restart] (Start XDWM) {xdwm-session}
+      [restart] (Start Xfce Session) {startxfce4}
+      [restart] (Start yeahwm) {yeahwm}
+      [restart] (Start μwm) {uwm}
+    [end]
+  [end]
+  [reconfig] (Reconfigure)
+  [nop] (--------------------------------) {}
+  [exit] (Exit)
+[end]
+[include] (~/.waimea/winmenu)

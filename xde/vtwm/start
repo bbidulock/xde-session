@@ -1,0 +1,63 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export VTWM_TYPE=${1:-${VTWM_TYPE:-vtwm}}
+if [ ! -x "`which $VTWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable vtwm program" >&2
+    exit 1;
+fi
+if [ -z "$VTWM_VERSION" ]; then
+    if $VTWM_TYPE -V >/dev/null 2>&1; then
+	VTWM_VERSION=$($VTWM_TYPE -V|head -1|awk '{print$NF}' 2>/dev/null)
+    else
+	VTWM_VERSION='5.5.0'
+    fi
+fi
+export VTWM_VERSION=${2:-$VTWM_VERSION}
+export VTWM_CONFIG_HOME=${VTWM_CONFIG_HOME:-${HOME:-~}/.$VTWM_TYPE}
+export VTWM_CONFIG_SDIR=${VTWM_CONFIG_SDIR:-/usr/share/$VTWM_TYPE}
+
+[ -d "$VTWM_CONFIG_HOME" ] || mkdir -p "$VTWM_CONFIG_HOME"
+if [ -s "$VTWM_CONFIG_SDIR/version" ]; then
+    if [ ! -s "$VTWM_CONFIG_HOME/version" -o ! diff "$VTWM_CONFIG_SDIR/version" "$VTWM_CONFIG_HOME/version" ] ; then
+	for file in apps defaults keys menu stylemenu version winmenu; do
+	    if [ ! -f "$VTWM_CONFIG_SDIR/$file" -o ! diff "$VTWM_CONFIG_SDIR/$file" "$VTWM_CONFIG_HOME/$file" ] ; then
+		[ ! -f "$VTWM_CONFIG_HOME/$file" ] || /bin/mv -f "$VTWM_CONFIG_HOME/$file" "$VTWM_CONFIG_HOME/$file.bak"
+		cat "$VTWM_CONFIG_SDIR/$file" \
+		    | sed -r 's,\$HOME\>,'"${HOME:-~}"',g' \
+		    >"$VTWM_CONFIG_HOME/$file"
+	    fi
+	done
+    fi
+fi
+
+if [ -x "`which xde-menugen 2>/dev/null`" ]; then
+    xde-menugen --format $VTWM_TYPE >"$VTWM_CONFIG_HOME/menu"
+fi
+
+config="$here/config"
+[ -x "$config" ] || config="$VTWM_CONFIG_HOME/config"
+[ -x "$config" ] || config="$VTWM_CONFIG_SDIR/config"
+[ -x "$config" ] && $config
+
+getstyles="$here/getstyles"
+[ -x "$getstyles" ] || getstyles="$VTWM_CONFIG_HOME/getstyles"
+[ -x "$getstyles" ] || getstyles="$VTWM_CONFIG_SDIR/getstyles"
+[ -x "$getstyles" ] && $getstyles
+
+export VTWM_RCFILE="${HOME:-~}/.${VTWM_TYPE}rc"
+
+if [ -L "$VTWM_RCFILE" ]; then
+    /bin/rm -f "$VTWM_RCFILE"
+elif [ -s  "$VTWM_RCFILE" ]; then
+    /bin/mv -f "${VTWM_RCFILE}" "${VTWM_RCFILE}.bak"
+fi
+/bin/ln -sf "$VTWM_CONFIG_HOME/rc.m4" "$VTWM_RCFILE"
+
+exec $VTWM_TYPE
+
+# vim: sw=4

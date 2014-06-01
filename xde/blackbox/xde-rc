@@ -1,0 +1,34 @@
+session.screen0.slit.placement:	CenterRight
+session.screen0.slit.direction:	Vertical
+session.screen0.slit.onTop:	False
+session.screen0.slit.autoHide:	True
+session.screen0.toolbar.onTop:	False
+session.screen0.toolbar.autoHide:	True
+session.screen0.toolbar.placement:	BottomCenter
+session.screen0.toolbar.widthPercent:	66
+session.screen0.enableToolbar:	True
+session.screen0.workspaces:	8
+session.screen0.workspaceNames:	Workspace 1,Workspace 2,Workspace 3,Workspace 4,Workspace 5,Workspace 6,Workspace 7,Workspace 8
+session.screen0.strftimeFormat:	%y-%m-%d %H:%M
+session.focusLastWindow:	True
+session.opaqueResize:	True
+session.autoRaiseDelay:	400
+session.changeWorkspaceWithMouseWheel:	True
+session.edgeSnapThreshold:	10
+session.maximumColors:	0
+session.focusModel:	SloppyFocus
+session.rowPlacementDirection:	LeftToRight
+session.imageDither:	FloydSteinbergDither
+session.doubleClickInterval:	250
+session.focusNewWindows:	True
+session.fullMaximization:	False
+session.placementIgnoresShaded:	True
+session.shadeWindowWithMouseWheel:	True
+session.opaqueMove:	True
+session.windowSnapThreshold:	0
+session.colPlacementDirection:	TopToBottom
+session.disableBindingsWithScrollLock:	False
+session.toolbarActionsWithMouseWheel:	True
+session.windowPlacement:	ColSmartPlacement
+session.menuFile:	~/.bbmenu
+session.styleFile:	/usr/share/styles/Unexicon

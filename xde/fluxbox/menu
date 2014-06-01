@@ -1,0 +1,495 @@
+[begin] (Fluxbox)
+[encoding] {UTF-8}
+    [exec] (1\) Web Browser) {xdg-launch preferred-web-browser} </usr/share/icons/gnome/16x16/apps/web-browser.png>
+    [exec] (2\) File Manager) {xdg-launch preferred-file-manager} </usr/share/icons/gnome/16x16/apps/file-manager.png>
+    [exec] (3\) Text Editor) {xdg-launch preferred-text-editor} </usr/share/icons/gnome/16x16/apps/text-editor.png>
+    [exec] (4\) Terminal) {xdg-launch preferred-terminal} </usr/share/icons/gnome/16x16/apps/terminal.png>
+    [exec] (5\) Run Command) {xdg-launch preferred-execute} </usr/share/icons/gnome/16x16/actions/system-run.png>
+    [separator]
+    [submenu] (Archlinux) {Archlinux Menu} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (AUR) {xdg-launch Arch-AUR} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (Bugs) {xdg-launch Arch-Bugs} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (Developers) {xdg-launch Arch-Developers} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (Documentation) {xdg-launch Arch-Documentation} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (Donate) {xdg-launch Arch-Donate} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (Forum) {xdg-launch Arch-Forum} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (Homepage) {xdg-launch Arch-Homepage} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (SVN) {xdg-launch Arch-SVN} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (Schwag) {xdg-launch Arch-Schwag} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+        [exec] (Wiki) {xdg-launch Arch-Wiki} </usr/share/icons/hicolor/16x16/apps/arch-logo.png>
+    [end] # (Archlinux)
+    [submenu] (Accessories) {Accessories Menu} </usr/share/icons/gnome/16x16/categories/applications-accessories.png>
+        [exec] (7-Zip FM) {xdg-launch 7zFM} </usr/share/icons/hicolor/32x32/apps/p7zip.png>
+        [exec] (AfterStep Terminal) {xdg-launch aterm} </usr/share/icons/hicolor/22x22/apps/aterm.png>
+        [exec] (AllTray 0.7.5.1dev) {xdg-launch alltray} </usr/share/pixmaps/alltray.png>
+        [exec] (Application Finder) {xdg-launch xfce4-appfinder} </usr/share/icons/gnome/16x16/actions/gtk-find.png>
+        [exec] (BlackBox Pager) {xdg-launch bbpager} </usr/share/icons/hicolor/16x16/apps/blackbox.png>
+        [exec] (Bvi) {xdg-launch bvi} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Bvi Plus) {xdg-launch bviplus} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Calculator) {xdg-launch ede-calc} </usr/share/icons/gnome/16x16/mimetypes/empty.png>
+        [exec] (Desktop Search) {xdg-launch tracker-needle} </usr/share/icons/gnome/16x16/actions/system-search.png>
+        [exec] (EDE Tips) {xdg-launch ede-tip} </usr/share/icons/gnome/16x16/status/dialog-information.png>
+        [exec] (FLTK Editor) {xdg-launch fltk-editor} </usr/share/pixmaps/fltk-editor.xpm>
+        [exec] (FOX Calculator) {xdg-launch calculator} </usr/share/pixmaps/calculator.png>
+        [exec] (FOX Text Editor) {xdg-launch adie} </usr/share/icons/gnome/16x16/apps/accessories-text-editor.png>
+        [exec] (File Manager PCManFM) {xdg-launch pcmanfm} </usr/share/icons/gnome/16x16/apps/system-file-manager.png>
+        [exec] (Gtk VNC Viewer) {xdg-launch gvncviewer} </usr/share/icons/gnome/16x16/apps/gnome-remote-desktop.png>
+        [exec] (LXTerminal) {xdg-launch lxterminal} </usr/share/pixmaps/lxterminal.png>
+        [exec] (MacSlow's Cairo-Clock) {xdg-launch cairo-clock} </usr/share/pixmaps/cairo-clock.png>
+        [exec] (Mount-gtk) {xdg-launch mount-gtk} </usr/share/icons/gnome/16x16/devices/drive-removable-media.png>
+        [exec] (Nano) {xdg-launch nano} </usr/share/icons/hicolor/22x22/apps/nano.png>
+        [exec] (Pacman Express) {xdg-launch pacmanexpress} </usr/share/pixmaps/pacmanexpress.png>
+        [exec] (Root Terminal) {xdg-launch gksu} </usr/share/pixmaps/gksu-root-terminal.png>
+        [exec] (SpaceFM File Search) {xdg-launch spacefm-find} </usr/share/icons/hicolor/48x48/apps/spacefm-find.png>
+        [exec] (VI) {xdg-launch vi} </usr/share/pixmaps/gvim.png>
+        [exec] (VIM) {xdg-launch vim} </usr/share/pixmaps/gvim.png>
+        [exec] (Vi IMproved) {xdg-launch gvim} </usr/share/pixmaps/gvim.png>
+        [exec] (X11 Terminal) {xdg-launch ede-xterm} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (XTerm (Unicode\)) {xdg-launch xterm-(unicode)} </usr/share/pixmaps/xterm-color_32x32.xpm>
+        [exec] (Xarchiver) {xdg-launch xarchiver} </usr/share/icons/hicolor/16x16/apps/xarchiver.png>
+        [exec] (Xcalc Calculator) {xdg-launch xcalc} </usr/share/icons/gnome/16x16/apps/accessories-calculator.png>
+        [exec] (Xedit) {xdg-launch xedit} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Xfburn) {xdg-launch xfburn} </usr/share/icons/gnome/16x16/devices/media-cdrom.png>
+        [exec] (Xfi) {xdg-launch xfi} </usr/share/pixmaps/xfi.png>
+        [exec] (Xfp) {xdg-launch xfp} </usr/share/pixmaps/xfp.png>
+        [exec] (Xfv) {xdg-launch xfv} </usr/share/pixmaps/xfv.png>
+        [exec] (Xfw) {xdg-launch xfw} </usr/share/pixmaps/xfw.png>
+        [exec] (Zalc) {xdg-launch zalc} </usr/share/pixmaps/zalc.png>
+        [exec] (xplanetFX) {xdg-launch xplanetFX} </usr/share/pixmaps/xplanetFX.svg>
+    [end] # (Accessories)
+    [submenu] (Education) {Education Menu} </usr/share/icons/gnome/16x16/categories/applications-engineering.png>
+        [exec] (Calcoo) {xdg-launch calcoo} </usr/share/pixmaps/calcoo.png>
+        [exec] (LibreOffice Math) {xdg-launch libreoffice-math} </usr/share/icons/gnome/16x16/apps/libreoffice-math.png>
+        [exec] (Qucs) {xdg-launch qucs} </usr/share/qucs/bitmaps/big.qucs.xpm>
+        [exec] (StarPlot Star Chart Viewer) {xdg-launch starplot} </usr/share/pixmaps/starplot32x32.xpm>
+    [end] # (Education)
+    [submenu] (Games) {Games Menu} </usr/share/icons/gnome/16x16/categories/applications-games.png>
+        [exec] (Block Attack!) {xdg-launch blocks} </usr/share/icons/hicolor/32x32/apps/blocks.png>
+        [exec] (Checkers) {xdg-launch checkers} </usr/share/icons/hicolor/32x32/apps/checkers.png>
+        [exec] (Chess) {xdg-launch gnome-chess} </usr/share/icons/hicolor/16x16/apps/gnome-chess.png>
+        [exec] (Internet Chess Club) {xdg-launch internet-chess-club} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Sudoku) {xdg-launch sudoku} </usr/share/icons/hicolor/32x32/apps/sudoku.png>
+        [exec] (XBill) {xdg-launch xbill} </usr/share/xbill/pixmaps/wingdows.xpm>
+        [exec] (XGalaga) {xdg-launch xgalaga} </usr/share/pixmaps/xgalaga.png>
+        [exec] (Xboard) {xdg-launch xboard} </usr/share/icons/hicolor/scalable/apps/xboard.svg>
+        [exec] (Xboard) {xdg-launch xboard-ics} </usr/share/icons/hicolor/scalable/apps/xboard.svg>
+        [exec] (Xtetris) {xdg-launch xtetris} </usr/share/pixmaps/xtetris.png>
+        [exec] (aafire) {xdg-launch aafire} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (cacafire) {xdg-launch cacafire} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+    [end] # (Games)
+    [submenu] (Graphics) {Graphics Menu} </usr/share/icons/gnome/16x16/categories/applications-graphics.png>
+        [exec] (Blender) {xdg-launch blender} </usr/share/icons/hicolor/16x16/apps/blender.png>
+        [exec] (Feh) {xdg-launch feh} </usr/share/feh/images/feh.png>
+        [exec] (G3DViewer) {xdg-launch g3dviewer} </usr/share/pixmaps/g3dviewer.png>
+        [exec] (GNU Image Manipulation Program) {xdg-launch gimp} </usr/share/icons/hicolor/16x16/apps/gimp.png>
+        [exec] (GQview) {xdg-launch gqview} </usr/share/pixmaps/gqview.png>
+        [exec] (GV) {xdg-launch gv} </usr/share/pixmaps/gv.png>
+        [exec] (Gaw Gtk Analog Wave viewer) {xdg-launch gaw} </usr/share/pixmaps/gaw.png>
+        [exec] (Geeqie) {xdg-launch geeqie} </usr/share/pixmaps/geeqie.png>
+        [exec] (Image Viewer) {xdg-launch ede-image-view} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Image Viewer) {xdg-launch gpicview} </usr/share/icons/hicolor/48x48/apps/gpicview.png>
+        [exec] (ImageMagick) {xdg-launch imagemagick} </usr/share/icons/Mist/16x16/devices/display.png>
+        [exec] (ImageMagick Image Viewer) {xdg-launch display} </usr/share/pixmaps/imagic.png>
+        [exec] (Inkscape) {xdg-launch inkscape} </usr/share/icons/hicolor/16x16/apps/inkscape.png>
+        [exec] (Konstruktor) {xdg-launch konstruktor} </usr/share/icons/hicolor/16x16/apps/konstruktor.png>
+        [exec] (LibreOffice Draw) {xdg-launch libreoffice-draw} </usr/share/icons/gnome/16x16/apps/libreoffice-draw.png>
+        [exec] (The GIMP) {xdg-launch the-gimp} </usr/share/icons/hicolor/16x16/apps/gimp.png>
+        [exec] (Window Magnifier) {xdg-launch wmagnify} </usr/share/WindowMaker/Icons/Magnify.xpm>
+        [exec] (Wings3D) {xdg-launch wings3d} </usr/share/pixmaps/wings3d.png>
+        [exec] (X Window Snapshot) {xdg-launch x-window-snapshot} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (XPaint) {xdg-launch xpaint} </usr/share/pixmaps/XPaintIcon.xpm>
+        [exec] (XV Image Viewer) {xdg-launch xv} </usr/share/pixmaps/xv.png>
+        [exec] (Xfig) {xdg-launch xfig} </usr/share/pixmaps/xfig.png>
+        [exec] (flPhoto) {xdg-launch flphoto} </usr/share/pixmaps/flphoto.png>
+        [exec] (gThumb) {xdg-launch gthumb} </usr/share/icons/hicolor/16x16/apps/gthumb.png>
+        [exec] (xzgv) {xdg-launch xzgv} </usr/share/pixmaps/xzgv.xpm>
+    [end] # (Graphics)
+    [submenu] (Internet) {Internet Menu} </usr/share/icons/gnome/16x16/categories/applications-internet.png>
+        [exec] (Avahi SSH Server Browser) {xdg-launch bssh} </usr/share/icons/gnome/16x16/devices/network-wired.png>
+        [exec] (Avahi VNC Server Browser) {xdg-launch bvnc} </usr/share/icons/gnome/16x16/devices/network-wired.png>
+        [exec] (DHCP Client Daemon Applet) {xdg-launch dhcpcd-gtk} </usr/share/icons/gnome/16x16/status/network-transmit-receive.png>
+        [exec] (ELinks) {xdg-launch elinks} </usr/share/icons/gnome/16x16/mimetypes/html.png>
+        [exec] (Ekiga Softphone) {xdg-launch ekiga} </usr/share/icons/hicolor/16x16/apps/ekiga.png>
+        [exec] (Ettercap) {xdg-launch ettercap} </usr/share/pixmaps/ettercap.svg>
+        [exec] (Firefox) {xdg-launch firefox} </usr/share/icons/hicolor/16x16/apps/firefox.png>
+        [exec] (Firefox) {xdg-launch mozilla-firefox} </usr/share/icons/hicolor/16x16/apps/firefox.png>
+        [exec] (IP Telephony, VoIP and Video Conferencing) {xdg-launch gnome-ekiga} </usr/share/icons/hicolor/16x16/apps/ekiga.png>
+        [exec] (Links) {xdg-launch links} </usr/share/pixmaps/links_32x32.xpm>
+        [exec] (Midori) {xdg-launch midori} </usr/share/icons/hicolor/16x16/apps/midori.png>
+        [exec] (Midori Private Browsing) {xdg-launch midori-private} </usr/share/icons/hicolor/16x16/apps/midori.png>
+        [exec] (Mutt) {xdg-launch mutt} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (OpenNX Connection Wizard) {xdg-launch innovidata-opennx-wizard} </usr/share/icons/hicolor/16x16/apps/opennx-wizard.png>
+        [exec] (OpenNX Session Administrator) {xdg-launch innovidata-opennx-admin} </usr/share/icons/hicolor/16x16/apps/opennx-admin.png>
+        [exec] (OpenNX client) {xdg-launch innovidata-opennx} </usr/share/icons/hicolor/16x16/apps/nx.png>
+        [exec] (Remmina Remote Desktop Client) {xdg-launch remmina} </usr/share/icons/hicolor/16x16/apps/remmina.png>
+        [exec] (Telnet) {xdg-launch telnet} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Tightvnc) {xdg-launch mandriva-tightvnc} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Wireshark Network Analyzer) {xdg-launch redhat-wireshark} </usr/share/icons/hicolor/16x16/apps/wireshark.png>
+        [exec] (X11VNC Server) {xdg-launch x11vnc} </usr/share/icons/Mist/16x16/devices/computer.png>
+        [exec] (Xbiff) {xdg-launch xbiff} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Zenmap) {xdg-launch zenmap} </usr/share/zenmap/pixmaps/zenmap.png>
+        [exec] (Zenmap (as root\)) {xdg-launch zenmap-root} </usr/share/zenmap/pixmaps/zenmap.png>
+        [exec] (wpa_gui) {xdg-launch wpa_gui} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+    [end] # (Internet)
+    [submenu] (Office) {Office Menu} </usr/share/icons/gnome/16x16/categories/applications-office.png>
+        [exec] (GV) {xdg-launch gv} </usr/share/pixmaps/gv.png>
+        [exec] (GXditview) {xdg-launch gxditview} </usr/share/icons/hicolor/24x24/apps/postscript-viewer.png>
+        [exec] (LibreOffice) {xdg-launch libreoffice-startcenter} </usr/share/icons/gnome/16x16/apps/libreoffice-startcenter.png>
+        [exec] (LibreOffice Base) {xdg-launch libreoffice-base} </usr/share/icons/gnome/16x16/apps/libreoffice-base.png>
+        [exec] (LibreOffice Calc) {xdg-launch libreoffice-calc} </usr/share/icons/gnome/16x16/apps/libreoffice-calc.png>
+        [exec] (LibreOffice Draw) {xdg-launch libreoffice-draw} </usr/share/icons/gnome/16x16/apps/libreoffice-draw.png>
+        [exec] (LibreOffice Impress) {xdg-launch libreoffice-impress} </usr/share/icons/gnome/16x16/apps/libreoffice-impress.png>
+        [exec] (LibreOffice Math) {xdg-launch libreoffice-math} </usr/share/icons/gnome/16x16/apps/libreoffice-math.png>
+        [exec] (LibreOffice Writer) {xdg-launch libreoffice-writer} </usr/share/icons/gnome/16x16/apps/libreoffice-writer.png>
+        [exec] (RAKT PDF Viewer) {xdg-launch raktpdf} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (X PDF) {xdg-launch xpdf} </usr/share/pixmaps/xpdf.xpm>
+        [exec] (XDvi) {xdg-launch xdvi} </usr/share/pixmaps/xdvi.png>
+        [exec] (Xditview) {xdg-launch xditview} </usr/share/icons/hicolor/24x24/apps/postscript-viewer.png>
+        [exec] (Zat) {xdg-launch zat} </usr/share/pixmaps/zat.png>
+        [exec] (Zathura) {xdg-launch zathura} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (apvlv) {xdg-launch apvlv} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+    [end] # (Office)
+    [submenu] (Programming) {Programming Menu} </usr/share/icons/gnome/16x16/categories/applications-development.png>
+        [exec] (CMake) {xdg-launch CMake} </usr/share/pixmaps/CMakeSetup32.png>
+        [exec] (Eeschema) {xdg-launch eeschema} </usr/share/icons/hicolor/16x16/apps/eeschema.png>
+        [exec] (FLUID) {xdg-launch fluid} </usr/share/icons/hicolor/16x16/apps/fluid.png>
+        [exec] (KiCad) {xdg-launch kicad} </usr/share/icons/hicolor/scalable/apps/kicad.svg>
+        [exec] (Qt Assistant) {xdg-launch assistant} </usr/share/icons/hicolor/32x32/apps/assistant.png>
+        [exec] (Qt Designer) {xdg-launch designer} </usr/share/icons/hicolor/128x128/apps/designer.png>
+        [exec] (Qt Linguist) {xdg-launch linguist} </usr/share/icons/hicolor/16x16/apps/linguist.png>
+        [exec] (Qt QDbusViewer) {xdg-launch qdbusviewer} </usr/share/icons/hicolor/32x32/apps/qdbusviewer.png>
+        [exec] (Qt3 Assistant) {xdg-launch qt-assistant3} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Qt3 Linguist) {xdg-launch qt-linguist3} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Qt4 Assistant) {xdg-launch assistant-qt4} </usr/share/icons/hicolor/32x32/apps/assistant-qt4.png>
+        [exec] (Qt4 Designer) {xdg-launch qt4-designer} </usr/share/icons/hicolor/128x128/apps/designer.png>
+        [exec] (Qt4 Designer) {xdg-launch designer-qt4} </usr/share/icons/hicolor/128x128/apps/designer-qt4.png>
+        [exec] (Qt4 Linguist) {xdg-launch linguist-qt4} </usr/share/icons/hicolor/16x16/apps/linguist-qt4.png>
+        [exec] (Qt4 Linguist) {xdg-launch qt4-linguist} </usr/share/icons/hicolor/16x16/apps/linguist.png>
+        [exec] (Qt4 QDbusViewer) {xdg-launch qdbusviewer-qt4} </usr/share/icons/hicolor/32x32/apps/qdbusviewer-qt4.png>
+        [exec] (Scratch) {xdg-launch scratch} </usr/share/icons/hicolor/32x32/apps/scratch.png>
+        [exec] (Vi IMproved) {xdg-launch gvim} </usr/share/pixmaps/gvim.png>
+    [end] # (Programming)
+    [submenu] (Science & Math) {Science & Math Menu} </usr/share/icons/gnome/16x16/categories/applications-science.png>
+        [exec] (Bc) {xdg-launch bc} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Dc) {xdg-launch dc} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (GNUplot) {xdg-launch gnuplot} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (GSpiceUI) {xdg-launch gspiceui} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+    [end] # (Science & Math)
+    [submenu] (Sound & Video) {Sound & Video Menu} </usr/share/icons/gnome/16x16/categories/applications-multimedia.png>
+        [exec] (ALSA Mixer) {xdg-launch alsamixer} </usr/share/icons/gnome/16x16/apps/gnome-mixer.png>
+        [exec] (Alsaplayer) {xdg-launch alsaplayer} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Audacious) {xdg-launch audacious} </usr/share/icons/hicolor/scalable/apps/audacious.svg>
+        [exec] (Audacious (GTKui\)) {xdg-launch audacious2-gtkui} </usr/share/icons/hicolor/scalable/apps/audacious.svg>
+        [exec] (Audacious2) {xdg-launch audacious2} </usr/share/icons/hicolor/scalable/apps/audacious2.svg>
+        [exec] (Audio Mixer) {xdg-launch xfce4-mixer} </usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png>
+        [exec] (Aumix) {xdg-launch aumix} </usr/share/aumix/aumix.xpm>
+        [exec] (Consonance) {xdg-launch consonance} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (FFADO Mixer) {xdg-launch ffadomixer} </usr/share/pixmaps/ffado.png>
+        [exec] (FlBurn) {xdg-launch flburn} </usr/share/pixmaps/flburn.png>
+        [exec] (Flmusic) {xdg-launch flmusic} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Goggles Music Manager) {xdg-launch gogglesmm} </usr/share/icons/hicolor/16x16/apps/gogglesmm.png>
+        [exec] (Guayadeque Music Player) {xdg-launch guayadeque} </usr/share/pixmaps/guayadeque.png>
+        [exec] (Music Player) {xdg-launch lxmusic} </usr/share/pixmaps/lxmusic.png>
+        [exec] (Pragha) {xdg-launch pragha} </usr/share/icons/hicolor/128x128/apps/pragha.png>
+        [exec] (Qt V4L2 test Utility) {xdg-launch qv4l2} </usr/share/icons/hicolor/16x16/apps/qv4l2.png>
+        [exec] (SimpleBurn) {xdg-launch simpleburn} </usr/share/pixmaps/simpleburn.png>
+        [exec] (Videos) {xdg-launch totem} </usr/share/icons/hicolor/16x16/apps/totem.png>
+        [exec] (XMMS) {xdg-launch xmms} </usr/share/pixmaps/xmms.png>
+        [exec] (Xfburn) {xdg-launch xfburn} </usr/share/icons/gnome/16x16/devices/media-cdrom.png>
+        [exec] (moc-tray) {xdg-launch moc-tray} </usr/share/pixmaps/moc-tray.png>
+    [end] # (Sound & Video)
+    [submenu] (System Tools) {System Tools Menu} </usr/share/icons/gnome/16x16/categories/applications-system.png>
+        [exec] (Atop) {xdg-launch atop} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Avahi Zeroconf Browser) {xdg-launch avahi-discover} </usr/share/icons/gnome/16x16/devices/network-wired.png>
+        [exec] (Battery Status Icon) {xdg-launch cbatticon} </usr/share/icons/gnome/16x16/devices/battery.png>
+        [exec] (Bluetooth Control) {xdg-launch bluetoothctl} </usr/share/icons/hicolor/16x16/apps/bluetooth.png>
+        [exec] (Bulk Rename) {xdg-launch Thunar-bulk-rename} </usr/share/icons/hicolor/16x16/apps/Thunar.png>
+        [exec] (Cairo Composite Manager) {xdg-launch cairo-compmgr} </usr/share/pixmaps/cairo-compmgr/cairo-compmgr.png>
+        [exec] (Conky Status Display) {xdg-launch conky} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (DHCP Client Daemon Applet) {xdg-launch dhcpcd-gtk} </usr/share/icons/gnome/16x16/status/network-transmit-receive.png>
+        [exec] (Fluff) {xdg-launch fluff} </usr/share/pixmaps/fluff.png>
+        [exec] (Fluxbox Panel) {xdg-launch fbpanel} </usr/share/fbpanel/images/logo.png>
+        [exec] (Fluxbox Tray Menu.) {xdg-launch ftmenu} </usr/share/icons/Mist/16x16/apps/start-here.png>
+        [exec] (Fluxbox XKB Switcher) {xdg-launch fbxkb} </usr/share/icons/gnome/16x16/devices/keyboard.png>
+        [exec] (GSmartControl) {xdg-launch gsmartcontrol} </usr/share/icons/hicolor/16x16/apps/gsmartcontrol.png>
+        [exec] (Htop) {xdg-launch htop} </usr/share/pixmaps/htop.png>
+        [exec] (LSHW) {xdg-launch gtk-lshw} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Lock Screen) {xdg-launch slock} </usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png>
+        [exec] (Manage Printing) {xdg-launch cups} </usr/share/icons/hicolor/16x16/apps/cups.png>
+        [exec] (New Login in a Window) {xdg-launch gdmflexiserver-xnest} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Package Updater) {xdg-launch gpk-update-viewer} </usr/share/icons/gnome/16x16/apps/system-software-update.png>
+        [exec] (Pango Viewer) {xdg-launch pango-view} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (PathFinder) {xdg-launch PathFinder} </usr/share/pixmaps/PathFinder.png>
+        [exec] (Procinfo) {xdg-launch procinfo} </usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png>
+        [exec] (Pstree) {xdg-launch pstree} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (ROX) {xdg-launch mandriva-rox} </usr/share/pixmaps/rox.png>
+        [exec] (ROX Filer) {xdg-launch rox-filer} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (ROX Filer) {xdg-launch rox} </usr/share/pixmaps/rox.png>
+        [exec] (ROXTerm) {xdg-launch roxterm} </usr/share/icons/hicolor/scalable/apps/roxterm.svg>
+        [exec] (Run Command) {xdg-launch gmrun} </usr/share/icons/gnome/16x16/actions/system-run.png>
+        [exec] (Run Command) {xdg-launch fbrun} </usr/share/icons/gnome/16x16/actions/system-run.png>
+        [exec] (Run Command) {xdg-launch xde-run} </usr/share/icons/gnome/16x16/actions/system-run.png>
+        [exec] (SpaceFM) {xdg-launch spacefm} </usr/share/icons/hicolor/48x48/apps/spacefm.png>
+        [exec] (System Profiler and Benchmark) {xdg-launch hardinfo} </usr/share/hardinfo/pixmaps/logo.png>
+        [exec] (Task Manager) {xdg-launch lxtask} </usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png>
+        [exec] (TeXconfig) {xdg-launch texconfig} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Terminal) {xdg-launch gnome-terminal} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (Thunar File Manager) {xdg-launch Thunar} </usr/share/icons/hicolor/16x16/apps/Thunar.png>
+        [exec] (Top CPU Processes) {xdg-launch top} </usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png>
+        [exec] (UXTerm) {xdg-launch uxterm} </usr/share/pixmaps/xterm-color_48x48.xpm>
+        [exec] (Unclutter) {xdg-launch unclutter} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Vifm) {xdg-launch vifm} </usr/share/pixmaps/vifm.png>
+        [exec] (Wireshark) {xdg-launch wireshark} </usr/share/icons/hicolor/16x16/apps/wireshark.png>
+        [exec] (X Load) {xdg-launch xload} </usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png>
+        [exec] (X-Terminal as root (GKsu\)) {xdg-launch terminal-as-root-(gksu)} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (XDE Panel) {xdg-launch xde-panel} </usr/share/icons/hicolor/48x48/apps/perlpanel-panel.png>
+        [exec] (XTerm) {xdg-launch xterm} </usr/share/pixmaps/xterm-color_48x48.xpm>
+        [exec] (XTerm) {xdg-launch mandriva-xterm} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (XTerm) {xdg-launch mageia-xterm} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Xfce Terminal) {xdg-launch xfce4-terminal} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (Xfe) {xdg-launch xfe} </usr/share/pixmaps/xfe.png>
+        [exec] (Xsensors) {xdg-launch xsensors} </usr/share/pixmaps/xsensors.png>
+        [exec] (dconf Editor) {xdg-launch dconf-editor} </usr/share/icons/hicolor/16x16/apps/dconf-editor.png>
+        [exec] (emelFM2) {xdg-launch emelfm2} </usr/share/pixmaps/emelfm2.png>
+        [exec] (mc) {xdg-launch mc} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (stalonetray) {xdg-launch stalonetray} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (urxvt) {xdg-launch urxvt} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (urxvt (client\)) {xdg-launch urxvtc} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+        [exec] (urxvt (tabbed\)) {xdg-launch urxvt-tabbed} </usr/share/icons/gnome/16x16/apps/utilities-terminal.png>
+    [end] # (System Tools)
+    [separator]
+    [submenu] (X11 Tools) {X11 Tools Menu} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (Openbox Window Properties) {xdg-launch obxprop} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (Reset color map) {xdg-launch xstdcmap} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (Session Manager Proxy) {xdg-launch smproxy} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Clipboard) {xdg-launch xclipboard} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Clock) {xdg-launch xclock} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Color Selector) {xdg-launch xcolorsel} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Console) {xdg-launch xconsole} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Display Atoms) {xdg-launch xlsatoms} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Display Clients) {xdg-launch xlsclients} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Display Properties) {xdg-launch xdpyinfo} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Display Refresh) {xdg-launch xrefresh} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Events) {xdg-launch xev} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Eyes) {xdg-launch xeyes} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Font Select) {xdg-launch xfontsel} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Input) {xdg-launch xinput} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Keyboard LEDs) {xdg-launch xkbvleds} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Keyboard State) {xdg-launch xkbwatch} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Kill) {xdg-launch xkill} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Magnifier) {xdg-launch xmag} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Manual Page) {xdg-launch xman} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Mod Key Mapping) {xdg-launch xmodmap} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X RandR) {xdg-launch xrandr} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Resource Editor) {xdg-launch editres} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Resource Top) {xdg-launch xrestop} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Settings) {xdg-launch xset} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Video Information) {xdg-launch xvinfo} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Video Tuner) {xdg-launch xvidtune} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Window Dump) {xdg-launch xwd} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Window Dump Display) {xdg-launch xwud} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Window Information) {xdg-launch xwininfo} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (X Window Properties) {xdg-launch xprop} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+    [end] # (X11 Tools)
+    [submenu] (Dock Apps) {Dock Apps Menu} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (ASClock) {xdg-launch asclock} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Alarm Clock Dock App) {xdg-launch wmclockmon} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Alsa Mixer) {xdg-launch AlsaMixer.app} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Analog and Digital Clock) {xdg-launch wmtime} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Audacious Dock App) {xdg-launch wmauda} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Audio Mixer) {xdg-launch wmmixer} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Audio Mixer) {xdg-launch wmsmixer} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Battery Dock App) {xdg-launch wmbattery} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Battery Dock App (ACPI\)) {xdg-launch wmacpi} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Binary Clock Dock App) {xdg-launch wmBinClock} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Blob Dock App) {xdg-launch wmblob} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Blue CPU Monitor Dock App) {xdg-launch wmbluecpu} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Blue Clock Dock App) {xdg-launch wmblueclock} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Blue GPU Temperature Monitor Dock App) {xdg-launch wmbluegpu} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Blue Memory Monitor Dock App) {xdg-launch wmbluemem} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Bubble Monitor) {xdg-launch bubblemon} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Bubble Monitor Dock App) {xdg-launch wmbubble} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (CPU Load Dock App) {xdg-launch wmcpuload} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (CPU Load Dock App (bars\)) {xdg-launch wmcpu} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Calculator Dock App) {xdg-launch wmcalc} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Calendar Clock Dock App) {xdg-launch wmCalClock} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Calendar Clock Keyboard Dock App) {xdg-launch wmCalClockKbd} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Clip History Dock App) {xdg-launch wmcliphist} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Clock Dock App) {xdg-launch lal} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Core CPU Load) {xdg-launch wmcore} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Disk Monitor Dock App) {xdg-launch wmdiskmon} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Filesystem Mounting Dock App) {xdg-launch wmudmount} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Launcher Dock App) {xdg-launch wmappl} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Mandelbrot Set Browser Dock App) {xdg-launch wmMand} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Monitoring Dock App) {xdg-launch allin1} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Network Device Monitor) {xdg-launch wmnd} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Network Monitor) {xdg-launch wmnet} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (System Monitor) {xdg-launch wmsysmon} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Timer Dock App) {xdg-launch wmtimer} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Trash Can Dock App) {xdg-launch wmtrash} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (WMCDplay) {xdg-launch wmcdplay} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (WMMaiLoad) {xdg-launch wmmaiload} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (WMMail) {xdg-launch wmmail} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (WMbiff) {xdg-launch wmbiff} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (WMifs) {xdg-launch wmifs} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Weather Monitor Dock App) {xdg-launch wmWeather} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Weather Monitor Dock App Plus) {xdg-launch wmweather+} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Wifi Monitor) {xdg-launch wmwave} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Wifi Monitor (LED\)) {xdg-launch wmwifi} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (Wmclock) {xdg-launch wmclock} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (wmITime) {xdg-launch wmitime} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (wmInet) {xdg-launch wminet} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (wmMoonClock) {xdg-launch wmMoonClock} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (wmMoonClock) {xdg-launch wmmoonclock} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (wmStickyNotes) {xdg-launch wmstickynotes} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (wmTop) {xdg-launch wmtop} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (wmbatteries) {xdg-launch wmbatteries} </usr/share/icons/hicolor/16x16/apps/GNUstep3D.png>
+        [exec] (wmbutton) {xdg-launch wmbutton} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (wmfire) {xdg-launch wmfire} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (wmforkplop) {xdg-launch wmforkplop} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (wmfrog) {xdg-launch wmfrog} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (wmgtemp) {xdg-launch wmgtemp} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (wmwork) {xdg-launch wmwork} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+    [end] # (Dock Apps)
+    [submenu] (Other) {Other Menu} </usr/share/icons/gnome/16x16/categories/applications-other.png>
+        [exec] (About EDE) {xdg-launch ede-about} </usr/share/icons/gnome/16x16/actions/help-about.png>
+        [exec] (Bash) {xdg-launch bash} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Dash) {xdg-launch dash} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (E16) {xdg-launch e16} </usr/share/e16/icons/e16.png>
+        [exec] (Font Viewer) {xdg-launch gfontview} </usr/share/pixmaps/gfontview.png>
+        [exec] (GnuChess) {xdg-launch gnuchess} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Help) {xdg-launch ede-help} </usr/share/icons/gnome/16x16/apps/help-browser.png>
+        [exec] (Info) {xdg-launch info} </usr/share/icons/gnome/16x16/status/info.png>
+        [exec] (Oclock) {xdg-launch oclock} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (PNMixer) {xdg-launch pnmixer} </usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png>
+        [exec] (Run Program...) {xdg-launch ede-launch} </usr/share/icons/gnome/16x16/actions/system-run.png>
+        [exec] (Screen Lock) {xdg-launch ede-screen-lock} </usr/share/icons/gnome/16x16/actions/system-lock-screen.png>
+        [exec] (Sh) {xdg-launch sh} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (Simple Tray XKB Indicator) {xdg-launch sbxkb} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (System monitor) {xdg-launch gatotray} </usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png>
+        [exec] (TeXdoctk) {xdg-launch texdoctk} </usr/share/icons/gnome/16x16/mimetypes/exec.png>
+        [exec] (TigerVNC viewer) {xdg-launch vncviewer} </usr/share/icons/hicolor/16x16/apps/tigervnc.png>
+        [exec] (X Fishtank) {xdg-launch xfishtank} </usr/share/icons/gnome/16x16/apps/wallpaper.png>
+        [exec] (X Snow) {xdg-launch xsnow} </usr/share/icons/gnome/16x16/apps/wallpaper.png>
+        [exec] (XDG Tray Menu) {xdg-launch xdg-traymenu} </usr/share/icons/Mist/16x16/apps/start-here.png>
+        [exec] (Xlock) {xdg-launch xlockmore} </usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png>
+        [exec] (Xlogo) {xdg-launch xlogo} </usr/share/icons/hicolor/16x16/apps/xlogo.png>
+        [exec] (gEDA Attribute Editor) {xdg-launch geda-gattrib} </usr/share/icons/hicolor/scalable/apps/geda-gattrib.svg>
+        [exec] (gEDA Schematic Editor) {xdg-launch geda-gschem} </usr/share/icons/hicolor/scalable/apps/geda-gschem.svg>
+        [exec] (mcedit) {xdg-launch mcedit} </usr/share/icons/gnome/16x16/apps/text-editor.png>
+    [end] # (Other)
+    [separator]
+    [submenu] (Preferences) {Preferences Menu} </usr/share/icons/gnome/16x16/categories/preferences-desktop.png>
+        [exec] (Adobe Flash Player) {xdg-launch flash-player-properties} </usr/share/icons/hicolor/16x16/apps/flash-player-properties.png>
+        [exec] (ChBg) {xdg-launch chbg} </usr/share/pixmaps/chbg_64x64.xpm>
+        [exec] (Configure EDE) {xdg-launch ede-conf} </usr/share/icons/Mist/16x16/devices/computer.png>
+        [exec] (Customize Look and Feel) {xdg-launch lxappearance} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (Desktop Preferences) {xdg-launch pcmanfm-desktop-pref} </usr/share/icons/Mist/16x16/places/user-desktop.png>
+        [exec] (FOX Desktop Setup) {xdg-launch ControlPanel} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (File Manager) {xdg-launch thunar-settings} </usr/share/icons/gnome/16x16/apps/system-file-manager.png>
+        [exec] (Firewall Builder) {xdg-launch fwbuilder} </usr/share/icons/hicolor/16x16/apps/fwbuilder.png>
+        [exec] (Gtk Theme Switch 2) {xdg-launch gtk-theme-switch2} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (Gtk2 Change Theme) {xdg-launch gtk-chtheme} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (Gtk2 Preferences) {xdg-launch gtk2_prefs} </usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png>
+        [exec] (Keyboard Settings) {xdg-launch lxkb-config} </usr/share/icons/gnome/16x16/apps/preferences-desktop-keyboard.png>
+        [exec] (Keyboard and Mouse) {xdg-launch xde-input} </usr/share/icons/gnome/16x16/devices/input-keyboard.png>
+        [exec] (LXDE Panel Settings) {xdg-launch lxpanelctl} </usr/share/icons/gnome/16x16/categories/preferences-desktop.png>
+        [exec] (Monitor Settings) {xdg-launch lxrandr} </usr/share/icons/Mist/16x16/devices/display.png>
+        [exec] (Network Connections) {xdg-launch nm-connection-editor} </usr/share/icons/gnome/16x16/categories/preferences-system-network.png>
+        [exec] (Openbox Configuration Manager) {xdg-launch obconf} </usr/share/pixmaps/obconf.png>
+        [exec] (Packages) {xdg-launch gpk-application} </usr/share/icons/gnome/16x16/apps/system-software-install.png>
+        [exec] (Panel tint2) {xdg-launch tint2conf} </usr/share/pixmaps/tint2conf.png>
+        [exec] (Pop-Up Notifications) {xdg-launch notification-properties} </usr/share/icons/hicolor/16x16/apps/notification-properties.png>
+        [exec] (Preferred Applications) {xdg-launch ede-preferred-applications} </usr/share/icons/gnome/16x16/mimetypes/empty.png>
+        [exec] (Preferred Applications) {xdg-launch libfm-pref-apps} </usr/share/icons/gnome/16x16/categories/preferences-desktop.png>
+        [exec] (Print Settings) {xdg-launch system-config-printer} </usr/share/icons/gnome/16x16/devices/printer.png>
+        [exec] (Printing) {xdg-launch redhat-system-config-printer} </usr/share/icons/gnome/16x16/devices/printer.png>
+        [exec] (Removable Drives and Media) {xdg-launch thunar-volman-settings} </usr/share/icons/gnome/16x16/devices/drive-removable-media.png>
+        [exec] (Search and Indexing) {xdg-launch tracker-preferences} </usr/share/icons/hicolor/16x16/apps/tracker.png>
+        [exec] (XDE Background) {xdg-launch xde-setbg} </usr/share/icons/gnome/16x16/devices/keyboard.png>
+        [exec] (systemadm) {xdg-launch systemadm} </usr/share/icons/gnome/16x16/categories/applications-system.png>
+    [end] # (Preferences)
+  [separator]
+  [submenu] (Fluxbox menu)
+    [config] (Configure)
+    [submenu] (System Styles) {Choose a style...}
+      [stylesdir] (/usr/share/fluxbox/styles)
+    [end]
+    [submenu] (User Styles) {Choose a style...}
+      [stylesdir] (~/.fluxbox/styles)
+    [end]
+    [submenu] (Backgrounds) {Set the Background}
+      [exec] (Random Background) {fbsetbg -r /usr/share/fluxbox/backgrounds}
+    [end]
+    [workspaces] (Workspace List) </usr/share/icons/Mist/16x16/apps/preferences-desktop-display.png>
+    [submenu] (Tools) </usr/share/icons/gnome/16x16/categories/applications-utilities.png>
+      [exec] (Window name) {xprop WM_CLASS|cut -d \" -f 2|gxmessage -file - -center}
+      [exec] (Screenshot - JPG) {import screenshot.jpg && display -resize 50% screenshot.jpg} </usr/share/icons/gnome/16x16/apps/applets-screenshooter.png>
+      [exec] (Screenshot - PNG) {import screenshot.png && display -resize 50% screenshot.png} </usr/share/icons/gnome/16x16/apps/applets-screenshooter.png>
+      [exec] (Run) {fbrun -font 10x20 -fg grey -bg black -title run} </usr/share/icons/gnome/16x16/actions/gtk-execute.png>
+      [exec] (Run Command) {bbrun -a -w} </usr/share/icons/gnome/16x16/actions/gtk-execute.png>
+    [end]
+    [submenu] (Arrange Windows) </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [arrangewindows] (Arrange Windows)
+      [arrangewindowshorizontal] (Arrange Windows Horizontal)
+      [arrangewindowsvertical] (Arrange Windows Vertical)
+    [end]
+    [submenu] (Window Managers) {Window Managers} </usr/share/icons/gnome/16x16/actions/gtk-quit.png>
+      [restart] (Restart) </usr/share/icons/gnome/16x16/actions/gtk-refresh.png>
+      [restart] (Start 2bwm) {2bwm} </usr/share/icons/hicolor/16x16/apps/2bWM.png>
+      [restart] (Start adwm) {adwm} </usr/share/icons/hicolor/16x16/apps/adwm.png>
+      [restart] (Start AEWM) {aewm} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start AEWM++) {aewm++} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start AfterStep) {afterstep} </usr/share/icons/hicolor/48x48/apps/AfterStep.png>
+      [restart] (Start awesome) {awesome} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start Blackbox) {blackbox} </usr/share/icons/hicolor/16x16/apps/blackbox.png>
+      [restart] (Start bspwm) {bspwm} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start CTWM) {ctwm} </usr/share/icons/hicolor/16x16/apps/ctwm.png>
+      [restart] (Start cwm) {cwm} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start Dwm) {dwm} </usr/share/icons/hicolor/16x16/apps/dwm.png>
+      [restart] (Start E16) {/usr/share/e16/misc/starte16} </usr/share/e16/icons/e16.png>
+      [restart] (Start echinus) {echinus} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start EDE) {startede} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start evilwm) {evilwm} </usr/share/icons/hicolor/16x16/apps/evilwm.png>
+      [restart] (Start failsafewm) {failsafewm} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start FLWM) {flwm} </usr/share/pixmaps/flwm.png>
+      [restart] (Start FVWM) {fvwm} </usr/share/icons/hicolor/16x16/apps/fvwm.png>
+      [restart] (Start FVWM-Crystal) {fvwm-crystal} </usr/share/icons/hicolor/16x16/apps/fvwm-crystal.png>
+      [restart] (Start herbstluftwm) {herbstluftwm} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start i3) {i3} </usr/share/icons/hicolor/16x16/apps/i3.png>
+      [restart] (Start IceWM) {icewm} </usr/share/icons/hicolor/16x16/apps/icewm.png>
+      [restart] (Start Jwm) {jwm} </usr/share/icons/hicolor/16x16/apps/jwm.png>
+      [restart] (Start larswm) {larswm} </usr/share/icons/hicolor/16x16/apps/larswm.png>
+      [restart] (Start LXDE) {startlxde} </usr/share/pixmaps/lxde-icon.png>
+      [restart] (Start mantis-wm) {mantis-wm} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start matwm2) {matwm2} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start Metacity) {metacity} </usr/share/pixmaps/metacity.png>
+      [restart] (Start MWM) {mwm} </usr/share/icons/hicolor/16x16/apps/mwm.png>
+      [restart] (Start Openbox) {openbox-session} </usr/share/pixmaps/openbox.png>
+      [restart] (Start pawm) {pawm} </usr/share/icons/hicolor/16x16/apps/pawm.png>
+      [restart] (Start Pekwm) {pekwm} </usr/share/icons/hicolor/16x16/apps/pekwm.png>
+      [restart] (Start spectrwm) {spectrwm} </usr/share/icons/hicolor/16x16/apps/spectrwm.png>
+      [restart] (Start TWM) {twm} </usr/share/icons/hicolor/16x16/apps/twm.png>
+      [restart] (Start μwm) {uwm} </usr/share/pixmaps/uwm16x16.xpm>
+      [restart] (Start velox) {velox} </usr/share/icons/hicolor/16x16/apps/velox.png>
+      [restart] (Start VTWM) {vtwm} </usr/share/icons/hicolor/16x16/apps/vtwm.png>
+      [restart] (Start Waimea) {waimea} </usr/share/icons/gnome/16x16/apps/preferences-system-windows.png>
+      [restart] (Start Wind) {wind} </usr/share/icons/hicolor/16x16/apps/windwm.png>
+      [restart] (Start wm2) {wm2} </usr/share/icons/hicolor/16x16/apps/wm2.png>
+      [restart] (Start WindowMaker) {wmaker} </usr/share/icons/hicolor/16x16/apps/wmaker.png>
+      [restart] (Start wmii) {wmii} </usr/share/icons/hicolor/16x16/apps/wmii.png>
+      [restart] (Start wmx) {wmx} </usr/share/icons/hicolor/16x16/apps/wmx.png>
+      [restart] (Start XDWM) {xdwm-session} </usr/share/icons/hicolor/16x16/apps/xdwm.png>
+      [restart] (Start Xfce Session) {startxfce4} </usr/share/icons/hicolor/16x16/apps/archlinux-wm-xfce.png>
+      [restart] (Start yeahwm) {yeahwm} </usr/share/icons/hicolor/16x16/apps/yeahwm.png>
+    [end] # (Window Managers)
+  [end] # (Fluxbox menu)
+  [exec] (Lock screen) {xlock} </usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png>
+  [commanddialog] (Fluxbox Command) </usr/share/icons/gnome/16x16/actions/gtk-execute.png>
+  [reconfig] (Reload config) </usr/share/icons/gnome/16x16/actions/gtk-redo-ltr.png>
+  [restart] (Restart) {} </usr/share/icons/gnome/16x16/actions/gtk-refresh.png>
+  [exec] (About) {(fluxbox -v; fluxbox -info | sed 1d) | gxmessage -file - -center} </usr/share/icons/gnome/16x16/actions/help-about.png>
+  [separator]
+  [exit] (Exit) </usr/share/icons/gnome/16x16/actions/gtk-quit.png>
+[endencoding]
+[end] # (Fluxbox)

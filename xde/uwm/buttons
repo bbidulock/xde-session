@@ -1,0 +1,56 @@
+;
+;	configure pointer/mouse buttons on root window
+;
+;	FIXME: change to new button configuration
+;
+root = [
+    [ button = 1 root-menu = 0 ]
+    [ button = 2 root-menu = 1 ]
+    [ button = 3 root-menu = 0 ]
+    [ button = 4 prev-desktop = true ]
+    [ button = 5 next-desktop  = true ]
+    ; FIXME: double-click not yet working
+    [ double-click = 1 toggle-show-desktop = true ]
+]
+
+;
+;	configure pointer/mouse buttons on frame of client window
+;
+;	modifier:	shift lock ctrl mod1 mod2 mod3 mod4 mod5
+;	type:		button click double-click triple-click long-click
+;	nr:		button nr 0 .. 255
+;
+;	click-raises	button raises the client window
+;	click-focus	button focus the client window
+;	replay		send button also to client
+;
+;	[ [ modifier* type nr] option action ]
+;
+;	FIXME: border = is above, planned feature
+;{
+frame = [
+    [ [ `button 1 ] click-raises = true border-button = true ]
+    [ [ `long-click 1 ] border-button = true ]
+    [ [ `double-click 1 ] toggle-maximize = true ]
+    [ [ `button 2 ] move = true ]
+    [ [ `button 3 ] window-menu = true ]
+    [ [ `double-click 3 ] toggle-shade = true ]
+    [ [ `button 4 ] shade = true ]
+    [ [ `button 5 ] shade = false ]
+    [ [ `button 6 ] lower = true ]
+    [ [ `button 7 ] raise = true ]
+]
+
+;
+;	configure pointer/mouse buttons on client window
+;
+client = [
+    [ [ `button 1 ] click-raises = true click-focus = true replay = true ]
+    [ [ `button 2 ] click-raises = true click-focus = true replay = true ]
+    [ [ `button 3 ] click-raises = true click-focus = true replay = true ]
+    [ [ `mod1 `button 1 ] move = true ]
+    [ [ `mod1 `button 2 ] move = true ]
+    [ [ `mod1 `button 3 ] resize = true ]
+]
+;}
+

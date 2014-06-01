@@ -1,0 +1,37 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Type=XSession
+Name=IceWM
+Icon=icewm
+Exec=icewm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Simple and fast window manger
+Categories=WindowManager;Application;System;
+StartupNotify=false
+NoDisplay=true
+X-GNOME-WMName=icewm
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=false
+Actions=XDE;Session;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop ICEWM -startwm start-icewmn
+Comment=IceWM in an XDE session
+
+[Desktop Action Session]
+Name=IceWM Session
+Icon=icewm
+Exec=icewm-session
+Name[en_US]=IceWM Session
+Comment=Simple and fast window manger
+
+[Window Manager]
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

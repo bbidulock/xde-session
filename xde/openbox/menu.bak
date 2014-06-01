@@ -1,0 +1,193 @@
+[begin] (Menu)
+[exec] (xterm) {xterm}
+[separator]
+[submenu] (Applications)
+ [submenu] (Accessories)
+     [exec] (AllTray 0.7.5.1dev) {alltray -a}
+     [exec] (BlackBox Pager) {/usr/bin/bbpager}
+     [exec] (File Manager PCManFM) {pcmanfm }
+     [exec] (Font Viewer) {gnome-font-viewer }
+     [exec] (Gtk VNC Viewer) {/usr/bin/gvncviewer}
+     [exec] (Gxmessage) {gxmessage}
+     [exec] (Image Viewer) {gpicview }
+     [exec] (LXTerminal) {lxterminal}
+     [exec] (MacSlow's Cairo-Clock) {cairo-clock}
+     [exec] (Mount-gtk) {mount-gtk}
+     [exec] (Root Terminal) {gksu -l gnome-terminal}
+     [exec] (Vi IMproved) {gvim -f }
+     [exec] (Xarchiver) {xarchiver}
+     [exec] (Xcalc Calculator) {xcalc}
+ [end] # (Accessories)
+ [submenu] (Archlinux)
+     [exec] (AUR) {xdg-open https://aur.archlinux.org}
+     [exec] (Bugs) {xdg-open https://bugs.archlinux.org}
+     [exec] (Developers) {xdg-open http://www.archlinux.org/developers/}
+     [exec] (Documentation) {xdg-open https://wiki.archlinux.org/index.php/Official_Arch_Linux_Install_Guide}
+     [exec] (Donate) {xdg-open http://www.archlinux.org/donate/}
+     [exec] (Forum) {xdg-open https://bbs.archlinux.org}
+     [exec] (Homepage) {xdg-open http://www.archlinux.org}
+     [exec] (SVN) {xdg-open http://projects.archlinux.org/svntogit/}
+     [exec] (Schwag) {xdg-open http://www.zazzle.com/archlinux/}
+     [exec] (Wiki) {xdg-open https://wiki.archlinux.org}
+ [end] # (Archlinux)
+ [submenu] (Graphics)
+     [exec] (GNU Image Manipulation Program) {gimp-2.8 }
+     [exec] (GQview) {gqview -r }
+     [exec] (GV) {gv}
+     [exec] (Geeqie) {geeqie -r }
+     [exec] (Image Viewer) {gpicview }
+     [exec] (Inkscape) {inkscape }
+     [exec] (LibreOffice Draw) {libreoffice --draw }
+     [exec] (MuPDF) {mupdf }
+     [exec] (Xfig) {xfig}
+ [end] # (Graphics)
+ [submenu] (Internet)
+     [exec] (Avahi SSH Server Browser) {/usr/bin/bssh}
+     [exec] (Avahi VNC Server Browser) {/usr/bin/bvnc}
+     [exec] (Ekiga Softphone) {ekiga}
+     [exec] (EtherApe) {etherape}
+     [exec] (Firefox) {/usr/lib/firefox/firefox }
+     [exec] (Links) {xlinks -g}
+     [exec] (OpenNX Connection Wizard) {/usr/bin/opennx --wizard}
+     [exec] (OpenNX Session Administrator) {/usr/bin/opennx --admin}
+     [exec] (OpenNX client) {/usr/bin/opennx}
+     [exec] (TightVNC Viewer) {vncviewer}
+     [exec] (X11VNC Server) {x11vnc -gui tray=setpass -rfbport PROMPT -bg -o %HOME/.x11vnc.log.%VNCDISPLAY}
+     [exec] (Zenmap) {zenmap }
+     [exec] (Zenmap (as root)) {/usr/share/zenmap/su-to-zenmap.sh }
+ [end] # (Internet)
+ [submenu] (Office)
+     [exec] (Adobe Reader 9) {/opt/Adobe/Reader9/bin/acroread }
+     [exec] (Evolution) {evolution }
+     [exec] (GV) {gv}
+     [exec] (LibreOffice) {libreoffice }
+     [exec] (LibreOffice Base) {libreoffice --base }
+     [exec] (LibreOffice Calc) {libreoffice --calc }
+     [exec] (LibreOffice Draw) {libreoffice --draw }
+     [exec] (LibreOffice Impress) {libreoffice --impress }
+     [exec] (LibreOffice Writer) {libreoffice --writer }
+     [exec] (RAKT PDF Viewer) {raktpdf}
+     [exec] (Xpdf) {xpdf }
+     [exec] (Zathura) {zathura }
+ [end] # (Office)
+ [submenu] (Other)
+     [exec] (Adobe Flash Player) {flash-player-properties}
+     [exec] (Alarm Clock Dock App) {wmclockmon}
+     [exec] (Audio Mixer) {wmmixer}
+     [exec] (Battery Dock App) {wmbattery}
+     [exec] (BlackBox Run Command) {/usr/bin/bbrun}
+     [exec] (Blob Dock App) {wmblob}
+     [exec] (Bluetooth Manager) {blueman-manager}
+     [exec] (CPU Load Dock App) {wmcpuload}
+     [exec] (Calendar Clock Dock App) {wmCalClock}
+     [exec] (Core CPU Load) {wmcore}
+     [exec] (Customize Look and Feel) {lxappearance}
+     [exec] (DHCP Client Daemon Applet) {/usr/bin/dhcpcd-gtk}
+     [exec] (Desktop Preferences) {pcmanfm --desktop-pref}
+     [exec] (Desktop Session Settings) {lxsession-edit}
+     [exec] (Firewall Builder) {fwbuilder}
+     [exec] (Fluxbox Tray Menu.) {/usr/bin/ftmenu}
+     [exec] (Fluxbox XKB Switcher) {/usr/bin/fbxkb}
+     [exec] (Keyboard Settings) {lxkb_config}
+     [exec] (LXDE Panel Settings) {/usr/bin/lxpanelctl config}
+     [exec] (Launcher Dock App) {wmappl}
+     [exec] (Monitor Settings) {lxrandr}
+     [exec] (Network Connections) {nm-connection-editor}
+     [exec] (Network Device Monitor) {wmnd}
+     [exec] (Network Monitor) {wmnet}
+     [exec] (Openbox Configuration Manager) {obconf }
+     [exec] (Openbox Window Properties) {obxprop | gxmessage -wrap -font 'monospace 10' -title 'X Window Properties' -file -}
+     [exec] (Preferred Applications) {libfm-pref-apps}
+     [exec] (Retrovol sound mixer) {/usr/bin/retrovol}
+     [exec] (Simple Tray XKB Indicator) {sbxkb}
+     [exec] (System Monitor) {wmsysmon}
+     [exec] (Timer Dock App) {wmtimer}
+     [exec] (Weather Monitor Dock App) {wmWeather}
+     [exec] (X Clock) {xclock -geometry 164x164}
+     [exec] (X Display Properties) {xdpyinfo|gxmessage -file - -title 'X Display Properties'}
+     [exec] (X Display Refresh) {xrefresh}
+     [exec] (X Events) {xterm -T 'X Events' -e xev}
+     [exec] (X Font Select) {xfontsel}
+     [exec] (X Input) {bash -c "xinput | gxmessage -font 'monospace 10' -file - -title 'X Input Information'"}
+     [exec] (X Keyboard LEDs) {xkbvleds}
+     [exec] (X Keyboard State) {xkbwatch}
+     [exec] (X Kill) {xkill}
+     [exec] (X Mod Key Mapping) {bash -c "xmodmap | gxmessage -font 'monospace 10' -file - -title 'X Mod Key Information'"}
+     [exec] (X RandR) {xrandr | gxmessage -font 'monospace 10' -title 'X Window Properties' -file -}
+     [exec] (X Settings) {xset -q|gxmessage -font 'monospace 10' -file - -title 'X Settings'}
+     [exec] (X Video Information) {xvinfo|gxmessage -font 'monospace 10' -file - -title 'X Video Information'}
+     [exec] (X Window Dump) {bash -c "set -e; xwd>`zenity --entry --text Filename`"}
+     [exec] (X Window Dump Display) {bash -c "set -e; xwd>`zenity --entry --text Filename`"}
+     [exec] (X Window Properties) {xprop | gxmessage -font 'monospace 10' -title 'X Window Properties' -file -}
+     [exec] (icewm) {icewm}
+ [end] # (Other)
+ [submenu] (Programming)
+     [exec] (CMake) {cmake-gui }
+     [exec] (Eeschema) {eeschema}
+     [exec] (FLUID) {fluid }
+     [exec] (GNU Octave) {xterm -e /usr/bin/octave}
+     [exec] (KiCad) {kicad}
+     [exec] (Qt4 Assistant ) {assistant-qt4}
+     [exec] (Qt4 Designer) {designer-qt4}
+     [exec] (Qt4 Linguist ) {linguist-qt4}
+ [end] # (Programming)
+ [submenu] (Sound & Video)
+     [exec] (Alsaplayer) {alsaplayer}
+     [exec] (Music Player) {lxmusic}
+     [exec] (PNMixer) {pnmixer}
+     [exec] (QT V4L2 test Utility) {qv4l2}
+     [exec] (Videos) {totem }
+     [exec] (Xfburn) {xfburn}
+ [end] # (Sound & Video)
+ [submenu] (System Tools)
+     [exec] (Avahi Zeroconf Browser) {/usr/bin/avahi-discover}
+     [exec] (Blackbox Window Manager) {/usr/bin/blackbox}
+     [exec] (Conky Status Display) {/usr/bin/conky}
+     [exec] (EtherApe) {etherape}
+     [exec] (Fluxbox Panel) {/usr/bin/fbpanel}
+     [exec] (Fluxbox Run Command) {/usr/bin/fbrun}
+     [exec] (Fluxbox Window Manager) {fluxbox}
+     [exec] (GSmartControl) {/usr/bin/gsmartcontrol}
+     [exec] (Htop) {xterm -e htop}
+     [exec] (LXDE Panel) {/usr/bin/lxpanel}
+     [exec] (Lock Screen) {slock}
+     [exec] (Manage Printing) {/usr/bin/xdg-open http://localhost:631/}
+     [exec] (Openbox Window Manager) {openbox}
+     [exec] (Pango Viewer) {pango-view -t "Hello world!"}
+     [exec] (ROX Filer) {rox}
+     [exec] (Services) {systemadm}
+     [exec] (Software) {gpk-application}
+     [exec] (Task Manager) {lxtask}
+     [exec] (UXTerm) {uxterm}
+     [exec] (Unclutter) {/usr/bin/unclutter}
+     [exec] (Wireshark) {wireshark }
+     [exec] (XTerm) {xterm}
+     [exec] (dconf Editor) {dconf-editor}
+     [exec] (urxvt) {urxvt}
+     [exec] (urxvt (client)) {urxvtc}
+     [exec] (urxvt (tabbed)) {urxvt-tabbed}
+ [end] # (System Tools)
+ [submenu] (Utilities)
+     [exec] (Font Viewer) {gfontview}
+ [end] # (Utilities)
+[end] # (Applications)
+[separator]
+[config] (Configuration)
+                [workspaces] (Workspace)
+                [submenu] (System Styles) {Choose a style...}
+                        [stylesdir] (/usr/share/blackbox/styles)
+			[stylesdir] (/usr/share/fluxbox/styles)
+			[stylesdir] (/usr/share/openbox/styles)
+                [end]
+                [submenu] (User Styles) {Choose a style...}
+                        [stylesdir] (~/.blackbox/styles)
+			[stylesdir] (~/.fluxbox/styles)
+			[stylesdir] (~/.openbox/styles)
+                [end]
+        [separator]
+        [exec] (Run Command) {bbrun -a -w}
+        [exec] (Lock Screen) {xlock}
+        [restart] (Restart) {}
+        [exit] (Logout)
+[end]
+    [end]

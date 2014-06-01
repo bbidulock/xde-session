@@ -1,0 +1,57 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export TWM_TYPE=${1:-${TWM_TYPE:-twm}}
+if [ ! -x "`which $TWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable twm program" >&2
+    exit 1;
+fi
+if [ -z "$TWM_VERSION" ]; then
+    TWM_VERSION='1.0.8'
+fi
+export TWM_VERSION=${2:-$TWM_VERSION}
+export TWM_CONFIG_HOME=${TWM_CONFIG_HOME:-${HOME:-~}/.$TWM_TYPE}
+export TWM_CONFIG_SDIR=${TWM_CONFIG_SDIR:-/usr/share/$TWM_TYPE}
+
+[ -d "$TWM_CONFIG_HOME" ] || mkdir -p "$TWM_CONFIG_HOME"
+if [ -s "$TWM_CONFIG_SDIR/version" ]; then
+    if [ ! -s "$TWM_CONFIG_HOME/version" -o ! diff "$TWM_CONFIG_SDIR/version" "$TWM_CONFIG_HOME/version" ] ; then
+	for file in apps defaults keys menu stylemenu version winmenu; do
+	    if [ ! -f "$TWM_CONFIG_SDIR/$file" -o ! diff "$TWM_CONFIG_SDIR/$file" "$TWM_CONFIG_HOME/$file" ] ; then
+		[ ! -f "$TWM_CONFIG_HOME/$file" ] || /bin/mv -f "$TWM_CONFIG_HOME/$file" "$TWM_CONFIG_HOME/$file.bak"
+		/bin/cp -f "$TWM_CONFIG_SDIR/$file" "$TWM_CONFIG_HOME/$file"
+	    fi
+	done
+    fi
+fi
+
+if [ -x "`which xde-menugen 2>/dev/null`" ]; then
+    xde-menugen --format $TWM_TYPE >"$TWM_CONFIG_HOME/menu"
+fi
+
+config="$here/config"
+[ -x "$config" ] || config="$TWM_CONFIG_HOME/config"
+[ -x "$config" ] || config="$TWM_CONFIG_SDIR/config"
+[ -x "$config" ] && $config
+
+getstyles="$here/getstyles"
+[ -x "$getstyles" ] || getstyles="$TWM_CONFIG_HOME/getstyles"
+[ -x "$getstyles" ] || getstyles="$TWM_CONFIG_SDIR/getstyles"
+[ -x "$getstyles" ] && $getstyles
+
+export TWM_RCFILE="${HOME:-~}/.${TWM_TYPE}rc"
+
+if [ -L "$TWM_RCFILE" ]; then
+    /bin/rm -f "$TWM_RCFILE"
+elif [ -s  "$TWM_RCFILE" ]; then
+    /bin/mv -f "${TWM_RCFILE}" "${TWM_RCFILE}.bak"
+fi
+/bin/ln -sf "$TWM_CONFIG_HOME/rc" "$TWM_RCFILE"
+
+exec $TWM_TYPE -f "$TWM_CONFIG_HOME/rc"
+
+# vim: sw=4

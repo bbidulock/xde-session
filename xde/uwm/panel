@@ -1,0 +1,258 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;	Panel
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+panel = [
+	; panel opacity: 0.00 - 1.00 (1.00)
+    opacity = 1.0
+
+    ;
+    ;	main panel
+    ;
+    [0] = [
+	    ; panel border: 0 - 32 (1)
+	border = 1
+	    ; hidden size: 1 - 256 (1)
+	hidden-size = 1
+	    ; panel gravity: static, north-west, north, north-east, west,
+	    ;	center, east, south-west, south, south-east (static)
+	gravity = "west"
+	    ; panel position: relative to gravity (0, -1)
+	x = -1 y = 0
+	    ; panel layout: auto | vertical | horizontal (auto)
+	; layout = "vertical"
+	    ; panel width: >0 width in pixel, 0 auto, <0 percent (0)
+	    ;	dockapps are 64x64 + 1 pixel border + 1 pixel panel border
+	width = 68
+	    ; panel height: >0 height in pixel, 0 auto, <0 percent (0)
+	; height = -99
+	    ; panel autohide: 0|1 (0)
+	; auto-hide = true
+	    ; panel maximize over panel; 0|1 (0)
+	maximize-over =  false
+	    ; panel layer: 0 .. 10 (6)
+	    ; FIXME: bottom, desktop, below, normal, above, panel, fullscreen,
+	    ;	top
+	layer = 6
+
+	;
+	;	now all plugins (order is position)
+	;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;	Button plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	[ type = `button
+	    ;width = 22 height = 22
+
+	    ;icon-or-text = true
+	    icon = "uwm16x16.xpm" text = "µWM"
+	    tooltip = "µwm menu"
+
+	    [ button = 1 root-menu = 0]
+	    [ button = 2 desktop = []]
+	    [ button = 3 root-menu = 0]
+	    [ button = 4 prev-desktop = true ]
+	    [ button = 5 next-desktop  = true ]
+	]
+	[ type = `button
+	    text = "_"
+	    tooltip = "Toggle hide windows and show desktop"
+	    [ button = 1 toggle-show-desktop = true ]
+	    [ button = 3 toggle-shade-desktop = true ]
+	]
+	[ type = `button
+	    height = 22 width = 22
+	    icon-or-text = true
+	    icon = "terminal.xpm" text = DEFAULT_TERM
+	    tooltip = "Execute terminal"
+	    [ button = 1 execute = DEFAULT_TERM]
+	]
+	[ type = `button
+	    tooltip = "Show desktop menu"
+	    ; show desktop name
+	    desktop = true
+	    [ button = 1 desktop = []]
+	]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Swallow plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;	name = "..."
+;		instance name of WM_CLASS, window matching is swallowed
+;	class = "..."
+;		class name of WM_CLASS, window matching is swallowed
+;	execute = "..."
+;		execute is executed to create swallow window client
+;	use-old = true
+;		flag use existing client to swallow
+;	border = 0 .. 8 (0)
+;		border arround swallowed window
+;	width = n (0)
+;		width of swallowed window
+;	height = n (0)
+;		height of swallowed window
+;
+	[ type = `swallow
+	    name = "wmnet"
+	    execute = "wmnet -W eth0 --logscale --maxrate=100000000"
+	    use-old = true
+	]
+	[ type = `swallow
+	    name = "wmcpumon"
+	    execute = "wmcpumon -jls"
+	    use-old = true
+	]
+;	[ type = `swallow
+;	    name = "wmdia"
+;	    execute = "wmdia"
+;	    use-old = true
+;	]
+	[ type = `swallow
+	    name = "wmc2d"
+	    execute = "wmc2d"
+	    use-old = true
+	]
+;	[ type = `swallow
+;	    name = "wmtime"
+;	    execute = "wmtime -n"
+;	    use-old = true
+;	]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;	Netload plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;	Show the netload of an interface.
+;
+;	interface	eth0, eth1, br0, ... (unset use first)
+;	smooth = true, false [false]
+;		smooth the graph
+;
+	[ type = `netload
+	    width = 56 height = 16
+	    interface = nil
+	    smooth = true
+	    [ button = 1 execute = "netstat | xmessage -file - -center"]
+	]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;	Clock plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;	For a complete list of clock formats see strftime
+;	%I:%M %P	HH:MM PM
+;	%R		HH:MM
+;	%T		HH:MM:SS
+;	%c		preferred date and time representation
+;	%n		for a new line
+;	%R%n%x		for a two line time and date
+;
+	[ type = `clock
+	    width = 0 height = 0
+	    format = "%R" tooltip = "%c"
+	    [ button = 1 execute = "xcalendar"]
+	    [ button = 2 execute = "oclock"]
+	    [ button = 3 execute = "xclock"]
+	    [ button = 4 execute = "dclock"]
+	    [ button = 5 execute = "cairo-clock"]
+	]
+    ]
+
+    ;
+    ;	secondary panel
+    ;
+    [1] = [
+	gravity = "south-east"
+	; FIXME: setting X and auto calculated width didn't work
+	;x = 66 y = 1
+	width = -95
+	; auto-hide = true
+	height = 24
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Pager plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;	labeled = 0|1 (0)
+;		true draw desktop name on pager desktops
+;	sticky = 0|1 (0)
+;		true show sticky window on all desktops
+;
+	[ type = `pager
+	    labeled = true
+	    sticky = true
+	]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Task plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;	insert-mode = left | right (left)
+;		insert new clients left/top or right/bottom
+;
+;	max-item-width = 0 .. max integer (unlimited)
+;		maximal width of client button in task list
+;
+	[ type = `task
+	    insert-mode = `right
+	    ; dynamic = true
+	    ; max-item-width = 0
+	]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       Systray plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;	There can only be one systray in one panel
+;
+	[ type = `systray
+	]
+
+	[ type = `clock
+	    width = 0 height = 0
+	    format = "%R%n%d/%m/%y" tooltip = "%c"
+	    [ button = 1 execute = "xcalendar"]
+	    [ button = 2 execute = "oclock"]
+	    [ button = 3 execute = "xclock"]
+	    [ button = 4 execute = "dclock"]
+	    [ button = 5 execute = "cairo-clock"]
+	]
+    ]
+
+    ;
+    ;	clock plugin panel
+    ;{
+    [2] = [
+	hidden = true
+	x = 67 y = 60
+	[ type = `swallow
+	    name = "xcalendar" class = "XCalendar"
+	    use-old = true
+	    ; execute = "/usr/bin/xcalendar"
+	    border = 0 width = 245 height = 165
+	]
+    ]
+    ;}
+
+    ;
+    ;	example for static buttons
+    ;
+    [2] = [
+	gravity = "static"
+	x = 32 y = 0
+	maximize-over =  true
+	layer = 0
+	[ type = `button
+	    icon = "terminal.xpm" text = DEFAULT_TERM
+	    tooltip = "Execute terminal"
+	    [ button = 1 execute = DEFAULT_TERM]
+	]
+    ]
+    [3] = [
+	gravity = "static"
+	x = 32 y = 64
+	maximize-over =  true
+	layer = 0
+	[ type = `button
+	    icon = "firefox.png" text = "firefox"
+	    tooltip = "Execute internet browser"
+	    [ button = 1 execute = "firefox"]
+	]
+    ]
+]
+

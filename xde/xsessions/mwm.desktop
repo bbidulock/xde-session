@@ -1,0 +1,30 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=MWM
+Icon=mwm
+Exec=mwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Motif Window Manager
+Categories=WindowManager;Application;System;
+StartupNotify=false
+NoDisplay=true
+X-GNOME-WMName=MWM
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-Autostart-Notify=false
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop MWM -startwm mwm
+Comment=MWM under an XDE session
+
+[Window Manager]
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=true
+ConfigExec=mwm -xrm 'configFile:%f'

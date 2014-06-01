@@ -1,0 +1,29 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+if [ $# -gt 1 ] ; then
+    VTWM_TYPE=${1:-${VTWM_TYPE:-vtwm}}
+    styledir="$2"
+else
+    VTWM_TYPE=${VTWM_TYPE:-vtwm}
+    styledir="$1"
+fi
+
+[ -n "$styledir" ] || { echo "ERROR" >&2; exit 1; }
+[ -d "$styledir" ] || { echo "ERROR" >&2; exit 1; }
+
+VTWM_CONFIG_HOME=${VTWM_CONFIG_HOME:-${HOME:-~}/.$VTWM_TYPE}
+
+[ -d "$VTWM_CONFIG_HOME" ] || mkdir -p "$VTWM_CONFIG_HOME"
+
+rm -f "$VTWM_CONFIG_HOME/stylerc"
+ln -s "$styledir/stylerc" "$VTWM_CONFIG_HOME/"
+
+exit 0
+
+# vim: sw=4
+

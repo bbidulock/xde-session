@@ -1,0 +1,3 @@
+prog "-h" - icerrun.py -h
+prog "" - icerrun.py
+prog "--help" - icerrun.py --help

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<JWM>
+   <Include>~/.config/jwm/root</Include>
+   <Include>~/.config/jwm/groups</Include>
+   <Include>~/.config/jwm/tray</Include>
+   <Include>~/.config/jwm/style</Include>
+   <Include>~/.config/jwm/desktop</Include>
+   <Include>~/.config/jwm/defaults</Include>
+   <Include>~/.config/jwm/paths</Include>
+   <Include>~/.config/jwm/keys</Include>
+</JWM>

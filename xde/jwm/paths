@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<JWM>
+   <IconPath>/usr/share/jwm/icons</IconPath>
+   <IconPath>/usr/share/jwm/styles</IconPath>
+   <IconPath>/usr/share/jwm/themes</IconPath>
+   <IconPath>~/.jwm/icons</IconPath>
+   <IconPath>~/.jwm/styles</IconPath>
+   <IconPath>~/.jwm/themes</IconPath>
+   <IconPath>~/.config/jwm/icons</IconPath>
+   <IconPath>~/.config/jwm/styles</IconPath>
+   <IconPath>~/.config/jwm/themes</IconPath>
+   <IconPath>/usr/share/icons/Mist/16x16/apps</IconPath>
+   <IconPath>/usr/share/icons/hicolor/16x16/apps</IconPath>
+   <IconPath>/usr/share/icons/gnome/16x16/apps</IconPath>
+   <IconPath>/usr/share/pixmaps</IconPath>
+   <IconPath>~/.icons</IconPath>
+</JWM>

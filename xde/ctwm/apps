@@ -1,0 +1,338 @@
+divert(VARIABLES)dnl
+`##' included file SINCLUDE
+### APPLICATION SPECIFIC ###
+
+ifelse(TWM_TYPE, `ctwm',
+``##' Windows to keep on top of others.
+AlwaysOnTop {
+}
+
+`##' Squeeze these using window gravity -- remove list for all
+AlwaysSqueezeToGravity {
+}
+
+`##' Automatically lower these windows when pointer leaves
+AutoLower {
+}
+')
+## Automatically raise these windows when pointer enters and stays
+AutoRaise {
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+}
+ifelse(TWM_TYPE, `vtwm',
+``##' Delay for autoraising
+AutoRaiseDelay 400
+')
+ifelse(TWM_TYPE, `ctwm',
+``##' Automatically unsqueeze on focus and squeeze on loss of focus these windows
+AutoSqueeze {
+}
+')
+## Window that are to be treated as icons (dockapps?)
+DontIconifyByUnmapping {
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+}
+ifelse(TWM_TYPE, `ctwm', `
+`##' Unmap these windows by moving them offscreen -- dockapps?
+UnmapByMovingFarAway {
+}
+
+`##' Do not save these windows for session manager.
+DontSave {
+}
+
+`##' Do not set inactive state when invisible due to change in workspace.
+DontSetInactive {
+}
+')
+## Windows that should never have their titles squeezed
+DontSqueezeTitle {
+}
+ifelse(TWM_TYPE, `ctwm', `
+`##' How to squeeze specific window titles.
+`#' SqueezeTitle {
+`#'     `#' "name"   justification   num   denom
+`#' }
+')
+## Do not generate icons for these clients.
+IconifyByUnmapping {
+}
+
+## Do not show these windows in the icon manager.
+IconManagerDontShow {
+	"xclock"
+	"xload"
+	"xbiff"
+	"xconsole"
+	"asmail"
+	"asclock"
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+	"Iconmanager"
+	"WorkSpaceManager"
+}
+
+## Show these windows in the icon manager.
+IconManagerShow {
+}
+
+ifelse(TWM_TYPE, `ctwm',
+``##' Do not show these windows in TwmIcons menu.
+IconMenuDontShow {
+}
+')
+ifelse(TWM_TYPE, `vtwm',
+``##' Do not show these windows in desktop display.
+DontShowInDisplay {
+}
+
+`##' Do not show in TWM (or VTWM) Windows list.
+DontShowInTwmWindows {
+}
+')
+## Icons variable overrides client specified icons.
+ForceIcons
+
+## Specify specific icons for specific windows.
+Icons {
+##	"Resource"  "iconname"
+	"AudioCP"   "xpm:audio_editor.xpm"
+	"Xedit"	    "xpm:xedit.xpm"
+	"Xterm"	    "xpm:term.xpm"
+	"rxvt"	    "xpm:term.xpm"
+	"urxvt"	    "xpm:term.xpm"
+	"xconsole"  "xpm:display.xpm"
+	"unread"    "xpm:xrn.xpm"
+	"nothing"   "xpm:xrn.xpm"
+	"xrn"	    "xpm:xrn.xpm"
+	"Xarchie"   "xpm:xarchie.xpm"
+	"Xman"	    "xpm:xman.xpm"
+	"HPterm"    "xpm:hpterm.xpm"
+	"emacs"	    "xpm:emacs.xpm"
+	"Elm"	    "xpm:mailfull"
+	"Pine"	    "xpm:mailfull"
+	"Mutt"	    "xpm:mailfull"
+	"xarchie"   "xpm:xarchie.xpm"
+	"xgopher"   "xpm:xgopher.xpm"
+	"ghostview" "xpm:ghostview.xpm"
+	"netscape"  "xpm:netscape.xpm"
+	"bitchx"    "xpm:bitchx.xpm"
+	"xmms"	    "xpm:/usr/share/xmms/wmxmms.xpm"
+	"ssh"	    "xpm:openssh.xpm"
+}
+
+## Windows that should have titlebar when NoTitle has been set.
+MakeTitle {
+}
+ifelse(TWM_TYPE, `twm', `', `
+`##' Windows that should not have borders.
+NoBorder {
+      `#' "name"
+	"WorkSpaceManager"
+	"xload"
+	"xclock"
+	"wmcpu"
+}
+
+`##' Windows that should not be highlighted when pointer enters.
+NoHighlight {
+}
+
+`##' Windows that should be moved opaquely.
+OpaqueMove {
+}
+
+`##' Windows that should not be moved opaquely.
+NoOpaqueMove {
+}
+
+`##' Windows that should be resized opaquely.
+OpaqueResize {
+}
+
+`##' Windows that should not be resized opaquely.
+NoOpaqueResize {
+}
+')
+## Windows that should not have a title.
+NoTitle {
+      # "name"
+	"WorkSpaceManager"
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+	"XTerm Icon Manager"
+	"Virtual Desktop"
+	"xload"
+	"xclock"
+	"wmcpu"
+	"TWM Dock"
+}
+
+## Do not highlight borders on these windows
+NoHighlight {
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+}
+
+## Windows that should not have title highlight.
+#NoTitleHighlight {
+#}
+
+## Window to disallow client requested restacking.
+NoStackMode {
+}
+ifelse(TWM_TYPE, `ctwm', `
+`##' Windows that should be on specific workspaces.
+Occupy {
+        "xconsole"      { "0" }
+}
+
+`##' Windows that should be on all workspaces.
+OccupyAll {
+      `#' "name"
+	"xload"
+	"xbiff"
+	"asmail"
+	"asclock"
+	"Licq*"
+	"Psi"
+	"xclock"
+}
+')
+## Windows that should be iconified by being unmapped without trying to
+#  map any icons.
+#IconifyByUnmapping {
+#}
+
+## Window that should be started iconified (regardless of WM_HINTS)
+StartIconified {
+}
+ifelse(TWM_TYPE, `ctwm', `
+`##' Windows that should start squeezed.
+StartSqueezed {
+}
+')
+## Warp cursor into these window when de-iconified
+WarpCursor {
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+}
+ifelse(TWM_TYPE, `ctwm', `
+`##' Warp windows to current workspace on client map request.
+WarpOnDeIconify {
+}
+')
+## Windows in the warp ring.
+WindowRing {
+}
+ifelse(TWM_TYPE, `ctwm', `
+`##' Windows excluded from the warp ring.
+WindowRingExclude {
+}
+
+`##' Window box for groups of windows.
+WindowBox "TWM Dock" "800x64+0-0" {
+	"xload"
+	"xclock"
+	"wmcpu"
+}
+`##' Default geometries for some windows.
+WindowGeometries {
+  `#' "name" "wxh+x+y"
+	"TWM Dock"   "800x64+0-0"
+	"xload"  "64x64+0+0"
+	"xclock" "64x64+64+0"
+	"wmcpu"  "64x64+128+0"
+}
+')
+ifelse(TWM_TYPE, `vtwm', `
+`##' Applet region for dock-apps.
+AppletRegion "800x64+0-0" North West 64 64 {
+	"xload"
+	"xclock"
+	"wmcpu"
+}
+
+`##' Doors.
+Doors {
+}
+
+`##' These windows cannot be moved or resized.
+Immutable {
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+	"xclock"
+	"xload"
+}
+
+`##' Windows that are initially nailed down.
+NailedDown {
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+	"xclock"
+	"xload"
+}
+')
+divert(COLOR)dnl
+`##' included file SINCLUDE
+    ## Hilighted window border color.
+    BorderColor			twm_BorderColor {
+	#   "res_class"	"color"
+    }
+    ## Unhilighted window border Foreground.
+    BorderTileForeground	twm_BorderTileForeground {
+	#   "res_class"	"color"
+    }
+    ## Unhilighted window border Background.
+    BorderTileBackground	twm_BorderTileBackground {
+	#   "res_class"	"color"
+    }
+    ## Title Foreground for specific windows
+    TitleForeground		twm_TitleForeground {
+	#   "res_class"	"color"
+    }
+    ## Title Background for specific windows
+    TitleBackground		twm_TitleBackground {
+	#   "res_class"	"color"
+    }
+    ## Icon foreground color for specific clients
+    IconForeground		twm_IconForeground {
+	#   "res_class"	"color"
+    }
+    ## Icon background for specific clients
+    IconBackground		twm_IconBackground {
+	#   "res_class"	"color"
+    }
+    ## Icon border color for specific clients
+    IconBorderColor		twm_IconBorderColor {
+	#   "res_class"	"color"
+    }
+    ## Foreground in icon manager for specific clients
+    IconManagerForeground	twm_IconManagerForeground {
+	#   "res_class"	"color"
+    }
+    ## Background in icon manager for specific clients
+    IconManagerBackground	twm_IconManagerBackground {
+	#   "res_class"	"color"
+    }
+    ## Highlight in icon manager for specific clients
+    IconManagerHighlight	twm_IconManagerHighlight {
+	#   "res_class"	"color"
+    }
+ifelse(TWM_TYPE, `vtwm', `
+    `##' Door foreground for specific doors
+    DoorForeground		twm_DoorForeground {
+    }
+    `##' Door background for specific doors
+    DoorBackground		twm_DoorBackground {
+    }')
+divert(GRAYSCALE)dnl
+`##' included file SINCLUDE
+divert(MONOCHROME)dnl
+`##' included file SINCLUDE
+divert(-1)
+dnl vim: ft=m4

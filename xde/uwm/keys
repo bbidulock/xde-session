@@ -1,0 +1,81 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;	Keyboard bindings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;
+;	modifier constants
+;
+shift	= 0x20000001
+lock	= 0x20000002
+control	= 0x20000004
+mod1	= 0x20000008
+mod2	= 0x20000010
+mod3	= 0x20000020
+mod4	= 0x20000040
+mod5	= 0x20000080
+button1	= 0x20000100
+button2	= 0x20000200
+button3	= 0x20000400
+button4	= 0x20000800
+button5 = 0x20001000
+
+;
+;	keysym constants
+;		see /usr/include/X11/keysymdef.h for keysym names and value
+;
+tab = 0xff09
+return = 0xff0d
+space = 0x0020
+f1 = 0xffbe
+f2 = 0xffbf
+f3 = 0xffc0
+f4 = 0xffc1
+f5 = 0xffc2
+f6 = 0xffc3
+f7 = 0xffc4
+f8 = 0xffc5
+f9 = 0xffc6
+f10 = 0xffc7
+f11 = 0xffc8
+f12 = 0xffc9
+
+;
+;	keyboard binding
+;
+;	key-list action = value
+;
+;	key-list:
+;		a b
+;		press 'a' and release, press 'b' and release.
+;		[a b]
+;		press 'a' and press 'b', than release both.
+;
+;	FIXME: support /usr/include/X11/XF86keysym.h
+;		and /usr/include/X11/keysymdef.h keysym names.
+;
+;	action = value:
+;		are the same actions as the menu
+;
+
+key-binding = [
+    ; switch to next window in task order
+    [ [ mod4 tab ] task-next-window = true ]
+    ; switch to previous window in task order
+    [ [ mod4 shift tab ] task-prev-window = true ]
+    ; switch to desktop #
+    [ [ mod4 f1 ] set-desktop = 0 ]
+    [ [ mod4 f2 ] set-desktop = 1 ]
+    [ [ mod4 f3 ] set-desktop = 2 ]
+    [ [ mod4 f4 ] set-desktop = 3 ]
+    [ [ mod4 f5 ] set-desktop = 4 ]
+    [ [ mod4 f6 ] set-desktop = 5 ]
+    [ [ mod4 f7 ] set-desktop = 6 ]
+    [ [ mod4 f8 ] set-desktop = 7 ]
+    [ [ mod4 f9 ] set-desktop = 8 ]
+    [ [ mod4 f10 ] set-desktop = 9 ]
+    [ [ mod4 f11 ] set-desktop = 10 ]
+    [ [ mod4 f12 ] set-desktop = 11 ]
+    ; execute shell
+    [ [ mod4 return ] execute = DEFAULT_TERM ]
+]
+
