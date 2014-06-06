@@ -342,6 +342,30 @@ make_logout_choice()
 	gtk_box_set_spacing(GTK_BOX(bb), 5);
 	gtk_box_pack_end(GTK_BOX(v), GTK_WIDGET(bb), FALSE, TRUE, 0);
 
+	GtkListStore *store = gtk_list_store_new(7,
+			GDK_TYPE_PIXBUF, /* pixbuf */
+			G_TYPE_STRING, /* name */
+			G_TYPE_STRING, /* comment */
+			G_TYPE_STRING, /* name and comment markup */
+			G_TYPE_STRING, /* label */
+			G_TYPE_BOOLEAN, /* SessionManaged ? X-XDE-Managed ? */
+			G_TYPE_BOOLEAN, /* X-XDE-Managed original setting */
+			-1);
+	GtkWidget *view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
+	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), 1);
+	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), FALSE);
+	gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(view), GTK_TREE_VIEW_GRID_LINES_BOTH);
+	gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(view));
+
+	GtkCellRenderer *rend = gtk_cell_renderer_toggle_new();
+	gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER(rend), TRUE);
+	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_toggled), NULL);
+
+
+
+
+
 }
 
 
