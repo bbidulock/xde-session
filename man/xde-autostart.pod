@@ -1,0 +1,69 @@
+=pod
+
+=head1 NAME
+
+xde-autostart - autostart applications for an XDE session
+
+=head1 SYNOPSIS
+
+B<xde-autostart> [I<OPTIONS>]
+
+=head1 DESCRIPTION
+
+B<xde-autostart> performs the autostart startup functions for a new
+session.  Autostarting of applications is as specified in the L<XDG
+Desktop Specification>.
+
+See L</USAGE> section for usage examples.
+
+Note that the functions performed by B<xde-autostart> are integrated
+into L<xde-session(1)>, so only use it when you are not using a full
+blown XDE session.
+
+=head1 OPTIONS
+
+=over
+
+=item B<--display>, B<-d> I<DISPLAY>
+
+=item B<--desktop>, B<-e> I<DESKTOP>
+
+=item B<--session>, B<-s> I<SESSION>
+
+=item B<--startwm>, B<-m> I<EXECUTE>
+
+=item B<--exec>, B<-x> I<COMMAND>
+
+=item B<--autostart>, B<--noautostart>, B<-a>
+
+=item B<--wait>, B<-w>, B<--nowait>
+
+=item B<--pause>, B<-p> [I<PAUSE>]
+
+=item B<--splash>, B<-l> [I<IMAGE>]
+
+=back
+
+=head1 USAGE
+
+B<xde-autostart> is intended on being launched by L<xde-session(1)>.
+See the L<xde-session(1)> manual page for details of its operation.
+
+When launched directly, 
+
+=head1 HISTORY
+
+I wrote B<xde-autostart> dues to the deficiencies of L<fbautostart(1)>
+and L<lxsession(1)> when launching XDG-compliant applications and
+desktop environments over NetWM/EWMH compliant light-weight window
+managers.  Most of these tools perform autostart I<before> the window
+manager is started, which can confuse the window manager.
+B<xde-autostart> autostarts program I<after> the window manager has
+appeared.
+
+B<xde-autostart> was originally written using L<perl-gtk>, but was
+rewritten as a C<C>-language program.
+
+=cut
+
+# vim: set tw=72 nocin:

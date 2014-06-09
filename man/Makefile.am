@@ -4,7 +4,8 @@ xde_man_files = \
 	xde-input.man \
 	xde-logout.man \
 	xde-session.man \
-	xde-xchooser.man
+	xde-xchooser.man \
+	xde-xlogin.man
 
 nodist_man1_MANS = $(xde_man_files)
 CLEANFILES = $(xde_man_files)
@@ -14,7 +15,8 @@ EXTRA_DIST = \
 	xde-input.pod \
 	xde-logout.pod \
 	xde-session.pod \
-	xde-xchooser.pod
+	xde-xchooser.pod \
+	xde-xlogin.man
 
 xde-chooser.man: MANNAME = XDE-CHOOSER
 xde-chooser.man: xde-chooser.pod
@@ -30,6 +32,9 @@ xde-session.man: xde-session.pod
 
 xde-xchooser.man: MANNAME = XDE-XCHOOSER
 xde-xchooser.man: xde-xchooser.pod
+
+xde-xlogin.man: MANNAME = XDE-XLOGIN
+xde-xlogin.man: xde-xlogin.pod
 
 SUFFIXES = .man .pod
 

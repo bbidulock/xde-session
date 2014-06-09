@@ -1,0 +1,93 @@
+=pod
+
+=head1 NAME
+
+xde-wmproxy - provide a session management proxy for an EWMH window manager
+
+=head1 SYNOPSIS
+
+B<xde-wmproxy> [I<OPTIONS>] COMMAND ARG ...
+
+=head1 DESCRIPTION
+
+B<xde-wmproxy> provides an X Session Management proxy for an NetWM/EWMH,
+WinWM/WMH or ICCCM compliant window managers that do not provide support
+for X Session Management on their own.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-c>, B<-clientId>
+
+Specifies the session ID used by B<xde-wmproxy> in the previous session.
+Normally only invoked in this fashion when restarted by an upper layer
+session manager.
+
+=item B<-r>, B<-restore> I<SAVEFILE>
+
+Specifies the file used by B<xde-wmproxy> to save state in the previous
+session.  Normally only invoked in this fashion when restarted by an
+upper layer session manager.
+
+=back
+
+=head1 USAGE
+
+B<xde-wmproxy> allows X window managers that do not support X11R7
+session management to participate in an X11R7 session.  For
+B<xde-wmproxy> to act as a proxy for a window manager, B<xde-wmproxy>
+must be used to launch the window manager.
+
+ICCCM 2.0 says the following:
+
+ 5.2. Window Manger Support for Session Management
+
+    A window manager supporting session management must register with
+    the session manager and obtain its own client-ID.  The window
+    manager should save and restore information such as WM_STATE, the
+    layout of windows on the screen, and their stacking order, for every
+    client window that havs a valid SM_CLIENT_ID property (on itself, or
+    on the window managed by WM_CLIENT_LEADER) and that can be uniquely
+    identified.  Clients are allowed to change this state during the
+    first phase of the session checkpoint process.  Therefore, window
+    managers shouldr request a second checkpoint phase and save clients'
+    state only during that phase.
+
+Should the window manager not register with B<xde-wmproxy> to obtain its
+own session management client-ID, B<xde-wmproxy> will perform these
+actions on behalf of the window manager.
+
+
+=head1 BEHAVIOUR
+
+B<xde-wmproxy> registers with the session manager identified in the
+C<SESSION_MANAGER> environment variable and launches the window manager
+as specified as a child of the proxy, replacing the C<SESSION_MANAGER>
+environment variable first with its own transport addresses.
+
+Should the window manager register with the proxy for session
+management, the proxy becomes a transparent proxy, passing further
+information upward toward the upper layer manager.  When there is no
+upper layer manager, the proxy will act as the sole manager, saving its
+own state.
+
+When a checkpoint is requested, either by the upper layer manager or via
+a direct request to the proxy, a proxy that has not had a window manager
+register will determine the state of all windows under the control of
+the window manager and save that state for session re-establishment,
+just as the window manager would do on its own if it was session
+management capable.
+
+To avoid the situation where a window manager disrupts the window
+configuration and then exits, logout selections in root menus should
+request that the proxy shut down the window manager rather than having
+the window manager simply exit.  L<xde-logout(1)> can be used for this
+purpose.  When a window manager shutdown is requested, the proxy
+presents a window to the user to give them the opportunity of saving the
+session prior to exit.
+
+
+=cut
+
+# vim: set tw=72 nocin:

@@ -49,7 +49,7 @@
 struct Options {
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
-	int connectionType;
+	CARD16 connectionType;
 	char *banner;
 	char *welcome;
 	int debug;
@@ -57,10 +57,10 @@ struct Options {
 };
 
 struct Options options = {
-	.xdmAddress = { 0, NULL },
-	.clientAddress = { 0, NULL },
-	.connectionType = 0,
-	.banner = NULL, /* "/usr/lib/X11/xdm/banner.png" */
+	.xdmAddress = {0, NULL},
+	.clientAddress = {0, NULL},
+	.connectionType = FamilyInternet,
+	.banner = NULL,		/* "/usr/lib/X11/xdm/banner.png" */
 	.welcome = NULL,
 	.debug = 0,
 	.output = 1,
@@ -77,11 +77,11 @@ XdmcpBuffer directBuffer;
 XdmcpBuffer broadcastBuffer;
 
 enum {
-	OBEYSESS_DISPLAY = 0,   /* obey multipleSessions resources */
-	REMANAGE_DISPLAY = 1,   /* force remanage */
-	UNMANAGE_DISPLAY = 2,   /* force deletion */
-	RESERVER_DISPLAY = 3,   /* force server termination */
-	OPENFAILED_DISPLAY = 4, /* XOpenDisplay failed, retry */
+	OBEYSESS_DISPLAY = 0,		/* obey multipleSessions resources */
+	REMANAGE_DISPLAY = 1,	/* force remanage */
+	UNMANAGE_DISPLAY = 2,	/* force deletion */
+	RESERVER_DISPLAY = 3,	/* force server termination */
+	OPENFAILED_DISPLAY = 4,	/* XOpenDisplay failed, retry */
 };
 
 enum {
@@ -112,7 +112,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 * authname_a, ARRAY8 * hostna
 	len = hostname_a->length;
 	if (len > NI_MAXHOST)
 		len = NI_MAXHOST;
-	strncpy(hostname, (char *)hostname_a->data, len);
+	strncpy(hostname, (char *) hostname_a->data, len);
 
 	switch ((family = sa->sa_family)) {
 	case AF_INET:
@@ -173,15 +173,10 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 * authname_a, ARRAY8 * hostna
 	if (!valid)
 		gtk_list_store_append(model, &iter);
 	gtk_list_store_set(model, &iter,
-			COLUMN_IPADDR, ipaddr,
-			COLUMN_HOSTNAME, hostname,
-			COLUMN_REMOTENAME, remotename,
-			COLUMN_WILLING, opc,
-			COLUMN_STATUS, status,
-			COLUMN_CTYPE, ctype,
-			COLUMN_SERVICE, service,
-			COLUMN_PORT, port,
-			-1);
+			   COLUMN_IPADDR, ipaddr,
+			   COLUMN_HOSTNAME, hostname,
+			   COLUMN_REMOTENAME, remotename,
+			   COLUMN_WILLING, opc, COLUMN_STATUS, status, COLUMN_CTYPE, ctype, COLUMN_SERVICE, service, COLUMN_PORT, port, -1);
 
 	const char *conntype;
 
@@ -288,9 +283,9 @@ PingHosts(gpointer data)
 			break;
 		}
 		if (ha->type == QUERY)
-			XdmcpFlush(ha->sfd, &directBuffer, (XdmcpNetaddr) &ha->addr, ha->addrlen);
+			XdmcpFlush(ha->sfd, &directBuffer, (XdmcpNetaddr) & ha->addr, ha->addrlen);
 		else
-			XdmcpFlush(ha->sfd, &broadcastBuffer, (XdmcpNetaddr) &ha->addr, ha->addrlen);
+			XdmcpFlush(ha->sfd, &broadcastBuffer, (XdmcpNetaddr) & ha->addr, ha->addrlen);
 	}
 	if (++pingTry < PING_TRIES)
 		pingid = g_timeout_add_seconds(PING_INTERVAL, PingHosts, (gpointer) NULL);
@@ -329,8 +324,8 @@ InitXDMCP(char *argv[], int argc)
 	buffer4 = calloc(1, sizeof(*buffer4));
 	buffer6 = calloc(1, sizeof(*buffer6));
 
-	srce4 = g_io_add_watch(chan4, G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_PRI, ReceivePacket, (gpointer) buffer4);
-	srce6 = g_io_add_watch(chan6, G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_PRI, ReceivePacket, (gpointer) buffer6);
+	srce4 = g_io_add_watch(chan4, G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI, ReceivePacket, (gpointer) buffer4);
+	srce6 = g_io_add_watch(chan6, G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI, ReceivePacket, (gpointer) buffer6);
 
 	for (i = 0, arg = argv; i < argc; i++, arg++) {
 		if (!strcmp(*arg, "BROADCAST")) {
@@ -342,7 +337,7 @@ InitXDMCP(char *argv[], int argc)
 					sa_family_t family;
 					socklen_t addrlen;
 
-					if (ifa->ifa_flags  & IFF_LOOPBACK)
+					if (ifa->ifa_flags & IFF_LOOPBACK)
 						continue;
 					if (!(ifa->ifa_flags & IFF_BROADCAST))
 						continue;
@@ -363,26 +358,25 @@ InitXDMCP(char *argv[], int argc)
 				}
 				freeifaddrs(ifas);
 			}
-		}
-		else if (strspan(*arg, "0123456789abcdefABCDEF") == strlen(*arg) && strlen(*arg) == 8) {
+		} else if (strspan(*arg, "0123456789abcdefABCDEF") == strlen(*arg) && strlen(*arg) == 8) {
 			char addr[4];
 			char *p, *o, c, b;
 			Bool ok = True;
 
-			for (p = *arg, o = addr; *p; p+=2, o++) {
+			for (p = *arg, o = addr; *p; p += 2, o++) {
 				c = tolower(p[0]);
 				if (!ishexdigit(c)) {
 					ok = False;
 					break;
 				}
-				b = ('0' <= c && c <= '9') ?  c - '0' : c - 'a' + 10;
+				b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
 				b <<= 4;
 				c = tolower(p[1]);
 				if (!ishexdigit(c)) {
 					ok = False;
 					break;
 				}
-				b += ('0' <= c && c <= '9') ?  c - '0' : c - 'a' + 10;
+				b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
 				*o = b;
 			}
 			if (ok) {
@@ -390,7 +384,7 @@ InitXDMCP(char *argv[], int argc)
 				struct sockaddr_in *sin;
 
 				ha = calloc(1, sizeof(*ha));
-				sin = (typeof(sin)) &ha->addr;
+				sin = (typeof(sin)) & ha->addr;
 				sin->sin_family = AF_INET;
 				sin->sin_port = XDM_UDP_PORT;
 				memcpy(&sin->sin_addr, addr, 4);
@@ -400,8 +394,7 @@ InitXDMCP(char *argv[], int argc)
 				ha->next = hostAddrdb;
 				hostAddrdb = ha;
 			}
-		}
-		else {
+		} else {
 			struct addrinfo hints, *result, *ai;
 
 			hints.ai_flags = AI_ADDRCONFIG;
@@ -425,8 +418,7 @@ InitXDMCP(char *argv[], int argc)
 						ha->type = QUERY;
 						ha->next = hostAddrdb;
 						hostAddrdb = ha;
-					} else
-					if (ai->ai_family == AF_INET6) {
+					} else if (ai->ai_family == AF_INET6) {
 						ha = calloc(1, sizeof(*ha));
 						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
 						ha->addrlen = ai->ai_addrlen;
@@ -543,7 +535,7 @@ Choose(short type, char *name)
 }
 
 void
-DoAccept(GtkButton *button, gpointer data)
+DoAccept(GtkButton * button, gpointer data)
 {
 	GtkTreeSelection *selection;
 	GtkTreeModel *model;
@@ -610,19 +602,19 @@ DoAccept(GtkButton *button, gpointer data)
 }
 
 void
-DoCancel(GtkButton *button, gpointer data)
+DoCancel(GtkButton * button, gpointer data)
 {
 	exit(OBEYSESS_DISPLAY);
 }
 
 Bool
-DoCheckWilling(PingHost *host)
+DoCheckWilling(PingHost * host)
 {
 	return (host->willing == WILLING);
 }
 
 void
-DoPing(GtkButton *button, gpointer data)
+DoPing(GtkButton * button, gpointer data)
 {
 	if (pingTry == PING_TRIES) {
 		pingTry = 0;
@@ -663,13 +655,9 @@ GetWindow()
 		gchar *markup;
 
 		if (options.welcome) {
-			markup = g_markup_printf_escaped(
-					"<span font=\"Liberation Sans 14\"><b><i>%s</i></b></span>",
-					options.welcome);
+			markup = g_markup_printf_escaped("<span font=\"Liberation Sans 14\"><b><i>%s</i></b></span>", options.welcome);
 		} else {
-			markup = g_markup_printf_escaped(
-					"<span font=\"Liberation Sans 14\"><b><i>Welcome to %s!</i></b></span>",
-					hostname);
+			markup = g_markup_printf_escaped("<span font=\"Liberation Sans 14\"><b><i>Welcome to %s!</i></b></span>", hostname);
 		}
 		gtk_label_set_markup(GTK_LABEL(lab), markup);
 		gfree(markup);
@@ -727,11 +715,13 @@ GetWindow()
 
 				int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
 				char *title = calloc(len, sizeof(*len));
+
 				strncpy(title, "XDCMP Host Menu from ", len);
 				strncat(title, hostname, len);
 
 				GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 				GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(title, renderer, "markup", COLUMN_MARKUP);
+
 				free(title);
 				gtk_tree_view_column_set_sort_column_id(column, COLUMN_MARKUP);
 				g_signal_connect(G_OBJECT(view), "row_activated", G_CALLBACK(on_row_activated), (gpointer) NULL);
@@ -740,6 +730,7 @@ GetWindow()
 			}
 			{
 				GtkWidget *bbox = gtk_button_box_new();
+
 				gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_SPREAD);
 				gtk_box_set_spacing(GTK_BOX(bbox), 5);
 				gtk_box_pack_end(GTK_BOX(vbox2), GTK_WIDGET(bbox), FALSE, TRUE, 0);
@@ -783,12 +774,12 @@ HexToARRAY8(ARRAY8 * array, char *hex)
 		c = tolower(p[0]);
 		if (!ishexdigit(c))
 			return False;
-		b = ('0' <= c && c <= '9') ?  c - '0' : c - 'a' + 10;
+		b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
 		b <<= 4;
 		c = tolower(p[1]);
 		if (!ishexdigit(c))
 			return False;
-		b += ('0' <= c && c <= '9') ?  c - '0' : c - 'a' + 10;
+		b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
 		*o = b;
 	}
 	return True;
@@ -799,12 +790,14 @@ main(char *argv[], int argc)
 {
 	while (1) {
 		int c, val;
+
 #ifdef _GNU_SOURCE
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"xdmAddress",	    required_argument,	NULL, 'x'},
 			{"clientAddress",   required_argument,	NULL, 'c'},
+			{"connectionType",  required_argmuent,	NULL, 't'},
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"welcome",	    required_argument,	NULL, 'w'},
 
@@ -818,10 +811,9 @@ main(char *argv[], int argc)
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "x:c:b:w:D::v::hVCH?", long_options,
-				&option_index);
+		c = getopt_long_only(argc, argv, "x:c:b:w:D::v::hVCH?", long_options, &option_index);
 #else
-		c = getopt(argc, argv, "x:c:b:w:DvhVC?");
+		c = getopt(argc, argv, "x:c:b:w:DvhVCH?");
 #endif
 		if (c == -1) {
 			if (options.debug)
@@ -844,6 +836,14 @@ main(char *argv[], int argc)
 			if (!HexToARRAY8(&options.clientAddress, optarg))
 				goto bad_option;
 			break;
+		case 't':	/* -connectionType TYPE */
+			if (!strcmp(optarg, "FamilyInternet") || atoi(optarg) == FamilyInternet)
+				options.connectionType = FamilyInternet;
+			else if (!strmcp(optarg, "FamilyInternet6") || atoi(optarg) == FamilyInternet6)
+				options.connectionType = FamilyIntetnet6;
+			else
+				goto bad_option;
+			break;
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
 			options.banner = strndup(optarg, 256);
@@ -854,8 +854,7 @@ main(char *argv[], int argc)
 			break;
 		case 'D':	/* -D, --debug [level] */
 			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n",
-					argv[0]);
+				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
@@ -866,8 +865,7 @@ main(char *argv[], int argc)
 			break;
 		case 'v':	/* -v, --verbose [level] */
 			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n",
-					argv[0]);
+				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.output++;
 				break;
@@ -884,14 +882,12 @@ main(char *argv[], int argc)
 			exit(OBEYSESS_DISPLAY);
 		case 'V':	/* -V, --version */
 			if (options.debug)
-				fprintf(stderr, "%s: printing version message\n",
-					argv[0]);
+				fprintf(stderr, "%s: printing version message\n", argv[0]);
 			version(argc, argv);
 			exit(OBEYSESS_DISPLAY);
 		case 'C':	/* -C, --copying */
 			if (options.debug)
-				fprintf(stderr, "%s: printing copying message\n",
-					argv[0]);
+				fprintf(stderr, "%s: printing copying message\n", argv[0]);
 			copying(argc, argv);
 			exit(OBEYSESS_DISPLAY);
 		case '?':
@@ -902,16 +898,14 @@ main(char *argv[], int argc)
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '",
-						argv[0]);
+					fprintf(stderr, "%s: syntax error near '", argv[0]);
 					while (optind < argc) {
 						fprintf(stderr, "%s", argv[optind++]);
 						fprintf(stderr, "%s", (optind < argc) ? " " : "");
 					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument",
-						argv[0]);
+					fprintf(stderr, "%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
@@ -936,4 +930,3 @@ main(char *argv[], int argc)
 	gtk_main();
 	exit(REMANAGE_DISPLAY);
 }
-
