@@ -1,3 +1,12 @@
+#include "xde-input.h"
+
+Display *dpy;
+
+typedef struct {
+	int debug;
+} Options;
+
+Options options;
 
 typedef struct {
 	Bool Keyboard;	    /* support for core Keyboard */
@@ -46,6 +55,8 @@ typedef struct {
 	} XKeyboard;
 } State;
 
+State state;
+
 typedef struct {
 	struct {
 		char *KeyClickPercent;
@@ -62,9 +73,9 @@ typedef struct {
 		char *Threshold;
 	} Pointer;
 	struct {
-		char *AllowExposures;
+		char *Allowexposures;
 		char *Interval;
-		char *PreferBlanking;
+		char *Preferblanking;
 		char *Timeout;
 	} ScreenSaver;
 	struct {
@@ -78,11 +89,11 @@ typedef struct {
 		char *AccessXFeedbackMaskEnabled;
 		char *AccessXKeysEnabled;
 		char *AccessXOptions;
+		char *AccessXOptionsEnabled;
 		char *AccessXTimeout;
 		char *AccessXTimeoutMask;
 		char *AccessXTimeoutMaskEnabled;
 		char *AccessXTimeoutOptionsMask;
-		char *AccessXTimeoutOptionsValues;
 		char *AccessXTimeoutOptionsValues;
 		char *AccessXTimeoutValues;
 		char *AudibleBellMaskEnabled;
@@ -122,20 +133,21 @@ void
 get_input()
 {
 	char buf[256] = { 0, };
+	int i, j;
 
 	XGetKeyboardControl(dpy, &state.Keyboard);
 
 	if (options.debug) {
 		fputs("Keyboard Control:\n", stderr);
-		fprintf("\tkey-click-percent: %d\n", state.Keyboard.key_click_percent);
-		fprintf("\tbell-percent: %d\n", state.Keyboard.bell_percent);
-		fprintf("\tbell-pitch: %u Hz\n", state.Keyboard.bell_pitch);
-		fprintf("\tbell-duration: %u milliseconds\n", state.Keyboard.bell_duration);
-		fprintf("\tled-mask: 0x%04x\n", state.Keyboard.led_mask);
-		fprintf("\tglobal-auto-repeat: %s\n", state.Keyboard.global_auto_repeat ? "Yes" : "No");
+		fprintf(stderr, "\tkey-click-percent: %d\n", state.Keyboard.key_click_percent);
+		fprintf(stderr, "\tbell-percent: %d\n", state.Keyboard.bell_percent);
+		fprintf(stderr, "\tbell-pitch: %u Hz\n", state.Keyboard.bell_pitch);
+		fprintf(stderr, "\tbell-duration: %u milliseconds\n", state.Keyboard.bell_duration);
+		fprintf(stderr, "\tled-mask: 0x%08lx\n", state.Keyboard.led_mask);
+		fprintf(stderr, "\tglobal-auto-repeat: %s\n", state.Keyboard.global_auto_repeat ? "Yes" : "No");
 		fputs("\tauto-repeats: ", stderr);
 		for (i = 0; i < 32; i++)
-			fprintf("%02X", state.Keyboard.auto_repeats[i]);
+			fprintf(stderr, "%02X", state.Keyboard.auto_repeats[i]);
 		fputs("\n", stderr);
 	}
 
@@ -227,7 +239,7 @@ get_input()
 		}
 	}
 
-	free(config.ScreenSaver.AllowExposures);
+	free(config.ScreenSaver.Allowexposures);
 	switch (state.ScreenSaver.allow_exposures) {
 	case DontAllowExposures:
 		strncpy(buf, "DontAllowExposures", sizeof(buf));
@@ -242,13 +254,13 @@ get_input()
 		snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.allow_exposures);
 		break;
 	}
-	config.ScreenSaver.AllowExposures = strndup(buf, sizeof(buf));
+	config.ScreenSaver.Allowexposures = strndup(buf, sizeof(buf));
 
 	free(config.ScreenSaver.Interval);
 	snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.interval);
 	config.ScreenSaver.Interval = strndup(buf, sizeof(buf));
 
-	free(config.ScreenSaver.PreferBlanking);
+	free(config.ScreenSaver.Preferblanking);
 	switch (state.ScreenSaver.prefer_blanking) {
 	case DontPreferBlanking:
 		strncpy(buf, "DontPreferBlanking", sizeof(buf));
@@ -263,18 +275,18 @@ get_input()
 		snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.prefer_blanking);
 		break;
 	}
-	config.ScreenSaver.PreferBlanking = strndup(buf, sizeof(buf));
+	config.ScreenSaver.Preferblanking = strndup(buf, sizeof(buf));
 
 	free(config.ScreenSaver.Timeout);
 	snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.timeout);
 	config.ScreenSaver.Timeout = strndup(buf, sizeof(buf));
 
 	if (DPMSGetVersion(dpy, &state.DPMS.major_version, &state.DPMS.minor_version)) {
-		DPMSInfo(dpy, &state.DPMS.power_level, &state.DPSM.state);
+		DPMSInfo(dpy, &state.DPMS.power_level, &state.DPMS.state);
 		DPMSGetTimeouts(dpy, &state.DPMS.standby, &state.DPMS.suspend, &state.DPMS.off);
 		if (options.debug) {
 			fputs("DPMS:\n", stderr);
-			fprintf(stderr, "\tDPMS Version: %d.%d\n", state.DPMS.major_version);
+			fprintf(stderr, "\tDPMS Version: %d.%d\n", state.DPMS.major_version, state.DPMS.minor_version);
 			fputs("\tpower-level: ", stderr);
 			switch (state.DPMS.power_level) {
 			case DPMSModeOn:
@@ -341,112 +353,115 @@ get_input()
 
 		static const char *_true = "true";
 		static const char *_false = "false";
+#if 0
 		unsigned int which = XkbControlsMask;
+#endif
 
 		state.XKeyboard.desc = XkbGetKeyboard(dpy, XkbControlsMask, XkbUseCoreKbd);
 
 		free(config.XKeyboard.MouseKeysDfltBtn);
-		snprintf(buf, sizeof(buf), "%hhu", state.XKeyboard.desc->ctrls.mk_dflt_btn);
+		snprintf(buf, sizeof(buf), "%hhu", state.XKeyboard.desc->ctrls->mk_dflt_btn);
 		config.XKeyboard.MouseKeysDfltBtn = strdup(buf);
 
 		free(config.XKeyboard.RepeatKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbRepeatKeysMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbRepeatKeysMask) ? _true : _false);
 		config.XKeyboard.RepeatKeysEnabled = strdup(buf);
 
 		free(config.XKeyboard.SlowKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbSlowKeysMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbSlowKeysMask) ? _true : _false);
 		config.XKeyboard.SlowKeysEnabled = strdup(buf);
 
 		free(config.XKeyboard.BounceKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbBounceKeysMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbBounceKeysMask) ? _true : _false);
 		config.XKeyboard.BounceKeysEnabled = strdup(buf);
 
 		free(config.XKeyboard.StickyKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbStickyKeysMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbStickyKeysMask) ? _true : _false);
 		config.XKeyboard.StickyKeysEnabled = strdup(buf);
 
 		free(config.XKeyboard.MouseKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbMouseKeysMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbMouseKeysMask) ? _true : _false);
 		config.XKeyboard.MouseKeysEnabled = strdup(buf);
 
 		free(config.XKeyboard.MouseKeysAccelEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbMouseKeysAccelMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbMouseKeysAccelMask) ? _true : _false);
 		config.XKeyboard.MouseKeysAccelEnabled = strdup(buf);
 
 		free(config.XKeyboard.AccessXKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbAccessXKeysMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAccessXKeysMask) ? _true : _false);
 		config.XKeyboard.AccessXKeysEnabled = strdup(buf);
 
 		free(config.XKeyboard.AccessXTimeoutMaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbAccessXTimeoutMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAccessXTimeoutMask) ? _true : _false);
 		config.XKeyboard.AccessXTimeoutMaskEnabled = strdup(buf);
 
 		free(config.XKeyboard.AccessXFeedbackMaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbAccessXFeedbackMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAccessXFeedbackMask) ? _true : _false);
 		config.XKeyboard.AccessXFeedbackMaskEnabled = strdup(buf);
 
 		free(config.XKeyboard.AudibleBellMaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbAudibleBellMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAudibleBellMask) ? _true : _false);
 		config.XKeyboard.AudibleBellMaskEnabled = strdup(buf);
 
 		free(config.XKeyboard.Overlay1MaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbOverlay1Mask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbOverlay1Mask) ? _true : _false);
 		config.XKeyboard.Overlay1MaskEnabled = strdup(buf);
 
 		free(config.XKeyboard.Overlay2MaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbOverlay2Mask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbOverlay2Mask) ? _true : _false);
 		config.XKeyboard.Overlay2MaskEnabled = strdup(buf);
 
 		free(config.XKeyboard.IgnoreGroupLockModsEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbIgnoreGroupLockMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbIgnoreGroupLockMask) ? _true : _false);
 		config.XKeyboard.IgnoreGroupLockModsEnabled = strdup(buf);
 
 		free(config.XKeyboard.GroupsWrapEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbGroupsWrapMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbGroupsWrapMask) ? _true : _false);
 		config.XKeyboard.GroupsWrapEnabled = strdup(buf);
 
 		free(config.XKeyboard.InternalModsEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbInternalModsMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbInternalModsMask) ? _true : _false);
 		config.XKeyboard.InternalModsEnabled = strdup(buf);
 
 		free(config.XKeyboard.IgnoreLockModsEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbIgnoreLockModsMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbIgnoreLockModsMask) ? _true : _false);
 		config.XKeyboard.IgnoreLockModsEnabled = strdup(buf);
 
 		free(config.XKeyboard.PerKeyRepeatEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbPerKeyRepeatMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbPerKeyRepeatMask) ? _true : _false);
 		config.XKeyboard.PerKeyRepeatEnabled = strdup(buf);
 
 		free(config.XKeyboard.ControlsEnabledEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbControlsEnabledMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbControlsEnabledMask) ? _true : _false);
 		config.XKeyboard.ControlsEnabledEnabled = strdup(buf);
 
 		free(config.XKeyboard.AccessXOptionsEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls.enabled_ctrls & XkbAccessXOptionsMask) ? _true : _false);
+		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAccessXOptionsMask) ? _true : _false);
 		config.XKeyboard.AccessXOptionsEnabled = strdup(buf);
 
 		{
-			int repeat_delay, repeat_interval;
+			unsigned int repeat_delay, repeat_interval;
 
 			XkbGetAutoRepeatRate(dpy, XkbUseCoreKbd, &repeat_delay, &repeat_interval);
 
 			free(config.XKeyboard.RepeatDelay);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.repeat_delay);
+			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->repeat_delay);
 			config.XKeyboard.RepeatDelay = strdup(buf);
 
 			free(config.XKeyboard.RepeatInterval);
 			free(config.XKeyboard.RepeatRate);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.repeat_interval);
+			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->repeat_interval);
 			config.XKeyboard.RepeatInterval = strdup(buf);
 		}
 
+#if 0
 		{
 			int slow_keys_delay;
 
 			XkbGetSlowKeysDelay(dpy, XkbUseCoreKbd, &slow_keys_delay);
 
 			free(config.XKeyboard.SlowKeysDelay);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.slow_keys_delay);
+			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->slow_keys_delay);
 			config.XKeyboard.SlowKeysDelay = strdup(buf);
 		}
 
@@ -456,28 +471,29 @@ get_input()
 			XkbGetBoundKeysDelay(dpy, XkbUseCoreKbd, &debounce_delay);
 
 			free(config.XKeyboard.DebounceDelay);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.debounce_delay);
+			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->debounce_delay);
 			config.XKeyboard.DebounceDelay = strdup(buf);
 		}
+#endif
 
 		free(config.XKeyboard.MouseKeysDelay);
-		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.mk_delay);
+		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_delay);
 		config.XKeyboard.MouseKeysDelay = strdup(buf);
 
 		free(config.XKeyboard.MouseKeysInterval);
-		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.mk_interval);
+		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_interval);
 		config.XKeyboard.MouseKeysInterval = strdup(buf);
 
 		free(config.XKeyboard.MouseKeysTimeToMax);
-		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.mk_time_to_max);
+		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_time_to_max);
 		config.XKeyboard.MouseKeysTimeToMax = strdup(buf);
 
 		free(config.XKeyboard.MouseKeysMaxSpeed);
-		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.mk_max_speed);
+		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_max_speed);
 		config.XKeyboard.MouseKeysMaxSpeed = strdup(buf);
 
 		free(config.XKeyboard.MouseKeysCurve);
-		snprintf(buf, sizeof(buf), "%hd", state.XKeyboard.desc->ctrls.mk_curve);
+		snprintf(buf, sizeof(buf), "%hd", state.XKeyboard.desc->ctrls->mk_curve);
 		config.XKeyboard.MouseKeysCurve = strdup(buf);
 
 		static struct {
@@ -500,10 +516,10 @@ get_input()
 
 		free(config.XKeyboard.AccessXOptions);
 		for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-			if (state.XKeyboard.desc->ctrls.ax_options & axoptions[i].mask) {
+			if (state.XKeyboard.desc->ctrls->ax_options & axoptions[i].mask) {
 				if (j++)
-					strncat(buf, ";", sizeof(buf));
-				strncat(buf, axoptions[i].name, sizeof(buf));
+					strncat(buf, ";", sizeof(buf)-1);
+				strncat(buf, axoptions[i].name, sizeof(buf)-1);
 			}
 		}
 		config.XKeyboard.AccessXOptions = strdup(buf);
@@ -526,20 +542,22 @@ get_input()
 		/* XkbAX_AllOptiosMask */
 
 		{
+#if 0
 			int ax_timeout, axt_ctrls_mask, axt_ctrls_values, axt_opts_mask, axt_opts_values;
 
 			XkbGetAccessXTimeout(dpy, XkbUseCoreKbd, &ax_timeout, &axt_ctrls_mask, &axt_ctrls_values, &axt_opts_mask, &axt_opts_values);
+#endif
 
 			free(config.XKeyboard.AccessXTimeout);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls.ax_timeout);
+			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->ax_timeout);
 			config.XKeyboard.AccessXTimeout = strdup(buf);
 
 			free(config.XKeyboard.AccessXTimeoutOptionsMask);
 			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls.axt_opts_mask & axoptions[i].mask) {
+				if (state.XKeyboard.desc->ctrls->axt_opts_mask & axoptions[i].mask) {
 					if (j++)
-						strncat(buf, ";", sizeof(buf));
-					strncat(buf, axoptions[i].name, sizeof(buf));
+						strncat(buf, ";", sizeof(buf)-1);
+					strncat(buf, axoptions[i].name, sizeof(buf)-1);
 				}
 
 			}
@@ -547,10 +565,10 @@ get_input()
 
 			free(config.XKeyboard.AccessXTimeoutOptionsValues);
 			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls.axt_opts_values & axoptions[i].mask) {
+				if (state.XKeyboard.desc->ctrls->axt_opts_values & axoptions[i].mask) {
 					if (j++)
-						strncat(buf, ";", sizeof(buf));
-					strncat(buf, axoptions[i].name, sizeof(buf));
+						strncat(buf, ";", sizeof(buf)-1);
+					strncat(buf, axoptions[i].name, sizeof(buf)-1);
 				}
 
 			}
@@ -558,10 +576,10 @@ get_input()
 
 			free(config.XKeyboard.AccessXTimeoutMask);
 			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls.axt_ctrls_mask & axoptions[i].mask) {
+				if (state.XKeyboard.desc->ctrls->axt_ctrls_mask & axoptions[i].mask) {
 					if (j++)
-						strncat(buf, ";", sizeof(buf));
-					strncat(buf, axoptions[i].name, sizeof(buf));
+						strncat(buf, ";", sizeof(buf)-1);
+					strncat(buf, axoptions[i].name, sizeof(buf)-1);
 				}
 
 			}
@@ -569,10 +587,10 @@ get_input()
 
 			free(config.XKeyboard.AccessXTimeoutValues);
 			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls.axt_ctrls_values & axoptions[i].mask) {
+				if (state.XKeyboard.desc->ctrls->axt_ctrls_values & axoptions[i].mask) {
 					if (j++)
-						strncat(buf, ";", sizeof(buf));
-					strncat(buf, axoptions[i].name, sizeof(buf));
+						strncat(buf, ";", sizeof(buf)-1);
+					strncat(buf, axoptions[i].name, sizeof(buf)-1);
 				}
 
 			}
@@ -584,9 +602,11 @@ get_input()
 void
 startup()
 {
+	Window window = None;
+
 	if (XScreenSaverQueryExtension(dpy, &state.ScreenSaver.event, &state.ScreenSaver.error)) {
 		support.ScreenSaver = True;
-		XScreenSaverQueryVerion(dpy, &state.ScreenSaver.major_version,
+		XScreenSaverQueryVersion(dpy, &state.ScreenSaver.major_version,
 				&state.ScreenSaver.minor_version);
 		XScreenSaverQueryInfo(dpy, window, &state.ScreenSaver.info);
 		if (options.debug) {
@@ -621,9 +641,9 @@ startup()
 				fprintf(stderr, "%d (unknown)\n", state.ScreenSaver.info.kind);
 				break;
 			}
-			fprintf(stderr, "\ttil-or-since: %d milliseconds\n",
+			fprintf(stderr, "\ttil-or-since: %lu milliseconds\n",
 					state.ScreenSaver.info.til_or_since);
-			fprintf(stderr, "\tidle: %d milliseconds\n",
+			fprintf(stderr, "\tidle: %lu milliseconds\n",
 					state.ScreenSaver.info.idle);
 			fputs("\tevent-mask: ", stderr);
 			if (state.ScreenSaver.info.eventMask & ScreenSaverNotifyMask)
@@ -639,7 +659,12 @@ startup()
 			&state.XKeyboard.minor_version)) {
 		support.XKeyboard = True;
 	}
-	if (DPMSGetVersion(dpy, &state.DPMS.major_version, &state
+	if (DPMSGetVersion(dpy, &state.DPMS.major_version, &state.DPMS.minor_version)) {
+	}
 }
 
-
+int
+main(int argc, char *argv[])
+{
+	return (0);
+}

@@ -44,6 +44,18 @@
 
 #include "xde-chooser.h"
 
+enum {
+	CHOOSE_RESULT_LOGOUT,
+};
+
+typedef struct {
+	char *banner;
+} Options;
+
+Options options;
+
+int choose_result;
+
 gboolean
 on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
@@ -57,27 +69,30 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	GdkPixbuf *pixbuf = GDK_PIXBUF(data);
 	GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(widget));
-	cairo_t cr = gdk_cairo_create(GDK_DRAWABLE(window));
+	cairo_t *cr = gdk_cairo_create(GDK_DRAWABLE(window));
 	gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
 	cairo_paint(cr);
 	GdkColor color = { .red = 0, .green = 0, .blue = 0, .pixel = 0 };
-	gdk_set_source_color(cr, &color);
+	gdk_cairo_set_source_color(cr, &color);
 	cairo_paint_with_alpha(cr, 0.7);
+	return TRUE; /* propagate */
 }
 
 void
-make_login_choice()
+make_login_choice(int argc, char *argv[])
 {
 	GtkWidget *w;
+	int status;
 
-	gtk_init();
-	system("xsetroot -cursor_name left_ptr");
+	gtk_init(&argc, &argv);
+	status = system("xsetroot -cursor_name left_ptr");
+	(void) status;
 
 	w = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_wmclass(GTK_WINDOW(w), "xde-chooser", "XDE-Chooser");
 	gtk_window_set_title(GTK_WINDOW(w), "Window Manager Selection");
 	gtk_window_set_gravity(GTK_WINDOW(w), GDK_GRAVITY_CENTER);
-	gtk_window_set_type_hint(GTK_WINDOW(w), GDK_WINDOW_TYPE_DIALOG);
+	gtk_window_set_type_hint(GTK_WINDOW(w), GDK_WINDOW_TYPE_HINT_DIALOG);
 	gtk_window_set_icon_name(GTK_WINDOW(w), "xdm");
 #if 0
 	gtk_container_set_border_width(GTK_CONTAINER(w), 15);
@@ -94,7 +109,7 @@ make_login_choice()
 	GdkWindow *root = gdk_screen_get_root_window(scrn);
 
 	gtk_window_set_default_size(GTK_WINDOW(w), width, height);
-	gtk_window_set_app_paintable(GTK_WINDOW(w), TRUE);
+	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
 
 	GdkPixbuf *pixbuf = gdk_pixbuf_get_from_drawable(NULL, root, NULL,
 			0, 0, 0, 0, width, height);
@@ -118,7 +133,7 @@ make_login_choice()
 	GtkWidget *f, *s;
 
 	if (options.banner) {
-		f = gtk_frame_new();
+		f = gtk_frame_new(NULL);
 		gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
 		gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), FALSE, FALSE, 0);
 
@@ -129,13 +144,14 @@ make_login_choice()
 		s = gtk_image_new_from_file(options.banner);
 		gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(s));
 	}
-	f = gtk_frame_new();
+	f = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
 	gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), TRUE, TRUE, 0);
 	v = gtk_vbox_new(FALSE, 5);
-	gtk_container_set_border_width(GTK_CONTAINER(f), GTK_WIDGET(v));
+	gtk_container_set_border_width(GTK_CONTAINER(v), 0);
+	gtk_container_add(GTK_CONTAINER(f), GTK_WIDGET(v));
 
-	GtkWidget *sw = gtk_scrolled_window_new();
+	GtkWidget *sw = gtk_scrolled_window_new(NULL,NULL);
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_container_set_border_width(GTK_CONTAINER(sw), 3);
@@ -149,4 +165,8 @@ make_login_choice()
 
 }
 
+int
+main(int argc, char *argv[]) {
+	return (0);
+}
 
