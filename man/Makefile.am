@@ -4,6 +4,7 @@ xde_man_files = \
 	xde-input.man \
 	xde-logout.man \
 	xde-session.man \
+	xde-smproxy.man \
 	xde-xchooser.man \
 	xde-xlogin.man
 
@@ -15,6 +16,7 @@ EXTRA_DIST = \
 	xde-input.pod \
 	xde-logout.pod \
 	xde-session.pod \
+	xde-smproxy.pod \
 	xde-xchooser.pod \
 	xde-xlogin.man
 
@@ -29,6 +31,9 @@ xde-logout.man: xde-logout.pod
 
 xde-session.man: MANNAME = XDE-SESSION
 xde-session.man: xde-session.pod
+
+xde-smproxy.man: MANNAME = XDE-SMPROXY
+xde-smproxy.man: xde-smproxy.pod
 
 xde-xchooser.man: MANNAME = XDE-XCHOOSER
 xde-xchooser.man: xde-xchooser.pod

@@ -181,16 +181,17 @@ GSList *runningClients;
 void
 wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
 {
-	/* for each client in stacking order (use _NET_CLIENT_LIST_STACKING), or
-	 * use XQueryTree with _NET_CLIENT_LIST/_WIN_CLIENT_LIST, or just use
-	 * XQueryTree with windows that have a WM_STATE property set. */
+	/* for each client in stacking order (use _NET_CLIENT_LIST_STACKING),
+	   or use XQueryTree with _NET_CLIENT_LIST/_WIN_CLIENT_LIST, or just
+	   use XQueryTree with windows that have a WM_STATE property set. */
 	/* find the WM_CLIENT_LEADER window, otherwise skip that client */
 	/* get the SM_CLIENT_ID property from that window */
 	/* get the WM_WINDOW_ROLE for the original window */
 	/* write "r %s %s ", SM_CLIENT_ID, WM_WINDOW_ROLE */
 	/* otherwise use resource class and instance */
 	/* write "c %s %s %s ", cid, WM_CLASS.res_class, WM_CLASS.res_instance */
-	/* write "%d:%d:%d:%d %ld %lu %ld\n", x, y, width, height, workspace, state, active layer */
+	/* write "%d:%d:%d:%d %ld %lu %ld\n", x, y, width, height, workspace,
+	   state, active layer */
 	/* at the end write "w %lu\n", active workspace */
 
 	/* additional information we should print about windows */
@@ -276,7 +277,8 @@ wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
   * fail, it would set #fast to True.
   */
 void
-wmpSaveYourselfCB(SmcConn smcConn, SmPointer clientData, int saveType, Bool shutdown, int interactStyle, Bool fast)
+wmpSaveYourselfCB(SmcConn smcConn, SmPointer clientData, int saveType, Bool shutdown,
+		  int interactStyle, Bool fast)
 {
 	if (!SmcRequestSaveYourselfPhase2(smcConn, wmpSaveYourselfPhase2CB, NULL)) {
 		SmcSaveYourselfDone(smcConn, False);
@@ -285,6 +287,12 @@ wmpSaveYourselfCB(SmcConn smcConn, SmPointer clientData, int saveType, Bool shut
 		send_save_done = 0;
 }
 
+/** @brief die callback
+  *
+  * The session manager sends a Die message to a client when it wants it to die.
+  * The client should respond by calling SmcCloseConnection.  A session manager
+  * that behaves properly will send a SaveYourself message before a Die message.
+  */
 void
 wmpDieCB(SmcConn smcConn, SmPointer clientData)
 {
@@ -298,6 +306,16 @@ wmpSaveCompleteCB(SmcConn smcConn, SmPointer clientData)
 	/* doesn't do anything */
 }
 
+/** @brief shutdown cancelled callback
+  *
+  * The session manager sends a ShutdownCancelled message when the user cancelled
+  * the shutdown during an interaction.  The client can now continue as if the
+  * shutdown had never happended.  If the client has not call SmcSaveYourselfDone
+  * yet, it can either abort the save and then call SmcSaveYourselfDone with the
+  * success argument set to False, or it can continue with the save and then call
+  * SmcSaveYourselfDone with the success argument set to reflect the outcome of the
+  * save.
+  */
 void
 wmpShutdownCancelledCB(SmcConn smcConn, SmPointer clientData)
 {
@@ -316,7 +334,9 @@ wmpConnectToSessionManager()
 	SmcConn smcConn = NULL;
 
 	if (getenv("SESSION_MANAGER")) {
-		mask = SmcSaveYourselfProcMask | SmcDieProcMask | SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
+		mask =
+		    SmcSaveYourselfProcMask | SmcDieProcMask | SmcSaveCompleteProcMask |
+		    SmcShutdownCancelledProcMask;
 
 		cb.save_yourself.callback = wmpSaveYourselfCB;
 		cb.save_yourself.client_data = (SmPointer) NULL;
@@ -330,9 +350,12 @@ wmpConnectToSessionManager()
 		cb.shutdown_cancelled.callback = wmpShutdownCancelledCB;
 		cb.shutdown_cancelled.callback = (SmPointer) NULL;
 
-		if ((smcConn = SmcOpenConnection(NULL,	/* use SESSION_MANAGER env */
+		if ((smcConn = SmcOpenConnection(NULL,	/* use SESSION_MANAGER
+							   env */
 						 NULL,	/* context */
-						 SmProtoMajor, SmProtoMinor, mask, &cb, options.clientId, &options.clientId, sizeof(err), err)) == NULL) {
+						 SmProtoMajor, SmProtoMinor, mask, &cb,
+						 options.clientId, &options.clientId, sizeof(err),
+						 err)) == NULL) {
 			fprintf(stderr, "SmcOpenConnection: %s\n", err);
 			exit(EXIT_FAILURE);
 		}
@@ -348,18 +371,19 @@ setSMProperties(int argc, char *argv[])
 	CARD8 hint;
 
 	SmPropValue propval[11];
+
 	SmProp prop[11] = {
-		.[ 0] = { SmCloneCommand,	SmLISTofARRAY8,	1, &propval[0]	},
-		.[ 1] = { SmCurrentDirectory,	SmARRAY8,	1, &propval[1]	},
-		.[ 2] = { SmDiscardCommand,	SmLISTofARRAY8,	1, &propval[2]	},
-		.[ 3] = { SmEnvironment,	SmLISTofARRAY8,	1, &propval[3]	},
-		.[ 4] = { SmProcessID,		SmARRAY8,	1, &propval[4]	},
-		.[ 5] = { SmProgram,		SmARRAY8,	1, &propval[5]	},
-		.[ 6] = { SmRestartCommand,	SmLISTofARRAY8,	1, &propval[6]	},
-		.[ 7] = { SmResignCommand,	SmLISTofARRAY8,	1, &propval[7]	},
-		.[ 8] = { SmRestartStyleHint,	SmARRAY8,	1, &propval[8]	},
-		.[ 9] = { SmShutdownCommand,	SmLISTofARRAY8,	1, &propval[9]	},
-		.[10] = { SmUserID,		SmARRAY8,	1, &propval[10]	},
+		.[0] = {SmCloneCommand, SmLISTofARRAY8, 1, &propval[0]},
+		.[1] = {SmCurrentDirectory, SmARRAY8, 1, &propval[1]},
+		.[2] = {SmDiscardCommand, SmLISTofARRAY8, 1, &propval[2]},
+		.[3] = {SmEnvironment, SmLISTofARRAY8, 1, &propval[3]},
+		.[4] = {SmProcessID, SmARRAY8, 1, &propval[4]},
+		.[5] = {SmProgram, SmARRAY8, 1, &propval[5]},
+		.[6] = {SmRestartCommand, SmLISTofARRAY8, 1, &propval[6]},
+		.[7] = {SmResignCommand, SmLISTofARRAY8, 1, &propval[7]},
+		.[8] = {SmRestartStyleHint, SmARRAY8, 1, &propval[8]},
+		.[9] = {SmShutdownCommand, SmLISTofARRAY8, 1, &propval[9]},
+		.[10] = {SmUserID, SmARRAY8, 1, &propval[10]},
 	};
 	SmProp *props[11] = {
 		.[0] = &prop[0],
@@ -421,8 +445,6 @@ setSMProperties(int argc, char *argv[])
 	propval[10].value = userID;
 	propval[10].length = strlen(userID);
 
-
-
 }
 
 void
@@ -461,33 +483,34 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 	if (!previousId) {
 		free(c->id);
 		c->id = SmsGenerateClientID(smsConn);
-	} else do {
-		Client *p;
+	} else
+		do {
+			Client *p;
 
-		if ((p = (typeof(p)) g_hash_table_lookup(pendingClients, previousId))) {
-			g_hash_table_remove(pendingClients, previousId);
-			setInitialProperties(c, p->props);
-			p->props = NULL;
-			freeClient(p);
-			break;
-		}
-		if ((p = (typeof(p)) g_hash_table_lookup(anywaysClients, previousId))) {
-			g_hash_table_remove(anywaysClients, previousId);
-			setInitialProperties(c, p->props);
-			p->props = NULL;
-			freeClient(p);
-			break;
-		}
-		if ((p = (typeof(p)) g_hash_table_lookup(restartClients, previousId))) {
-			g_hash_table_remove(restartClients, previousId);
-			setInitialProperties(c, p->props);
-			p->props = NULL;
-			freeClient(p);
-			break;
-		}
-		free(previousId);
-		return (0);
-	} while (0);
+			if ((p = (typeof(p)) g_hash_table_lookup(pendingClients, previousId))) {
+				g_hash_table_remove(pendingClients, previousId);
+				setInitialProperties(c, p->props);
+				p->props = NULL;
+				freeClient(p);
+				break;
+			}
+			if ((p = (typeof(p)) g_hash_table_lookup(anywaysClients, previousId))) {
+				g_hash_table_remove(anywaysClients, previousId);
+				setInitialProperties(c, p->props);
+				p->props = NULL;
+				freeClient(p);
+				break;
+			}
+			if ((p = (typeof(p)) g_hash_table_lookup(restartClients, previousId))) {
+				g_hash_table_remove(restartClients, previousId);
+				setInitialProperties(c, p->props);
+				p->props = NULL;
+				freeClient(p);
+				break;
+			}
+			free(previousId);
+			return (0);
+		} while (0);
 	SmsRegisterClientReply(smsConn, c->id);
 	free(c->hostname);
 	c->hostname = SmsClientHostName(smsConn);
@@ -564,7 +587,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
   */
 void
 saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
-		int style, Bool fast, Bool global)
+		  int style, Bool fast, Bool global)
 {
 	Client *c = (typeof(c)) data;
 }
@@ -620,7 +643,7 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reason)
   * actual array of pointers with free().
   */
 void
-setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp *props[])
+setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp * props[])
 {
 	Client *c = (typeof(c)) data;
 }
@@ -647,7 +670,6 @@ getPropertiesCB(SmsConn smsConn, SmPointer data)
 {
 	Client *c = (typeof(c)) data;
 }
-
 
 Status
 newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks * cb, char **reason)
@@ -741,7 +763,9 @@ on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 			int ifd = IceConnectionNumber(ice);
 			char *connstr = IceConnectionString(ice);
 
-			fprintf(stderr, "ICE connection opened by client, fd = %d, accepted at networkId %s\n", ifd, connstr);
+			fprintf(stderr,
+				"ICE connection opened by client, fd = %d, accepted at networkId %s\n",
+				ifd, connstr);
 			free(constr);
 		}
 	} else {
@@ -757,7 +781,7 @@ on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 Bool
 hostBasedAuthCB(char *hostname)
 {
-	return (False); /* refuse host based authentication */
+	return (False);		/* refuse host based authentication */
 }
 
 void
@@ -765,20 +789,20 @@ smpInitSessionManager()
 {
 	char err[256] = { 0, };
 	int i;
-	gint mask = G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_PRI;
+	gint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
 
 	if (!SmsInitialize(NAME, VERSION, newClientCB, NULL, hostBasedAuthCB, sizeof(err), err)) {
 		fprintf(stderr, "SmsInitialize: %s\n", err);
-		exit (EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 	if (!IceListenForConnections(&numTransports, &listenObjs, sizeof(err), err)) {
 		fprintf(stderr, "IceListenForConnections: %s\n", err);
-		exit (EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 	atexit(closeListeners);
 	if (!SetAuthentication(numTransports, listenObjs, &authDataEntries)) {
 		fprintf(stderr, "SetAuthentication: could not set authorization\n");
-		exit (EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 	for (i = 0; i < numTransports; i++) {
 		int lfd = IceGetListenConnectionNumber(listenObjs[i]);
@@ -790,34 +814,33 @@ smpInitSessionManager()
 }
 
 gboolean
-on_xfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
+on_xfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 {
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		fprintf(stderr, "ERROR: poll failed: %s %s %s\n",
 			(cond & G_IO_NVAL) ? "NVAL" : "",
-			(cond & G_IO_HUP) ? "HUP" : "",
-			(cond & G_IO_ERR) ? "ERR" : "");
+			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
 		exit(EXIT_FAILURE);
 	} else if (cond & (G_IO_IN | G_IO_PRI)) {
 		handle_events();
 	}
-	return TRUE; /* keep event source */
+	return TRUE;		/* keep event source */
 }
 
 gboolean
-on_ifd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
+on_ifd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 {
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		fprintf(stderr, "ERROR: poll failed: %s %s %s\n",
 			(cond & G_IO_NVAL) ? "NVAL" : "",
-			(cond & G_IO_HUP) ? "HUP" : "",
-			(cond & G_IO_ERR) ? "ERR" : "");
+			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
 		exit(EXIT_FAILURE);
 	} else if (cond & (G_IO_IN | G_IO_PRI)) {
 		IceConn ice = (typeof(ice)) data;
+
 		IceProcessMessages(ice, NULL, NULL);
 	}
-	return TRUE; /* keep event source */
+	return TRUE;		/* keep event source */
 }
 
 void
@@ -831,7 +854,7 @@ startup(argc, char *argv[])
 	char *file;
 	int len;
 	IceConn ice;
-	gint mask = G_IO_IN|G_IO_ERR|G_IO_HUP|G_IO_PRI;
+	gint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
 
 	initialClients = g_hash_table_new(g_str_hash, g_str_equal);
 	pendingClients = g_hash_table_new(g_str_hash, g_str_equal);
@@ -857,7 +880,8 @@ startup(argc, char *argv[])
 	signal(SIGALRM, on_alrm_signal);
 
 	if (!(dpy, XOpenDisplay(0))) {
-		fprintf(stderr, "%s: %s %s\n", argv[0], "cannot open display", getenv("DISPLAY") ? : "");
+		fprintf(stderr, "%s: %s %s\n", argv[0], "cannot open display",
+			getenv("DISPLAY") ? : "");
 		exit(EXIT_FAILURE);
 	}
 	xfd = ConnectionNumber(dpy);
@@ -876,7 +900,6 @@ startup(argc, char *argv[])
 		srce = g_io_add_watch(chan, mask, on_ifd_watch, (gpointer) ice);
 	}
 
-
 }
 
 void
@@ -889,8 +912,9 @@ main(int argc, char *argv[])
 {
 	set_defaults();
 
-	while(1) {
+	while (1) {
 		int c, val;
+
 #ifdef _GNU_SOURCE
 		int option_index = 0;
 		/* *INDENT-OFF* */
@@ -907,6 +931,7 @@ main(int argc, char *argv[])
 			{ 0, }
 		};
 		/* *INDENT-ON* */
+
 		c = getopt_long_only(argc, argv, "c:r:D::v::hVCH?", long_options, &option_index);
 #else
 		c = getopt(argc, argv, "c:r:DvhVCH?");
