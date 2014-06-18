@@ -27,3 +27,5 @@ xde_session_LDFLAGS = $(UNIQUE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
 
 xde_xchooser_CPPFLAGS = -DNAME=\"xde-xchooser\"
 xde_xchooser_SOURCES = xde-xchooser.c xde-xchooser.h
+xde_xchooser_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS)
+xde_xchooser_LDFLAGS = $(XDMCP_LIBS) $(AM_LDFLAGS)
