@@ -11,9 +11,13 @@ bin_PROGRAMS = \
 
 xde_chooser_CPPFLAGS = -DNAME=\"xde-chooser\"
 xde_chooser_SOURCES = xde-chooser.c xde-chooser.h
+xde_chooser_CFLAGS = $(AM_CFLAGS)
+xde_chooser_LDFLAGS = $(AM_LDFLAGS)
 
 xde_input_CPPFLAGS = -DNAME=\"xde-input\"
 xde_input_SOURCES = xde-input.c xde-input.h
+xde_input_CFLAGS = $(AM_CFLAGS)
+xde_input_LDFLAGS = $(AM_LDFLAGS)
 
 xde_logout_CPPFLAGS = -DNAME=\"xde-logout\"
 xde_logout_SOURCES = xde-logout.c xde-logout.h
