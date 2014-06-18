@@ -1,0 +1,177 @@
+=pod
+
+=head1 NAME
+
+xde-smproxy - X Session Management proxy for the X Desktop Environment (XDE)
+
+=head1 SYNOPSIS
+
+B<xde-smproxy> [I<OPTIONS>]
+
+=head1 DESCRIPTION
+
+B<xde-smproxy> provides an X Session Management X11R6 proxy as well
+assistance for NetWM/EWMH, WinWM/WMH or ICCCM compliant window managers
+that do not provide support for X Session Management on their own.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-c>, B<-clientId> I<CLIENTID>
+
+Specifies the session ID used by B<xde-smproxy> in the previous session.
+Normally only invoked in this fashion when restarted by an upper layer
+session manager.
+
+=item B<-r>, B<-restore> I<SAVEFILE>
+
+Specifies the file used by B<xde-smproxy> to save state in the previous
+session.  Normally only invoked in this fashion when restarted by an
+upper layer session manager.
+
+=item B<-d>, B<-dockApps>
+
+Peform proxy services also for L<wmaker(1)> dock apps.  This is seldom
+necessary as L<xde-dock(1)> provides a proxy for session management of
+L<maker(1)> dock apps on its own.
+
+=item B<-s>, B<-systemTray>
+
+Perform proxy services also for L<wmaker(1)> system tray icons for any
+system tray icons that do not support X11R6 session management on their
+own and whose client leaders have no other windows mapped.
+
+=item B<-w>, B<-windowManager>
+
+Perform session management assistance for lightweight window managers.
+
+=back
+
+=head1 USAGE
+
+B<xde-smproxy> allows X applications that do not support X11R6 session
+management to participate in an X11R6 session.  B<xde-smproxy> requires
+the presence of an X Session Manager; otherwise it will exit when run.
+
+For B<xde-smproxy> to act as a proxy for an X application that does not
+support X11R6 session management, one of the following must be true:
+
+=over
+
+=item 1.
+
+The application maps a top-level window containing the
+C<WM_CLIENT_LEADER> property.  This property provides a pointer to the
+client leader window that contains the C<WM_CLASS>, C<WM_NAME>,
+C<WM_COMMAND> and C<WM_CLIENT_MACHINE> properties.
+
+A non NetWM/EWMH or WinWM/WMH compliant window manager must add the
+C<WM_STATE> property to these windows in compiliance with ICCCM 2.0 for
+them to be detected.  For NetWM/EWMH or WinWM/WMH compliant window
+managers, the window must be present in the C<_NET_CLIENT_LIST> and
+C<_NET_CLIENT_LIST_STACKING> lists, or in the C<_WIN_CLIENT_LIST> list.
+
+=item 2.
+
+The application maps a top-level window that does not contain the
+B<WM_CLIENT_LEADER> property.  However, this top-level window contains
+the B<WM_CLASS>, B<WM_NAME>, B<WM_COMMAND> and B<WM_CLIENT_MACHINE>
+properties.
+
+A non NetWM/EWMH or WinWM/WMH compliant window manager must add the
+C<WM_STATE> property to these windows in compiliance with ICCCM 2.0 for
+them to be detected.  For NetWM/EWMH or WinWM/WMH compliant window
+managers, the window must be present in the C<_NET_CLIENT_LIST> and
+C<_NET_CLIENT_LIST_STACKING> lists, or in the C<_WIN_CLIENT_LIST> list.
+
+=item 3.
+
+Starup notification is provided when the application is launched.  In
+this case B<xde-smproxy> obtains additional information from the startup
+notification messages and can use the C<WM_CLASS> property and possibly
+the C<_NET_STARTUP_ID> property to determine properties that are
+missing, such as C<WM_NAME>, C<WM_COMMAND>, C<WM_CLIENT_MACHINE>,
+C<_NET_WM_PID>, C<_NET_WM_DESKTOP>, C<_WIN_WORKSPACE> or
+C<_DT_WORKSPACE_PRESENCE>.  In general, when the application is launched
+using B<xdg-launch(1)>, all the necessary information is available.
+
+=item 4.
+
+When the B<-dockApp> option is specified and the application is a
+L<wmaker(1)> dock app.  A WindowMaker dock app is a top-level window
+that has the following characteristics:
+
+=over
+
+=item a)
+
+The top-level window contains a C<WM_HINTS> property.  The property
+specifies an initial state of C<WithdrawnState>; or,
+
+=item b)
+
+in support of post 2.4.0 GTK+ dock apps, has any initial state but has
+the C<StateHint>, C<WindowGroupHint> and C<IconWindowHint> (and
+possibly the C<IconPositionHint>) flags set; or,
+
+=item c)
+
+has the C<WM_CLASS> property set with a I<res_class> of C<DockApp>.
+
+=back
+
+The C<WM_STATE> property must not be added to these windows (otherwise
+they are treated as non-dockapp windows).  Dock apps typically also have
+the C<WM_CLASS>, C<WM_NAME>, C<WM_COMMAND>, C<WM_CLIENT_MACHINE> and
+C<WM_CLIENT_LEADER> properties set.
+
+=item 5.
+
+When the B<-systemTray> option is specified and the application is a
+system tray icon conforming to the freedesktop.org system tray
+specification, but does not support X11R6 session management.
+
+Typically, system tray icons provide a C<WM_CLIENT_LEADER> property that
+points to a leader window with the C<WM_CLASS>, C<WM_NAME>,
+C<WM_COMMAND> and C<WM_CLIENT_MACHINE> properties set.  The system tray
+icon itself can be identified by the presence of an C<_XEMBED_INFO>
+property (and have no C<WM_STATE> property set).  They may be visible or
+not.
+
+=back
+
+Applications that support the C<WM_SAVE_YOURSELF> protocol will receive
+a C<WM_SAVE_YOURSELF> client message each time the session manager
+issues a checkpoint or shutdown.  This allows applications to save
+state.  If an application does not support the C<WM_SAVE_YOURSELF>
+protocol, then the proxy will provide enough information to the session
+manager to restart the application (using C<WM_COMMAND>), but no state
+will be restored.
+
+When the B<-windowManager> option is specified, during save-yourself
+phase 2, B<xde-smproxy> will save window position, desktop, NetWM/EWMH
+or WinWM/WMH state, layer, stacking order, geometry and position, and
+other controllable information concerning every window in the system
+(not just those that are proxied).  Otherwise, when the
+B<-windowManager> option is not specified, save-yourself phase 2 window
+manager state will only be saved for proxied windows.
+
+=head1 HISTORY
+
+I wrote B<xde-smproxy(1)> because the normal Xorg L<smproxy(1)> was
+lacking in a number of respects: it does not provide assistance for
+window managers; cannot identify WindowMaker dock apps; cannot identify
+applications that have system tray icons but no other window mapped;
+does not use startup notification nor /proc filesystem for additional
+information.
+
+=head1 SEE ALSO
+
+L<xdg-launch(1)>,
+L<smproxy(1)>,
+L<xsm(1)>.
+
+=cut
+
+# vim: set tw=72 nocin:
