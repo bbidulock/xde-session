@@ -23,7 +23,7 @@ xde_logout_LDFLAGS = $(DBUS_GLIB_LIBS) $(AM_LDFLAGS)
 xde_session_CPPFLAGS = -DNAME=\"xde-session\"
 xde_session_SOURCES = xde-session.c xde-session.h
 xde_session_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(UNIQUE_CFLAGS)
-xde_session_LDFLAGS = $(UNQIUE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
+xde_session_LDFLAGS = $(UNIQUE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
 
 xde_xchooser_CPPFLAGS = -DNAME=\"xde-xchooser\"
 xde_xchooser_SOURCES = xde-xchooser.c xde-xchooser.h

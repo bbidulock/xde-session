@@ -131,6 +131,7 @@ setup_environment()
 	char *env, buf[PATH_MAX] = { 0, };
 	struct stat st;
 	FILE *f;
+	int status;
 
 	/* set defaults or determine values */
 	if ((env = getenv("HOSTNAME")))
@@ -210,7 +211,7 @@ setup_environment()
 	/* check for XDG user directory settings */
 	snprintf(buf, PATH_MAX, "%s/user-dirs.dirs", envir.XDG_CONFIG_HOME);
 	if (stat("/usr/bin/xdg-user-dirs-update", &st) != -1 && (S_IXOTH & st.st_mode))
-		system("/usr/bin/xdg-user-dirs-update");
+		status = system("/usr/bin/xdg-user-dirs-update");
 	else if (stat(buf, &st) == -1 || !S_ISREG(st.st_mode)) {
 		if ((f = fopen(buf, ">"))) {
 			fputs("XDG_DESKTOP_DIR=\"$HOME/Desktop\"\n", f);
@@ -224,6 +225,7 @@ setup_environment()
 			fclose(f);
 		}
 	}
+	(void) status;
 	if ((f = fopen(buf, "<"))) {
 		char *key, *val, *p, **where;
 		int hlen = strlen(envir.HOME);
@@ -752,11 +754,13 @@ daemonize()
 {
 	pid_t pid, sid;
 	char buf[64] = { 0, };
+	FILE *status;
 
 	pid = getpid();
 
-	freopen("/dev/null", "r", stdin);
-	freopen("/dev/null", "w", stdout);
+	status = freopen("/dev/null", "r", stdin);
+	status = freopen("/dev/null", "w", stdout);
+	(void) status;
 
 	if ((sid = setsid()) == -1)
 		sid = pid;
@@ -1047,5 +1051,10 @@ main(int argc, char *argv[])
 			{ 0, }
 		};
 		/* *INDENT-ON* */
+		(void) c;
+		(void) val;
+		(void) long_options;
+		break;
 	}
+	return (0);
 }
