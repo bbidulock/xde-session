@@ -44,6 +44,16 @@
 
 #include "xde-logout.h"
 
+#include <dbus/dbus-glib.h>
+
+typedef struct {
+	char *lockscreen;
+	char *banner;
+	char *prompt;
+} Options;
+
+Options options;
+
 typedef enum {
 	LOGOUT_ACTION_CANCEL,
 	LOGOUT_ACTION_POWEROFF,
@@ -57,6 +67,8 @@ typedef enum {
 	LOGOUT_ACTION_LOGOUT,
 	LOGOUT_ACTION_RESTART,
 } LogoutActionResult;
+
+LogoutActionResult action_result;
 
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 
@@ -120,7 +132,7 @@ test_lock_screen_program()
 		{ NULL,		     NULL		    }
 		/* *INDENT-ON* */
 	};
-	struct prog_cmd *prog;
+	const struct prog_cmd *prog;
 
 	if (!options.lockscreen) {
 		for (prog = progs; prog->name; prog++) {
@@ -130,9 +142,10 @@ test_lock_screen_program()
 			char *b, *path;
 			struct stat st;
 			int status;
+			int len;
 
 			while ((b = p + 1) < e) {
-				*(p = strchrnul(b, ":")) = '\0';
+				*(p = strchrnul(b, ':')) = '\0';
 				len = strlen(b) + 1 + strlen(prog->name) + 1;
 				path = calloc(len, sizeof(*path));
 				strncpy(path, b, len);
@@ -142,11 +155,12 @@ test_lock_screen_program()
 				free(path);
 				if (status == 0 && S_ISREG(st.st_mode) && (st.st_mode & S_IXOTH)) {
 					options.lockscreen = strdup(prog->cmd);
-					break 2;
+					goto done;
 				}
 			}
 		}
 	}
+done:
 	if (options.lockscreen)
 		af.lockscreen = TRUE;
 	return;
@@ -161,7 +175,7 @@ void
 test_power_functions()
 {
 	GError *error = NULL;
-	DbusGConnection *bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error);
+	DBusGConnection *bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error);
 	DBusGProxy *proxy = dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager");
 
 	dbus_g_proxy_call(proxy, "CanPowerOff", &error, G_TYPE_INVALID, G_TYPE_BOOLEAN, &af.power_off, G_TYPE_INVALID);
@@ -180,7 +194,7 @@ void
 grabbed_window(GtkWindow * window)
 {
 	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(window));
-	GEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
+	GdkEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
 
 	gdk_window_set_override_redirect(win, TRUE);
 	gdk_window_set_focus_on_map(win, TRUE);
@@ -239,8 +253,8 @@ areyousure(GtkWindow *window, char *message)
 	gtk_widget_show_now(GTK_WIDGET(d));
 	grabbed_window(GTK_WINDOW(d));
 	result = gtk_dialog_run(GTK_DIALOG(d));
-	ungrabbed_window(GTK_DINWO(d));
-	gtk_window_destroy(GTK_WINDOW(d));
+	ungrabbed_window(GTK_WINDOW(d));
+	gtk_widget_destroy(GTK_WIDGET(d));
 	if (result == GTK_RESPONSE_YES)
 		grabbed_window(window);
 	return((result == GTK_RESPONSE_YES) ? TRUE : FALSE);
@@ -263,7 +277,7 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	gdk_cairo_set_source_pixbuf(cr, p, 0, 0);
 	cairo_paint(cr);
 	GdkColor color = { .red = 0, .green = 0, .blue = 0, .pixel = 0, };
-	gdk_set_source_color(cr, &color);
+	gdk_cairo_set_source_color(cr, &color);
 	cairo_paint_with_alpha(cr, 0.7);
 	return FALSE;
 }
@@ -293,7 +307,7 @@ make_logout_choice()
 	gint height = gdk_screen_get_height(scrn);
 
 	gtk_window_set_default_size(GTK_WINDOW(w), width, height);
-	gtk_window_set_app_paintable(GTK_WINDOW(w), TRUE);
+	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
 
 	GdkPixbuf *pixbuf = gdk_pixbuf_get_from_drawable(NULL,
 			GDK_DRAWABLE(root), NULL, 0, 0, 0, 0, width, height);
@@ -312,7 +326,7 @@ make_logout_choice()
 	gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(h));
 
 	if (options.banner) {
-		GtkWidget *f = gtk_frame_new();
+		GtkWidget *f = gtk_frame_new(NULL);
 		gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
 		gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), FALSE, FALSE, 0);
 
@@ -327,13 +341,13 @@ make_logout_choice()
 			gtk_widget_destroy(GTK_WIDGET(f));
 	}
 
-	GtkWidget *f = gtk_frame_new();
+	GtkWidget *f = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
-	gtk_box_pack_start(GTK_BOX(h), TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), TRUE, TRUE, 0);
 	v = gtk_vbox_new(FALSE, 5);
 	gtk_container_set_border_width(GTK_CONTAINER(v), 10);
 	gtk_container_add(GTK_CONTAINER(f), GTK_WIDGET(v));
-	GtkWidget *l = gtk_label_new();
+	GtkWidget *l = gtk_label_new(NULL);
 	gtk_label_set_markup(GTK_LABEL(l), options.prompt);
 	gtk_box_pack_start(GTK_BOX(v), GTK_WIDGET(l), FALSE, TRUE, 0);
 	GtkWidget *bb = gtk_vbutton_box_new();
@@ -342,30 +356,12 @@ make_logout_choice()
 	gtk_box_set_spacing(GTK_BOX(bb), 5);
 	gtk_box_pack_end(GTK_BOX(v), GTK_WIDGET(bb), FALSE, TRUE, 0);
 
-	GtkListStore *store = gtk_list_store_new(7,
-			GDK_TYPE_PIXBUF, /* pixbuf */
-			G_TYPE_STRING, /* name */
-			G_TYPE_STRING, /* comment */
-			G_TYPE_STRING, /* name and comment markup */
-			G_TYPE_STRING, /* label */
-			G_TYPE_BOOLEAN, /* SessionManaged ? X-XDE-Managed ? */
-			G_TYPE_BOOLEAN, /* X-XDE-Managed original setting */
-			-1);
-	GtkWidget *view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
-	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
-	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), 1);
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), FALSE);
-	gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(view), GTK_TREE_VIEW_GRID_LINES_BOTH);
-	gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(view));
-
-	GtkCellRenderer *rend = gtk_cell_renderer_toggle_new();
-	gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER(rend), TRUE);
-	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_toggled), NULL);
+	/* FIXME: fill out buttons */
 
 
 
 
-
+	return action_result;
 }
 
 
@@ -373,8 +369,9 @@ void
 action_PowerOff(GtkButton *button, gpointer data)
 {
 	GtkWidget *top = gtk_widget_get_toplevel(GTK_WIDGET(button));
-	gboolen result = areyousure(top, "Are you sure you want power off the computer?");
+	gboolean result = areyousure(GTK_WINDOW(top), "Are you sure you want power off the computer?");
 	action_result = LOGOUT_ACTION_POWEROFF;
+	(void) result;
 	gtk_main_quit();
 }
 
@@ -395,15 +392,18 @@ action_SwitchDesk(GtkButton * button, gpointer data)
 void
 action_LockScreen(GtkButton * button, gpointer data)
 {
+	int status;
+
 	if (options.lockscreen)
-		system(options.lockscreen);
+		status = system(options.lockscreen);
 	else
 		fprintf(stderr, "No screen locking program found!\n");
+	(void) status;
 	return;
 }
 
 void
-action_Logout(GtkButton * button, gpointer data)
+action_Logout(GtkButton * button, gpointer dummy)
 {
 	const char *env;
 	pid_t pid;
@@ -434,7 +434,7 @@ action_Logout(GtkButton * button, gpointer data)
 	GdkDisplayManager *mgr = gdk_display_manager_get();
 	GdkDisplay *disp = gdk_display_manager_get_default_display(mgr);
 	GdkScreen *scrn = gdk_display_get_default_screen(disp);
-	GdkWindow *root = gdk_screen_get_root_window(srcn);
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
 
 	/* When the _BLACKBOX_PID atom is set on the desktop, that is the PID of the FLUXBOX window 
 	   manager.  Actually it is me that is setting _BLACKBOX_PID using the fluxbox init file
@@ -475,7 +475,7 @@ action_Logout(GtkButton * button, gpointer data)
 	if ((atom = gdk_atom_intern("_NET_SUPPORTING_WM_CHECK", TRUE)) != GDK_NONE) {
 		if (gdk_property_get(root, atom, GDK_NONE, 0, 1, FALSE, &actual, &format, &length, &data) && format == 32 && length >= 1) {
 			Window xid = *(unsigned long *) data;
-			GtkWindow *win = gdk_window_foreign_new(xid);
+			GdkWindow *win = gdk_window_foreign_new(xid);
 
 			if ((atom = gdk_atom_intern("_NET_WM_PID", TRUE)) != GDK_NONE) {
 				if (gdk_property_get(win, atom, GDK_NONE, 0, 1, FALSE, &actual, &format, &length, &data) && format == 32 && length >= 1) {
@@ -486,7 +486,7 @@ action_Logout(GtkButton * button, gpointer data)
 							g_object_unref(G_OBJECT(win));
 							return;
 						}
-						fprintf(stderr, "kill: could not kill _NET_WM_PID %d: %s\n", (int) pid, %strerror(errno));
+						fprintf(stderr, "kill: could not kill _NET_WM_PID %d: %s\n", (int) pid, strerror(errno));
 					}
 				}
 			}
@@ -500,7 +500,7 @@ action_Logout(GtkButton * button, gpointer data)
 				/* NOTE: we might actually be killing ourselves here... */
 				if (kill(pid, SIGTERM) == 0)
 					return;
-				fprintf(stderr, "kill: could not kill _NET_WM_PID %d: %s\n", (int) pid, %strerror(errno));
+				fprintf(stderr, "kill: could not kill _NET_WM_PID %d: %s\n", (int) pid, strerror(errno));
 			}
 		}
 	}
@@ -512,7 +512,7 @@ action_Logout(GtkButton * button, gpointer data)
 				/* NOTE: we might actually be killing ourselves here... */
 				if (kill(pid, SIGTERM) == 0)
 					return;
-				fprintf(stderr, "kill: could not kill _XDE_WM_PID %d: %s\n", (int) pid, %strerror(errno));
+				fprintf(stderr, "kill: could not kill _XDE_WM_PID %d: %s\n", (int) pid, strerror(errno));
 			}
 		}
 	}
@@ -520,4 +520,9 @@ action_Logout(GtkButton * button, gpointer data)
 	   libxde. */
 	fprintf(stderr, "ERROR: cannot find session or window manager PID!\n");
 	return;
+}
+
+int
+main(int argc, char *argv[]) {
+	return (0);
 }

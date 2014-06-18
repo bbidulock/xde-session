@@ -42,7 +42,36 @@
 
  *****************************************************************************/
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+
 #include "xde-session.h"
+
+#include <sys/types.h>
+#include <pwd.h>
+#include <unique/unique.h>
+#include <glib-unix.h>
+#include <glib/gfileutils.h>
+#include <glib/gkeyfile.h>
+#include <glib/gdataset.h>
+
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
+
+typedef struct {
+	char *vendor;
+	Bool mkdirs;
+	char *wmname;
+	char *desktop;
+	char *session;
+	char *splash;
+	char **setup;
+	char *startwm;
+} Options;
+
+Options options;
 
 typedef struct {
 	char *HOSTNAME;
@@ -56,7 +85,7 @@ typedef struct {
 	char *XDG_MENU_PREFIX;
 } Environment;
 
-Environment environ;
+Environment envir;
 
 typedef struct {
 	char *Desktop;
@@ -105,81 +134,81 @@ setup_environment()
 
 	/* set defaults or determine values */
 	if ((env = getenv("HOSTNAME")))
-		environ.HOSTNAME = strdup(env);
+		envir.HOSTNAME = strdup(env);
 	else {
 		gethostname(buf, PATH_MAX);
-		environ.HOSTNAME = strdup(buf);
+		envir.HOSTNAME = strdup(buf);
 	}
 	if ((env = getenv("USER")))
-		environ.USER = strdup(env);
+		envir.USER = strdup(env);
 	else {
 		struct passwd pwd = { NULL, }, *pw = NULL;
-		if (getpwuid_r(getuid(), pwd, buf, PATH_MAX, &pw) != -1 && pw)
-			environ.USER = strdup(pw->pw_name);
+		if (getpwuid_r(getuid(), &pwd, buf, PATH_MAX, &pw) != -1 && pw)
+			envir.USER = strdup(pw->pw_name);
 	}
 	if ((env = getenv("HOME")))
-		environ.HOME = strdup(env);
+		envir.HOME = strdup(env);
 	else {
 		struct passwd pwd = { NULL, }, *pw = NULL;
-		if (getpwuid_r(getuid(), pwd, buf, PATH_MAX, &pw) != -1 && pw)
-			environ.HOME = strdup(pw->pw_dir);
+		if (getpwuid_r(getuid(), &pwd, buf, PATH_MAX, &pw) != -1 && pw)
+			envir.HOME = strdup(pw->pw_dir);
 	}
 	if ((env = getenv("XDG_CONFIG_HOME")))
-		environ.XDG_CONFIG_HOME = strdup(env);
+		envir.XDG_CONFIG_HOME = strdup(env);
 	else {
-		snprintf(buf, PATH_MAX, "%s/.config", environ.HOME);
-		environ.XDG_CONFIG_HOME = strdup(buf);
+		snprintf(buf, PATH_MAX, "%s/.config", envir.HOME);
+		envir.XDG_CONFIG_HOME = strdup(buf);
 	}
 	if ((env = getenv("XDG_CONFIG_DIRS")))
-		environ.XDG_CONFIG_DIRS = strdup(env);
+		envir.XDG_CONFIG_DIRS = strdup(env);
 	else
-		environ.XDG_CONFIG_DIRS = strdup("/usr/local/share:/usr/share");
+		envir.XDG_CONFIG_DIRS = strdup("/usr/local/share:/usr/share");
 	if ((env = getenv("XDG_DATA_HOME")))
-		environ.XDG_DATA_HOME = strdup(env);
+		envir.XDG_DATA_HOME = strdup(env);
 	else {
-		snprintf(buf, PATH_MAX, "%s/.local/share", environ.HOME);
-		environ.XDG_DATA_HOME = strdup(buf);
+		snprintf(buf, PATH_MAX, "%s/.local/share", envir.HOME);
+		envir.XDG_DATA_HOME = strdup(buf);
 	}
 	/* add overrides for XDE and for vendor */
 	if (options.vendor) {
-		snprintf(buf, PATH_MAX, "/etc/xdg/xde:/etc/xdg/%s:%s", options.vendor, environ.XDG_CONFIG_DIRS);
-		free(environ.XDG_CONFIG_DIRS);
-		environ.XDG_CONFIG_DIRS = strdup(buf);
-		snprintf(buf, PATH_MAX, "/usr/share/xde:/usr/share/%s:%s", options.vendor, environ.XDG_CONFIG_DIRS);
-		free(environ.XDG_DATA_DIRS);
-		environ.XDG_DATA_DIRS = strdup(buf);
+		snprintf(buf, PATH_MAX, "/etc/xdg/xde:/etc/xdg/%s:%s", options.vendor, envir.XDG_CONFIG_DIRS);
+		free(envir.XDG_CONFIG_DIRS);
+		envir.XDG_CONFIG_DIRS = strdup(buf);
+		snprintf(buf, PATH_MAX, "/usr/share/xde:/usr/share/%s:%s", options.vendor, envir.XDG_CONFIG_DIRS);
+		free(envir.XDG_DATA_DIRS);
+		envir.XDG_DATA_DIRS = strdup(buf);
 	} else {
-		snprintf(buf, PATH_MAX, "/etc/xdg/xde:%s", options.vendor, environ.XDG_CONFIG_DIRS);
-		free(environ.XDG_CONFIG_DIRS);
-		environ.XDG_CONFIG_DIRS = strdup(buf);
-		snprintf(buf, PATH_MAX, "/usr/share/xde:%s", options.vendor, environ.XDG_CONFIG_DIRS);
-		free(environ.XDG_DATA_DIRS);
-		environ.XDG_DATA_DIRS = strdup(buf);
+		snprintf(buf, PATH_MAX, "/etc/xdg/xde:%s:%s", options.vendor, envir.XDG_CONFIG_DIRS);
+		free(envir.XDG_CONFIG_DIRS);
+		envir.XDG_CONFIG_DIRS = strdup(buf);
+		snprintf(buf, PATH_MAX, "/usr/share/xde:%s:%s", options.vendor, envir.XDG_CONFIG_DIRS);
+		free(envir.XDG_DATA_DIRS);
+		envir.XDG_DATA_DIRS = strdup(buf);
 	}
 	/* set primary XDG environment variables */
-	if (environ.HOSTNAME)
-		setenv("HOSTNAME", environ.HOSTNAME, 1);
-	if (environ.USER)
-		setenv("USER", environ.USER, 1);
-	if (environ.HOME)
-		setenv("HOME", environ.HOME, 1);
-	if (environ.XDG_CONFIG_HOME) {
-		setenv("XDG_CONFIG_HOME", environ.XDG_CONFIG_HOME, 1);
-		if (stat(environ.XDG_CONFIG_HOME, &st) == -1 || !S_ISDIR(st.st_mode))
-			mkdir(environ.XDG_CONFIG_HOME, 0755);
+	if (envir.HOSTNAME)
+		setenv("HOSTNAME", envir.HOSTNAME, 1);
+	if (envir.USER)
+		setenv("USER", envir.USER, 1);
+	if (envir.HOME)
+		setenv("HOME", envir.HOME, 1);
+	if (envir.XDG_CONFIG_HOME) {
+		setenv("XDG_CONFIG_HOME", envir.XDG_CONFIG_HOME, 1);
+		if (stat(envir.XDG_CONFIG_HOME, &st) == -1 || !S_ISDIR(st.st_mode))
+			mkdir(envir.XDG_CONFIG_HOME, 0755);
 	}
-	if (environ.XDG_CONFIG_DIRS)
-		setenv("XDG_CONFIG_DIRS", environ.XDG_CONFIG_DIRS, 1);
-	if (environ.XDG_DATA_HOME) {
-		setenv("XDG_DATA_HOME", environ.XDG_DATA_HOME, 1);
-		if (stat(environ.XDG_DATA_HOME, &st) == -1 || !S_ISDIR(st.st_mode))
-			mkdir(environ.XDG_DATA_HOME, 0755);
+	if (envir.XDG_CONFIG_DIRS)
+		setenv("XDG_CONFIG_DIRS", envir.XDG_CONFIG_DIRS, 1);
+	if (envir.XDG_DATA_HOME) {
+		setenv("XDG_DATA_HOME", envir.XDG_DATA_HOME, 1);
+		if (stat(envir.XDG_DATA_HOME, &st) == -1 || !S_ISDIR(st.st_mode))
+			mkdir(envir.XDG_DATA_HOME, 0755);
 	}
-	if (environ.XDG_DATA_DIRS)
-		setenv("XDG_DATA_DIRS", environ.XDG_DATA_DIRS, 1);
+	if (envir.XDG_DATA_DIRS)
+		setenv("XDG_DATA_DIRS", envir.XDG_DATA_DIRS, 1);
 
 	/* check for XDG user directory settings */
-	snprintf(buf, PATH_MAX, "%s/user-dirs.dirs", environ.XDG_CONFIG_HOME);
+	snprintf(buf, PATH_MAX, "%s/user-dirs.dirs", envir.XDG_CONFIG_HOME);
 	if (stat("/usr/bin/xdg-user-dirs-update", &st) != -1 && (S_IXOTH & st.st_mode))
 		system("/usr/bin/xdg-user-dirs-update");
 	else if (stat(buf, &st) == -1 || !S_ISREG(st.st_mode)) {
@@ -197,7 +226,7 @@ setup_environment()
 	}
 	if ((f = fopen(buf, "<"))) {
 		char *key, *val, *p, **where;
-		int hlen = strlen(environ.HOME);
+		int hlen = strlen(envir.HOME);
 
 		while ((fgets(buf, PATH_MAX, f))) {
 			if (!(key = strstr(buf, "XDG_")) || key != buf)
@@ -213,7 +242,7 @@ setup_environment()
 			if (!strcmp(key, "DESKTOP"))
 				where = &userdirs.Desktop;
 			else if (!strcmp(key, "DOWNLOAD"))
-				where = &userdirs.Downloads;
+				where = &userdirs.Download;
 			else if (!strcmp(key, "TEMPLATES"))
 				where = &userdirs.Templates;
 			else if (!strcmp(key, "PUBLICSHARE"))
@@ -231,7 +260,7 @@ setup_environment()
 			p = val;
 			while ((p = strstr(p, "$HOME"))) {
 				memmove(p + hlen, p + 4, strlen(p + 5) + 1);
-				memcpy(p, environ.HOME, hlen);
+				memcpy(p, envir.HOME, hlen);
 				p += hlen;
 			}
 			free(*where);
@@ -241,43 +270,43 @@ setup_environment()
 	}
 	/* apply defaults to remaining values */
 	if (!userdirs.Desktop) {
-		snprintf(buf, PATH_MAX, "%s/Desktop", environ.HOME);
+		snprintf(buf, PATH_MAX, "%s/Desktop", envir.HOME);
 		userdirs.Desktop = strdup(buf);
 	}
-	if (!userdirs.Downloads) {
-		snprintf(buf, PATH_MAX, "%s/Downloads", environ.HOME);
-		userdirs.Downloads = strdup(buf);
+	if (!userdirs.Download) {
+		snprintf(buf, PATH_MAX, "%s/Downloads", envir.HOME);
+		userdirs.Download = strdup(buf);
 	}
 	if (!userdirs.Templates) {
-		snprintf(buf, PATH_MAX, "%s/Templates", environ.HOME);
+		snprintf(buf, PATH_MAX, "%s/Templates", envir.HOME);
 		userdirs.Templates = strdup(buf);
 	}
 	if (!userdirs.Public) {
-		snprintf(buf, PATH_MAX, "%s/Public", environ.HOME);
+		snprintf(buf, PATH_MAX, "%s/Public", envir.HOME);
 		userdirs.Public = strdup(buf);
 	}
 	if (!userdirs.Documents) {
-		snprintf(buf, PATH_MAX, "%s/Documents", environ.HOME);
+		snprintf(buf, PATH_MAX, "%s/Documents", envir.HOME);
 		userdirs.Documents = strdup(buf);
 	}
 	if (!userdirs.Music) {
-		snprintf(buf, PATH_MAX, "%s/Documents/Music", environ.HOME);
+		snprintf(buf, PATH_MAX, "%s/Documents/Music", envir.HOME);
 		userdirs.Music = strdup(buf);
 	}
 	if (!userdirs.Pictures) {
-		snprintf(buf, PATH_MAX, "%s/Documents/Pictures", environ.HOME);
+		snprintf(buf, PATH_MAX, "%s/Documents/Pictures", envir.HOME);
 		userdirs.Pictures = strdup(buf);
 	}
 	if (!userdirs.Videos) {
-		snprintf(buf, PATH_MAX, "%s/Documents/Videos", environ.HOME);
+		snprintf(buf, PATH_MAX, "%s/Documents/Videos", envir.HOME);
 		userdirs.Videos = strdup(buf);
 	}
 	if (options.mkdirs) {
 		/* make missing user directories */
 		if ((stat(userdirs.Desktop, &st) == -1) || !S_ISDIR(st.st_mode))
 			mkdir(userdirs.Desktop, 0755);
-		if ((stat(userdirs.Downloads, &st) == -1) || !S_ISDIR(st.st_mode))
-			mkdir(userdirs.Downloads, 0755);
+		if ((stat(userdirs.Download, &st) == -1) || !S_ISDIR(st.st_mode))
+			mkdir(userdirs.Download, 0755);
 		if ((stat(userdirs.Templates, &st) == -1) || !S_ISDIR(st.st_mode))
 			mkdir(userdirs.Templates, 0755);
 		if ((stat(userdirs.Public, &st) == -1) || !S_ISDIR(st.st_mode))
@@ -292,18 +321,18 @@ setup_environment()
 			mkdir(userdirs.Videos, 0755);
 	}
 	if ((env = getenv("XDG_DESKTOP_DIR")))
-		environ.XDG_DESKTOP_DIR = strdup(env);
+		envir.XDG_DESKTOP_DIR = strdup(env);
 	else {
 		if (userdirs.Desktop)
-			environ.XDG_DESKTOP_DIR = strdup(userdirs.Desktop);
+			envir.XDG_DESKTOP_DIR = strdup(userdirs.Desktop);
 		else {
-			snprintf(buf, PATH_MAX, "%s/Desktop", environ.HOME);
-			environ.XDG_DESKTOP_DIR = strdup(buf);
+			snprintf(buf, PATH_MAX, "%s/Desktop", envir.HOME);
+			envir.XDG_DESKTOP_DIR = strdup(buf);
 		}
 	}
-	setenv("XDG_DESKTOP_DIR", environ.XDG_DESKTOP_DIR, 1);
-	if ((stat(environ.XDG_DESKTOP_DIR, &st) == -1) || !S_ISDIR(st.st_mode))
-		mkdir(environ.XDG_DESKTOP_DIR, 0755);
+	setenv("XDG_DESKTOP_DIR", envir.XDG_DESKTOP_DIR, 1);
+	if ((stat(envir.XDG_DESKTOP_DIR, &st) == -1) || !S_ISDIR(st.st_mode))
+		mkdir(envir.XDG_DESKTOP_DIR, 0755);
 
 	if (options.wmname && *options.wmname && !options.desktop) {
 		int i, len;
@@ -345,18 +374,18 @@ setup_environment()
 	setenv("XDE_WM_NAME", options.wmname, 1);
 
 	if ((env = getenv("XDG_MENU_PREFIX")) && *env)
-		environ.XDG_MENU_PREFIX = strdup(env);
-	if (!environ.XDG_MENU_PREFIX && options.vendor) {
-		environ.XDG_MENU_PREFIX = calloc(strlen(options.vendor) + 2,
-				sizeof(*environ.XDG_MENU_PREFIX));
-		strcpy(environ.XDG_MENU_PREFIX, options.vendor);
-		strcat(environ.XDG_MENU_PREFIX, "-");
+		envir.XDG_MENU_PREFIX = strdup(env);
+	if (!envir.XDG_MENU_PREFIX && options.vendor) {
+		envir.XDG_MENU_PREFIX = calloc(strlen(options.vendor) + 2,
+				sizeof(*envir.XDG_MENU_PREFIX));
+		strcpy(envir.XDG_MENU_PREFIX, options.vendor);
+		strcat(envir.XDG_MENU_PREFIX, "-");
 	}
-	if (!environ.XDG_MENU_PREFIX && options.desktop && !strcmp(options.desktop, "LXDE"))
-		environ.XDG_MENU_PREFIX = strdup("lxde-");
-	if (!environ.XDG_MENU_PREFIX)
-		environ.XDG_MENU_PREFIX = strdup("xde-");
-	setenv("XDG_MENU_PREFIX", environ.XDG_MENU_PREFIX, 1);
+	if (!envir.XDG_MENU_PREFIX && options.desktop && !strcmp(options.desktop, "LXDE"))
+		envir.XDG_MENU_PREFIX = strdup("lxde-");
+	if (!envir.XDG_MENU_PREFIX)
+		envir.XDG_MENU_PREFIX = strdup("xde-");
+	setenv("XDG_MENU_PREFIX", envir.XDG_MENU_PREFIX, 1);
 
 
 }
@@ -392,12 +421,12 @@ message_received(UniqueApp * app, gint cmd_id, UniqueMessageData * umd, guint ti
 		/* perform the control actions and gtk_window_set_screen(GTK_WINDOW(win),
 		   unique_message_get_screen(umd)); */
 		break;
-	case COMMAND_RUN:
+	case COMMAND_EXECUTE:
 		/* perform the control actions and gtk_window_set_screen(GTK_WINDOW(win),
 		   unique_message_get_screen(umd)); */
 		break;
 	}
-	gchar *startup_id = unique_message_data_get_startup_id(umd);
+	const gchar *startup_id = unique_message_data_get_startup_id(umd);
 	if (!startup_id && getenv("DESKTOP_STARTUP_ID"))
 		startup_id = g_strdup(getenv("DESKTOP_STARTUP_ID"));
 	if (startup_id)
@@ -405,7 +434,7 @@ message_received(UniqueApp * app, gint cmd_id, UniqueMessageData * umd, guint ti
 	else
 		gdk_notify_startup_complete();
 	/* we are actually not doing anything, maybe later... */
-	return UNIQUE_REPONSE_OK;
+	return UNIQUE_RESPONSE_OK;
 }
 
 UniqueApp *uapp;
@@ -413,12 +442,13 @@ UniqueApp *uapp;
 void
 session_startup(int argc, char *argv[])
 {
-	GdkManager *mgr = gdk_display_manager_get();
+	GdkDisplayManager *mgr = gdk_display_manager_get();
 	GdkDisplay *dpy = gdk_display_manager_get_default_display(mgr);
 	GdkScreen *screen = gdk_display_get_default_screen(dpy);
 	GdkWindow *root = gdk_screen_get_root_window(screen);
+	(void) root;
 
-	uapp = unique_app_new_with_command("com.unexicon.xde-session",
+	uapp = unique_app_new_with_commands("com.unexicon.xde-session",
 						      NULL,
 						      "xde-session", COMMAND_SESSION,
 						      "xde-session-edit", COMMAND_EDITOR,
@@ -429,7 +459,7 @@ session_startup(int argc, char *argv[])
 						      NULL);
 
 	if (unique_app_is_running(uapp)) {
-		const char *cmd = strrchr(argv[0]) ? strrchr(argv[0]) + 1 : argv[0];
+		const char *cmd = strrchr(argv[0], '/') ? strrchr(argv[0], '/') + 1 : argv[0];
 		int cmd_id = -1;
 
 		if (!strcmp(cmd, "xde-session"))
@@ -454,7 +484,7 @@ session_startup(int argc, char *argv[])
 
 			data = calloc(size, sizeof(*data));
 
-			for (i = 0, p = data; i < argc; i++, p += len) {
+			for (i = 0, p = data; i < argc; i++, p += size) {
 				int len = strlen(argv[i]) + 1;
 
 				memcpy(p, argv[i], len);
@@ -476,7 +506,7 @@ relax()
 		gtk_main_iteration();
 }
 
-GtkWidet *table;
+GtkWidget *table;
 int cols = 7;
 
 void
@@ -487,7 +517,7 @@ splashscreen()
 	unique_app_watch_window(uapp, GTK_WINDOW(splscr));
 	g_signal_connect(G_OBJECT(uapp), "message-received", G_CALLBACK(message_received), (gpointer) NULL);
 	gtk_window_set_gravity(GTK_WINDOW(splscr), GDK_GRAVITY_CENTER);
-	gtk_window_set_type_hint(GTK_WINDOW(splscr), GDK_WINDOW_TYPE_SPLASHSCREEN);
+	gtk_window_set_type_hint(GTK_WINDOW(splscr), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
 	gtk_container_set_border_width(GTK_CONTAINER(splscr), 20);
 	gtk_window_set_skip_pager_hint(GTK_WINDOW(splscr), TRUE);
 	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(splscr), TRUE);
@@ -503,15 +533,15 @@ splashscreen()
 	GtkWidget *img = gtk_image_new_from_file(options.splash);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(img), FALSE, FALSE, 0);
 
-	GtkWidget *sw = gtk_scrolled_window_new();
+	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_widget_set_size_request(GTK_WIDGET(sw), 800, -1);
 	gtk_box_pack_end(GTK_BOX(vbox), GTK_WIDGET(sw), TRUE, TRUE, 0);
 
 	table = gtk_table_new(1, cols, TRUE);
-	gtk_table_set_col_spacing(GTK_TABLE(table), 1);
-	gtk_table_set_row_spacing(GTK_TABLE(table), 1);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 1);
+	gtk_table_set_row_spacings(GTK_TABLE(table), 1);
 	gtk_table_set_homogeneous(GTK_TABLE(table), TRUE);
 	gtk_widget_set_size_request(GTK_WIDGET(table), 750, -1);
 	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(sw), GTK_WIDGET(table));
@@ -533,16 +563,16 @@ int autostarts = 0;
 void
 get_autostart()
 {
-	int dlen = strlen(environ.XDG_CONFIG_DIRS);
-	int hlen = strlen(environ.XDG_CONFIG_HOME);
+	int dlen = strlen(envir.XDG_CONFIG_DIRS);
+	int hlen = strlen(envir.XDG_CONFIG_HOME);
 	int size = dlen + 1 + hlen + 1;
 	char *dir;
 	char *dirs = calloc(size, sizeof(*dirs)), *save = dirs;
 	char *path = calloc(PATH_MAX, sizeof(*path));
 
-	strcpy(dirs, environ.XDG_CONFIG_HOME);
+	strcpy(dirs, envir.XDG_CONFIG_HOME);
 	strcat(dirs, ":");
-	strcat(dirs, environ.XDG_CONFIG_DIRS);
+	strcat(dirs, envir.XDG_CONFIG_DIRS);
 
 	g_datalist_init(&entries);
 
@@ -556,22 +586,20 @@ get_autostart()
 		relax();
 		while ((d = readdir(D))) {
 			char *p;
-			GQuark id;
 			GKeyFile *kf;
-			GError err;
+			GError *err = NULL;
 
 			if (*d->d_name == '.')
 				continue;
 			if (!(p = strstr(d->d_name, ".desktop")) || p[8])
 				continue;
 			snprintf(path, PATH_MAX, "%s/autostart/%s", dir, d->d_name);
-			id = g_string_to_quark(d->d_name);
-			if ((kf = (typeof(kf)) g_datalist_id_get_data(entries, id)))
+			if ((kf = (typeof(kf)) g_datalist_get_data(&entries, d->d_name)))
 				continue;
 			relax();
 			kf = g_key_file_new();
 			if (g_key_file_load_from_file(kf, path, G_KEY_FILE_NONE, &err)) {
-				g_datalist_id_set_data_full(entries, id, (gpointer) kf, key_file_unref);
+				g_datalist_set_data_full(&entries, d->d_name, (gpointer) kf, key_file_unref);
 				autostarts++;
 			}
 		}
@@ -592,12 +620,10 @@ void
 foreach_autostart(GQuark key_id, gpointer data, gpointer user_data)
 {
 	static const char section[] = "Desktop Entry";
-	GtkKeyFile *kf = (GtkKeyFile *) data;
+	GKeyFile *kf = (GKeyFile *) data;
 	TableContext *c = (typeof(c)) user_data;
 	char *name, *p, *value, **list, **item;
 	GtkWidget *icon, *but;
-	int i;
-	gsize n;
 	gboolean found;
 
 	if ((name = g_key_file_get_string(kf, section, "Icon", NULL))) {
@@ -616,18 +642,18 @@ foreach_autostart(GQuark key_id, gpointer data, gpointer user_data)
 #if 0
 	gtk_button_set_label(GTK_BUTTON(but), name);
 #endif
-	gtk_button_set_tooltip_text(GTK_WIDGET(but), name);
+	gtk_widget_set_tooltip_text(GTK_WIDGET(but), name);
 	g_free(name);
 
-	gtk_table_attach_defautls(GTK_TABLE(table), GTK_WIDGET(but), c.col, c.col + 1, c.row, c.row + 1);
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(but), c->col, c->col + 1, c->row, c->row + 1);
 	gtk_widget_set_sensitive(GTK_WIDGET(but), FALSE);
 	gtk_widget_show_all(GTK_WIDGET(but));
 	gtk_widget_show_now(GTK_WIDGET(but));
 	relax();
 
-	if (++c.col >= c.cols) {
-		c.row++;
-		c.col = 0;
+	if (++c->col >= c->cols) {
+		c->row++;
+		c->col = 0;
 	}
 
 	found = FALSE;
@@ -644,7 +670,7 @@ foreach_autostart(GQuark key_id, gpointer data, gpointer user_data)
 
 	found = TRUE;
 	if ((list = g_key_file_get_string_list(kf, section, "OnlyShowIn", NULL, NULL))) {
-		for (found = false, item = list; *item; item++) {
+		for (found = FALSE, item = list; *item; item++) {
 			if (!strcmp(*item, options.desktop)) {
 				found = TRUE;
 				break;
@@ -657,7 +683,7 @@ foreach_autostart(GQuark key_id, gpointer data, gpointer user_data)
 
 	found = FALSE;
 	if ((list = g_key_file_get_string_list(kf, section, "NotShowIn", NULL, NULL))) {
-		for (found = false, item = list; *item; item++) {
+		for (found = FALSE, item = list; *item; item++) {
 			if (!strcmp(*item, options.desktop)) {
 				found = TRUE;
 				break;
@@ -676,7 +702,7 @@ foreach_autostart(GQuark key_id, gpointer data, gpointer user_data)
 			if (stat(value, &st) == -1 || !((S_IXUSR | S_IXGRP | S_IXOTH) & st.st_mode))
 				found = FALSE;
 		} else {
-			gchar **path, *file;
+			gchar **path;
 
 			found = FALSE;
 			if ((path = g_strsplit(getenv("PATH") ? : "", ":", -1))) {
@@ -706,7 +732,7 @@ foreach_autostart(GQuark key_id, gpointer data, gpointer user_data)
 
 	/* Do we really need to make two lists? Why not launch them right now? */
 	g_key_file_ref(kf);
-	g_datalist_id_set_data_full(execute, key_id, (gpointer) kf, key_file_unref);
+	g_datalist_id_set_data_full(&execute, key_id, (gpointer) kf, key_file_unref);
 }
 
 void
@@ -736,14 +762,14 @@ daemonize()
 		sid = pid;
 
 	snprintf(buf, sizeof(buf), "%d", (int)sid);
-	setenv("XDG_SESSION_PID", buf);
-	setenv("_LXSESSION_PID", buf);
+	setenv("XDG_SESSION_PID", buf, 1);
+	setenv("_LXSESSION_PID", buf, 1);
 }
 
-GData *children;
-GData *restarts;
-GData *watchers;
-GData *commands;
+GHashTable *children;
+GHashTable *restarts;
+GHashTable *watchers;
+GHashTable *commands;
 
 pid_t wmpid;
 
@@ -752,7 +778,7 @@ pid_t startup(char *cmd, gpointer data);
 void
 childexit(pid_t pid, int wstat, gpointer data)
 {
-	gpointer key = (gpointer) pid;
+	gpointer key = (gpointer) (long) pid;
 	int status;
 	gboolean res;
 
@@ -811,14 +837,14 @@ startup(char *cmd, gpointer data)
 	}
 	if (child) {
 		/* we are the parent */
-		gpointer val, key = (gpointer) child;
+		gpointer val, key = (gpointer) (long) child;
 
 		fprintf(stderr, "Child %d started...(%s)\n", child, cmd);
 		g_hash_table_insert(commands, key, cmd);
 		if (restart)
 			g_hash_table_add(restarts, key);
 		g_hash_table_add(children, key);
-		val = (gpointer) g_child_watch_add(child, childexit, data);
+		val = (gpointer) (long) g_child_watch_add(child, childexit, data);
 		g_hash_table_insert(watchers, key, val);
 	} else {
 		/* we are the child */
@@ -867,7 +893,7 @@ setup()
 		int slen, wlen;
 
 		fprintf(stderr, "%s\n", "executing default setup");
-		save = dirs = strdup(environ.XDG_DATA_DIRS);
+		save = dirs = strdup(envir.XDG_DATA_DIRS);
 		slen = strlen(script);
 		wlen = strlen(options.wmname);
 
@@ -909,11 +935,11 @@ startwm()
 	char *cmd;
 
 	if (!options.startwm) {
-		char *dirs, *save, *dir;
+		char *dirs, *dir;
 		int slen, wlen;
 
 		fprintf(stderr, "%s\n", "executing default start");
-		save = dirs = strdup(environ.XDG_DATA_DIRS);
+		dirs = strdup(envir.XDG_DATA_DIRS);
 		slen = strlen(script);
 		wlen = strlen(options.wmname);
 
@@ -949,7 +975,6 @@ startwm()
 void
 waitwm()
 {
-	int count = 0;
 }
 
 
@@ -968,12 +993,23 @@ run_autostart()
 {
 }
 
+static gboolean
+hidesplash(gpointer user_data)
+{
+	return FALSE; /* remove source */
+}
+
 void
 do_loop()
 {
 	g_timeout_add_seconds(150, hidesplash, NULL);
 	gtk_main();
 	exit(EXIT_SUCCESS);
+}
+
+void
+set_defaults(void)
+{
 }
 
 int
