@@ -647,14 +647,138 @@ General options:\n\
 ", argv[0]);
 }
 
+void
+set_default_prompt(void)
+{
+	char *session = NULL, *prompt, *p;
+	const char *s;
+	int i, len;
+
+	prompt = calloc(PATH_MAX, sizeof(*prompt));
+
+	if ((s = getenv("XDG_CURRENT_DESKTOP")) && *s) {
+		session = strdup(s);
+		while((p = strchr(session, ';')))
+			*p = ':';
+	} else if ((s = getenv("XDG_VENDOR_ID")) && *s) {
+		session = strdup(s);
+	} else if ((s = getenv("XDG_MENU_PREFIX")) && *s) {
+		session = strdup(s);
+		p = session + strlen(session) - 1;
+		if (*p == '-')
+			*p = '\0';
+	} else {
+		session = strdup("XDE");
+	}
+	len = strlen(session);
+	for (i = 0, p = session; i < len; i++, p++)
+		*p = toupper(*p);
+	snprintf(prompt, PATH_MAX-1, "Logout of <b>%s</b> session?", session);
+	options.prompt = strdup(prompt);
+	free(session);
+	free(prompt);
+}
+
+void
+set_default_banner(void)
+{
+	char *home, *xhome, *xdata, *dirs, *pos, *end, *pfx, *file, *banner = NULL;
+	int len, n;
+	struct stat st;
+
+	file = calloc(PATH_MAX+1, sizeof(*file));
+	pfx = getenv("XDG_MENU_PREFIX") ?: "";
+	home = getenv("HOME") ?: ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) +
+		strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1)  {
+		*strchrnul(pos, ':') = '\0';
+		if (!*pos)
+			continue;
+		strncpy(file, pos, PATH_MAX);
+		strncat(file, "/images/", PATH_MAX);
+		strncat(file, pfx, PATH_MAX);
+		strncat(file, "banner.png", PATH_MAX);
+		if (stat(file, &st)) {
+			DPRINTF("%s: %s\n", file, strerror(errno));
+			continue;
+		}
+		if (!S_ISREG(st.st_mode)) {
+			DPRINTF("%s: not a file\n", file);
+			continue;
+		}
+		banner = strdup(file);
+		break;
+	}
+	if (!banner && *pfx) {
+		pfx = "";
+		if (xhome)
+			strcpy(dirs, xhome);
+		else {
+			strcpy(dirs, home);
+			strcat(dirs, "/.local/share");
+		}
+		strcat(dirs, ":");
+		strcat(dirs, xdata);
+		end = dirs + strlen(dirs);
+		for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1)  {
+			*strchrnul(pos, ':') = '\0';
+			if (!*pos)
+				continue;
+			strncpy(file, pos, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner.png", PATH_MAX);
+			if (stat(file, &st)) {
+				DPRINTF("%s: %s\n", file, strerror(errno));
+				continue;
+			}
+			if (!S_ISREG(st.st_mode)) {
+				DPRINTF("%s: not a file\n", file);
+				continue;
+			}
+			banner = strdup(file);
+			break;
+		}
+	}
+	free(dirs);
+	free(file);
+	options.banner = banner;
+}
+
+void
+set_defaults(void)
+{
+	set_default_prompt();
+	set_default_banner();
+}
+
 int
 main(int argc, char *argv[]) {
+	set_defaults();
 	while(1) {
 		int c, val;
 #ifdef _GNU_SOURCE
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+			{"prompt",	required_argument,	NULL, 'p'},
+			{"banner",	required_argument,	NULL, 'b'},
+			{"side",	required_argument,	NULL, 's'},
+
 			{"dry-run",	no_argument,		NULL, 'n'},
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},
@@ -666,10 +790,10 @@ main(int argc, char *argv[]) {
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "nD::v::hVCH?",
+		c = getopt_long_only(argc, argv, "p:b:s:nD::v::hVCH?",
 				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "nDvhVC?");
+		c = getopt(argc, argv, "p:b:s:nDvhVC?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			if (options.debug)
@@ -680,6 +804,14 @@ main(int argc, char *argv[]) {
 		case 0:
 			goto bad_usage;
 
+		case 'p':	/* -p, --prompt PROPMT */
+			free(options.prompt);
+			options.prompt = strdup(optarg);
+			break;
+		case 'b':	/* -b, --banner BANNER */
+			free(options.banner);
+			options.banner = strdup(optarg);
+			break;
 		case 'n':	/* -n, --dry-run */
 			options.dryrun = True;
 			break;
