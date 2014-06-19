@@ -56,11 +56,27 @@ enum {
 	CHOOSE_RESULT_LOGOUT,
 };
 
+typedef enum _ChooserSide {
+	CHOOSER_SIDE_LEFT,
+	CHOOSER_SIDE_TOP,
+	CHOOSER_SIDE_RIGHT,
+	CHOOSER_SIDE_BOTTOM,
+} ChooserSide;
+
 typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	Bool prompt;
 	char *banner;
+	ChooserSide side;
+	Bool noask;
+	char *charset;
+	char *language;
+	Bool dflt;
+	char *icon_theme;
+	char *gtk2_theme;
+	Bool execute;
 } Options;
 
 Options options = {
@@ -268,10 +284,16 @@ help(int argc, char *argv[])
 		return;
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [options]\n\
+    %1$s [OPTIONS] [SESSION]\n\
     %1$s {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
+Arguments:\n\
+    SESSION\n\
+        The name of the XDG session to execute, or \"default\"\n\
+	or \"choose\".  When unspecified defaults to \"default\"\n\
+	\"default\" means execute default without prompting\n\
+	\"choose\" means post a dialog to choose the session\n\
 Command options:\n\
     -h, --help, -?, --?\n\
         print this usage information and exit\n\
@@ -280,6 +302,27 @@ Command options:\n\
     -C, --copying\n\
         print copying permission and exit\n\
 General options:\n\
+    -p, --prompt\n\
+        prompt for session regardless of SESSION argument\n\
+    -b, --banner BANNER\n\
+	specify custom login branding\n\
+    -s, --side {left|top|right|bottom}\n\
+        specify side  of dialog for logo placement\n\
+    -n, --noask\n\
+        do not ask to set session as default\n\
+    -c, --charset CHARSET\n\
+	specify the character set, defaults to current locale\n\
+    -l, --language LANGUAGE\n\
+        specify the language, defaults to current locale\n\
+    -d, --default\n\
+        set the future default to the SESSION argument or choice\n\
+    -i, --icons THEME\n\
+        set the icon theme to use, default to current setting\n\
+    -t, --theme THEME\n\
+        set the gtk+ theme to use, default to current setting\n\
+    -e, --exec\n\
+        execute the Exec= statement instead of returning as string\n\
+	indicating the selected XSession\n\
     -D, --debug [LEVEL]\n\
         increment or set debug LEVEL [default: 0]\n\
     -v, --verbose [LEVEL]\n\
@@ -297,7 +340,18 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-			{"dry-run",	no_argument,		NULL, 'n'},
+			{"prompt",	no_argument,		NULL, 'p'},
+			{"banner",	required_argument,	NULL, 'b'},
+			{"side",	required_argument,	NULL, 's'},
+			{"noask",	no_argument,		NULL, 'n'},
+			{"charset",	required_argument,	NULL, 'c'},
+			{"language",	required_argument,	NULL, 'l'},
+			{"default",	no_argument,		NULL, 'd'},
+			{"icons",	required_argument,	NULL, 'i'},
+			{"theme",	required_argument,	NULL, 't'},
+			{"exec",	no_argument,		NULL, 'e'},
+
+			{"dryrun",	no_argument,		NULL, 'N'},
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},
 			{"help",	no_argument,		NULL, 'h'},
@@ -308,10 +362,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "nD::v::hVCH?",
+		c = getopt_long_only(argc, argv, "ND::v::hVCH?",
 				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "nDvhVCH?");
+		c = getopt(argc, argv, "NDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			if (options.debug)
@@ -322,7 +376,58 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case 'n':	/* -n, --dry-run */
+		case 'p':	/* -p, --prompt */
+			options.prompt = True;
+			break;
+		case 'b':	/* -b, --banner BANNER */
+			free(options.banner);
+			options.banner = strdup(optarg);
+			break;
+		case 's':	/* -s, --side {top|bottom|left|right} */
+			if (!strncasecmp(optarg, "left", strlen(optarg))) {
+				options.side = CHOOSER_SIDE_LEFT;
+				break;
+			}
+			if (!strncasecmp(optarg, "top", strlen(optarg))) {
+				options.side = CHOOSER_SIDE_TOP;
+				break;
+			}
+			if (!strncasecmp(optarg, "right", strlen(optarg))) {
+				options.side = CHOOSER_SIDE_RIGHT;
+				break;
+			}
+			if (!strncasecmp(optarg, "bottom", strlen(optarg))) {
+				options.side = CHOOSER_SIDE_BOTTOM;
+				break;
+			}
+			goto bad_option;
+		case 'n':	/* -n, --noask */
+			options.noask = True;
+			break;
+		case 'c':	/* -c --charset CHARSET */
+			free(options.charset);
+			options.charset = strdup(optarg);
+			break;
+		case 'l':	/* -l, --language LANGUAGE */
+			free(options.language);
+			options.language = strdup(optarg);
+			break;
+		case 'd':	/* -d, --default */
+			options.dflt = True;
+			break;
+		case 'i':	/* -i, --icons THEME */
+			free(options.icon_theme);
+			options.icon_theme = strdup(optarg);
+			break;
+		case 't':	/* -t, --theme THEME */
+			free(options.gtk2_theme);
+			options.gtk2_theme = strdup(optarg);
+			break;
+		case 'e':	/* -e, --exec */
+			options.execute = True;
+			break;
+
+		case 'N':	/* -N, --dry-run */
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
