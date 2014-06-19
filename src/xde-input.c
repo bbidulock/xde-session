@@ -58,12 +58,16 @@ typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	Bool editor;
+	char *filename;
 } Options;
 
 Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.editor = False,
+	.filename = NULL,
 };
 
 typedef struct {
@@ -813,6 +817,8 @@ Usage:\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Command options:\n\
+    -e, --editor\n\
+        launch the settings editor\n\
     -h, --help, -?, --?\n\
         print this usage information and exit\n\
     -V, --version\n\
@@ -820,6 +826,10 @@ Command options:\n\
     -C, --copying\n\
         print copying permission and exit\n\
 General options:\n\
+    -f, --filename FILENAME\n\
+        use an alternate configuration file\n\
+    -n, --dry-run\n\
+        do not change anything, just report actions\n\
     -D, --debug [LEVEL]\n\
         increment or set debug LEVEL [default: 0]\n\
     -v, --verbose [LEVEL]\n\
@@ -828,15 +838,39 @@ General options:\n\
 ", argv[0]);
 }
 
+void
+set_defaults(void)
+{
+	char *file;
+	const char *s;
+
+	file = calloc(PATH_MAX, sizeof(*file));
+	if ((s = getenv("XDG_CONFIG_HOME")))
+		strcpy(file, s);
+	else if ((s = getenv("HOME"))) {
+		strcpy(file, s);
+		strcat(file, "/.config");
+	} else {
+		strcpy(file, ".");
+	}
+	strcat(file, "/xde/input.ini");
+	options.filename = strdup(file);
+	free(file);
+}
+
 int
 main(int argc, char *argv[])
 {
+	set_defaults();
+
 	while(1) {
 		int c, val;
 #ifdef _GNU_SOURCE
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+			{"editor",	no_argument,		NULL, 'e'},
+			{"filename",	required_argument,	NULL, 'f'},
 			{"dry-run",	no_argument,		NULL, 'n'},
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},
@@ -862,6 +896,13 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
+		case 'e':	/* -e, --editor */
+			options.editor = True;
+			break;
+		case 'f':	/* -f, --filename FILENAME */
+			free(options.filename);
+			options.filename = strdup(optarg);
+			break;
 		case 'n':	/* -n, --dry-run */
 			options.dryrun = True;
 			break;
