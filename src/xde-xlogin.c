@@ -42,28 +42,53 @@
 
  *****************************************************************************/
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+
 #include "xde-xlogin.h"
 
+#include <X11/Xft/Xft.h>
 #include <X11/Xdmcp.h>
 
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
+
+enum {
+	OBEYSESS_DISPLAY, /* obey multipleSessions resource */
+	REMANAGE_DISPLAY, /* force remanage */
+	UNMANAGE_DISPLAY, /* force deletion */
+	RESERVER_DISPLAY, /* force server termination */
+	OPENFAILED_DISPLAY, /* XOpenDisplay failed, retry */
+};
+
+Display *dpy;
+int screen;
+Window root;
+
 typedef struct {
+	int output;
+	int debug;
+	Bool dryrun;
+	char *clientId;
+	char *saveFile;
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
 	char *banner;
 	char *welcome;
-	int debug;
-	int verbose;
 } Options;
 
 Options options = {
+	.output = 1,
+	.debug = 0,
+	.dryrun = False,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
-	.debug = 0,
-	.verbose = 1,
 };
 
 typedef enum {
@@ -240,11 +265,13 @@ read_file(char *filename)
 	FILE *f;
 	char buffer[BUFSIZ + 1], *p, *q;
 	unsigned long num;
+	GdkColormap *colormap;
 
 	if (!(f = fopen(filename, "r"))) {
 		fprintf(stderr, "fopen: %s: %s\n", filename, strerror(errno));
 		return;
 	}
+	colormap = gdk_colormap_get_system();
 	while ((fgets(buffer, BUFSIZ, f))) {
 		p = buffer + strspn(buffer, " \t");
 		if (*p == '#')
@@ -269,9 +296,9 @@ read_file(char *filename)
 				p += strspn(p, " \t");
 				if ((q = strrchr(p, '%')))
 					*q = '\0';
-				num = stroul(p, NULL, 0);
+				num = strtoul(p, NULL, 0);
 				if (q) {
-					num *= ScreenWidth(dpy, screen);
+					num *= DisplayWidth(dpy, screen);
 					num /= 100;
 				}
 				theme.msg.x = num;
@@ -281,9 +308,9 @@ read_file(char *filename)
 				p += strspn(p, " \t");
 				if ((q = strrchr(p, '%')))
 					*q = '\0';
-				num = stroul(p, NULL, 0);
+				num = strtoul(p, NULL, 0);
 				if (q) {
-					num *= ScreenHeight(dpy, screen);
+					num *= DisplayHeight(dpy, screen);
 					num /= 100;
 				}
 				theme.msg.y = num;
@@ -295,14 +322,14 @@ read_file(char *filename)
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					theme.msg.shadow.xoffset = stroul(p, NULL, 0);
+					theme.msg.shadow.xoffset = strtoul(p, NULL, 0);
 				} else if (!strncmp(p, "yoffset", 7)) {
 					if (!strspn(p, " \t"))
 						goto unrecognized;
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					theme.msg.shadow.yoffset = stroul(p, NULL, 0);
+					theme.msg.shadow.yoffset = strtoul(p, NULL, 0);
 				} else if (!strncmp(p, "color", 5)) {
 					if (!strspn(p, " \t"))
 						goto unrecognized;
@@ -321,9 +348,9 @@ read_file(char *filename)
 				if ((q = strrchr(p, '\n')))
 					*q = '\0';
 				if (!strcmp(p, "stretch"))
-					theme.background.style = BackgroundStyleStretch;
+					theme.background_style = BackgroundStyleStretch;
 				else if (!strcmp(p, "tile"))
-					theme.background.style = BackgroundStyleTile;
+					theme.background_style = BackgroundStyleTile;
 			} else
 				goto unrecognized;
 		} else if (!strncmp(p, "input_", 6)) {
@@ -336,9 +363,9 @@ read_file(char *filename)
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					num = stroul(p, NULL, 0);
+					num = strtoul(p, NULL, 0);
 					if (q) {
-						num *= ScreenWidth(dpy, screen);
+						num *= DisplayWidth(dpy, screen);
 						num /= 100;
 					}
 					theme.input.panel.x = num;
@@ -348,9 +375,9 @@ read_file(char *filename)
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					num = stroul(p, NULL, 0);
+					num = strtoul(p, NULL, 0);
 					if (q) {
-						num *= ScreenHeight(dpy, screen);
+						num *= DisplayHeight(dpy, screen);
 						num /= 100;
 					}
 					theme.input.panel.y = num;
@@ -364,9 +391,9 @@ read_file(char *filename)
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					num = stroul(p, NULL, 0);
+					num = strtoul(p, NULL, 0);
 					if (q) {
-						num *= ScreenWidth(dpy, screen);
+						num *= DisplayWidth(dpy, screen);
 						num /= 100;
 					}
 					theme.input.name.x = num;
@@ -376,9 +403,9 @@ read_file(char *filename)
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					num = stroul(p, NULL, 0);
+					num = strtoul(p, NULL, 0);
 					if (q) {
-						num *= ScreenHeight(dpy, screen);
+						num *= DisplayHeight(dpy, screen);
 						num /= 100;
 					}
 					theme.input.name.y = num;
@@ -392,9 +419,9 @@ read_file(char *filename)
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					num = stroul(p, NULL, 0);
+					num = strtoul(p, NULL, 0);
 					if (q) {
-						num *= ScreenWidth(dpy, screen);
+						num *= DisplayWidth(dpy, screen);
 						num /= 100;
 					}
 					theme.input.pass.x = num;
@@ -404,9 +431,9 @@ read_file(char *filename)
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					num = stroul(p, NULL, 0);
+					num = strtoul(p, NULL, 0);
 					if (q) {
-						num *= ScreenHeight(dpy, screen);
+						num *= DisplayHeight(dpy, screen);
 						num /= 100;
 					}
 					theme.input.pass.y = num;
@@ -464,9 +491,9 @@ read_file(char *filename)
 				p += strspn(p, " \t");
 				if ((q = strrchr(p, '%')))
 					*q = '\0';
-				num = stroul(p, NULL, 0);
+				num = strtoul(p, NULL, 0);
 				if (q) {
-					num *= ScreenWidth(dpy, screen);
+					num *= DisplayWidth(dpy, screen);
 					num /= 100;
 				}
 				theme.username.x = num;
@@ -476,9 +503,9 @@ read_file(char *filename)
 				p += strspn(p, " \t");
 				if ((q = strrchr(p, '%')))
 					*q = '\0';
-				num = stroul(p, NULL, 0);
+				num = strtoul(p, NULL, 0);
 				if (q) {
-					num *= ScreenHeight(dpy, screen);
+					num *= DisplayHeight(dpy, screen);
 					num /= 100;
 				}
 				theme.username.y = num;
@@ -510,9 +537,9 @@ read_file(char *filename)
 				p += strspn(p, " \t");
 				if ((q = strrchr(p, '%')))
 					*q = '\0';
-				num = stroul(p, NULL, 0);
+				num = strtoul(p, NULL, 0);
 				if (q) {
-					num *= ScreenWidth(dpy, screen);
+					num *= DisplayWidth(dpy, screen);
 					num /= 100;
 				}
 				theme.password.x = num;
@@ -522,9 +549,9 @@ read_file(char *filename)
 				p += strspn(p, " \t");
 				if ((q = strrchr(p, '%')))
 					*q = '\0';
-				num = stroul(p, NULL, 0);
+				num = strtoul(p, NULL, 0);
 				if (q) {
-					num *= ScreenHeight(dpy, screen);
+					num *= DisplayHeight(dpy, screen);
 					num /= 100;
 				}
 				theme.password.y = num;
@@ -556,9 +583,9 @@ read_file(char *filename)
 				p += strspn(p, " \t");
 				if ((q = strrchr(p, '%')))
 					*q = '\0';
-				num = stroul(p, NULL, 0);
+				num = strtoul(p, NULL, 0);
 				if (q) {
-					num *= ScreenWidth(dpy, screen);
+					num *= DisplayWidth(dpy, screen);
 					num /= 100;
 				}
 				theme.welcome.x = num;
@@ -568,9 +595,9 @@ read_file(char *filename)
 				p += strspn(p, " \t");
 				if ((q = strrchr(p, '%')))
 					*q = '\0';
-				num = stroul(p, NULL, 0);
+				num = strtoul(p, NULL, 0);
 				if (q) {
-					num *= ScreenHeight(dpy, screen);
+					num *= DisplayHeight(dpy, screen);
 					num /= 100;
 				}
 				theme.welcome.y = num;
@@ -582,14 +609,14 @@ read_file(char *filename)
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					theme.welcome.shadow.xoffset = stroul(p, NULL, 0);
+					theme.welcome.shadow.xoffset = strtoul(p, NULL, 0);
 				} else if (!strncmp(p, "yoffset", 7)) {
 					if (!strspn(p, " \t"))
 						goto unrecognized;
 					p += strspn(p, " \t");
 					if ((q = strrchr(p, '%')))
 						*q = '\0';
-					theme.welcome.shadow.yoffset = stroul(p, NULL, 0);
+					theme.welcome.shadow.yoffset = strtoul(p, NULL, 0);
 				} else if (!strncmp(p, "color", 5)) {
 					if (!strspn(p, " \t"))
 						goto unrecognized;
@@ -624,17 +651,136 @@ HexToARRAY8(ARRAY8 * array, char *hex)
 	array->data = calloc(len, sizeof(CARD8));
 	for (p = hex, o = array->data; *p; p += 2, o++) {
 		c = tolower(p[0]);
-		if (!ishexdigit(c))
+		if (!isxdigit(c))
 			return False;
 		b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
 		b <<= 4;
 		c = tolower(p[1]);
-		if (!ishexdigit(c))
+		if (!isxdigit(c))
 			return False;
 		b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
 		*o = b;
 	}
 	return True;
+}
+
+static void
+copying(int argc, char *argv[])
+{
+	if (!options.output && !options.debug)
+		return;
+	(void) fprintf(stdout, "\
+--------------------------------------------------------------------------------\n\
+%1$s\n\
+--------------------------------------------------------------------------------\n\
+Copyright (c) 2008-2014  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
+Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
+\n\
+All Rights Reserved.\n\
+--------------------------------------------------------------------------------\n\
+This program is free software: you can  redistribute it  and/or modify  it under\n\
+the terms of the  GNU Affero  General  Public  License  as published by the Free\n\
+Software Foundation, version 3 of the license.\n\
+\n\
+This program is distributed in the hope that it will  be useful, but WITHOUT ANY\n\
+WARRANTY; without even  the implied warranty of MERCHANTABILITY or FITNESS FOR A\n\
+PARTICULAR PURPOSE.  See the GNU Affero General Public License for more details.\n\
+\n\
+You should have received a copy of the  GNU Affero General Public License  along\n\
+with this program.   If not, see <http://www.gnu.org/licenses/>, or write to the\n\
+Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.\n\
+--------------------------------------------------------------------------------\n\
+U.S. GOVERNMENT RESTRICTED RIGHTS.  If you are licensing this Software on behalf\n\
+of the U.S. Government (\"Government\"), the following provisions apply to you. If\n\
+the Software is supplied by the Department of Defense (\"DoD\"), it is classified\n\
+as \"Commercial  Computer  Software\"  under  paragraph  252.227-7014  of the  DoD\n\
+Supplement  to the  Federal Acquisition Regulations  (\"DFARS\") (or any successor\n\
+regulations) and the  Government  is acquiring  only the  license rights granted\n\
+herein (the license rights customarily provided to non-Government users). If the\n\
+Software is supplied to any unit or agency of the Government  other than DoD, it\n\
+is  classified as  \"Restricted Computer Software\" and the Government's rights in\n\
+the Software  are defined  in  paragraph 52.227-19  of the  Federal  Acquisition\n\
+Regulations (\"FAR\")  (or any successor regulations) or, in the cases of NASA, in\n\
+paragraph  18.52.227-86 of  the  NASA  Supplement  to the FAR (or any  successor\n\
+regulations).\n\
+--------------------------------------------------------------------------------\n\
+", NAME " " VERSION);
+}
+
+static void
+version(int argc, char *argv[])
+{
+	if (!options.output && !options.debug)
+		return;
+	(void) fprintf(stdout, "\
+%1$s (OpenSS7 %2$s) %3$s\n\
+Written by Brian Bidulock.\n\
+\n\
+Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014  Monavacon Limited.\n\
+Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
+Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
+This is free software; see the source for copying conditions.  There is NO\n\
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
+\n\
+Distributed by OpenSS7 under GNU Affero General Public License Version 3,\n\
+with conditions, incorporated herein by reference.\n\
+\n\
+See `%1$s --copying' for copying permissions.\n\
+", NAME, PACKAGE, VERSION);
+}
+
+static void
+usage(int argc, char *argv[])
+{
+	if (!options.output && !options.debug)
+		return;
+	(void) fprintf(stderr, "\
+Usage:\n\
+    %1$s [options] COMMAND ARG ...\n\
+    %1$s {-h|--help}\n\
+    %1$s {-V|--version}\n\
+    %1$s {-C|--copying}\n\
+", argv[0]);
+}
+
+static void
+help(int argc, char *argv[])
+{
+	if (!options.output && !options.debug)
+		return;
+	(void) fprintf(stdout, "\
+Usage:\n\
+    %1$s [options] COMMAND ARG ...\n\
+    %1$s {-h|--help}\n\
+    %1$s {-V|--version}\n\
+    %1$s {-C|--copying}\n\
+Arguments:\n\
+    COMMAND ARG ...\n\
+        command and arguments to launch window manager\n\
+Command options:\n\
+    -h, --help, -?, --?\n\
+        print this usage information and exit\n\
+    -V, --version\n\
+        print version and exit\n\
+    -C, --copying\n\
+        print copying permission and exit\n\
+Options:\n\
+    -c, --clientId CLIENTID\n\
+        session management client id [default: %4$s]\n\
+    -r, --restore SAVEFILE\n\
+        session management state file [default: %5$s]\n\
+    -D, --debug [LEVEL]\n\
+        increment or set debug LEVEL [default: %2$d]\n\
+    -v, --verbose [LEVEL]\n\
+        increment or set output verbosity LEVEL [default: %3$d]\n\
+        this option may be repeated.\n\
+", argv[0], options.debug, options.output, options.clientId, options.saveFile);
+}
+
+void
+set_defaults()
+{
 }
 
 int
@@ -649,7 +795,7 @@ main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"xdmAddress",	    required_argument,	NULL, 'x'},
 			{"clientAddress",   required_argument,	NULL, 'c'},
-			{"connectionType",  required_argmuent,	NULL, 't'},
+			{"connectionType",  required_argument,	NULL, 't'},
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"welcome",	    required_argument,	NULL, 'w'},
 
@@ -691,8 +837,8 @@ main(int argc, char *argv[])
 		case 't':	/* -connectionType TYPE */
 			if (!strcmp(optarg, "FamilyInternet") || atoi(optarg) == FamilyInternet)
 				options.connectionType = FamilyInternet;
-			else if (!strmcp(optarg, "FamilyInternet6") || atoi(optarg) == FamilyInternet6)
-				options.connectionType = FamilyIntetnet6;
+			else if (!strcmp(optarg, "FamilyInternet6") || atoi(optarg) == FamilyInternet6)
+				options.connectionType = FamilyInternet6;
 			else
 				goto bad_option;
 			break;
@@ -777,8 +923,8 @@ main(int argc, char *argv[])
 		exit(REMANAGE_DISPLAY);
 	}
 
-	top = GetWindow();
-	InitXDMCP(&argv[optind], argc - optind);
+//	top = GetWindow();
+//	InitXDMCP(&argv[optind], argc - optind);
 	gtk_main();
 	exit(REMANAGE_DISPLAY);
 }

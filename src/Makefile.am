@@ -7,7 +7,9 @@ bin_PROGRAMS = \
 	xde-input \
 	xde-logout \
 	xde-session \
-	xde-xchooser
+	xde-wmproxy \
+	xde-xchooser \
+	xde-xlogin
 
 xde_chooser_CPPFLAGS = -DNAME=\"xde-chooser\"
 xde_chooser_SOURCES = xde-chooser.c xde-chooser.h
@@ -29,7 +31,18 @@ xde_session_SOURCES = xde-session.c xde-session.h
 xde_session_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(UNIQUE_CFLAGS)
 xde_session_LDFLAGS = $(UNIQUE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
 
+xde_wmproxy_CPPFLAGS = -DNAME=\"xde-wmproxy\"
+xde_wmproxy_SOURCES = xde-wmproxy.c xde-wmproxy.h
+xde_wmproxy_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
+xde_wmproxy_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
+
 xde_xchooser_CPPFLAGS = -DNAME=\"xde-xchooser\"
 xde_xchooser_SOURCES = xde-xchooser.c xde-xchooser.h
 xde_xchooser_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS)
 xde_xchooser_LDFLAGS = $(XDMCP_LIBS) $(AM_LDFLAGS)
+
+xde_xlogin_CPPFLAGS = -DNAME=\"xde-xlogin\"
+xde_xlogin_SOURCES = xde-xlogin.c xde-xlogin.h
+xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS)
+xde_xlogin_LDFLAGS = $(XFT_LIBS) $(AM_LDFLAGS)
+

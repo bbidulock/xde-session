@@ -42,13 +42,37 @@
 
  *****************************************************************************/
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+
 #include "xde-wmproxy.h"
+
+#include <X11/ICE/ICEutil.h>
+#include <X11/SM/SMlib.h>
+
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
+
+enum {
+	OBEYSESS_DISPLAY, /* obey multipleSessions resource */
+	REMANAGE_DISPLAY, /* force remanage */
+	UNMANAGE_DISPLAY, /* force deletion */
+	RESERVER_DISPLAY, /* force server termination */
+	OPENFAILED_DISPLAY, /* XOpenDisplay failed, retry */
+};
+
+Display *dpy;
+int screen;
+Window root;
 
 typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
 	char *clientId;
+	char *saveFile;
 } Options;
 
 Options options = {
@@ -56,7 +80,23 @@ Options options = {
 	.debug = 0,
 	.dryrun = False,
 	.clientId = NULL,
+	.saveFile = NULL,
 };
+
+typedef struct {
+	char *id;
+	char *hostname;
+	SmsConn sms;
+	IceConn ice;
+	SmProp **props;
+	Bool restarted;
+	Bool checkpoint;
+	Bool discard;
+	Bool freeafter;
+	char *discardCommand;
+	char *saveDiscardCommand;
+	int restartHint;
+} Client;
 
 SmcConn smc;
 GHashTable *initialClients;
@@ -132,6 +172,8 @@ wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
 	SmcSaveYourselfDone(smcConn, True);
 }
 
+int sent_save_done;
+
 /** @brief save yourself callback
   *
   * The session manager sends a SaveYourself message to the client either to
@@ -176,7 +218,7 @@ wmpSaveYourselfCB(SmcConn smcConn, SmPointer clientData, int saveType, Bool shut
 		SmcSaveYourselfDone(smcConn, False);
 		sent_save_done = 1;
 	} else
-		send_save_done = 0;
+		sent_save_done = 0;
 }
 
 /** @brief die callback
@@ -251,8 +293,8 @@ wmpConnectToSessionManager()
 			fprintf(stderr, "SmcOpenConnection: %s\n", err);
 			exit(EXIT_FAILURE);
 		}
-	} else if (options.clientID)
-		fprintf(stderr, "clientID specified by no SESSION_MANAGER\n");
+	} else if (options.clientId)
+		fprintf(stderr, "clientId specified by no SESSION_MANAGER\n");
 	return (smcConn);
 }
 
@@ -261,35 +303,37 @@ setSMProperties(int argc, char *argv[])
 {
 	char procID[20], userID[20];
 	CARD8 hint;
+	int i;
 
 	SmPropValue propval[11];
 
 	SmProp prop[11] = {
-		.[0] = {SmCloneCommand, SmLISTofARRAY8, 1, &propval[0]},
-		.[1] = {SmCurrentDirectory, SmARRAY8, 1, &propval[1]},
-		.[2] = {SmDiscardCommand, SmLISTofARRAY8, 1, &propval[2]},
-		.[3] = {SmEnvironment, SmLISTofARRAY8, 1, &propval[3]},
-		.[4] = {SmProcessID, SmARRAY8, 1, &propval[4]},
-		.[5] = {SmProgram, SmARRAY8, 1, &propval[5]},
-		.[6] = {SmRestartCommand, SmLISTofARRAY8, 1, &propval[6]},
-		.[7] = {SmResignCommand, SmLISTofARRAY8, 1, &propval[7]},
-		.[8] = {SmRestartStyleHint, SmARRAY8, 1, &propval[8]},
-		.[9] = {SmShutdownCommand, SmLISTofARRAY8, 1, &propval[9]},
-		.[10] = {SmUserID, SmARRAY8, 1, &propval[10]},
+		[0] = {SmCloneCommand, SmLISTofARRAY8, 1, &propval[0]},
+		[1] = {SmCurrentDirectory, SmARRAY8, 1, &propval[1]},
+		[2] = {SmDiscardCommand, SmLISTofARRAY8, 1, &propval[2]},
+		[3] = {SmEnvironment, SmLISTofARRAY8, 1, &propval[3]},
+		[4] = {SmProcessID, SmARRAY8, 1, &propval[4]},
+		[5] = {SmProgram, SmARRAY8, 1, &propval[5]},
+		[6] = {SmRestartCommand, SmLISTofARRAY8, 1, &propval[6]},
+		[7] = {SmResignCommand, SmLISTofARRAY8, 1, &propval[7]},
+		[8] = {SmRestartStyleHint, SmARRAY8, 1, &propval[8]},
+		[9] = {SmShutdownCommand, SmLISTofARRAY8, 1, &propval[9]},
+		[10] = {SmUserID, SmARRAY8, 1, &propval[10]},
 	};
 	SmProp *props[11] = {
-		.[0] = &prop[0],
-		.[1] = &prop[1],
-		.[2] = &prop[2],
-		.[3] = &prop[3],
-		.[4] = &prop[4],
-		.[5] = &prop[5],
-		.[6] = &prop[6],
-		.[7] = &prop[7],
-		.[8] = &prop[9],
-		.[9] = &prop[9],
-		.[10] = &prop[10],
+		[0] = &prop[0],
+		[1] = &prop[1],
+		[2] = &prop[2],
+		[3] = &prop[3],
+		[4] = &prop[4],
+		[5] = &prop[5],
+		[6] = &prop[6],
+		[7] = &prop[7],
+		[8] = &prop[9],
+		[9] = &prop[9],
+		[10] = &prop[10],
 	};
+	(void) props;
 
 	prop[0].vals = calloc(argc, sizeof(SmPropValue));
 	prop[0].num_vals = 0;
@@ -329,7 +373,7 @@ setSMProperties(int argc, char *argv[])
 	prop[6].vals[prop[6].num_vals].value = (SmPointer) options.saveFile;
 	prop[6].vals[prop[6].num_vals++].length = strlen(options.saveFile);
 
-	hint = SMRestartIfRunning;
+	hint = SmRestartIfRunning;
 	propval[8].value = &hint;
 	propval[8].length = 1;
 
@@ -344,6 +388,18 @@ relax()
 {
 	while (gtk_events_pending())
 		gtk_main_iteration();
+}
+
+void
+setInitialProperties(Client *c, SmProp *props[])
+{
+	/* FIXME !!!! */
+}
+
+void
+freeClient(Client *c)
+{
+	/* FIXME !!!! */
 }
 
 /** @brief register client callback
@@ -371,6 +427,9 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 	Client *c = (typeof(c)) data;
 	gpointer found;
 	int send_save;
+
+	(void) send_save; /* FIXME */
+	(void) found; /* FIXME */
 
 	if (!previousId) {
 		free(c->id);
@@ -441,6 +500,44 @@ interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 	Client *c = (typeof(c)) data;
 }
 
+void
+popupBadSave()
+{
+	/* FIXME */
+}
+
+void
+finishUpSave()
+{
+	/* FIXME */
+}
+
+void
+letClientInteract()
+{
+	/* FIXME */
+}
+
+void
+startPhase2()
+{
+	/* FIXME */
+}
+
+Bool
+okToEnterInteractPhase()
+{
+	/* FIXME */
+	return False;
+}
+
+Bool
+okToEnterPhase2()
+{
+	/* FIXME */
+	return False;
+}
+
 /** @brief interact done callback
   *
   * When the client is done interacting with the user, the interact done callback
@@ -451,6 +548,9 @@ interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 void
 interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 {
+	int success = 0; /* FIXME */
+	int checkpoint_from_signal = 0; /* FIXME */
+
 	Client *c = (typeof(c)) data, *p;
 
 	if ((p = g_hash_table_lookup(savselfClients, c->id))) {
@@ -599,7 +699,7 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 
 	*mask |= SmsInteractDoneProcMask;
 	cb->interact_done.callback = interactDoneCB;
-	cb->interact_done.manaver_data = (SmPointer) c;
+	cb->interact_done.manager_data = (SmPointer) c;
 
 	*mask |= SmsSaveYourselfRequestProcMask;
 	cb->save_yourself_request.callback = saveYourselfReqCB;
@@ -632,6 +732,8 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	return (1);
 }
 
+int shutting_down;
+
 gboolean
 on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 {
@@ -641,12 +743,12 @@ on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 	IceListenObj obj = (typeof(obj)) data;
 
 	if (shutting_down)
-		return;
+		return FALSE;
 
 	if (!(ice = IceAcceptConnection(obj, &status))) {
 		if (options.debug)
 			fprintf(stderr, "IceAcceptConnection: failed\n");
-		return;
+		return FALSE;
 	}
 	while ((cstatus = IceConnectionStatus(ice)) == IceConnectPending)
 		relax();
@@ -658,7 +760,7 @@ on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 			fprintf(stderr,
 				"ICE connection opened by client, fd = %d, accepted at networkId %s\n",
 				ifd, connstr);
-			free(constr);
+			free(connstr);
 		}
 	} else {
 		if (cstatus == IceConnectIOError)
@@ -675,6 +777,125 @@ hostBasedAuthCB(char *hostname)
 {
 	return (False);		/* refuse host based authentication */
 }
+
+int numTransports;
+IceListenObj *listenObjs;
+
+void
+closeListeners(void)
+{
+	/* FIXME */
+}
+
+static void
+write_iceauth(FILE *addfp, FILE *removefp, IceAuthDataEntry *entry)
+{
+	int i;
+
+	fprintf(addfp, "add %s \"\" %s %s ",
+			entry->protocol_name,
+			entry->network_id,
+			entry->auth_name);
+	for (i = 0; i < entry->auth_data_length; i++)
+		fprintf(addfp, "%02x", (char) entry->auth_data[i]);
+	fprintf(addfp, "\n");
+	fprintf(removefp, "remove protoname=%s protodata=\"\" netid=%s authname=%s\n",
+			entry->protocol_name,
+			entry->network_id,
+			entry->auth_name);
+}
+
+static char *
+unique_filename(const char *path, const char *prefix, int *pFd)
+{
+	char tempFile[PATH_MAX];
+	char *ptr;
+
+	snprintf(tempFile, sizeof(tempFile), "%s/%sXXXXXX", path, prefix);
+	if ((ptr = strdup(tempFile)))
+		*pFd = mkstemp(ptr);
+	return (ptr);
+}
+
+Bool
+HostBasedAuthProc(char *hostname)
+{
+	return False;
+}
+
+static char *addAuthFile;
+static char *remAuthFile;
+
+#define MAGIC_COOKIE_LEN 16
+
+Status
+SetAuthentication(int count, IceListenObj * listenObjs, IceAuthDataEntry **authDataEntries)
+{
+	FILE *addfp = NULL;
+	FILE *removefp = NULL;
+	const char *path;
+	mode_t original_umask;
+	char command[256] = { 0, };
+	int i, j, status;
+	int fd;
+
+	original_umask = umask(0077);
+	path = getenv("SM_SAVE_DIR") ? : (getenv("HOME") ? : ".");
+	if ((addAuthFile = unique_filename(path, ".xsm", &fd)) == NULL)
+		goto bad;
+	if (!(addfp = fdopen(fd, "wb")))
+		goto bad;
+	if ((remAuthFile = unique_filename(path, ".xsm", &fd)) == NULL)
+		goto bad;
+	if (!(removefp = fdopen(fd, "wb")))
+		goto bad;
+	if ((*authDataEntries = calloc(count * 2, sizeof(IceAuthDataEntry))) == NULL)
+		goto bad;
+	for (i = 0, j = 0; j < count; i += 2, j++) {
+		(*authDataEntries)[i].network_id = IceGetListenConnectionString(listenObjs[j]);
+		(*authDataEntries)[i].protocol_name = "ICE";
+		(*authDataEntries)[i].auth_name = "MIT-MAGIC-COOKIE-1";
+		(*authDataEntries)[i].auth_data = IceGenerateMagicCookie(MAGIC_COOKIE_LEN);
+		(*authDataEntries)[i].auth_data_length = MAGIC_COOKIE_LEN;
+
+		(*authDataEntries)[i].network_id = IceGetListenConnectionString(listenObjs[j]);
+		(*authDataEntries)[i].protocol_name = "XSMP";
+		(*authDataEntries)[i].auth_name = "MIT-MAGIC-COOKIE-1";
+		(*authDataEntries)[i].auth_data = IceGenerateMagicCookie(MAGIC_COOKIE_LEN);
+		(*authDataEntries)[i].auth_data_length = MAGIC_COOKIE_LEN;
+
+		write_iceauth(addfp, removefp, &(*authDataEntries)[i]);
+		write_iceauth(addfp, removefp, &(*authDataEntries)[i + 1]);
+
+		IceSetPaAuthData(2, &(*authDataEntries)[i]);
+		IceSetHostBasedAuthProc(listenObjs[j], HostBasedAuthProc);
+	}
+	fclose(addfp);
+	fclose(removefp);
+	umask(original_umask);
+	snprintf(command, sizeof(command), "iceauth source %s", addAuthFile);
+	status = system(command);
+	(void) status;
+	remove(addAuthFile);
+	return (1);
+      bad:
+	if (addfp)
+		fclose(addfp);
+	if (removefp)
+		fclose(removefp);
+	if (addAuthFile) {
+		remove(addAuthFile);
+		free(addAuthFile);
+	}
+	if (remAuthFile) {
+		remove(remAuthFile);
+		free(remAuthFile);
+	}
+	return (0);
+}
+
+IceAuthDataEntry *authDataEntries;
+char *networkIds;
 
 void
 smpInitSessionManager()
@@ -700,9 +921,16 @@ smpInitSessionManager()
 		int lfd = IceGetListenConnectionNumber(listenObjs[i]);
 		GIOChannel *chan = g_io_channel_unix_new(lfd);
 		gint srce = g_io_add_watch(chan, mask, on_lfd_watch, (gpointer) listenObjs[i]);
+		(void) srce;
 	}
 	networkIds = IceComposeNetworkIdList(numTransports, listenObjs);
 	setenv("SESSION_MANAGER", networkIds, TRUE);
+}
+
+void
+handle_events(void)
+{
+	/* FIXME */
 }
 
 gboolean
@@ -736,7 +964,65 @@ on_ifd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 }
 
 void
-startup(argc, char *argv[])
+on_int_signal(int signum)
+{
+	/* FIXME */
+}
+
+void
+on_hup_signal(int signum)
+{
+	/* FIXME */
+}
+
+void
+on_term_signal(int signum)
+{
+	/* FIXME */
+}
+
+void
+on_quit_signal(int signum)
+{
+	/* FIXME */
+}
+
+void
+on_usr1_signal(int signum)
+{
+	/* FIXME */
+}
+
+void
+on_usr2_signal(int signum)
+{
+	/* FIXME */
+}
+
+void
+on_alrm_signal(int signum)
+{
+	/* FIXME */
+}
+
+int
+handler(Display *display, XErrorEvent *xev)
+{
+	if (options.debug) {
+		char msg[80], req[80], num[80], def[80];
+
+		snprintf(num, sizeof(num), "%d", xev->request_code);
+		snprintf(def, sizeof(def), "[request_code=%d]", xev->request_code);
+		XGetErrorDatabaseText(dpy, "xdg-launch", num, def, req, sizeof(req));
+		if (XGetErrorText(dpy, xev->error_code, msg, sizeof(msg)) != Success)
+			msg[0] = '\0';
+		fprintf(stderr, "X error %s(0x%lx): %s\n", req, xev->resourceid, msg);
+	}
+	return(0);
+}
+
+void
+startup(int argc, char *argv[])
 {
 	static const char *suffix = "/.gtkrc-2.0.xde";
 	int xfd, ifd;
@@ -771,13 +1057,13 @@ startup(argc, char *argv[])
 	signal(SIGUSR2, on_usr2_signal);
 	signal(SIGALRM, on_alrm_signal);
 
-	if (!(dpy, XOpenDisplay(0))) {
+	if (!(dpy = XOpenDisplay(0))) {
 		fprintf(stderr, "%s: %s %s\n", argv[0], "cannot open display",
 			getenv("DISPLAY") ? : "");
 		exit(EXIT_FAILURE);
 	}
 	xfd = ConnectionNumber(dpy);
-	chan = g_io_channel_unix_new(xdf);
+	chan = g_io_channel_unix_new(xfd);
 	srce = g_io_add_watch(chan, mask, on_xfd_watch, NULL);
 	(void) srce;
 
@@ -899,7 +1185,7 @@ Options:\n\
     -c, --clientId CLIENTID\n\
         session management client id [default: %4$s]\n\
     -r, --restore SAVEFILE\n\
-        session management state file [default: %5$d]\n\
+        session management state file [default: %5$s]\n\
     -D, --debug [LEVEL]\n\
         increment or set debug LEVEL [default: %2$d]\n\
     -v, --verbose [LEVEL]\n\
