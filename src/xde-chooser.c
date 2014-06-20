@@ -113,16 +113,18 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 void
 make_login_choice(int argc, char *argv[])
 {
-	GtkWidget *w;
-	int status;
+	{
+		int status;
 
+		status = system("xsetroot -cursor_name left_ptr");
+		(void) status;
+	}
 	gtk_init(&argc, &argv);
-	status = system("xsetroot -cursor_name left_ptr");
-	(void) status;
 
-	w = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	GtkWidget *w = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_wmclass(GTK_WINDOW(w), "xde-chooser", "XDE-Chooser");
 	gtk_window_set_title(GTK_WINDOW(w), "Window Manager Selection");
+	gtk_window_set_modal(GTK_WINDOW(w), TRUE);
 	gtk_window_set_gravity(GTK_WINDOW(w), GDK_GRAVITY_CENTER);
 	gtk_window_set_type_hint(GTK_WINDOW(w), GDK_WINDOW_TYPE_HINT_DIALOG);
 	gtk_window_set_icon_name(GTK_WINDOW(w), "xdm");
@@ -136,9 +138,9 @@ make_login_choice(int argc, char *argv[])
 	gtk_window_set_decorated(GTK_WINDOW(w), FALSE);
 
 	GdkScreen *scrn = gdk_screen_get_default();
-	int width = gdk_screen_get_width(scrn);
-	int height = gdk_screen_get_height(scrn);
 	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	gint width = gdk_screen_get_width(scrn);
+	gint height = gdk_screen_get_height(scrn);
 
 	gtk_window_set_default_size(GTK_WINDOW(w), width, height);
 	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
@@ -162,21 +164,22 @@ make_login_choice(int argc, char *argv[])
 	GtkWidget *h = gtk_hbox_new(FALSE, 5);
 	gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(h));
 
-	GtkWidget *f, *s;
-
 	if (options.banner) {
-		f = gtk_frame_new(NULL);
+		GtkWidget *f = gtk_frame_new(NULL);
 		gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
 		gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), FALSE, FALSE, 0);
 
-		v = gtk_vbox_new(FALSE, 5);
+		GtkWidget *v = gtk_vbox_new(FALSE, 5);
 		gtk_container_set_border_width(GTK_CONTAINER(v), 10);
 		gtk_container_add(GTK_CONTAINER(f), GTK_WIDGET(v));
 
-		s = gtk_image_new_from_file(options.banner);
-		gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(s));
+		GtkWidget *s = gtk_image_new_from_file(options.banner);
+		if (s)
+			gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(s));
+		else
+			gtk_widget_destroy(GTK_WIDGET(f));
 	}
-	f = gtk_frame_new(NULL);
+	GtkWidget *f = gtk_frame_new(NULL);
 	gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
 	gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), TRUE, TRUE, 0);
 	v = gtk_vbox_new(FALSE, 5);
@@ -331,9 +334,96 @@ General options:\n\
 ", argv[0]);
 }
 
+void
+set_default_banner(void)
+{
+	char *home, *xhome, *xdata, *dirs, *pos, *end, *pfx, *file, *banner = NULL;
+	int len, n;
+	struct stat st;
+
+	file = calloc(PATH_MAX+1, sizeof(*file));
+	pfx = getenv("XDG_MENU_PREFIX") ?: "";
+	home = getenv("HOME") ?: ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) +
+		strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1)  {
+		*strchrnul(pos, ':') = '\0';
+		if (!*pos)
+			continue;
+		strncpy(file, pos, PATH_MAX);
+		strncat(file, "/images/", PATH_MAX);
+		strncat(file, pfx, PATH_MAX);
+		strncat(file, "banner.png", PATH_MAX);
+		if (stat(file, &st)) {
+			DPRINTF("%s: %s\n", file, strerror(errno));
+			continue;
+		}
+		if (!S_ISREG(st.st_mode)) {
+			DPRINTF("%s: not a file\n", file);
+			continue;
+		}
+		banner = strdup(file);
+		break;
+	}
+	if (!banner && *pfx) {
+		pfx = "";
+		if (xhome)
+			strcpy(dirs, xhome);
+		else {
+			strcpy(dirs, home);
+			strcat(dirs, "/.local/share");
+		}
+		strcat(dirs, ":");
+		strcat(dirs, xdata);
+		end = dirs + strlen(dirs);
+		for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1)  {
+			*strchrnul(pos, ':') = '\0';
+			if (!*pos)
+				continue;
+			strncpy(file, pos, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner.png", PATH_MAX);
+			if (stat(file, &st)) {
+				DPRINTF("%s: %s\n", file, strerror(errno));
+				continue;
+			}
+			if (!S_ISREG(st.st_mode)) {
+				DPRINTF("%s: not a file\n", file);
+				continue;
+			}
+			banner = strdup(file);
+			break;
+		}
+	}
+	free(dirs);
+	free(file);
+	options.banner = banner;
+}
+
+void
+set_defaults(void)
+{
+	set_default_banner();
+}
+
 int
 main(int argc, char *argv[])
 {
+	set_defaults();
 	while(1) {
 		int c, val;
 #ifdef _GNU_SOURCE

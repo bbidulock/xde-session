@@ -329,8 +329,10 @@ make_logout_choice()
 
 	GdkPixbuf *pixbuf = gdk_pixbuf_get_from_drawable(NULL,
 			GDK_DRAWABLE(root), NULL, 0, 0, 0, 0, width, height);
+
 	GtkWidget *a = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
 	gtk_container_add(GTK_CONTAINER(w), GTK_WIDGET(a));
+
 	GtkWidget *e = gtk_event_box_new();
 	gtk_container_add(GTK_CONTAINER(a), GTK_WIDGET(e));
 	gtk_widget_set_size_request(GTK_WIDGET(e), -1, -1);
@@ -365,9 +367,11 @@ make_logout_choice()
 	v = gtk_vbox_new(FALSE, 5);
 	gtk_container_set_border_width(GTK_CONTAINER(v), 10);
 	gtk_container_add(GTK_CONTAINER(f), GTK_WIDGET(v));
+
 	GtkWidget *l = gtk_label_new(NULL);
 	gtk_label_set_markup(GTK_LABEL(l), options.prompt);
 	gtk_box_pack_start(GTK_BOX(v), GTK_WIDGET(l), FALSE, TRUE, 0);
+
 	GtkWidget *bb = gtk_vbutton_box_new();
 	gtk_container_set_border_width(GTK_CONTAINER(bb), 5);
 	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_SPREAD);
