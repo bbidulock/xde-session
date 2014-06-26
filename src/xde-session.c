@@ -55,6 +55,8 @@
 #include <glib/gfileutils.h>
 #include <glib/gkeyfile.h>
 #include <glib/gdataset.h>
+#include <gdk/gdk.h>
+#include <gdk/gdkx.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -72,6 +74,8 @@ typedef struct {
 	char *splash;
 	char **setup;
 	char *startwm;
+	int pause;
+	Bool wait;
 } Options;
 
 Options options = {
@@ -86,6 +90,8 @@ Options options = {
 	.splash = NULL,
 	.setup = NULL,
 	.startwm = NULL,
+	.pause = 0,
+	.wait = False,
 };
 
 typedef struct {
@@ -991,15 +997,369 @@ startwm()
 	/* startup assumes ownership of cmd */
 }
 
+Atom _XA_NET_SUPPORTING_WM_CHECK;
+Atom _XA_NET_SUPPORTED;
+Atom _XA_WIN_SUPPORTING_WM_CHECK;
+Atom _XA_WIN_PROTOCOLS;
+Atom _XA_WINDOWMAKER_NOTICEBOARD;
+Atom _XA_MOTIF_WM_INFO;
+Atom *_XA_WM_Sd;
+
+Display *dpy;
+int nscr;
+Window *roots;
+
+/** @brief check for recursive window properties
+  * @param root - the root window
+  * @param atom - property name
+  * @param type - property type
+  * @param offset - offset in property
+  * @return Window - the recursive window property or None
+  */
+static Window
+check_recursive(Window root, Atom atom, Atom type, int offset)
+{
+	Atom real;
+	int format = 0;
+	unsigned long n, after;
+	unsigned long *data = NULL;
+	Window check = None;
+
+	if (XGetWindowProperty(dpy, root, atom, 0, 1 + offset, False, type, &real, &format, &n, &after,
+			       (unsigned char **) &data) == Success && n >= offset + 1 && data[offset]) {
+		check = data[offset];
+		XFree(data);
+		data = NULL;
+		if (XGetWindowProperty(dpy, check, atom, 0, 1 + offset, False, type, &real, &format, &n,
+				       &after, (unsigned char **) &data) == Success && n >= offset + 1) {
+			if (check == (Window) data[offset]) {
+				XFree(data);
+				data = NULL;
+				return (check);
+			}
+		}
+
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	return (None);
+}
+
+/** @brief check for non-recursive window properties (that should be recursive).
+  * @param root - root window
+  * @param atom - property name
+  * @param type - property type
+  * @return @indow - the recursive window property or None
+  */
+static Window
+check_nonrecursive(Window root, Atom atom, Atom type, int offset)
+{
+	Atom real;
+	int format = 0;
+	unsigned long n, after;
+	unsigned long *data = NULL;
+	Window check = None;
+
+	if (XGetWindowProperty(dpy, root, atom, 0, 1 + offset, False, type, &real, &format, &n, &after,
+			       (unsigned char **) &data) == Success && format && n >= offset + 1 && data[offset]) {
+		check = data[offset];
+		XFree(data);
+		data = NULL;
+		return (check);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	return (None);
+}
+
+/** @brief check if an atom is in a supported atom list
+  * @param root - root window
+  * @param protocols - list name
+  * @param supported - element name
+  * @return Bool - true if atom is in list 
+  */
+static Bool
+check_supported(Window root, Atom protocols, Atom supported)
+{
+	Atom real;
+	int format = 0;
+	unsigned long n, after, num = 1;
+	unsigned long *data = NULL;
+	Bool result = False;
+
+      try_harder:
+	if (XGetWindowProperty(dpy, root, protocols, 0, num, False, XA_ATOM, &real, &format,
+			       &n, &after, (unsigned char **) &data) == Success && format) {
+		if (after) {
+			num += ((after + 1) >> 2);
+			XFree(data);
+			data = NULL;
+			goto try_harder;
+		}
+		if (n > 0) {
+			unsigned long i;
+			Atom *atoms;
+
+			atoms = (Atom *) data;
+			for (i = 0; i < n; i++) {
+				if (atoms[i] == supported) {
+					result = True;
+					break;
+				}
+			}
+		}
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	return (result);
+
+}
+
+/** @brief Check for a non-compliant EWMH/NetWM window manager.
+  *
+  * There are quite a few window managers that implement part of the EWMH/NetWM
+  * specification but do not fill out _NET_SUPPORTING_WM_CHECK.  This is a big
+  * annoyance.  One way to test this is whether there is a _NET_SUPPORTED on the
+  * root window that does not include _NET_SUPPORTING_WM_CHECK in its atom list.
+  *
+  * The only window manager I know of that placed _NET_SUPPORTING_WM_CHECK in
+  * the list and did not set the property on the root window was 2bwm, but is
+  * has now been fixed.
+  *
+  * There are others that provide _NET_SUPPORTING_WM_CHECK on the root window
+  * but fail to set it recursively.  When _NET_SUPPORTING_WM_CHECK is reported
+  * as supported, relax the check to a non-recursive check.  (Case in point is
+  * echinus(1)).
+  */
+static Window
+check_netwm_supported(Window root)
+{
+	if (check_supported(root, _XA_NET_SUPPORTED, _XA_NET_SUPPORTING_WM_CHECK))
+		return root;
+	return check_nonrecursive(root, _XA_NET_SUPPORTING_WM_CHECK, XA_WINDOW, 0);
+}
+
+/** @brief Check for an EWMH/NetWM compliant (sorta) window manager.
+  */
+static Window
+check_netwm(Window root)
+{
+	int i = 0;
+	Window check = None;
+
+	do {
+		check = check_recursive(root, _XA_NET_SUPPORTING_WM_CHECK, XA_WINDOW, 0);
+	}
+	while (i++ < 2 && !check);
+
+	if (!check || check == root)
+		check = check_netwm_supported(root);
+
+	return (check);
+}
+
+/** @brief Check for a non-compliant GNOME/WinWM window manager.
+  *
+  * There are quite a few window managers that implement part of the GNOME/WinWM
+  * specification but do not fill in the _WIN_SUPPORTING_WM_CHECK.  This is
+  * another big annoyance.  One way to test this is whether there is a
+  * _WIN_PROTOCOLS on the root window that does not include
+  * _WIN_SUPPORTING_WM_CHECK in its list of atoms.
+  */
+static Window
+check_winwm_supported(Window root)
+{
+	if (check_supported(root, _XA_WIN_PROTOCOLS, _XA_WIN_SUPPORTING_WM_CHECK))
+		return root;
+	return check_nonrecursive(root, _XA_WIN_SUPPORTING_WM_CHECK, XA_CARDINAL, 0);
+}
+
+/** @brief Check for a GNOME1/WMH/WinWM compliant window manager.
+  */
+static Window
+check_winwm(Window root)
+{
+	int i = 0;
+	Window check = None;
+
+	do {
+		check = check_recursive(root, _XA_WIN_SUPPORTING_WM_CHECK, XA_CARDINAL, 0);
+	}
+	while (i++ < 2 && !check);
+
+	if (!check || check == root)
+		check = check_winwm_supported(root);
+
+	return (check);
+}
+
+/** @brief Check for a WindowMaker compliant window manager.
+  */
+static Window
+check_maker(Window root)
+{
+	int i = 0;
+	Window check = None;
+
+	do {
+		check = check_recursive(root, _XA_WINDOWMAKER_NOTICEBOARD, XA_WINDOW, 0);
+	}
+	while (i++ < 2 && !check);
+
+	return (check);
+}
+
+/** @brief Check for an OSF/Motif compliant window manager.
+  * @param root - the root window of the screen
+  * @return Window - the check window or None
+  *
+  * This is really supposed to be recursive, however, Lesstif sets the window to
+  * the root window which makes it automatically recursive.
+  */
+static Window
+check_motif(Window root)
+{
+	int i = 0;
+	Window check = None;
+
+	do {
+		check = check_recursive(root, _XA_MOTIF_WM_INFO, AnyPropertyType, 1);
+	}
+	while (i++ < 2 && !check);
+
+	return (check);
+}
+
+/** @brief Check for an ICCCM 2.0 compliant window manager.
+  * @param root - the root window of the screen
+  * @param selection - the WM_S%d selection atom
+  * @return Window - the selection owner window or None
+  */
+static Window
+check_icccm(Window root, Atom selection)
+{
+	return XGetSelectionOwner(dpy, selection);
+}
+
+/** @brief Check whether an ICCCM window manager is present.
+  * @param root - the root window of the screen
+  * @return Window - the root window or None
+  *
+  * This pretty much assumes that any ICCCM window manager will select for
+  * SubstructureRedirectMask on the root window.
+  */
+static Window
+check_redir(Window root)
+{
+	XWindowAttributes wa;
+	Window check = None;
+
+	if (XGetWindowAttributes(dpy, root, &wa))
+		if (wa.all_event_masks & SubstructureRedirectMask)
+			check = root;
+	return (check);
+}
+
+/** @brief check whether a window manager is present
+  * @return Bool - true if a window manager is present on any screen
+  */
+static Bool
+check_wm(void)
+{
+	int s;
+
+	for (s = 0; s < nscr; s++) {
+		Window root = roots[s];
+
+		if (check_redir(root))
+			return True;
+		if (check_icccm(root, _XA_WM_Sd[s]))
+			return True;
+		if (check_motif(root))
+			return True;
+		if (check_maker(root))
+			return True;
+		if (check_winwm(root))
+			return True;
+		if (check_netwm(root))
+			return True;
+	}
+	return False;
+}
+
+
+int check_iterations;
+
+static gboolean
+recheck_wm(gpointer user_data)
+{
+	if (check_wm() || !check_iterations--) {
+		gtk_main_quit();
+		return FALSE; /* remove source */
+	}
+	return TRUE; /* continue checking */
+}
+
 void
 waitwm()
 {
+	char buf[16] = { 0, };
+	int s;
+
+	if (!options.wait)
+		return;
+
+	dpy = gdk_x11_get_default_xdisplay();
+
+	_XA_NET_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
+	_XA_NET_SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", False);
+	_XA_WIN_SUPPORTING_WM_CHECK = XInternAtom(dpy, "_WIN_SUPPORTING_WM_CHECK", False);
+	_XA_WIN_PROTOCOLS = XInternAtom(dpy, "_WIN_PROTOCOLS", False);
+	_XA_WINDOWMAKER_NOTICEBOARD = XInternAtom(dpy, "_WINDOWMAKER_NOTICEBAORD", False);
+	_XA_MOTIF_WM_INFO = XInternAtom(dpy, "_MOTIF_WM_INFO", False);
+
+	nscr = ScreenCount(dpy);
+	_XA_WM_Sd = calloc(nscr, sizeof(*_XA_WM_Sd));
+	roots = calloc(nscr, sizeof(*roots));
+
+	for (s = 0; s < nscr; s++) {
+		snprintf(buf, sizeof(buf), "WM_S%d", s);
+		_XA_WM_Sd[s] = XInternAtom(dpy, buf, False);
+		roots[s] = RootWindow(dpy, s);
+	}
+	if (!check_wm()) {
+		check_iterations = 3;
+		g_timeout_add_seconds(1, recheck_wm, NULL);
+		gtk_main();
+	}
+	free(_XA_WM_Sd);
+	_XA_WM_Sd = NULL;
+	free(roots);
+	roots = NULL;
+}
+
+static gboolean
+pause_done(gpointer user_data)
+{
+	gtk_main_quit();
+	return FALSE;		/* remove source */
 }
 
 
 void
 pause_after_wm()
 {
+	if (!options.pause)
+		return;
+
+	g_timeout_add(options.pause, pause_done, NULL);
+	gtk_main();
 }
 
 void
@@ -1247,3 +1607,4 @@ main(int argc, char *argv[])
 	exit(0);
 }
 
+// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
