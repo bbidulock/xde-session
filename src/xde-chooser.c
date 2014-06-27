@@ -77,6 +77,8 @@ typedef struct {
 	char *icon_theme;
 	char *gtk2_theme;
 	Bool execute;
+	char *current;
+	Bool managed;
 } Options;
 
 Options options = {
@@ -88,26 +90,472 @@ Options options = {
 
 int choose_result;
 
-gboolean
-on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+typedef struct {
+} XSessionEntry;
+
+XSessionEntry **xsessions;
+
+char **
+get_xsession_dirs(int *np)
 {
-	choose_result = CHOOSE_RESULT_LOGOUT;
-	gtk_main_quit();
-	return TRUE; /* propagate */
+	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/shoare");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end; n++,
+	     *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1) {
+		len = strlen(pos) + strlen("/xsessions") + 1;
+		xdg_dirs[n] = calloc(len, sizeof(*xdg_dirs[n]));
+		strcpy(xdg_dirs[n], pos);
+		strcat(xdg_dirs[n], "/xsessions");
+	}
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
+static void
+xsession_key_free(gpointer data)
+{
+	free(data);
+}
+
+static void
+xsession_value_free(gpointer entry)
+{
+	g_key_file_free((GKeyFile *) entry);
+}
+
+static void
+get_xsession_entry(GHashTable *xsessions, const char *key, const char *file)
+{
+	GKeyFile *entry;
+
+	if (!(entry = g_key_file_new())) {
+		EPRINTF("%s: could not allocate key file\n", file);
+		return;
+	}
+	if (!g_key_file_load_from_file(entry, file, G_KEY_FILE_NONE, NULL)) {
+		EPRINTF("%s: could not load keyfile\n", file);
+		g_key_file_unref(entry);
+		return;
+	}
+	if (!g_key_file_has_group(entry, G_KEY_FILE_DESKTOP_GROUP)) {
+		EPRINTF("%s: has no [%s] section\n", file, G_KEY_FILE_DESKTOP_GROUP);
+		g_key_file_free(entry);
+		return;
+	}
+	if (!g_key_file_has_key(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_TYPE, NULL)) {
+		EPRINTF("%s: has no Type= section\n", file);
+		g_key_file_free(entry);
+		return;
+	}
+	g_hash_table_replace(xsessions, strdup(key), entry);
+	return;
+}
+
+/** @brief wean out entries that should not be used
+  * @param key - pointer to the application id of the entry
+  * @param value - pointer to the key file entry
+  * @return gboolean - TRUE if removal required, FALSE otherwise
+  *
+  */
+static gboolean
+xsessions_filter(gpointer key, gpointer value, gpointer user_data)
+{
+	char *appid = (char *) key;
+	GKeyFile *entry = (GKeyFile *) value;
+	gchar *name, *exec, *tryexec, *binary;
+
+	if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					   G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
+		DPRINTF("%s: no Name\n", appid);
+		return TRUE;
+	}
+	g_free(name);
+	if (!(exec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					   G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
+		DPRINTF("%s: no Exec\n", appid);
+		return TRUE;
+	}
+	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
+				   G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
+		DPRINTF("%s: is Hidden\n", appid);
+		return TRUE;
+	}
+#if 0
+	/* NoDisplay is often used to hide XSession desktop entries from the
+	   application menu and does not indicate that it should not be
+	   displayed as an XSession entry. */
+
+	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
+				   G_KEY_FILE_DESKTOP_KEY_NO_DISPLAY, NULL)) {
+		DPRINTF("%s: is NoDisplay\n", appid);
+		return TRUE;
+	}
+#endif
+	if ((tryexec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					     G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, NULL))) {
+		binary = g_strdup(tryexec);
+		g_free(tryexec);
+	} else {
+		char *p;
+
+		/* parse the first word of the exec statement and see whether
+		   it is executable or can be found in PATH */
+		binary = g_strdup(exec);
+		if ((p = strpbrk(binary, " \t")))
+			*p = '\0';
+
+	}
+	g_free(exec);
+	if (binary[0] == '/') {
+		if (access(binary, X_OK)) {
+			DPRINTF("%s: %s: %s\n", appid, binary, strerror(errno));
+			g_free(binary);
+			return TRUE;
+		}
+	} else {
+		char *dir, *end;
+		char *path = strdup(getenv("PATH") ? : "");
+		int blen = strlen(binary) + 2;
+		gboolean execok = FALSE;
+
+		for (dir = path, end = dir + strlen(dir); dir < end;
+		     *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
+		for (dir = path; dir < end; dir += strlen(dir) + 1) {
+			int len = strlen(dir) + blen;
+			char *file = calloc(len, sizeof(*file));
+
+			strcpy(file, dir);
+			strcat(file, "/");
+			strcat(file, binary);
+			if (!access(file, X_OK)) {
+				execok = TRUE;
+				free(file);
+				break;
+			}
+			DPRINTF("%s: %s: %s\n", appid, file, strerror(errno));
+		}
+		free(path);
+		if (!execok) {
+			DPRINTF("%s: %s: not executable\n", appid, binary);
+			g_free(binary);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+GHashTable *
+get_xsessions(void)
+{
+	char **xdg_dirs, **dirs;
+	int i, n = 0;
+	static const char *suffix = ".desktop";
+	static const int suflen = 8;
+	GHashTable *xsessions = NULL;
+	size_t entries = 0;
+
+	if (!(xdg_dirs = get_xsession_dirs(&n)) || !n)
+		return (xsessions);
+
+	xsessions = g_hash_table_new_full(g_str_hash, g_str_equal,
+					  xsession_key_free, xsession_value_free);
+
+	/* got through them backward */
+	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+		char *file, *p;
+		DIR *dir;
+		struct dirent *d;
+		int len;
+		char *key;
+		struct stat st;
+
+		if (!(dir = opendir(*dirs))) {
+			DPRINTF("%s: %s\n", *dirs, strerror(errno));
+			continue;
+		}
+		while ((d = readdir(dir))) {
+			if (d->d_name[0] == '.')
+				continue;
+			if (!(p = strstr(d->d_name, suffix)) || p[suflen]) {
+				DPRINTF("%s: no %s suffix\n", d->d_name, suffix);
+				continue;
+			}
+			len = strlen(*dirs) + strlen(d->d_name) + 2;
+			file = calloc(len, sizeof(*file));
+			strcpy(file, *dirs);
+			strcat(file, "/");
+			strcat(file, d->d_name);
+			if (stat(file, &st)) {
+				EPRINTF("%s: %s\n", file, strerror(errno));
+				free(file);
+				continue;
+			}
+			if (!S_ISREG(st.st_mode)) {
+				EPRINTF("%s: %s\n", file, "not a regular file");
+				free(file);
+				continue;
+			}
+			key = strdup(d->d_name);
+			*strstr(key, suffix) = '\0';
+			get_xsession_entry(xsessions, key, file);
+			free(key);
+			free(file);
+		}
+		closedir(dir);
+	}
+	for (i = 0; i < entries; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+	g_hash_table_foreach_remove(xsessions, xsessions_filter, NULL);
+	return (xsessions);
 }
 
 gboolean
-on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+choose_xsession(void)
+{
+	GHashTable *xsessions;
+	gchar **keys;
+	guint length = 0;
+
+	if (!(xsessions = get_xsessions()))
+		return FALSE;
+	if (!(keys = (typeof(keys)) g_hash_table_get_keys_as_array(xsessions, &length))) {
+		return FALSE;
+	}
+	return TRUE;
+}
+
+gboolean
+on_delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
+{
+	choose_result = CHOOSE_RESULT_LOGOUT;
+	gtk_main_quit();
+	return TRUE;		/* propagate */
+}
+
+gboolean
+on_expose_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 {
 	GdkPixbuf *pixbuf = GDK_PIXBUF(data);
 	GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(widget));
 	cairo_t *cr = gdk_cairo_create(GDK_DRAWABLE(window));
+
 	gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
 	cairo_paint(cr);
-	GdkColor color = { .red = 0, .green = 0, .blue = 0, .pixel = 0 };
+	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0 };
 	gdk_cairo_set_source_color(cr, &color);
 	cairo_paint_with_alpha(cr, 0.7);
-	return TRUE; /* propagate */
+	return TRUE;		/* propagate */
+}
+
+enum {
+	COLUMN_PIXBUF,
+	COLUMN_NAME,
+	COLUMN_COMMENT,
+	COLUMN_MARKUP,
+	COLUMN_LABEL,
+	COLUMN_MANAGED,
+	COLUMN_ORIGINAL
+};
+
+GtkListStore* model;
+GtkWidget *view;
+
+void
+on_managed_toggle(GtkCellRendererToggle * rend, gchar * path, gpointer user_data)
+{
+	GtkTreeIter iter;
+
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(model), &iter, path)) {
+		GValue user_v = G_VALUE_INIT;
+		GValue orig_v = G_VALUE_INIT;
+		gboolean user;
+		gboolean orig;
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_MANAGED, &user_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_ORIGINAL, &orig_v);
+		user = g_value_get_boolean(&user_v);
+		orig = g_value_get_boolean(&orig_v);
+		if (orig) {
+			user = user ? FALSE : TRUE;
+			g_value_set_boolean(&user_v, user);
+			gtk_list_store_set_value(GTK_LIST_STORE(model), &iter, COLUMN_MANAGED,
+						 &user_v);
+		}
+		g_value_unset(&user_v);
+		g_value_unset(&orig_v);
+	}
+}
+
+void
+on_render_pixbuf(GtkTreeViewColumn * col, GtkCellRenderer * cell,
+		 GtkTreeModel * model, GtkTreeIter * iter, gpointer data)
+{
+	GValue iname_v = G_VALUE_INIT;
+	const gchar *iname;
+	gchar *name = NULL, *p;
+	gboolean has;
+	GValue pixbuf_v = G_VALUE_INIT;
+
+	gtk_tree_model_get_value(GTK_TREE_MODEL(model), iter, COLUMN_PIXBUF, &iname_v);
+	if ((iname = g_value_get_string(&iname_v))) {
+		name = g_strdup(iname);
+		/* should we really do this? */
+		if ((p = strstr(name, ".xpm")) && !p[4])
+			*p = '\0';
+		else if ((p = strstr(name, ".svg")) && !p[4])
+			*p = '\0';
+		else if ((p = strstr(name, ".png")) && !p[4])
+			*p = '\0';
+	} else
+		name = g_strdup("preferences-system-windows");
+	g_value_unset(&iname_v);
+
+	GtkIconTheme *theme = gtk_icon_theme_get_default();
+	GdkPixbuf *pixbuf = NULL;
+
+	has = gtk_icon_theme_has_icon(theme, name);
+	if (has)
+		pixbuf = gtk_icon_theme_load_icon(theme, name, 32,
+				GTK_ICON_LOOKUP_GENERIC_FALLBACK |
+				GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+	if (!has || !pixbuf) {
+		g_free(name);
+		name = g_strdup("preferences-system-windows");
+		has = gtk_icon_theme_has_icon(theme, name);
+		if (has)
+			pixbuf = gtk_icon_theme_load_icon(theme, name, 32,
+					GTK_ICON_LOOKUP_GENERIC_FALLBACK |
+					GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+		if (!has || !pixbuf) {
+			GtkWidget *image;
+			
+			image = gtk_image_new_from_stock("gtk-missing-image",
+					GTK_ICON_SIZE_LARGE_TOOLBAR);
+			pixbuf = gtk_widget_render_icon(GTK_WIDGET(image),
+					"gtk-missing-image",
+					GTK_ICON_SIZE_LARGE_TOOLBAR,
+					NULL);
+			g_object_unref(G_OBJECT(image));
+		}
+	}
+	g_object_unref(G_OBJECT(theme));
+	g_value_init(&pixbuf_v, G_TYPE_OBJECT);
+	g_value_take_object(&pixbuf_v, pixbuf);
+	g_object_set_property(G_OBJECT(cell), "pixbuf", &pixbuf_v);
+	g_value_unset(&pixbuf_v);
+}
+
+static void
+on_logout_clicked(GtkButton * button, gpointer user_data)
+{
+	GtkWidget **buttons = (typeof(buttons)) user_data;
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		GValue label_v = G_VALUE_INIT;
+		const gchar *label;
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
+		if ((label = g_value_get_string(&label_v)))
+			DPRINTF("Label selected %s\n", label);
+		g_value_unset(&label_v);
+	}
+	free(options.current);
+	options.current = strdup("logout");
+	options.managed = False;
+	gtk_main_quit();
+}
+
+static void
+on_default_clicked(GtkButton *button, gpointer user_data)
+{
+	GtkWidget **buttons = (typeof(buttons)) user_data;
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		GValue label_v = G_VALUE_INIT;
+		const gchar *label;
+		char *home = getenv("HOME") ? : ".";
+		char *xhome = getenv("XDG_CONFIG_HOME");
+		char *cdir, *file;
+		int len, dlen, flen;
+		FILE *f;
+
+		if (xhome) {
+			len = strlen(xhome);
+		} else {
+			len = strlen(home);
+			len += strlen("/.config");
+		}
+		dlen = len + strlen("/xde");
+		flen = dlen + strlen("/default");
+		cdir = calloc(dlen, sizeof(*cdir));
+		file = calloc(flen, sizeof(*file));
+		if (xhome) {
+			strcpy(cdir, xhome);
+		} else {
+			strcpy(cdir, home);
+			strcat(cdir, "/.config");
+		}
+		strcat(cdir, "/xde");
+		strcpy(file, cdir);
+		strcat(file, "/default");
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
+		if ((label = g_value_get_string(&label_v)))
+			DPRINTF("Label selected %s\n", label);
+
+		if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
+			if ((f = fopen(file, "w"))) {
+				fprintf(f, "%s\n", label);
+				gtk_widget_set_sensitive(buttons[1], FALSE);
+				gtk_widget_set_sensitive(buttons[2], FALSE);
+				gtk_widget_set_sensitive(buttons[3], TRUE);
+				fclose(f);
+			}
+		}
+
+		g_value_unset(&label_v);
+		free(file);
+		free(cdir);
+	}
+}
+
+static void
+on_select_clicked(GtkButton *button, gpointer user_data)
+{
+}
+
+static void
+on_launch_clicked(GtkButton *button, gpointer user_data)
+{
 }
 
 void
@@ -122,6 +570,7 @@ make_login_choice(int argc, char *argv[])
 	gtk_init(&argc, &argv);
 
 	GtkWidget *w = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
 	gtk_window_set_wmclass(GTK_WINDOW(w), "xde-chooser", "XDE-Chooser");
 	gtk_window_set_title(GTK_WINDOW(w), "Window Manager Selection");
 	gtk_window_set_modal(GTK_WINDOW(w), TRUE);
@@ -146,59 +595,162 @@ make_login_choice(int argc, char *argv[])
 	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
 
 	GdkPixbuf *pixbuf = gdk_pixbuf_get_from_drawable(NULL, root, NULL,
-			0, 0, 0, 0, width, height);
+							 0, 0, 0, 0, width, height);
 
 	GtkWidget *a = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
+
 	gtk_container_add(GTK_CONTAINER(w), GTK_WIDGET(a));
 
 	GtkWidget *e = gtk_event_box_new();
+
 	gtk_container_add(GTK_CONTAINER(a), GTK_WIDGET(e));
 	gtk_widget_set_size_request(GTK_WIDGET(e), -1, 400);
-	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), (gpointer) pixbuf);
+	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event),
+			 (gpointer) pixbuf);
 
 	GtkWidget *v = gtk_vbox_new(FALSE, 0);
+
 	gtk_container_set_border_width(GTK_CONTAINER(v), 15);
 	gtk_container_add(GTK_CONTAINER(e), GTK_WIDGET(v));
 	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), NULL);
 
 	GtkWidget *h = gtk_hbox_new(FALSE, 5);
+
 	gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(h));
 
 	if (options.banner) {
 		GtkWidget *f = gtk_frame_new(NULL);
+
 		gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
 		gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), FALSE, FALSE, 0);
 
 		GtkWidget *v = gtk_vbox_new(FALSE, 5);
+
 		gtk_container_set_border_width(GTK_CONTAINER(v), 10);
 		gtk_container_add(GTK_CONTAINER(f), GTK_WIDGET(v));
 
 		GtkWidget *s = gtk_image_new_from_file(options.banner);
+
 		if (s)
 			gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(s));
 		else
 			gtk_widget_destroy(GTK_WIDGET(f));
 	}
 	GtkWidget *f = gtk_frame_new(NULL);
+
 	gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
 	gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), TRUE, TRUE, 0);
 	v = gtk_vbox_new(FALSE, 5);
 	gtk_container_set_border_width(GTK_CONTAINER(v), 0);
 	gtk_container_add(GTK_CONTAINER(f), GTK_WIDGET(v));
 
-	GtkWidget *sw = gtk_scrolled_window_new(NULL,NULL);
+	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
+
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_NEVER,
+				       GTK_POLICY_AUTOMATIC);
 	gtk_container_set_border_width(GTK_CONTAINER(sw), 3);
 	gtk_box_pack_start(GTK_BOX(v), GTK_WIDGET(sw), TRUE, TRUE, 0);
 
 	GtkWidget *bb = gtk_hbutton_box_new();
+
 	gtk_box_set_spacing(GTK_BOX(bb), 5);
 	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_END);
 	gtk_box_pack_end(GTK_BOX(v), GTK_WIDGET(bb), FALSE, TRUE, 0);
 
+	/* *INDENT-OFF* */
+	model = gtk_list_store_new(7
+			,GTK_TYPE_STRING	/* pixbuf */
+			,GTK_TYPE_STRING	/* Name */
+			,GTK_TYPE_STRING	/* Comment */
+			,GTK_TYPE_STRING	/* Name and Comment Markup */
+			,GTK_TYPE_STRING	/* Label */
+			,GTK_TYPE_BOOL		/* SessionManaged?  XDE-Managed?  */
+			,GTK_TYPE_BOOL		/* X-XDE-Managed original setting */
+	    );
+	/* *INDENT-ON* */
+	view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
+	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
+	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), COLUMN_NAME);
+	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), FALSE);
+	gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(view), GTK_TREE_VIEW_GRID_LINES_BOTH);
+	gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(view));
+
+	GtkCellRenderer *rend = gtk_cell_renderer_toggle_new();
+
+	gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), TRUE);
+	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), NULL);
+	GtkTreeViewColumn *col;
+	col = gtk_tree_view_column_new_with_attributes("Managed", rend, "active", COLUMN_MANAGED,
+						     NULL);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(col));
+
+	rend = gtk_cell_renderer_pixbuf_new();
+	gtk_tree_view_insert_column_with_data_func(GTK_TREE_VIEW(view),
+						   -1, "Icon", rend, on_render_pixbuf, NULL, NULL);
+
+	rend = gtk_cell_renderer_text_new();
+	col = gtk_tree_view_column_new_with_attributes("Window Manager", rend, "markup",
+						      COLUMN_MARKUP, NULL);
+	gtk_tree_view_column_set_sort_column_id(GTK_TREE_VIEW_COLUMN(col), COLUMN_NAME);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(col));
+
+	GtkWidget *i;
+	GtkWidget *b;
+	GtkWidget *buttons[5];
+	
+	buttons[0] = b = gtk_button_new();
+	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
+	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
+	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+	if ((getenv("DISPLAY") ? : "")[0] == ':') {
+		if ((i = gtk_image_new_from_stock("gtk-quit", GTK_ICON_SIZE_BUTTON)))
+			gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(i));
+		gtk_button_set_label(GTK_BUTTON(b), "Logout");
+	} else {
+		if ((i = gtk_image_new_from_stock("gtk-disconnect", GTK_ICON_SIZE_BUTTON)))
+			gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(i));
+		gtk_button_set_label(GTK_BUTTON(b), "Disconnect");
+	}
+	gtk_box_pack_start(GTK_BOX(bb), GTK_WIDGET(b), TRUE, TRUE, 5);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_logout_clicked), buttons);
+
+	buttons[1] = b = gtk_button_new();
+	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
+	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
+	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+	if ((i = gtk_image_new_from_stock("gtk-save", GTK_ICON_SIZE_BUTTON)))
+		gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(i));
+	gtk_button_set_label(GTK_BUTTON(b), "Make Default");
+	gtk_box_pack_start(GTK_BOX(bb), GTK_WIDGET(b), TRUE, TRUE, 5);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_default_clicked), buttons);
+
+	buttons[2] = b = gtk_button_new();
+	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
+	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
+	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+	if ((i = gtk_image_new_from_stock("gtk-revert-to-saved", GTK_ICON_SIZE_BUTTON)))
+		gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(i));
+	gtk_button_set_label(GTK_BUTTON(b), "Select Default");
+	gtk_box_pack_start(GTK_BOX(bb), GTK_WIDGET(b), TRUE, TRUE, 5);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_select_clicked), buttons);
+
+	buttons[3] = b = gtk_button_new();
+	gtk_widget_set_can_default(GTK_WIDGET(b), TRUE);
+	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
+	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
+	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+	if ((i = gtk_image_new_from_stock("gtk-ok", GTK_ICON_SIZE_BUTTON)))
+		gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(i));
+	gtk_button_set_label(GTK_BUTTON(b), "Launch Session");
+	gtk_box_pack_start(GTK_BOX(bb), GTK_WIDGET(b), TRUE, TRUE, 5);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_launch_clicked), buttons);
+
+	gtk_widget_grab_default(GTK_WIDGET(b));
+
 
 }
+
 
 static void
 copying(int argc, char *argv[])
@@ -341,14 +893,13 @@ set_default_banner(void)
 	int len, n;
 	struct stat st;
 
-	file = calloc(PATH_MAX+1, sizeof(*file));
-	pfx = getenv("XDG_MENU_PREFIX") ?: "";
-	home = getenv("HOME") ?: ".";
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	pfx = getenv("XDG_MENU_PREFIX") ? : "";
+	home = getenv("HOME") ? : ".";
 	xhome = getenv("XDG_DATA_HOME");
 	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
-	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) +
-		strlen(xdata) + 2;
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
 	dirs = calloc(len, sizeof(*dirs));
 	if (xhome)
 		strcpy(dirs, xhome);
@@ -359,7 +910,7 @@ set_default_banner(void)
 	strcat(dirs, ":");
 	strcat(dirs, xdata);
 	end = dirs + strlen(dirs);
-	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1)  {
+	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) {
 		*strchrnul(pos, ':') = '\0';
 		if (!*pos)
 			continue;
@@ -389,7 +940,8 @@ set_default_banner(void)
 		strcat(dirs, ":");
 		strcat(dirs, xdata);
 		end = dirs + strlen(dirs);
-		for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1)  {
+		for (n = 0, pos = dirs; pos < end;
+		     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) {
 			*strchrnul(pos, ':') = '\0';
 			if (!*pos)
 				continue;
@@ -424,8 +976,9 @@ int
 main(int argc, char *argv[])
 {
 	set_defaults();
-	while(1) {
+	while (1) {
 		int c, val;
+
 #ifdef _GNU_SOURCE
 		int option_index = 0;
 		/* *INDENT-OFF* */
@@ -452,8 +1005,7 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "ND::v::hVCH?",
-				     long_options, &option_index);
+		c = getopt_long_only(argc, argv, "ND::v::hVCH?", long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "NDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
@@ -522,8 +1074,7 @@ main(int argc, char *argv[])
 			break;
 		case 'D':	/* -D, --debug [level] */
 			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n",
-					argv[0]);
+				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
@@ -534,8 +1085,7 @@ main(int argc, char *argv[])
 			break;
 		case 'v':	/* -v, --verbose [level] */
 			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n",
-					argv[0]);
+				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.output++;
 				break;
@@ -552,14 +1102,12 @@ main(int argc, char *argv[])
 			exit(0);
 		case 'V':	/* -V, --version */
 			if (options.debug)
-				fprintf(stderr, "%s: printing version message\n",
-					argv[0]);
+				fprintf(stderr, "%s: printing version message\n", argv[0]);
 			version(argc, argv);
 			exit(0);
 		case 'C':	/* -C, --copying */
 			if (options.debug)
-				fprintf(stderr, "%s: printing copying message\n",
-					argv[0]);
+				fprintf(stderr, "%s: printing copying message\n", argv[0]);
 			copying(argc, argv);
 			exit(0);
 		case '?':
@@ -570,14 +1118,12 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '",
-						argv[0]);
+					fprintf(stderr, "%s: syntax error near '", argv[0]);
 					while (optind < argc)
 						fprintf(stderr, "%s ", argv[optind++]);
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument",
-						argv[0]);
+					fprintf(stderr, "%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
@@ -597,3 +1143,4 @@ main(int argc, char *argv[])
 	exit(0);
 }
 
+// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:

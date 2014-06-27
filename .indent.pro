@@ -24,6 +24,14 @@
 -ss
 -hnl
 -nbc
+-TGtkWidget
+-TGtkButton
+-TGtkBox
+-TGtkTreeSelection
+-TGtkTreeModel
+-TGtkTreeIter
+-TGtkCellRenderer
+-TGHashTable
 -TWindowManager
 -TWmDisplay
 -TWmScreen
