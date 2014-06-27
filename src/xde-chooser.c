@@ -79,6 +79,7 @@ typedef struct {
 	Bool execute;
 	char *current;
 	Bool managed;
+	char *choice;
 } Options;
 
 Options options = {
@@ -93,7 +94,7 @@ int choose_result;
 typedef struct {
 } XSessionEntry;
 
-XSessionEntry **xsessions;
+GHashTable *xsessions;
 
 char **
 get_xsession_dirs(int *np)
@@ -271,7 +272,6 @@ get_xsessions(void)
 	int i, n = 0;
 	static const char *suffix = ".desktop";
 	static const int suflen = 8;
-	GHashTable *xsessions = NULL;
 	size_t entries = 0;
 
 	if (!(xdg_dirs = get_xsession_dirs(&n)) || !n)
@@ -346,7 +346,7 @@ choose_xsession(void)
 }
 
 gboolean
-on_delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
+on_delete_event(GtkWidget *widget, GdkEvent * event, gpointer data)
 {
 	choose_result = CHOOSE_RESULT_LOGOUT;
 	gtk_main_quit();
@@ -354,7 +354,7 @@ on_delete_event(GtkWidget * widget, GdkEvent * event, gpointer data)
 }
 
 gboolean
-on_expose_event(GtkWidget * widget, GdkEvent * event, gpointer data)
+on_expose_event(GtkWidget *widget, GdkEvent * event, gpointer data)
 {
 	GdkPixbuf *pixbuf = GDK_PIXBUF(data);
 	GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(widget));
@@ -378,11 +378,12 @@ enum {
 	COLUMN_ORIGINAL
 };
 
-GtkListStore* model;
+GtkListStore *model;
 GtkWidget *view;
+GtkTreeViewColumn *cursor;
 
 void
-on_managed_toggle(GtkCellRendererToggle * rend, gchar * path, gpointer user_data)
+on_managed_toggle(GtkCellRendererToggle *rend, gchar * path, gpointer user_data)
 {
 	GtkTreeIter iter;
 
@@ -408,8 +409,8 @@ on_managed_toggle(GtkCellRendererToggle * rend, gchar * path, gpointer user_data
 }
 
 void
-on_render_pixbuf(GtkTreeViewColumn * col, GtkCellRenderer * cell,
-		 GtkTreeModel * model, GtkTreeIter * iter, gpointer data)
+on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
+		 GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
 {
 	GValue iname_v = G_VALUE_INIT;
 	const gchar *iname;
@@ -437,25 +438,24 @@ on_render_pixbuf(GtkTreeViewColumn * col, GtkCellRenderer * cell,
 	has = gtk_icon_theme_has_icon(theme, name);
 	if (has)
 		pixbuf = gtk_icon_theme_load_icon(theme, name, 32,
-				GTK_ICON_LOOKUP_GENERIC_FALLBACK |
-				GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+						  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
+						  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
 	if (!has || !pixbuf) {
 		g_free(name);
 		name = g_strdup("preferences-system-windows");
 		has = gtk_icon_theme_has_icon(theme, name);
 		if (has)
 			pixbuf = gtk_icon_theme_load_icon(theme, name, 32,
-					GTK_ICON_LOOKUP_GENERIC_FALLBACK |
-					GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+							  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
+							  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
 		if (!has || !pixbuf) {
 			GtkWidget *image;
-			
+
 			image = gtk_image_new_from_stock("gtk-missing-image",
-					GTK_ICON_SIZE_LARGE_TOOLBAR);
+							 GTK_ICON_SIZE_LARGE_TOOLBAR);
 			pixbuf = gtk_widget_render_icon(GTK_WIDGET(image),
-					"gtk-missing-image",
-					GTK_ICON_SIZE_LARGE_TOOLBAR,
-					NULL);
+							"gtk-missing-image",
+							GTK_ICON_SIZE_LARGE_TOOLBAR, NULL);
 			g_object_unref(G_OBJECT(image));
 		}
 	}
@@ -467,7 +467,7 @@ on_render_pixbuf(GtkTreeViewColumn * col, GtkCellRenderer * cell,
 }
 
 static void
-on_logout_clicked(GtkButton * button, gpointer user_data)
+on_logout_clicked(GtkButton *button, gpointer user_data)
 {
 	GtkWidget **buttons = (typeof(buttons)) user_data;
 	GtkTreeSelection *selection;
@@ -551,11 +551,161 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 static void
 on_select_clicked(GtkButton *button, gpointer user_data)
 {
+	GtkTreeSelection *selection;
+
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	if (options.dflt) {
+		GtkTreeIter iter;
+		gboolean valid;
+
+		for (valid = gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(model), &iter, NULL, 0);
+		     valid; valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)) {
+			GValue label_v = G_VALUE_INIT;
+			const gchar *label;
+
+			gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter,
+						 COLUMN_LABEL, &label_v);
+			label = g_value_get_string(&label_v);
+			if (!strcmp(label, options.dflt)) {
+				g_value_unset(&label_v);
+				break;
+			}
+			g_value_unset(&label_v);
+		}
+		if (valid) {
+			gchar *string;
+			GtkTreePath *path;
+
+			gtk_tree_selection_select_iter(GTK_TREE_SELECTION(selection), &iter);
+			string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter);
+			path = gtk_tree_path_new_from_string(string);
+			g_free(string);
+			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor, NULL,
+							 FALSE);
+			gtk_tree_path_free(path);
+		}
+	} else {
+		gtk_tree_selection_unselect_all(selection);
+	}
 }
 
 static void
 on_launch_clicked(GtkButton *button, gpointer user_data)
 {
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		GValue label_v = G_VALUE_INIT;
+		GValue manage_v = G_VALUE_INIT;
+		const gchar *label;
+		gboolean manage;
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_MANAGED, &manage_v);
+		label = g_value_get_string(&label_v);
+		manage = g_value_get_boolean(&manage_v);
+		free(options.current);
+		options.current = strdup(label);
+		options.managed = manage;
+		free(options.choice);
+		options.choice = strdup(label);
+		gtk_main_quit();
+	}
+}
+
+static void
+on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
+{
+	GtkWidget **buttons = (typeof(buttons)) user_data;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		GValue label_v = G_VALUE_INIT;
+		const gchar *label;
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
+		if ((label = g_value_get_string(&label_v)))
+			DPRINTF("Label selected %s\n", label);
+		if (label && !strcmp(label, options.dflt)) {
+			gtk_widget_set_sensitive(buttons[1], FALSE);
+			gtk_widget_set_sensitive(buttons[2], FALSE);
+			gtk_widget_set_sensitive(buttons[3], TRUE);
+		} else {
+			gtk_widget_set_sensitive(buttons[1], TRUE);
+			gtk_widget_set_sensitive(buttons[2], TRUE);
+			gtk_widget_set_sensitive(buttons[3], TRUE);
+		}
+		g_value_unset(&label_v);
+	} else {
+		gtk_widget_set_sensitive(buttons[1], FALSE);
+		gtk_widget_set_sensitive(buttons[2], TRUE);
+		gtk_widget_set_sensitive(buttons[3], FALSE);
+	}
+}
+
+static void
+on_row_activated(GtkTreeView *view, GtkTreePath * path, GtkTreeViewColumn *col, gpointer user_data)
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		GValue label_v = G_VALUE_INIT;
+		GValue manage_v = G_VALUE_INIT;
+		const gchar *label;
+		gboolean manage;
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_MANAGED, &manage_v);
+		if ((label = g_value_get_string(&label_v)))
+			DPRINTF("Label selected %s\n", label);
+		manage = g_value_get_boolean(&manage_v);
+		free(options.current);
+		options.current = strdup(label);
+		options.managed = manage;
+		g_value_unset(&label_v);
+		g_value_unset(&manage_v);
+	}
+}
+
+static gboolean
+on_button_press(GtkWidget *view, GdkEvent * event, gpointer user_data)
+{
+	GtkTreeSelection *selection;
+	GtkTreePath *path;
+	GtkTreeViewColumn *col;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(view),
+					  event->button.x,
+					  event->button.y, &path, &col, NULL, NULL)) {
+		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+		gtk_tree_selection_select_path(selection, path);
+		if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+			GValue label_v = G_VALUE_INIT;
+			const gchar *label;
+
+			gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL,
+						 &label_v);
+			if ((label = g_value_get_string(&label_v)))
+				DPRINTF("Label clicked was: %s\n", label);
+#if 0
+			GKeyFile *entry;
+
+			if ((entry = (typeof(entry)) g_hash_table_lookup(xsessions, label))) {
+			}
+#endif
+			g_value_unset(&label_v);
+		}
+	}
+	return FALSE;		/* propagate event */
 }
 
 void
@@ -681,8 +831,9 @@ make_login_choice(int argc, char *argv[])
 	gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), TRUE);
 	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), NULL);
 	GtkTreeViewColumn *col;
+
 	col = gtk_tree_view_column_new_with_attributes("Managed", rend, "active", COLUMN_MANAGED,
-						     NULL);
+						       NULL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(col));
 
 	rend = gtk_cell_renderer_pixbuf_new();
@@ -691,14 +842,15 @@ make_login_choice(int argc, char *argv[])
 
 	rend = gtk_cell_renderer_text_new();
 	col = gtk_tree_view_column_new_with_attributes("Window Manager", rend, "markup",
-						      COLUMN_MARKUP, NULL);
+						       COLUMN_MARKUP, NULL);
 	gtk_tree_view_column_set_sort_column_id(GTK_TREE_VIEW_COLUMN(col), COLUMN_NAME);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(col));
+	cursor = col;
 
 	GtkWidget *i;
 	GtkWidget *b;
 	GtkWidget *buttons[5];
-	
+
 	buttons[0] = b = gtk_button_new();
 	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
 	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
@@ -748,9 +900,88 @@ make_login_choice(int argc, char *argv[])
 
 	gtk_widget_grab_default(GTK_WIDGET(b));
 
+	GtkTreeSelection *selection;
 
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
+	g_signal_connect(G_OBJECT(selection), "changed", G_CALLBACK(on_selection_changed), buttons);
+
+	g_signal_connect(G_OBJECT(view), "row_activated", G_CALLBACK(on_row_activated), NULL);
+	g_signal_connect(G_OBJECT(view), "button_press_event", G_CALLBACK(on_button_press), NULL);
+
+	GHashTableIter hiter;
+	gpointer key, value;
+	GtkTreeIter iter;
+
+	g_hash_table_iter_init(&hiter, xsessions);
+	while (g_hash_table_iter_next(&hiter, &key, &value)) {
+		const gchar *label = (typeof(label)) key;
+		GKeyFile *entry = (typeof(entry)) value;
+		gchar *iname = g_key_file_get_string(entry,
+						     G_KEY_FILE_DESKTOP_GROUP,
+						     G_KEY_FILE_DESKTOP_KEY_ICON,
+						     NULL);
+		gchar *name = g_key_file_get_locale_string(entry,
+							   G_KEY_FILE_DESKTOP_GROUP,
+							   G_KEY_FILE_DESKTOP_KEY_NAME,
+							   NULL, NULL) ? : "";
+		gchar *comment = g_key_file_get_locale_string(entry,
+							      G_KEY_FILE_DESKTOP_GROUP,
+							      G_KEY_FILE_DESKTOP_KEY_COMMENT,
+							      NULL, NULL) ? : "";
+		gchar *markup = g_strdup_printf("<b>%s</b>\n%s",
+						name, comment);
+		gboolean managed = g_key_file_get_boolean(entry,
+							  "Window Manager",
+							  "X-XDE-Managed",
+							  NULL);
+
+		gtk_list_store_append(model, &iter);
+		gtk_list_store_set(model, &iter,
+				   COLUMN_PIXBUF, iname,
+				   COLUMN_NAME, name,
+				   COLUMN_COMMENT, comment,
+				   COLUMN_MARKUP, markup,
+				   COLUMN_LABEL, label,
+				   COLUMN_MANAGED, managed, COLUMN_ORIGINAL, managed, -1);
+		g_free(iname);
+		g_free(name);
+		g_free(comment);
+		g_free(markup);
+		if (!strcmp(options.choice, label) ||
+		    ((!strcmp(options.choice, "choose") ||
+		      !strcmp(options.choice, "default")) && !strcmp(options.dflt, label))) {
+			gchar *string;
+			GtkTreePath *path;
+
+			gtk_tree_selection_select_iter(selection, &iter);
+			string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter);
+			path = gtk_tree_path_new_from_string(string);
+			g_free(string);
+			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor, NULL,
+							 FALSE);
+			gtk_tree_path_free(path);
+		}
+	}
+	// gtk_window_set_default_size(GTK_WINDOW(w), -1, 400);
+	gtk_widget_show_all(GTK_WIDGET(w));
+	gtk_widget_grab_focus(GTK_WIDGET(buttons[3]));
+
+	/* TODO: we should really set a timeout and if no user interaction has
+	   occured before the timeout, we should continue if we have a viable
+	   default or choice. */
+	gtk_main();
+	gtk_widget_destroy(GTK_WIDGET(w));
+
+	GKeyFile *entry = NULL;
+
+	if (strcmp(options.current, "logout")) {
+		if (!(entry = (typeof(entry)) g_hash_table_lookup(xsessions, options.current))) {
+			EPRINTF("What happenned to entry for %s\n", options.current);
+			exit(EXIT_FAILURE);
+		}
+	}
 }
-
 
 static void
 copying(int argc, char *argv[])

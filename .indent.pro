@@ -24,6 +24,11 @@
 -ss
 -hnl
 -nbc
+-TGtkTreeViewColumn
+-TGtkCellRenderer
+-TGtkCellRendererToggle
+-TGtkButton
+-TGtkTreeView
 -TGtkWidget
 -TGtkButton
 -TGtkBox
