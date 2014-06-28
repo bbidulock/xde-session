@@ -8,7 +8,7 @@ B<xde-chooser> [I<OPTIONS>] [I<SESSION>]
 
 =head1 DESCRIPTION
 
-B<xde-chooser> is a gtk2-perl application that can be launched from
+B<xde-chooser> is a C<C>-language program that can be launched from
 F<~/.xinitrc> to choose the X session that will be launched, or can be
 launched from a window manager or session logout script to switch the
 sessions.  The menu can also provide the choice for the user to perform
@@ -21,11 +21,68 @@ C<logout> to standard output and exits with a zero exit status.  On
 error, a diagnostic message is printed to standard error and a non-zero
 exit status is returned.
 
+=head1 ARGUMENTS
+
+B<xde-chooser> accepts one optional argument as follows:
+
+=over
+
+=item [I<SESSION>]
+
+The name of the XDG session to use.  This can be any of the recognized
+session names or the special names: C<logout>, C<default> or C<choose>.
+
+=over
+
+=item C<logout>
+
+Do not choose a session but simply logout.  This has the effect of
+simply reprinting C<logout> to standard output and exiting.
+
+=item C<default>
+
+Do not choose a session but simply run (typically without prompting)
+whichever session the user has set as a default.  (The default is
+located in the file F<$XDG_CONFIG_HOME/xde/default>).  When no default
+is configured, or when the configured default is not usable (e.g.
+missing executable), this argument has the same effect as C<choose>,
+below.
+
+=item C<choose>
+
+Launch a dialog to choose the session regardless of whether a default
+session is configured or available.  This is the most typical mode of
+B<xde-chooser>.
+
+=item I<SESSION>
+
+A Session name is the name of the F<*.desktop> file (without the
+F<.desktop> suffix) that exists in a F<@XDG_DATA_DIRS/xsessions/>
+subdirectory describing the window manager session.  Som commonly
+recognized session names are as follows: C<adwm>, C<AfterStep>,
+C<blackbox>, C<ctwm>, C<dwm>, C<etwm>, C<fluxbox>, C<flwm>, C<Fvwm>,
+C<fvwm>, C<Fvwm1>, C<icewm>, C<jwm>, C<openbox>, C<pekwm>, C<twm>,
+C<vtwm>, C<wmaker>, C<wmii>, C<wmx>, etc.
+
+=back
+
+When unspecified, the default is C<default>.
+
+=back
+
 =head1 OPTIONS
 
-B<xde-chooser> uses L<Getopt::Long(3pm)> to parse options, so
+B<xde-chooser> uses L<getopt_long_only(3)> to parse options, so
 abbreviated or single-dash long options are recognized when not
 ambiguous.  B<xde-chooser> accepts the following options:
+
+=head2 COMMAND OPTIONS
+
+The following command options are mutually exclusive: the first option
+in this groug encountered sets the mode of the program.  When no command
+option is specified, the program assumes normal operation.  In normal
+operation the graphical chooser is display and once the user has
+selected a session, the program exits.
 
 =over
 
@@ -34,14 +91,57 @@ ambiguous.  B<xde-chooser> accepts the following options:
 Print usage information to standard error containing current defaults
 and exit.
 
-=item B<--verbose>, B<-v>
+=item B<--version>, B<-v>
 
-Print debugging information to standard error during operation.
+Print the program version to standard output and exit.
+
+=item B<--copying>, B<-C>
+
+Print copying permissions to standard output and exit.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+The following general options can be used with most of the command
+options listed above:
+
+=over
+
+=item B<--default>, B<-d>
+
+When a I<SESSION> is specified, also set the future default to I<SESSION>.
 
 =item B<--prompt>, B<-p>
 
 Prompt the user for the session regardless of the value of the
 I<SESSION> argument.
+
+=item B<--noask>, B<-n>
+
+Do not ask the user whether she wishes to set the current session as the
+default session when I<SESSION> is specified or chosen as something
+different than the current default.
+
+=item B<--timeout>, B<-T> I<SECONDS>
+
+Specify the timeout in seconds that the program will wait for user input
+before proceeding with the default session.  Set to zero to defeat the
+timeout altogether.  The default is 15 seconds.
+
+=item B<--charset>, B<-c> I<CHARSET>
+
+Specify the character set with which to output the menu.  Defaults to
+the character set in use by the current locale.
+Because B<xde-chooser> is intended on running after the login, use of
+this option is seldom necessary.
+
+=item B<--language>, B<-l> I<LANGUAGE>
+
+Specify the output language for the menu.  Defaults to the language set
+in the current locale.
+Because B<xde-chooser> is intended on running after the login, use of
+this option is seldom necessary.
 
 =item B<--banner>, B<-b> I<BANNER>
 
@@ -56,78 +156,74 @@ option is recognized for compatability with L<lxsession-logout(1)>.
 B<xde-logout> always places the logo on the left and this option is
 ignored.
 
-=item B<--noask>, B<-n>
-
-Do not ask the user whether she wishes to set the current session as the
-default session when I<SESSION> is specified or chosen as something
-different than the current default.
-
-=item B<--charset>, B<-c> I<CHARSET>
-
-Specify the character set with which to output the menu.  Defaults to
-the character set in use by the current locale.
-
-=item B<--language>, B<-l> I<LANGUAGE>
-
-Specify the output language for the menu.  Defaults to the language set
-in the current locale.
-
-=item B<--default>, B<-d>
-
-When a I<SESSION> is specified, also set the future default to I<SESSION>.
-
 =item B<--icons>, B<-i> I<THEME>
 
 Specifies the icon theme to use.  Otherwise, the user's default gtk2
-icon theme will be used (i.e. from F<$HOME/.gtkrc-2.0>).
+icon theme will be used (i.e. from F<$HOME/.gtkrc-2.0>); but note the
+B<--xde-theme> option as well.
 
 =item B<--theme>, B<-t> I<THEME>
 
 Specifies the Gtk2 theme to use.  Otherwise, the user's default gtk2
-theme will be used (i.e. from F<$HOME/.gtkrc-2.0>).
+theme will be used (i.e. from F<$HOME/.gtkrc-2.0>); but note the
+B<--xde-theme> option as well.
 
 =item B<--exec>, B<-e>
 
-Execute the C<Exec=> action from the xsessions file instead of returning
-a string indicating the selected xsession.
+Execute the C<Exec=> action from the xsessions F<.desktop> file instead
+of returning a string indicating the selected xsession.
+
+(Note that the program actually executes C<xdg-launch -x I<SESSION>>
+instead of determining how to execute the desktop file itself. See
+L<xdg-launch(1)>.)
+
+=item B<--xde-theme>, B<-x>
+
+Use the current XDE desktop theme for the selection window instead of
+the specified or default GTK theme.
+
+=item B<--dry-run>, B<-N>
+
+Do not do anything (do not execute or write out files), just print to
+standard error what would be done.  Implies a debug level of C<2>.
+
+=item B<--debug>, B<-D> [I<LEVEL>]
+
+Increment or set the debug level to I<LEVEL>.  The default debugging
+level is C<0> (meaning no debugging).  When set, the program will print
+debuggin information to standard error during operation.
+
+(Note that because this option takes an optional argument, C<--> must be
+specified before any non-option argument.)
+
+=item B<--verbose>, B<-v> [I<LEVEL>]
+
+Increment or set the output verbosity level to I<LEVEL>.  The default
+output verbosity level is C<1>.
+
+(Note that because this option takes an optional argument, C<--> must be
+specified before any non-option argument.)
 
 =back
 
-=head1 ARGUMENTS
+=head1 USAGE
 
-B<xde-chooser> take the following arguments:
+B<xde-chooser> can be run from the command line to check its operation
+without having to be involved in an session or started by L<xinit(1)>.
+The B<--dry-run> option is usedful in combination with B<--exec> to keep
+the chooser from attempting to execute the window manager.
 
-=over
+B<xde-chooser> can also be run as a desktop application to switch the
+window manager currently being used (this is because L<xdg-launch> with
+the B<-x> flag is capable of switching the running window manager in
+many cases).  Simply run it with the B<--exec> option.  An application
+F<.desktop> file is distributed with the release to provide a menu item
+for this funcion of the program.
 
-=item I<SESSION>
-
-The name of the XDG session to execute.  This can be any of the
-recognized session names or the special names: C<default> or C<choose>.
-
-=over
-
-=item C<default>
-
-means to execute the default session (typically without
-prompting).
-
-=item C<choose>
-
-means to launch a graphical menu so that the use may choose a
-session.
-
-=back
-
-When unspecified, the default is C<default>.
-
-A session name is the name of the F<*.desktop> file (without the
-F<.desktop> suffix) that exists in a F<@XDG_DATA_DIRS/xsessions/>
-directory describing the window manager session.
-Some commonly recognized session names are as follows: C<fluxbox>,
-C<blackbox>, C<openbox>, C<icewm>, C<pekwm>, C<jwm>, C<metacity>,
-C<fvwm>, C<wmaker> and C<afterstep>.
-
-=back
+(Note that switching the window manager may fail when L<xdg-launch>
+cannot determine how to stop a running window manager when the running
+window manager does not conform to ICCCM 2.0 C<WM_S0> manager selection
+semantics.)
 
 =head1 WINDOW MANAGERS
 
@@ -146,7 +242,7 @@ F<wmaker>, F<wmii>, F<xfce>.
 
 These locations are searched for F<.desktop> files that describe which X
 Sessions are to be made available to the user.  Files in this directory
-can be desktop files of type I<Application> or I<XSession>.  A I<Window
+can be desktop files of type B<Application> or B<XSession>.  A B<Window
 Manager> section may also describe whether the session needs to be
 managed or whether the window manager is capable of managing its own
 session.  Desktop entry files in data directories earlier in the search
@@ -168,11 +264,15 @@ managers.
 
 This file contains the default session.  The file consists of a single
 line containing the session name.
+Remember that the session name is the name of the F<.desktop> file
+without the C<.desktop> suffix.
 
 =item F<$XDG_CONFIG_HOME/xde/current>
 
 This file contains the current session.  The file consists of a single
 line containing the session name.
+Remember that the session name is the name of the F<.desktop> file
+without the C<.desktop> suffix.
 
 =back
 
@@ -229,7 +329,10 @@ instead of the lowercase session name.
 I wrote B<xde-chooser> to provide a mechanism for selecting availabile
 window managers in an XDG compliant way for the I<unexicon> desktop.
 With L<gdm(1)> going to GTK3, the I<unexicon> desktop uses L<xdm(1)>,
-L<slim(1)> and L<xde-chooser(1p)> instead.
+L<slim(1)>, L<xde-chooser(1)> and L<xde-session(1)> instead.
+
+B<xde-chooser> was originally written as a gtk-perl program;
+however, I hate to wait on computers so it was converted to C<C>.
 
 =head1 AUTHOR
 
@@ -237,10 +340,14 @@ Brian Bidulock <bidulock@cpan.org>
 
 =head1 SEE ALSO
 
-L<Getopt::Long(3pm)>,
+L<getopt_long_only(3)>,
 L<xde-logout(1)>,
-L<lxsession-logout(1)>,
+L<xde-session(1)>,
 L<xde-startup(1)>,
-L<XDE::Chooser(3pm)>.
+L<xdg-launch(1)>,
+L<lxsession-logout(1)>,
+L<lxsession(1)>.
 
 =cut
+
+# vim: set tw=72 nocin:

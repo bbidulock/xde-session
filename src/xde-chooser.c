@@ -1109,6 +1109,10 @@ General options:\n\
     -e, --exec\n\
         execute the Exec= statement instead of returning as string\n\
 	indicating the selected XSession\n\
+    -x, --xde-theme\n\
+        use the XDE desktop theme for the selection window\n\
+    -N, --dry-run\n\
+        do not do anything: just print what would be done\n\
     -D, --debug [LEVEL]\n\
         increment or set debug LEVEL [default: 0]\n\
     -v, --verbose [LEVEL]\n\
@@ -1207,6 +1211,7 @@ int
 main(int argc, char *argv[])
 {
 	set_defaults();
+
 	while (1) {
 		int c, val;
 
@@ -1224,6 +1229,8 @@ main(int argc, char *argv[])
 			{"icons",	required_argument,	NULL, 'i'},
 			{"theme",	required_argument,	NULL, 't'},
 			{"exec",	no_argument,		NULL, 'e'},
+			{"xde-theme",	no_argument,		NULL, 'x'},
+			{"timeout",	required_argument,	NULL, 'T'},
 
 			{"dryrun",	no_argument,		NULL, 'N'},
 			{"debug",	optional_argument,	NULL, 'D'},
@@ -1236,9 +1243,9 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "ND::v::hVCH?", long_options, &option_index);
+		c = getopt_long_only(argc, argv, "pb:s:nc:l:di:t:exT:ND::v::hVCH?", long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "NDvhVCH?");
+		c = getopt(argc, argv, "pb:s:nc:l:di:t:exT:NDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			if (options.debug)
