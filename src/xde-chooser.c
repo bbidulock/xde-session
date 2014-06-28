@@ -52,6 +52,9 @@
 #include <getopt.h>
 #endif
 
+#include <langinfo.h>
+#include <locale.h>
+
 enum {
 	CHOOSE_RESULT_LOGOUT,
 };
@@ -80,13 +83,29 @@ typedef struct {
 	char *current;
 	Bool managed;
 	char *choice;
+	Bool usexde;
+	unsigned int timeout;
 } Options;
 
 Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.prompt = False,
 	.banner = NULL,
+	.side = CHOOSER_SIDE_LEFT,
+	.noask = False,
+	.charset = NULL,
+	.language = NULL,
+	.dflt = False,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.execute = False,
+	.current = NULL,
+	.managed = True,
+	.choice = NULL,
+	.usexde = False,
+	.timeout = 15,
 };
 
 int choose_result;
@@ -1063,6 +1082,30 @@ Usage:\n\
 ", argv[0]);
 }
 
+static const char *
+show_side(ChooserSide side)
+{
+	switch (side) {
+	case CHOOSER_SIDE_LEFT:
+		return ("left");
+	case CHOOSER_SIDE_TOP:
+		return ("top");
+	case CHOOSER_SIDE_RIGHT:
+		return ("right");
+	case CHOOSER_SIDE_BOTTOM:
+		return ("bottom");
+	}
+	return ("unknown");
+}
+
+static const char *
+show_bool(Bool val)
+{
+	if (val)
+		return ("true");
+	return ("false");
+}
+
 static void
 help(int argc, char *argv[])
 {
@@ -1075,11 +1118,11 @@ Usage:\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Arguments:\n\
-    SESSION\n\
+    SESSION                (%17$s)\n\
         The name of the XDG session to execute, or \"default\"\n\
-	or \"choose\".  When unspecified defaults to \"default\"\n\
-	\"default\" means execute default without prompting\n\
-	\"choose\" means post a dialog to choose the session\n\
+        or \"choose\".  When unspecified defaults to \"default\"\n\
+        \"default\" means execute default without prompting\n\
+        \"choose\" means post a dialog to choose the session\n\
 Command options:\n\
     -h, --help, -?, --?\n\
         print this usage information and exit\n\
@@ -1088,37 +1131,57 @@ Command options:\n\
     -C, --copying\n\
         print copying permission and exit\n\
 General options:\n\
-    -p, --prompt\n\
+    -p, --prompt           (%3$s)\n\
         prompt for session regardless of SESSION argument\n\
-    -b, --banner BANNER\n\
-	specify custom login branding\n\
-    -s, --side {left|top|right|bottom}\n\
+    -b, --banner BANNER    (%2$s)\n\
+        specify custom login branding\n\
+    -s, --side SIDE        (%4$s)\n\
         specify side  of dialog for logo placement\n\
-    -n, --noask\n\
+    -n, --noask            (%5$s)\n\
         do not ask to set session as default\n\
-    -c, --charset CHARSET\n\
-	specify the character set, defaults to current locale\n\
-    -l, --language LANGUAGE\n\
-        specify the language, defaults to current locale\n\
-    -d, --default\n\
-        set the future default to the SESSION argument or choice\n\
-    -i, --icons THEME\n\
-        set the icon theme to use, default to current setting\n\
-    -t, --theme THEME\n\
-        set the gtk+ theme to use, default to current setting\n\
-    -e, --exec\n\
+    -c, --charset CHARSET  (%6$s)\n\
+        specify the character set\n\
+    -l, --language LANG    (%7$s)\n\
+        specify the language\n\
+    -d, --default          (%8$s)\n\
+        set the future default to choice\n\
+    -i, --icons THEME      (%15$s)\n\
+        set the icon theme to use\n\
+    -t, --theme THEME      (%16$s)\n\
+        set the gtk+ theme to use\n\
+    -e, --exec             (%9$s)\n\
         execute the Exec= statement instead of returning as string\n\
-	indicating the selected XSession\n\
-    -x, --xde-theme\n\
+        indicating the selected XSession\n\
+    -x, --xde-theme        (%10$s)\n\
         use the XDE desktop theme for the selection window\n\
-    -N, --dry-run\n\
-        do not do anything: just print what would be done\n\
-    -D, --debug [LEVEL]\n\
-        increment or set debug LEVEL [default: 0]\n\
-    -v, --verbose [LEVEL]\n\
-        increment or set output verbosity LEVEL [default: 1]\n\
+    -T, --timeout SECONDS  (%11$u sec)\n\
+        set dialog timeout\n\
+    -N, --dry-run          (%12$s)\n\
+        do not do anything: just print it\n\
+    -D, --debug [LEVEL]    (%13$d)\n\
+        increment or set debug LEVEL\n\
+    -v, --verbose [LEVEL]  (%14$d)\n\
+        increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
-", argv[0]);
+",
+		argv[0],
+		options.banner,
+		show_bool(options.prompt),
+		show_side(options.side),
+		show_bool(options.noask),
+		options.charset,
+		options.language,
+		show_bool(options.dflt),
+		show_bool(options.execute),
+		show_bool(options.usexde),
+		options.timeout,
+		show_bool(options.dryrun),
+		options.debug,
+		options.output,
+		options.usexde ? "xde" : (options.gtk2_theme ? : "auto"),
+		options.usexde ? "xde" : (options.icon_theme ? : "auto"),
+		options.choice
+	);
 }
 
 void
@@ -1204,7 +1267,16 @@ set_default_banner(void)
 void
 set_defaults(void)
 {
+	char *p;
+
 	set_default_banner();
+	if ((options.language = setlocale(LC_ALL, ""))) {
+		options.language = strdup(options.language);
+		if ((p = strchr(options.language, '.')))
+			*p = '\0';
+	}
+	options.choice = strdup("default");
+	options.charset = strdup(nl_langinfo(CODESET));
 }
 
 int
@@ -1288,7 +1360,7 @@ main(int argc, char *argv[])
 			free(options.charset);
 			options.charset = strdup(optarg);
 			break;
-		case 'l':	/* -l, --language LANGUAGE */
+		case 'l':	/* -l, --language LANG */
 			free(options.language);
 			options.language = strdup(optarg);
 			break;
@@ -1305,6 +1377,12 @@ main(int argc, char *argv[])
 			break;
 		case 'e':	/* -e, --exec */
 			options.execute = True;
+			break;
+		case 'x':
+			options.usexde = True;
+			break;
+		case 'T':
+			options.timeout = strtoul(optarg, NULL, 0);
 			break;
 
 		case 'N':	/* -N, --dry-run */
@@ -1371,12 +1449,17 @@ main(int argc, char *argv[])
 			exit(2);
 		}
 	}
+	if (optind < argc) {
+		free(options.choice);
+		options.choice = strdup(argv[optind++]);
+		if (optind < argc) {
+			fprintf(stderr, "%s: too many arguments\n", argv[0]);
+			goto bad_nonopt;
+		}
+	}
 	if (options.debug) {
 		fprintf(stderr, "%s: option index = %d\n", argv[0], optind);
 		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
-	}
-	if (optind < argc) {
-		goto bad_nonopt;
 	}
 	exit(0);
 }
