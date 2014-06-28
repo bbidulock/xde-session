@@ -77,6 +77,7 @@ typedef struct {
 	char *charset;
 	char *language;
 	Bool dflt;
+	char *session;
 	char *icon_theme;
 	char *gtk2_theme;
 	Bool execute;
@@ -98,6 +99,7 @@ Options options = {
 	.charset = NULL,
 	.language = NULL,
 	.dflt = False,
+	.session = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
 	.execute = False,
@@ -110,8 +112,69 @@ Options options = {
 
 int choose_result;
 
-typedef struct {
-} XSessionEntry;
+char **
+get_data_dirs(int *np)
+{
+	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/loca/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end;
+	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
+		xdg_dirs[n] = strdup(pos);
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
+char **
+get_config_dirs(int *np)
+{
+	char *home, *xhome, *xconf, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_CONFIG_HOME");
+	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.config");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xconf);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end;
+	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
+		xdg_dirs[n] = strdup(pos);
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
 
 GHashTable *xsessions;
 
@@ -131,7 +194,7 @@ get_xsession_dirs(int *np)
 		strcpy(dirs, xhome);
 	else {
 		strcpy(dirs, home);
-		strcat(dirs, "/.local/shoare");
+		strcat(dirs, "/.local/share");
 	}
 	strcat(dirs, ":");
 	strcat(dirs, xdata);
@@ -291,7 +354,6 @@ get_xsessions(void)
 	int i, n = 0;
 	static const char *suffix = ".desktop";
 	static const int suflen = 8;
-	size_t entries = 0;
 
 	if (!(xdg_dirs = get_xsession_dirs(&n)) || !n)
 		return (xsessions);
@@ -299,7 +361,7 @@ get_xsessions(void)
 	xsessions = g_hash_table_new_full(g_str_hash, g_str_equal,
 					  xsession_key_free, xsession_value_free);
 
-	/* got through them backward */
+	/* go through them backward */
 	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
 		char *file, *p;
 		DIR *dir;
@@ -342,26 +404,11 @@ get_xsessions(void)
 		}
 		closedir(dir);
 	}
-	for (i = 0; i < entries; i++)
+	for (i = 0; i < n; i++)
 		free(xdg_dirs[i]);
 	free(xdg_dirs);
 	g_hash_table_foreach_remove(xsessions, xsessions_filter, NULL);
 	return (xsessions);
-}
-
-gboolean
-choose_xsession(void)
-{
-	GHashTable *xsessions;
-	gchar **keys;
-	guint length = 0;
-
-	if (!(xsessions = get_xsessions()))
-		return FALSE;
-	if (!(keys = (typeof(keys)) g_hash_table_get_keys_as_array(xsessions, &length))) {
-		return FALSE;
-	}
-	return TRUE;
 }
 
 gboolean
@@ -573,7 +620,7 @@ on_select_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeSelection *selection;
 
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	if (options.dflt) {
+	if (options.session) {
 		GtkTreeIter iter;
 		gboolean valid;
 
@@ -585,7 +632,7 @@ on_select_clicked(GtkButton *button, gpointer user_data)
 			gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter,
 						 COLUMN_LABEL, &label_v);
 			label = g_value_get_string(&label_v);
-			if (!strcmp(label, options.dflt)) {
+			if (!strcmp(label, options.session)) {
 				g_value_unset(&label_v);
 				break;
 			}
@@ -649,7 +696,7 @@ on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
 		if ((label = g_value_get_string(&label_v)))
 			DPRINTF("Label selected %s\n", label);
-		if (label && !strcmp(label, options.dflt)) {
+		if (label && !strcmp(label, options.session)) {
 			gtk_widget_set_sensitive(buttons[1], FALSE);
 			gtk_widget_set_sensitive(buttons[2], FALSE);
 			gtk_widget_set_sensitive(buttons[3], TRUE);
@@ -936,40 +983,33 @@ make_login_choice(int argc, char *argv[])
 	while (g_hash_table_iter_next(&hiter, &key, &value)) {
 		const gchar *label = (typeof(label)) key;
 		GKeyFile *entry = (typeof(entry)) value;
-		gchar *iname = g_key_file_get_string(entry,
-						     G_KEY_FILE_DESKTOP_GROUP,
-						     G_KEY_FILE_DESKTOP_KEY_ICON,
-						     NULL);
-		gchar *name = g_key_file_get_locale_string(entry,
-							   G_KEY_FILE_DESKTOP_GROUP,
-							   G_KEY_FILE_DESKTOP_KEY_NAME,
-							   NULL, NULL) ? : "";
-		gchar *comment = g_key_file_get_locale_string(entry,
-							      G_KEY_FILE_DESKTOP_GROUP,
-							      G_KEY_FILE_DESKTOP_KEY_COMMENT,
-							      NULL, NULL) ? : "";
-		gchar *markup = g_strdup_printf("<b>%s</b>\n%s",
-						name, comment);
-		gboolean managed = g_key_file_get_boolean(entry,
-							  "Window Manager",
-							  "X-XDE-Managed",
-							  NULL);
+		gchar *i, *n, *c, *k;
+		gboolean m;
+
+		i = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					  G_KEY_FILE_DESKTOP_KEY_ICON, NULL);
+		n = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+						 G_KEY_FILE_DESKTOP_KEY_NAME, NULL, NULL) ? : "";
+		c = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+						 G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL, NULL) ? : "";
+		k = g_strdup_printf("<b>%s</b>\n%s", n, c);
+		m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
 
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   COLUMN_PIXBUF, iname,
-				   COLUMN_NAME, name,
-				   COLUMN_COMMENT, comment,
-				   COLUMN_MARKUP, markup,
-				   COLUMN_LABEL, label,
-				   COLUMN_MANAGED, managed, COLUMN_ORIGINAL, managed, -1);
-		g_free(iname);
-		g_free(name);
-		g_free(comment);
-		g_free(markup);
+				   COLUMN_PIXBUF, i,
+				   COLUMN_NAME, n,
+				   COLUMN_COMMENT, c,
+				   COLUMN_MARKUP, k,
+				   COLUMN_LABEL, label, COLUMN_MANAGED, m, COLUMN_ORIGINAL, m, -1);
+		g_free(i);
+		g_free(n);
+		g_free(c);
+		g_free(k);
+
 		if (!strcmp(options.choice, label) ||
-		    ((!strcmp(options.choice, "choose") ||
-		      !strcmp(options.choice, "default")) && !strcmp(options.dflt, label))) {
+		    !strcmp(options.choice, "choose" ||
+		      (!strcmp(options.choice, "default") && !strcmp(options.session, label)))) {
 			gchar *string;
 			GtkTreePath *path;
 
@@ -1000,6 +1040,21 @@ make_login_choice(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 	}
+}
+
+gboolean
+choose(void)
+{
+	GHashTable *xsessions;
+	gchar **keys;
+	guint length = 0;
+
+	if (!(xsessions = get_xsessions()))
+		return FALSE;
+	if (!(keys = (typeof(keys)) g_hash_table_get_keys_as_array(xsessions, &length))) {
+		return FALSE;
+	}
+	return TRUE;
 }
 
 static void
@@ -1075,7 +1130,7 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [options]\n\
+    %1$s [OPTIONS] [--] [SESSION]\n\
     %1$s {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
@@ -1113,7 +1168,7 @@ help(int argc, char *argv[])
 		return;
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [OPTIONS] [SESSION]\n\
+    %1$s [OPTIONS] [--] [SESSION]\n\
     %1$s {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
@@ -1123,6 +1178,7 @@ Arguments:\n\
         or \"choose\".  When unspecified defaults to \"default\"\n\
         \"default\" means execute default without prompting\n\
         \"choose\" means post a dialog to choose the session\n\
+	[default: %18$s] [current: %19$s]\n\
 Command options:\n\
     -h, --help, -?, --?\n\
         print this usage information and exit\n\
@@ -1135,7 +1191,7 @@ General options:\n\
         prompt for session regardless of SESSION argument\n\
     -b, --banner BANNER    (%2$s)\n\
         specify custom login branding\n\
-    -s, --side SIDE        (%4$s)\n\
+    -s, --side {l|t|r|b}   (%4$s)\n\
         specify side  of dialog for logo placement\n\
     -n, --noask            (%5$s)\n\
         do not ask to set session as default\n\
@@ -1180,88 +1236,115 @@ General options:\n\
 		options.output,
 		options.usexde ? "xde" : (options.gtk2_theme ? : "auto"),
 		options.usexde ? "xde" : (options.icon_theme ? : "auto"),
-		options.choice
+		options.choice,
+		options.session ? : "",
+		options.current ? : ""
 	);
+}
+
+void
+set_default_session(void)
+{
+	char **xdg_dirs, **dirs, *file, *line, *p;
+	int i, n = 0;
+	static const char *session = "/xde/default";
+	static const char *current = "/xde/current";
+
+	free(options.session);
+	options.session = NULL;
+	free(options.current);
+	options.current = NULL;
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n)
+		return;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	line = calloc(BUFSIZ + 1, sizeof(*line));
+
+	/* go through them forward */
+	for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+		FILE *f;
+
+		if (!options.session) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, session, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						options.session = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+
+		}
+		if (!options.current) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, current, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						options.current = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+		}
+	}
+	free(line);
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
 }
 
 void
 set_default_banner(void)
 {
-	char *home, *xhome, *xdata, *dirs, *pos, *end, *pfx, *file, *banner = NULL;
-	int len, n;
-	struct stat st;
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n)
+		return;
+
+	pfx = getenv("XDG_MENU_PREFIX") ? : "";
+
+	free(options.banner);
+	options.banner = NULL;
 
 	file = calloc(PATH_MAX + 1, sizeof(*file));
-	pfx = getenv("XDG_MENU_PREFIX") ? : "";
-	home = getenv("HOME") ? : ".";
-	xhome = getenv("XDG_DATA_HOME");
-	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
-	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
-	dirs = calloc(len, sizeof(*dirs));
-	if (xhome)
-		strcpy(dirs, xhome);
-	else {
-		strcpy(dirs, home);
-		strcat(dirs, "/.local/share");
-	}
-	strcat(dirs, ":");
-	strcat(dirs, xdata);
-	end = dirs + strlen(dirs);
-	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) {
-		*strchrnul(pos, ':') = '\0';
-		if (!*pos)
-			continue;
-		strncpy(file, pos, PATH_MAX);
+	for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+		strncpy(file, *dirs, PATH_MAX);
 		strncat(file, "/images/", PATH_MAX);
 		strncat(file, pfx, PATH_MAX);
-		strncat(file, "banner.png", PATH_MAX);
-		if (stat(file, &st)) {
-			DPRINTF("%s: %s\n", file, strerror(errno));
-			continue;
-		}
-		if (!S_ISREG(st.st_mode)) {
-			DPRINTF("%s: not a file\n", file);
-			continue;
-		}
-		banner = strdup(file);
-		break;
-	}
-	if (!banner && *pfx) {
-		pfx = "";
-		if (xhome)
-			strcpy(dirs, xhome);
-		else {
-			strcpy(dirs, home);
-			strcat(dirs, "/.local/share");
-		}
-		strcat(dirs, ":");
-		strcat(dirs, xdata);
-		end = dirs + strlen(dirs);
-		for (n = 0, pos = dirs; pos < end;
-		     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) {
-			*strchrnul(pos, ':') = '\0';
-			if (!*pos)
-				continue;
-			strncpy(file, pos, PATH_MAX);
-			strncat(file, "/images/", PATH_MAX);
-			strncat(file, pfx, PATH_MAX);
-			strncat(file, "banner.png", PATH_MAX);
-			if (stat(file, &st)) {
-				DPRINTF("%s: %s\n", file, strerror(errno));
-				continue;
+		strncat(file, "banner", PATH_MAX);
+		suffix = file + strnlen(file, PATH_MAX);
+
+		for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+			strcpy(suffix, exts[j]);
+			if (!access(file, R_OK)) {
+				options.banner = strdup(file);
+				break;
 			}
-			if (!S_ISREG(st.st_mode)) {
-				DPRINTF("%s: not a file\n", file);
-				continue;
-			}
-			banner = strdup(file);
+		}
+		if (options.banner)
 			break;
-		}
 	}
-	free(dirs);
+
 	free(file);
-	options.banner = banner;
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
 }
 
 void
@@ -1270,6 +1353,7 @@ set_defaults(void)
 	char *p;
 
 	set_default_banner();
+	set_default_session();
 	if ((options.language = setlocale(LC_ALL, ""))) {
 		options.language = strdup(options.language);
 		if ((p = strchr(options.language, '.')))
@@ -1279,9 +1363,18 @@ set_defaults(void)
 	options.charset = strdup(nl_langinfo(CODESET));
 }
 
+typedef enum {
+	COMMAND_CHOOSE,
+	COMMAND_HELP,
+	COMMAND_VERSION,
+	COMMAND_COPYING,
+} CommandType;
+
 int
 main(int argc, char *argv[])
 {
+	CommandType command = COMMAND_CHOOSE;
+
 	set_defaults();
 
 	while (1) {
@@ -1315,7 +1408,8 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "pb:s:nc:l:di:t:exT:ND::v::hVCH?", long_options, &option_index);
+		c = getopt_long_only(argc, argv, "pb:s:nc:l:di:t:exT:ND::v::hVCH?", long_options,
+				     &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "pb:s:nc:l:di:t:exT:NDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
@@ -1412,20 +1506,20 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (options.debug)
-				fprintf(stderr, "%s: printing help message\n", argv[0]);
-			help(argc, argv);
-			exit(0);
+			if (command != COMMAND_CHOOSE)
+				goto bad_option;
+			command = COMMAND_HELP;
+			break;
 		case 'V':	/* -V, --version */
-			if (options.debug)
-				fprintf(stderr, "%s: printing version message\n", argv[0]);
-			version(argc, argv);
-			exit(0);
+			if (command != COMMAND_CHOOSE)
+				goto bad_option;
+			command = COMMAND_VERSION;
+			break;
 		case 'C':	/* -C, --copying */
-			if (options.debug)
-				fprintf(stderr, "%s: printing copying message\n", argv[0]);
-			copying(argc, argv);
-			exit(0);
+			if (command != COMMAND_CHOOSE)
+				goto bad_option;
+			command = COMMAND_COPYING;
+			break;
 		case '?':
 		default:
 		      bad_option:
@@ -1460,6 +1554,25 @@ main(int argc, char *argv[])
 	if (options.debug) {
 		fprintf(stderr, "%s: option index = %d\n", argv[0], optind);
 		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
+	}
+	switch (command) {
+	case COMMAND_CHOOSE:
+		break;
+	case COMMAND_HELP:
+		if (options.debug)
+			fprintf(stderr, "%s: printing help message\n", argv[0]);
+		help(argc, argv);
+		break;
+	case COMMAND_VERSION:
+		if (options.debug)
+			fprintf(stderr, "%s: printing version message\n", argv[0]);
+		version(argc, argv);
+		break;
+	case COMMAND_COPYING:
+		if (options.debug)
+			fprintf(stderr, "%s: printing copying message\n", argv[0]);
+		copying(argc, argv);
+		break;
 	}
 	exit(0);
 }
