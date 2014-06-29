@@ -90,21 +90,111 @@ typedef enum {
 LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 
-static gboolean action_can[LOGOUT_ACTION_COUNT] = {
+typedef enum {
+	AvailStatusUndef,		/* undefined */
+	AvailStatusUnknown,		/* not known */
+	AvailStatusNa,			/* not available */
+	AvailStatusNo,			/* available not permitted */
+	AvailStatusChallenge,		/* available with password */
+	AvailStatusYes,			/* available and permitted */
+} AvailStatus;
+
+AvailStatus
+status_of_string(const char *string)
+{
+	if (!string)
+		return AvailStatusUndef;
+	if (!string || !strcmp(string, "na"))
+		return AvailStatusNa;
+	if (!strcmp(string, "no"))
+		return AvailStatusNo;
+	if (!strcmp(string, "yes"))
+		return AvailStatusYes;
+	if (!strcmp(string, "challenge"))
+		return AvailStatusChallenge;
+	EPRINTF("unknown availability status %s\n", string);
+	return AvailStatusUnknown;
+}
+
+static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
 	/* *INDENT-OFF* */
-	[LOGOUT_ACTION_POWEROFF]	= FALSE,
-	[LOGOUT_ACTION_REBOOT]		= FALSE,
-	[LOGOUT_ACTION_SUSPEND]		= FALSE,
-	[LOGOUT_ACTION_HIBERNATE]	= FALSE,
-	[LOGOUT_ACTION_HYBRIDSLEEP]	= FALSE,
-	[LOGOUT_ACTION_SWITCHUSER]	= FALSE,
-	[LOGOUT_ACTION_SWITCHDESK]	= FALSE,
-	[LOGOUT_ACTION_LOCKSCREEN]	= FALSE,
-	[LOGOUT_ACTION_LOGOUT]		= FALSE,
-	[LOGOUT_ACTION_RESTART]		= FALSE,
-	[LOGOUT_ACTION_CANCEL]		= FALSE,
+	[LOGOUT_ACTION_POWEROFF]	= AvailStatusUndef,
+	[LOGOUT_ACTION_REBOOT]		= AvailStatusUndef,
+	[LOGOUT_ACTION_SUSPEND]		= AvailStatusUndef,
+	[LOGOUT_ACTION_HIBERNATE]	= AvailStatusUndef,
+	[LOGOUT_ACTION_HYBRIDSLEEP]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SWITCHUSER]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SWITCHDESK]	= AvailStatusUndef,
+	[LOGOUT_ACTION_LOCKSCREEN]	= AvailStatusUndef,
+	[LOGOUT_ACTION_LOGOUT]		= AvailStatusUndef,
+	[LOGOUT_ACTION_RESTART]		= AvailStatusUndef,
+	[LOGOUT_ACTION_CANCEL]		= AvailStatusUndef,
 	/* *INDENT-ON* */
 };
+
+char **
+get_data_dirs(int *np)
+{
+	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/loca/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end;
+	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
+		xdg_dirs[n] = strdup(pos);
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
+char **
+get_config_dirs(int *np)
+{
+	char *home, *xhome, *xconf, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_CONFIG_HOME");
+	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.config");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xconf);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end;
+	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
+		xdg_dirs[n] = strdup(pos);
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
 
 /*
  * Determine whether we have been invoked under a session running lxsession(1).
@@ -123,18 +213,25 @@ struct prog_cmd {
 	char *cmd;
 };
 
-/*
- * Test to see whether the caller specified a lock screen program. If not,
- * search through a short list of known screen lockers, searching PATH for an
- * executable of the corresponding name, and when one is found, set the screen
- * locking program to that function.  We could probably easily write our own
- * little screen locker here, but I don't have the time just now...
- *
- * These are hardcoded.  Sorry.  Later we can try to design a reliable search
- * for screen locking programs in the XDG applications directory or create a
- * "sensible-" or "preferred-" screen locker shell program.  That would be
- * useful for menus too.
- */
+/** @brief test availability of a screen locker program
+  *
+  * Test to see whether the caller specified a lock screen program. If not,
+  * search through a short list of known screen lockers, searching PATH for an
+  * executable of the corresponding name, and when one is found, set the screen
+  * locking program to that function.  We could probably easily write our own
+  * little screen locker here, but I don't have the time just now...
+  *
+  * These are hardcoded.  Sorry.  Later we can try to design a reliable search
+  * for screen locking programs in the XDG applications directory or create a
+  * "sensible-" or "preferred-" screen locker shell program.  That would be
+  * useful for menus too.
+  *
+  * Note that if a screen saver is registered with the X Server then we can
+  * likely simply ask the screen saver to lock the screen.
+  *
+  * Note also that we can use DBUS interface to systemd logind service to
+  * request that a session manager lock the screen.
+  */
 void
 test_lock_screen_program()
 {
@@ -178,49 +275,121 @@ test_lock_screen_program()
 	}
       done:
 	if (options.lockscreen)
-		action_can[LOGOUT_ACTION_LOCKSCREEN] = TRUE;
+		action_can[LOGOUT_ACTION_LOCKSCREEN] = AvailStatusYes;
 	return;
 }
 
-/*
- * Uses DBUsGProxy and the login1 service to test for available power functions.
- * The results of the test are stored in the corresponding booleans in the
- * available functions structure.
- */
+/** @brief test availability of power functions
+  *
+  * Uses DBUsGProxy and the login1 service to test for available power
+  * functions.  The results of the test are stored in the corresponding booleans
+  * in the available functions structure.
+  */
 void
 test_power_functions()
 {
 	GError *error = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
+	gchar *value = NULL;
+	gboolean ok;
 
-	bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error);
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
+		EPRINTF("cannot access system bus\n");
+		return;
+	} else
+		error = NULL;
 	proxy = dbus_g_proxy_new_for_name(bus,
 					  "org.freedesktop.login1",
 					  "/org/freedesktop/login1",
 					  "org.freedesktop.login1.Manager");
-	dbus_g_proxy_call(proxy, "CanPowerOff",
-			  &error, G_TYPE_INVALID, G_TYPE_BOOLEAN,
-			  &action_can[LOGOUT_ACTION_POWEROFF], G_TYPE_INVALID);
-	dbus_g_proxy_call(proxy, "CanReboot",
-			  &error, G_TYPE_INVALID, G_TYPE_BOOLEAN,
-			  &action_can[LOGOUT_ACTION_REBOOT], G_TYPE_INVALID);
-	dbus_g_proxy_call(proxy, "CanSuspend",
-			  &error, G_TYPE_INVALID, G_TYPE_BOOLEAN,
-			  &action_can[LOGOUT_ACTION_SUSPEND], G_TYPE_INVALID);
-	dbus_g_proxy_call(proxy, "CanHibernate",
-			  &error, G_TYPE_INVALID, G_TYPE_BOOLEAN,
-			  &action_can[LOGOUT_ACTION_HIBERNATE], G_TYPE_INVALID);
-	dbus_g_proxy_call(proxy, "CanHybridSleep",
-			  &error, G_TYPE_INVALID, G_TYPE_BOOLEAN,
-			  &action_can[LOGOUT_ACTION_HYBRIDSLEEP], G_TYPE_INVALID);
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy\n");
+		return;
+	}
+	value = NULL;
+	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
+			  &error, G_TYPE_INVALID, G_TYPE_STRING,
+			  &value, G_TYPE_INVALID);
+	if (ok && !error) {
+		DPRINTF("CanPowerOff status is %s\n", value);
+		action_can[LOGOUT_ACTION_POWEROFF] = status_of_string(value);
+		g_free(value);
+		value = NULL;
+	} else
+		error = NULL;
+	ok = dbus_g_proxy_call(proxy, "CanReboot",
+			  &error, G_TYPE_INVALID, G_TYPE_STRING,
+			  &value, G_TYPE_INVALID);
+	if (ok && !error) {
+		DPRINTF("CanReboot status is %s\n", value);
+		action_can[LOGOUT_ACTION_REBOOT] = status_of_string(value);
+		g_free(value);
+		value = NULL;
+	} else
+		error = NULL;
+	ok = dbus_g_proxy_call(proxy, "CanSuspend",
+			  &error, G_TYPE_INVALID, G_TYPE_STRING,
+			  &value, G_TYPE_INVALID);
+	if (ok && !error) {
+		DPRINTF("CanSuspend status is %s\n", value);
+		action_can[LOGOUT_ACTION_SUSPEND] = status_of_string(value);
+		g_free(value);
+		value = NULL;
+	} else
+		error = NULL;
+	ok = dbus_g_proxy_call(proxy, "CanHibernate",
+			  &error, G_TYPE_INVALID, G_TYPE_STRING,
+			  &value, G_TYPE_INVALID);
+	if (ok && !error) {
+		DPRINTF("CanHibernate status is %s\n", value);
+		action_can[LOGOUT_ACTION_HIBERNATE] = status_of_string(value);
+		g_free(value);
+		value = NULL;
+	} else
+		error = NULL;
+	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
+			  &error, G_TYPE_INVALID, G_TYPE_STRING,
+			  &value, G_TYPE_INVALID);
+	if (ok && !error) {
+		DPRINTF("CanHybridSleep status is %s\n", value);
+		action_can[LOGOUT_ACTION_HYBRIDSLEEP] = status_of_string(value);
+		g_free(value);
+		value = NULL;
+	} else
+		error = NULL;
 	g_object_unref(G_OBJECT(proxy));
 }
 
-/*
- * Transform the a window into a window that has a grab on the pointer on a
- * GtkWindow and restricts pointer movement to the window boundary.
- */
+/** @brief test availability of user functions
+  *
+  * For now, do not let the user switch users or window managers.
+  */
+void
+test_user_functions()
+{
+	action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusNa;
+	action_can[LOGOUT_ACTION_SWITCHDESK] = AvailStatusNa;
+}
+
+/** @brief test availability of session functions
+  *
+  * For now, always let the user logout or cancel, but not restart the current
+  * session.
+  */
+void
+test_session_functions()
+{
+	action_can[LOGOUT_ACTION_LOGOUT] = AvailStatusYes;
+	action_can[LOGOUT_ACTION_RESTART] = AvailStatusNa;
+	action_can[LOGOUT_ACTION_CANCEL] = AvailStatusYes;
+}
+
+/** @brief transform a window into a grabbed window
+  *
+  * Transform the a window into a window that has a grab on the pointer on a
+  * GtkWindow and restricts pointer movement to the window boundary.
+  */
 void
 grabbed_window(GtkWindow *window)
 {
@@ -242,11 +411,12 @@ grabbed_window(GtkWindow *window)
 		EPRINTF("Could not grab pointer!\n");
 }
 
-/*
- * Transform the window back into a regular window, releasing the pointer and
- * keyboard grab and motion restriction.  window is the GtkWindow that
- * previously had the grabbed_window() method called on it.
- */
+/** @brief transform a window away from a grabbed window
+  *
+  * Transform the window back into a regular window, releasing the pointer and
+  * keyboard grab and motion restriction.  window is the GtkWindow that
+  * previously had the grabbed_window() method called on it.
+  */
 void
 ungrabbed_window(GtkWindow * window)
 {
@@ -257,12 +427,15 @@ ungrabbed_window(GtkWindow * window)
 	gdk_window_hide(win);
 }
 
-/*
- * Simple dialog prompting the user with a yes or no question; however, the
- * window is one that was previously grabbed using grabbed_window().  This
- * method hands the focus grab to the dialog and back to the window on exit.
- * Returns the response to the dialog.
- */
+/** @brief ask the user if they are sure
+  * @param window - grabbed window
+  * @param message - dialog message
+  *
+  * Simple dialog prompting the user with a yes or no question; however, the
+  * window is one that was previously grabbed using grabbed_window().  This
+  * method hands the focus grab to the dialog and back to the window on exit.
+  * Returns the response to the dialog.
+  */
 gboolean
 areyousure(GtkWindow * window, char *message)
 {
@@ -390,6 +563,36 @@ get_icon(GtkIconSize size, const char *icons[], int count)
 	return (image);
 }
 
+static void action_PowerOff(void);
+static void action_Reboot(void);
+static void action_Suspend(void);
+static void action_Hibernate(void);
+static void action_HybridSleep(void);
+static void action_SwitchUser(void);
+static void action_SwitchDesk(void);
+static void action_LockScreen(void);
+static void action_Logout(void);
+static void action_Restart(void);
+static void action_Cancel(void);
+
+typedef void (*ActionFunctionPointer)(void);
+
+static const ActionFunctionPointer logout_actions[LOGOUT_ACTION_COUNT] = {
+	/* *INDENT-OFF* */
+	[LOGOUT_ACTION_POWEROFF]	= &action_PowerOff,
+	[LOGOUT_ACTION_REBOOT]		= &action_Reboot,
+	[LOGOUT_ACTION_SUSPEND]		= &action_Suspend,
+	[LOGOUT_ACTION_HIBERNATE]	= &action_Hibernate,
+	[LOGOUT_ACTION_HYBRIDSLEEP]	= &action_HybridSleep,
+	[LOGOUT_ACTION_SWITCHUSER]	= &action_SwitchUser,
+	[LOGOUT_ACTION_SWITCHDESK]	= &action_SwitchDesk,
+	[LOGOUT_ACTION_LOCKSCREEN]	= &action_LockScreen,
+	[LOGOUT_ACTION_LOGOUT]		= &action_Logout,
+	[LOGOUT_ACTION_RESTART]		= &action_Restart,
+	[LOGOUT_ACTION_CANCEL]		= &action_Cancel,
+	/* *INDENT-ON* */
+};
+
 static const char *check_message[LOGOUT_ACTION_COUNT] = {
 	/* *INDENT-OFF* */
 	[LOGOUT_ACTION_POWEROFF]	= "power off",
@@ -411,11 +614,11 @@ on_clicked(GtkButton *button, gpointer data)
 {
 	LogoutActionResult action = (typeof(action)) (long) data;
 
-	if (!action_can[action]) {
+	if (action_can[action] < AvailStatusChallenge) {
 		EPRINTF("Button %s is disabled!\n", button_labels[action]);
 		return;
 	}
-	if (check_message[action]) {
+	if (check_message[action] && action_can[action] != AvailStatusChallenge) {
 		gchar *message;
 		GtkWindow *top;
 		gboolean result;
@@ -436,6 +639,8 @@ on_clicked(GtkButton *button, gpointer data)
 LogoutActionResult
 make_logout_choice()
 {
+	gtk_init(NULL, NULL);
+
 	GtkWidget *w = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
 	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), (gpointer) NULL);
@@ -536,7 +741,7 @@ make_logout_choice()
 		gtk_button_set_label(GTK_BUTTON(b), button_labels[i]);
 		g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_clicked),
 				 (gpointer) (long) i);
-		gtk_widget_set_sensitive(GTK_WIDGET(b), action_can[i]);
+		gtk_widget_set_sensitive(GTK_WIDGET(b), (action_can[i] >= AvailStatusChallenge));
 		gtk_widget_set_tooltip_text(GTK_WIDGET(b), button_tips[i]);
 		gtk_box_pack_start(GTK_BOX(bb), GTK_WIDGET(b), TRUE, TRUE, 5);
 	}
@@ -567,7 +772,235 @@ make_logout_choice()
 }
 
 void
-Logout(GtkButton *button, gpointer dummy)
+run_logout(int argc, char *argv[])
+{
+	LogoutActionResult result;
+	int i;
+
+	/* determine which functions are available */
+	test_power_functions();
+	test_lock_screen_program();
+	test_user_functions();
+	test_session_functions();
+
+	/* adjust the tooltips for the functions */
+	if (options.debug) {
+		for (i = 0; i < LOGOUT_ACTION_COUNT; i++) {
+			switch (action_can[i]) {
+			case AvailStatusUndef:
+				button_tips[i] = g_strdup_printf(
+						"\nFunction undefined."
+						"\nCan value was %s", "(undefined)");
+				break;
+			case AvailStatusUnknown:
+				button_tips[i] = g_strdup_printf(
+						"\nFunction unknown."
+						"\nCan value was %s", "(unknown)");
+				break;
+			case AvailStatusNa:
+				button_tips[i] = g_strdup_printf(
+						"\nFunction not available."
+						"\nCan value was %s", "na");
+				break;
+			case AvailStatusNo:
+				button_tips[i] = g_strdup_printf(
+						"\n%s"
+						"\nCan value was %s",
+						button_tips[i],
+						"no");
+				break;
+			case AvailStatusChallenge:
+				button_tips[i] = g_strdup_printf(
+						"\n%s"
+						"\nCan value was %s",
+						button_tips[i],
+						"challenge");
+				break;
+			case AvailStatusYes:
+				button_tips[i] = g_strdup_printf(
+						"\n%s"
+						"\nCan value was %s",
+						button_tips[i],
+						"yes");
+				break;
+			}
+		}
+	}
+	result = make_logout_choice(argc, argv);
+	if (logout_actions[result])
+		(*logout_actions[result])();
+	else {
+		EPRINTF("No action for choice %d\n", result);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static void
+action_PowerOff(void)
+{
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
+		EPRINTF("cannot access the system bus\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktp/login1",
+			"org.freedesktop.login1.Manager");
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(proxy, "PowerOff", NULL,
+			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok) {
+		EPRINTF("call to PowerOff failed\n");
+		g_object_unref(G_OBJECT(proxy));
+		return;
+	}
+	g_object_unref(G_OBJECT(proxy));
+}
+
+static void
+action_Reboot(void)
+{
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
+		EPRINTF("cannot access the system bus\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktp/login1",
+			"org.freedesktop.login1.Manager");
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(proxy, "Reboot", NULL,
+			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok) {
+		EPRINTF("call to Reboot failed\n");
+		g_object_unref(G_OBJECT(proxy));
+		return;
+	}
+	g_object_unref(G_OBJECT(proxy));
+}
+
+static void
+action_Suspend(void)
+{
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
+		EPRINTF("cannot access the system bus\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktp/login1",
+			"org.freedesktop.login1.Manager");
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(proxy, "Suspend", NULL,
+			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok) {
+		EPRINTF("call to Suspend failed\n");
+		g_object_unref(G_OBJECT(proxy));
+		return;
+	}
+	g_object_unref(G_OBJECT(proxy));
+}
+
+static void
+action_Hibernate(void)
+{
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
+		EPRINTF("cannot access the system bus\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktp/login1",
+			"org.freedesktop.login1.Manager");
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(proxy, "Hibernate", NULL,
+			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok) {
+		EPRINTF("call to Hibernate failed\n");
+		g_object_unref(G_OBJECT(proxy));
+		return;
+	}
+	g_object_unref(G_OBJECT(proxy));
+}
+
+static void
+action_HybridSleep(void)
+{
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
+		EPRINTF("cannot access the system bus\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktp/login1",
+			"org.freedesktop.login1.Manager");
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(proxy, "HybridSleep", NULL,
+			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok) {
+		EPRINTF("call to HybridSleep failed\n");
+		g_object_unref(G_OBJECT(proxy));
+		return;
+	}
+	g_object_unref(G_OBJECT(proxy));
+}
+
+static void
+action_SwitchUser(void)
+{
+	/* not implemented yet */
+	return;
+}
+
+static void
+action_SwitchDesk(void)
+{
+	/* not implemented yet */
+	return;
+}
+
+static void
+action_LockScreen(void)
+{
+}
+
+static void
+action_Logout(void)
 {
 	const char *env;
 	pid_t pid;
@@ -714,6 +1147,20 @@ Logout(GtkButton *button, gpointer dummy)
 }
 
 static void
+action_Restart(void)
+{
+	/* not implemented yet */
+	return;
+}
+
+static void
+action_Cancel(void)
+{
+	/* do nothing for now */
+	return;
+}
+
+static void
 copying(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
@@ -855,81 +1302,43 @@ set_default_prompt(void)
 void
 set_default_banner(void)
 {
-	char *home, *xhome, *xdata, *dirs, *pos, *end, *pfx, *file, *banner = NULL;
-	int len, n;
-	struct stat st;
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n)
+		return;
+
+	pfx = getenv("XDG_MENU_PREFIX") ? : "";
+
+	free(options.banner);
+	options.banner = NULL;
 
 	file = calloc(PATH_MAX + 1, sizeof(*file));
-	pfx = getenv("XDG_MENU_PREFIX") ? : "";
-	home = getenv("HOME") ? : ".";
-	xhome = getenv("XDG_DATA_HOME");
-	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
-	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
-	dirs = calloc(len, sizeof(*dirs));
-	if (xhome)
-		strcpy(dirs, xhome);
-	else {
-		strcpy(dirs, home);
-		strcat(dirs, "/.local/share");
-	}
-	strcat(dirs, ":");
-	strcat(dirs, xdata);
-	end = dirs + strlen(dirs);
-	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) {
-		*strchrnul(pos, ':') = '\0';
-		if (!*pos)
-			continue;
-		strncpy(file, pos, PATH_MAX);
+	for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+		strncpy(file, *dirs, PATH_MAX);
 		strncat(file, "/images/", PATH_MAX);
 		strncat(file, pfx, PATH_MAX);
-		strncat(file, "banner.png", PATH_MAX);
-		if (stat(file, &st)) {
-			DPRINTF("%s: %s\n", file, strerror(errno));
-			continue;
-		}
-		if (!S_ISREG(st.st_mode)) {
-			DPRINTF("%s: not a file\n", file);
-			continue;
-		}
-		banner = strdup(file);
-		break;
-	}
-	if (!banner && *pfx) {
-		pfx = "";
-		if (xhome)
-			strcpy(dirs, xhome);
-		else {
-			strcpy(dirs, home);
-			strcat(dirs, "/.local/share");
-		}
-		strcat(dirs, ":");
-		strcat(dirs, xdata);
-		end = dirs + strlen(dirs);
-		for (n = 0, pos = dirs; pos < end;
-		     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) {
-			*strchrnul(pos, ':') = '\0';
-			if (!*pos)
-				continue;
-			strncpy(file, pos, PATH_MAX);
-			strncat(file, "/images/", PATH_MAX);
-			strncat(file, pfx, PATH_MAX);
-			strncat(file, "banner.png", PATH_MAX);
-			if (stat(file, &st)) {
-				DPRINTF("%s: %s\n", file, strerror(errno));
-				continue;
+		strncat(file, "banner", PATH_MAX);
+		suffix = file + strnlen(file, PATH_MAX);
+
+		for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+			strcpy(suffix, exts[j]);
+			if (!access(file, R_OK)) {
+				options.banner = strdup(file);
+				break;
 			}
-			if (!S_ISREG(st.st_mode)) {
-				DPRINTF("%s: not a file\n", file);
-				continue;
-			}
-			banner = strdup(file);
+		}
+		if (options.banner)
 			break;
-		}
 	}
-	free(dirs);
+
 	free(file);
-	options.banner = banner;
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
 }
 
 void
@@ -939,10 +1348,20 @@ set_defaults(void)
 	set_default_banner();
 }
 
+typedef enum {
+	COMMAND_LOGOUT,
+	COMMAND_HELP,
+	COMMAND_VERSION,
+	COMMAND_COPYING,
+} CommandType;
+
 int
 main(int argc, char *argv[])
 {
+	CommandType command = COMMAND_LOGOUT;
+
 	set_defaults();
+
 	while (1) {
 		int c, val;
 
@@ -1013,20 +1432,20 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (options.debug)
-				fprintf(stderr, "%s: printing help message\n", argv[0]);
-			help(argc, argv);
-			exit(0);
+			if (command != COMMAND_LOGOUT)
+				goto bad_option;
+			command = COMMAND_HELP;
+			break;
 		case 'V':	/* -V, --version */
-			if (options.debug)
-				fprintf(stderr, "%s: printing version message\n", argv[0]);
-			version(argc, argv);
-			exit(0);
+			if (command != COMMAND_LOGOUT)
+				goto bad_option;
+			command = COMMAND_VERSION;
+			break;
 		case 'C':	/* -C, --copying */
-			if (options.debug)
-				fprintf(stderr, "%s: printing copying message\n", argv[0]);
-			copying(argc, argv);
-			exit(0);
+			if (command != COMMAND_LOGOUT)
+				goto bad_option;
+			command = COMMAND_COPYING;
+			break;
 		case '?':
 		default:
 		      bad_option:
@@ -1056,6 +1475,28 @@ main(int argc, char *argv[])
 	}
 	if (optind < argc) {
 		goto bad_nonopt;
+	}
+	switch (command) {
+	case COMMAND_LOGOUT:
+		if (options.debug)
+			fprintf(stderr, "%s: running logout\n", argv[0]);
+		run_logout(argc, argv);
+		break;
+	case COMMAND_HELP:
+		if (options.debug)
+			fprintf(stderr, "%s: printing help message\n", argv[0]);
+		help(argc, argv);
+		break;
+	case COMMAND_VERSION:
+		if (options.debug)
+			fprintf(stderr, "%s: printing version message\n", argv[0]);
+		version(argc, argv);
+		break;
+	case COMMAND_COPYING:
+		if (options.debug)
+			fprintf(stderr, "%s: printing copying message\n", argv[0]);
+		copying(argc, argv);
+		break;
 	}
 	exit(0);
 }
