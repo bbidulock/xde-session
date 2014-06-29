@@ -24,6 +24,7 @@
 -ss
 -hnl
 -nbc
+-TGtkWindow
 -TGtkTreePath
 -Tgchar
 -TGdkEvent

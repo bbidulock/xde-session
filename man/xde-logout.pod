@@ -1,15 +1,15 @@
 =head1 NAME
 
- xde-logout - Log out of an X Session
+xde-logout - Log out of an X Session
 
 =head1 SYNOPSIS
 
- xde-logout [OPTIONS]
+B<xde-logout> [I<OPTIONS>]
 
 =head1 DESCRIPTION
 
 B<xde-logout> logs the user out of the current XDG compliant session.
-The script detects when running under L<lxsession(1)> or L<fbsession(1)>
+The program detects when running under L<lxsession(1)> or L<fbsession(1)>
 and performs the appropriate actions.
 
 By default, B<xde-logout> presents a menu that includes:
@@ -273,13 +273,17 @@ They cannot switch window managers nor users without the bloated GDM.
 
 =back
 
+B<xde-logout> was originally written using gtk-perl.  This is the
+C<C>-language port of the program.  Only the C<C>-language program is
+under current development.
+
 =head1 AUTHOR
 
 Brian Bidulock <bidulock@openss7.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2013 by OpenSS7 Corporation.
+Copyright (c) 2014 by OpenSS7 Corporation.
 All rights reserved.
 
 This program is free software; you basically stole it, and you can,
@@ -292,3 +296,5 @@ L<fbsession(1)>, L<lxsession(1)>, L<lxsession-logout(1)>,
 L<lxde-logout(1)>.
 
 =cut
+
+# vim: set tw=72 nocin:

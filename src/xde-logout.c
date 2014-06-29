@@ -54,6 +54,13 @@
 #include <getopt.h>
 #endif
 
+typedef enum _LogoSide {
+	LOGO_SIDE_LEFT,
+	LOGO_SIDE_TOP,
+	LOGO_SIDE_RIGHT,
+	LOGO_SIDE_BOTTOM,
+} LogoSide;
+
 typedef struct {
 	int output;
 	int debug;
@@ -61,6 +68,12 @@ typedef struct {
 	char *lockscreen;
 	char *banner;
 	char *prompt;
+	LogoSide side;
+	Bool noask;
+	char *icon_theme;
+	char *gtk2_theme;
+	Bool usexde;
+	unsigned int timeout;
 } Options;
 
 Options options = {
@@ -70,6 +83,12 @@ Options options = {
 	.lockscreen = NULL,
 	.banner = NULL,
 	.prompt = NULL,
+	.side = LOGO_SIDE_LEFT,
+	.noask = False,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.usexde = False,
+	.timeout = 15,
 };
 
 typedef enum {
@@ -309,8 +328,7 @@ test_power_functions()
 	}
 	value = NULL;
 	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
-			  &error, G_TYPE_INVALID, G_TYPE_STRING,
-			  &value, G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanPowerOff status is %s\n", value);
 		action_can[LOGOUT_ACTION_POWEROFF] = status_of_string(value);
@@ -319,8 +337,7 @@ test_power_functions()
 	} else
 		error = NULL;
 	ok = dbus_g_proxy_call(proxy, "CanReboot",
-			  &error, G_TYPE_INVALID, G_TYPE_STRING,
-			  &value, G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanReboot status is %s\n", value);
 		action_can[LOGOUT_ACTION_REBOOT] = status_of_string(value);
@@ -329,8 +346,7 @@ test_power_functions()
 	} else
 		error = NULL;
 	ok = dbus_g_proxy_call(proxy, "CanSuspend",
-			  &error, G_TYPE_INVALID, G_TYPE_STRING,
-			  &value, G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		action_can[LOGOUT_ACTION_SUSPEND] = status_of_string(value);
@@ -339,8 +355,7 @@ test_power_functions()
 	} else
 		error = NULL;
 	ok = dbus_g_proxy_call(proxy, "CanHibernate",
-			  &error, G_TYPE_INVALID, G_TYPE_STRING,
-			  &value, G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanHibernate status is %s\n", value);
 		action_can[LOGOUT_ACTION_HIBERNATE] = status_of_string(value);
@@ -349,8 +364,7 @@ test_power_functions()
 	} else
 		error = NULL;
 	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
-			  &error, G_TYPE_INVALID, G_TYPE_STRING,
-			  &value, G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanHybridSleep status is %s\n", value);
 		action_can[LOGOUT_ACTION_HYBRIDSLEEP] = status_of_string(value);
@@ -418,7 +432,7 @@ grabbed_window(GtkWindow *window)
   * previously had the grabbed_window() method called on it.
   */
 void
-ungrabbed_window(GtkWindow * window)
+ungrabbed_window(GtkWindow *window)
 {
 	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(window));
 
@@ -437,7 +451,7 @@ ungrabbed_window(GtkWindow * window)
   * Returns the response to the dialog.
   */
 gboolean
-areyousure(GtkWindow * window, char *message)
+areyousure(GtkWindow *window, char *message)
 {
 	GtkWidget *d;
 	gint result;
@@ -575,7 +589,7 @@ static void action_Logout(void);
 static void action_Restart(void);
 static void action_Cancel(void);
 
-typedef void (*ActionFunctionPointer)(void);
+typedef void (*ActionFunctionPointer) (void);
 
 static const ActionFunctionPointer logout_actions[LOGOUT_ACTION_COUNT] = {
 	/* *INDENT-OFF* */
@@ -755,7 +769,7 @@ make_logout_choice()
 	gtk_window_stick(GTK_WINDOW(w));
 	gtk_window_deiconify(GTK_WINDOW(w));
 	gtk_widget_show_all(GTK_WIDGET(w));
-	gtk_widget_grab_focus(GTK_WIDGET(buttons[3]));
+	gtk_widget_grab_focus(GTK_WIDGET(buttons[LOGOUT_ACTION_LOGOUT]));
 
 	gtk_widget_realize(GTK_WIDGET(w));
 	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(w));
@@ -788,47 +802,39 @@ run_logout(int argc, char *argv[])
 		for (i = 0; i < LOGOUT_ACTION_COUNT; i++) {
 			switch (action_can[i]) {
 			case AvailStatusUndef:
-				button_tips[i] = g_strdup_printf(
-						"\nFunction undefined."
-						"\nCan value was %s", "(undefined)");
+				button_tips[i] = g_strdup_printf("\nFunction undefined."
+								 "\nCan value was %s",
+								 "(undefined)");
 				break;
 			case AvailStatusUnknown:
-				button_tips[i] = g_strdup_printf(
-						"\nFunction unknown."
-						"\nCan value was %s", "(unknown)");
+				button_tips[i] = g_strdup_printf("\nFunction unknown."
+								 "\nCan value was %s", "(unknown)");
 				break;
 			case AvailStatusNa:
-				button_tips[i] = g_strdup_printf(
-						"\nFunction not available."
-						"\nCan value was %s", "na");
+				button_tips[i] = g_strdup_printf("\nFunction not available."
+								 "\nCan value was %s", "na");
 				break;
 			case AvailStatusNo:
-				button_tips[i] = g_strdup_printf(
-						"\n%s"
-						"\nCan value was %s",
-						button_tips[i],
-						"no");
+				button_tips[i] = g_strdup_printf("\n%s"
+								 "\nCan value was %s",
+								 button_tips[i], "no");
 				break;
 			case AvailStatusChallenge:
-				button_tips[i] = g_strdup_printf(
-						"\n%s"
-						"\nCan value was %s",
-						button_tips[i],
-						"challenge");
+				button_tips[i] = g_strdup_printf("\n%s"
+								 "\nCan value was %s",
+								 button_tips[i], "challenge");
 				break;
 			case AvailStatusYes:
-				button_tips[i] = g_strdup_printf(
-						"\n%s"
-						"\nCan value was %s",
-						button_tips[i],
-						"yes");
+				button_tips[i] = g_strdup_printf("\n%s"
+								 "\nCan value was %s",
+								 button_tips[i], "yes");
 				break;
 			}
 		}
 	}
 	result = make_logout_choice(argc, argv);
 	if (logout_actions[result])
-		(*logout_actions[result])();
+		(*logout_actions[result]) ();
 	else {
 		EPRINTF("No action for choice %d\n", result);
 		exit(EXIT_FAILURE);
@@ -847,15 +853,15 @@ action_PowerOff(void)
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
-			"org.freedesktop.login1",
-			"/org/freedesktp/login1",
-			"org.freedesktop.login1.Manager");
+					  "org.freedesktop.login1",
+					  "/org/freedesktp/login1",
+					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "PowerOff", NULL,
-			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to PowerOff failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -876,15 +882,15 @@ action_Reboot(void)
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
-			"org.freedesktop.login1",
-			"/org/freedesktp/login1",
-			"org.freedesktop.login1.Manager");
+					  "org.freedesktop.login1",
+					  "/org/freedesktp/login1",
+					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "Reboot", NULL,
-			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to Reboot failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -905,15 +911,15 @@ action_Suspend(void)
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
-			"org.freedesktop.login1",
-			"/org/freedesktp/login1",
-			"org.freedesktop.login1.Manager");
+					  "org.freedesktop.login1",
+					  "/org/freedesktp/login1",
+					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "Suspend", NULL,
-			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to Suspend failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -934,15 +940,15 @@ action_Hibernate(void)
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
-			"org.freedesktop.login1",
-			"/org/freedesktp/login1",
-			"org.freedesktop.login1.Manager");
+					  "org.freedesktop.login1",
+					  "/org/freedesktp/login1",
+					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "Hibernate", NULL,
-			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to Hibernate failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -963,15 +969,15 @@ action_HybridSleep(void)
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
-			"org.freedesktop.login1",
-			"/org/freedesktp/login1",
-			"org.freedesktop.login1.Manager");
+					  "org.freedesktop.login1",
+					  "/org/freedesktp/login1",
+					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "HybridSleep", NULL,
-			G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to HybridSleep failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -999,6 +1005,13 @@ action_LockScreen(void)
 {
 }
 
+/** @brief perform the logout action
+  *
+  * Performs a complicated sequence of checks to log out of the current session.
+  * This method supports more than just XDE sessions (L<lxsession(1)> and other
+  * sessions are supported).
+  *
+  */
 static void
 action_Logout(void)
 {
@@ -1240,6 +1253,30 @@ Usage:\n\
 ", argv[0]);
 }
 
+static const char *
+show_side(LogoSide side)
+{
+	switch (side) {
+	case LOGO_SIDE_LEFT:
+		return ("left");
+	case LOGO_SIDE_TOP:
+		return ("top");
+	case LOGO_SIDE_RIGHT:
+		return ("right");
+	case LOGO_SIDE_BOTTOM:
+		return ("bottom");
+	}
+	return ("unknown");
+}
+
+static const char *
+show_bool(Bool val)
+{
+	if (val)
+		return ("true");
+	return ("false");
+}
+
 static void
 help(int argc, char *argv[])
 {
@@ -1259,12 +1296,31 @@ Command options:\n\
     -C, --copying\n\
         print copying permission and exit\n\
 General options:\n\
-    -D, --debug [LEVEL]\n\
-        increment or set debug LEVEL [default: 0]\n\
-    -v, --verbose [LEVEL]\n\
-        increment or set output verbosity LEVEL [default: 1]\n\
+    -p, --prompt PROMPT        (%2$s)\n\
+        specifies a custom prompt message\n\
+    -b, --banner BANNER        (%3$s)\n\
+        specify custom login branding\n\
+    -s, --side {l|t|r|b}       (%4$s)\n\
+        specify side  of dialog for logo placement\n\
+    -n, --noask                (%5$s)\n\
+        do not ask what to do, just logout\n\
+    -i, --icons THEME          (%6$s)\n\
+        set the icon theme to use\n\
+    -t, --theme THEME          (%7$s)\n\
+        set the gtk+ theme to use\n\
+    -x, --xde-theme            (%8$s)\n\
+        use the XDE desktop theme for the selection window\n\
+    -T, --timeout SECONDS      (%9$u sec)\n\
+        set dialog timeout\n\
+    -N, --dry-run              (%10$s)\n\
+        do not do anything: just print it\n\
+    -D, --debug [LEVEL]        (%11$d)\n\
+        increment or set debug LEVEL\n\
         this option may be repeated.\n\
-", argv[0]);
+    -v, --verbose [LEVEL]      (%12$d)\n\
+        increment or set output verbosity LEVEL\n\
+        this option may be repeated.\n\
+", argv[0], options.prompt, options.banner, show_side(options.side), show_bool(options.noask), options.usexde ? "xde" : (options.icon_theme ? : "auto"), options.usexde ? "xde" : (options.gtk2_theme ? : "auto"), show_bool(options.usexde), options.timeout, show_bool(options.dryrun), options.debug, options.output);
 }
 
 void
@@ -1372,8 +1428,13 @@ main(int argc, char *argv[])
 			{"prompt",	required_argument,	NULL, 'p'},
 			{"banner",	required_argument,	NULL, 'b'},
 			{"side",	required_argument,	NULL, 's'},
+			{"noask",	no_argument,		NULL, 'n'},
+			{"icons",	required_argument,	NULL, 'i'},
+			{"theme",	required_argument,	NULL, 't'},
+			{"xde-theme",	no_argument,		NULL, 'x'},
+			{"timeout",	required_argument,	NULL, 'T'},
 
-			{"dry-run",	no_argument,		NULL, 'n'},
+			{"dry-run",	no_argument,		NULL, 'N'},
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},
 			{"help",	no_argument,		NULL, 'h'},
@@ -1405,7 +1466,43 @@ main(int argc, char *argv[])
 			free(options.banner);
 			options.banner = strdup(optarg);
 			break;
-		case 'n':	/* -n, --dry-run */
+		case 's':	/* -s, --side {top|bottom|left|right} */
+			if (!strncasecmp(optarg, "left", strlen(optarg))) {
+				options.side = LOGO_SIDE_LEFT;
+				break;
+			}
+			if (!strncasecmp(optarg, "top", strlen(optarg))) {
+				options.side = LOGO_SIDE_TOP;
+				break;
+			}
+			if (!strncasecmp(optarg, "right", strlen(optarg))) {
+				options.side = LOGO_SIDE_RIGHT;
+				break;
+			}
+			if (!strncasecmp(optarg, "bottom", strlen(optarg))) {
+				options.side = LOGO_SIDE_BOTTOM;
+				break;
+			}
+			goto bad_option;
+		case 'n':	/* -n, --noask */
+			options.noask = True;
+			break;
+		case 'i':	/* -i, --icons THEME */
+			free(options.icon_theme);
+			options.icon_theme = strdup(optarg);
+			break;
+		case 't':	/* -t, --theme THEME */
+			free(options.gtk2_theme);
+			options.gtk2_theme = strdup(optarg);
+			break;
+		case 'x':
+			options.usexde = True;
+			break;
+		case 'T':
+			options.timeout = strtoul(optarg, NULL, 0);
+			break;
+
+		case 'N':	/* -n, --dry-run */
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */

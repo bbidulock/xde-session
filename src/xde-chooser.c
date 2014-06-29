@@ -55,12 +55,12 @@
 #include <langinfo.h>
 #include <locale.h>
 
-typedef enum _ChooserSide {
-	CHOOSER_SIDE_LEFT,
-	CHOOSER_SIDE_TOP,
-	CHOOSER_SIDE_RIGHT,
-	CHOOSER_SIDE_BOTTOM,
-} ChooserSide;
+typedef enum _LogoSide {
+	LOGO_SIDE_LEFT,
+	LOGO_SIDE_TOP,
+	LOGO_SIDE_RIGHT,
+	LOGO_SIDE_BOTTOM,
+} LogoSide;
 
 typedef struct {
 	int output;
@@ -68,7 +68,7 @@ typedef struct {
 	Bool dryrun;
 	Bool prompt;
 	char *banner;
-	ChooserSide side;
+	LogoSide side;
 	Bool noask;
 	char *charset;
 	char *language;
@@ -90,7 +90,7 @@ Options options = {
 	.dryrun = False,
 	.prompt = False,
 	.banner = NULL,
-	.side = CHOOSER_SIDE_LEFT,
+	.side = LOGO_SIDE_LEFT,
 	.noask = False,
 	.charset = NULL,
 	.language = NULL,
@@ -1344,16 +1344,16 @@ Usage:\n\
 }
 
 static const char *
-show_side(ChooserSide side)
+show_side(LogoSide side)
 {
 	switch (side) {
-	case CHOOSER_SIDE_LEFT:
+	case LOGO_SIDE_LEFT:
 		return ("left");
-	case CHOOSER_SIDE_TOP:
+	case LOGO_SIDE_TOP:
 		return ("top");
-	case CHOOSER_SIDE_RIGHT:
+	case LOGO_SIDE_RIGHT:
 		return ("right");
-	case CHOOSER_SIDE_BOTTOM:
+	case LOGO_SIDE_BOTTOM:
 		return ("bottom");
 	}
 	return ("unknown");
@@ -1536,14 +1536,15 @@ set_default_banner(void)
 void
 set_defaults(void)
 {
-	char *p;
+	char *p, *a;
 
 	set_default_banner();
 	set_default_session();
 	if ((options.language = setlocale(LC_ALL, ""))) {
 		options.language = strdup(options.language);
+		a = strchrnul(options.language, '@');
 		if ((p = strchr(options.language, '.')))
-			*p = '\0';
+			strcpy(p, a);
 	}
 	options.choice = strdup("default");
 	options.charset = strdup(nl_langinfo(CODESET));
@@ -1617,19 +1618,19 @@ main(int argc, char *argv[])
 			break;
 		case 's':	/* -s, --side {top|bottom|left|right} */
 			if (!strncasecmp(optarg, "left", strlen(optarg))) {
-				options.side = CHOOSER_SIDE_LEFT;
+				options.side = LOGO_SIDE_LEFT;
 				break;
 			}
 			if (!strncasecmp(optarg, "top", strlen(optarg))) {
-				options.side = CHOOSER_SIDE_TOP;
+				options.side = LOGO_SIDE_TOP;
 				break;
 			}
 			if (!strncasecmp(optarg, "right", strlen(optarg))) {
-				options.side = CHOOSER_SIDE_RIGHT;
+				options.side = LOGO_SIDE_RIGHT;
 				break;
 			}
 			if (!strncasecmp(optarg, "bottom", strlen(optarg))) {
-				options.side = CHOOSER_SIDE_BOTTOM;
+				options.side = LOGO_SIDE_BOTTOM;
 				break;
 			}
 			goto bad_option;
