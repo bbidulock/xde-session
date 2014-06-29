@@ -24,6 +24,10 @@
 -ss
 -hnl
 -nbc
+-TGtkTreePath
+-Tgchar
+-TGdkEvent
+-TGKeyFile
 -TGtkTreeViewColumn
 -TGtkCellRenderer
 -TGtkCellRendererToggle

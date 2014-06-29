@@ -55,10 +55,6 @@
 #include <langinfo.h>
 #include <locale.h>
 
-enum {
-	CHOOSE_RESULT_LOGOUT,
-};
-
 typedef enum _ChooserSide {
 	CHOOSER_SIDE_LEFT,
 	CHOOSER_SIDE_TOP,
@@ -76,7 +72,7 @@ typedef struct {
 	Bool noask;
 	char *charset;
 	char *language;
-	Bool dflt;
+	Bool setdflt;
 	char *session;
 	char *icon_theme;
 	char *gtk2_theme;
@@ -98,7 +94,7 @@ Options options = {
 	.noask = False,
 	.charset = NULL,
 	.language = NULL,
-	.dflt = False,
+	.setdflt = False,
 	.session = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
@@ -110,7 +106,12 @@ Options options = {
 	.timeout = 15,
 };
 
-int choose_result;
+typedef enum {
+	CHOOSE_RESULT_LOGOUT,
+	CHOOSE_RESULT_LAUNCH,
+} ChooseResult;
+
+ChooseResult choose_result;
 
 char **
 get_data_dirs(int *np)
@@ -250,6 +251,7 @@ get_xsession_entry(GHashTable *xsessions, const char *key, const char *file)
 		g_key_file_free(entry);
 		return;
 	}
+	DPRINTF("got xsession file: %s (%s)\n", key, file);
 	g_hash_table_replace(xsessions, strdup(key), entry);
 	return;
 }
@@ -335,7 +337,9 @@ xsessions_filter(gpointer key, gpointer value, gpointer user_data)
 				free(file);
 				break;
 			}
-			DPRINTF("%s: %s: %s\n", appid, file, strerror(errno));
+			// to much noise
+			// DPRINTF("%s: %s: %s\n", appid, file,
+			// strerror(errno));
 		}
 		free(path);
 		if (!execok) {
@@ -412,15 +416,18 @@ get_xsessions(void)
 }
 
 gboolean
-on_delete_event(GtkWidget *widget, GdkEvent * event, gpointer data)
+on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
+	free(options.current);
+	options.current = strdup("logout");
+	options.managed = False;
 	choose_result = CHOOSE_RESULT_LOGOUT;
 	gtk_main_quit();
 	return TRUE;		/* propagate */
 }
 
 gboolean
-on_expose_event(GtkWidget *widget, GdkEvent * event, gpointer data)
+on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	GdkPixbuf *pixbuf = GDK_PIXBUF(data);
 	GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(widget));
@@ -449,7 +456,7 @@ GtkWidget *view;
 GtkTreeViewColumn *cursor;
 
 void
-on_managed_toggle(GtkCellRendererToggle *rend, gchar * path, gpointer user_data)
+on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer user_data)
 {
 	GtkTreeIter iter;
 
@@ -497,39 +504,51 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	} else
 		name = g_strdup("preferences-system-windows");
 	g_value_unset(&iname_v);
+	XPRINTF("will try to render icon name =\"%s\"\n", name);
 
 	GtkIconTheme *theme = gtk_icon_theme_get_default();
 	GdkPixbuf *pixbuf = NULL;
 
+	XPRINTF("checking icon \"%s\"\n", name);
 	has = gtk_icon_theme_has_icon(theme, name);
-	if (has)
+	if (has) {
+		XPRINTF("tyring to load icon \"%s\"\n", name);
 		pixbuf = gtk_icon_theme_load_icon(theme, name, 32,
 						  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
 						  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+	}
 	if (!has || !pixbuf) {
 		g_free(name);
 		name = g_strdup("preferences-system-windows");
+		XPRINTF("checking icon \"%s\"\n", name);
 		has = gtk_icon_theme_has_icon(theme, name);
-		if (has)
+		if (has) {
+			XPRINTF("tyring to load icon \"%s\"\n", name);
 			pixbuf = gtk_icon_theme_load_icon(theme, name, 32,
 							  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
 							  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+		}
 		if (!has || !pixbuf) {
 			GtkWidget *image;
 
-			image = gtk_image_new_from_stock("gtk-missing-image",
-							 GTK_ICON_SIZE_LARGE_TOOLBAR);
-			pixbuf = gtk_widget_render_icon(GTK_WIDGET(image),
-							"gtk-missing-image",
-							GTK_ICON_SIZE_LARGE_TOOLBAR, NULL);
-			g_object_unref(G_OBJECT(image));
+			XPRINTF("tyring to load image \"%s\"\n", "gtk-missing-image");
+			if ((image = gtk_image_new_from_stock("gtk-missing-image",
+							      GTK_ICON_SIZE_LARGE_TOOLBAR))) {
+				XPRINTF("tyring to load icon \"%s\"\n", "gtk-missing-image");
+				pixbuf = gtk_widget_render_icon(GTK_WIDGET(image),
+								"gtk-missing-image",
+								GTK_ICON_SIZE_LARGE_TOOLBAR, NULL);
+				g_object_unref(G_OBJECT(image));
+			}
 		}
 	}
-	g_object_unref(G_OBJECT(theme));
-	g_value_init(&pixbuf_v, G_TYPE_OBJECT);
-	g_value_take_object(&pixbuf_v, pixbuf);
-	g_object_set_property(G_OBJECT(cell), "pixbuf", &pixbuf_v);
-	g_value_unset(&pixbuf_v);
+	if (pixbuf) {
+		XPRINTF("setting pixbuf for cell renderrer\n");
+		g_value_init(&pixbuf_v, G_TYPE_OBJECT);
+		g_value_take_object(&pixbuf_v, pixbuf);
+		g_object_set_property(G_OBJECT(cell), "pixbuf", &pixbuf_v);
+		g_value_unset(&pixbuf_v);
+	}
 }
 
 static void
@@ -553,6 +572,7 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 	free(options.current);
 	options.current = strdup("logout");
 	options.managed = False;
+	choose_result = CHOOSE_RESULT_LOGOUT;
 	gtk_main_quit();
 }
 
@@ -640,15 +660,17 @@ on_select_clicked(GtkButton *button, gpointer user_data)
 		}
 		if (valid) {
 			gchar *string;
-			GtkTreePath *path;
 
 			gtk_tree_selection_select_iter(GTK_TREE_SELECTION(selection), &iter);
-			string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter);
-			path = gtk_tree_path_new_from_string(string);
-			g_free(string);
-			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor, NULL,
-							 FALSE);
-			gtk_tree_path_free(path);
+			if ((string =
+			     gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter))) {
+				GtkTreePath *path = gtk_tree_path_new_from_string(string);
+
+				g_free(string);
+				gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor,
+								 NULL, FALSE);
+				gtk_tree_path_free(path);
+			}
 		}
 	} else {
 		gtk_tree_selection_unselect_all(selection);
@@ -676,8 +698,7 @@ on_launch_clicked(GtkButton *button, gpointer user_data)
 		free(options.current);
 		options.current = strdup(label);
 		options.managed = manage;
-		free(options.choice);
-		options.choice = strdup(label);
+		choose_result = CHOOSE_RESULT_LAUNCH;
 		gtk_main_quit();
 	}
 }
@@ -714,7 +735,7 @@ on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 }
 
 static void
-on_row_activated(GtkTreeView *view, GtkTreePath * path, GtkTreeViewColumn *col, gpointer user_data)
+on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data)
 {
 	GtkTreeSelection *selection;
 	GtkTreeModel *model;
@@ -735,13 +756,15 @@ on_row_activated(GtkTreeView *view, GtkTreePath * path, GtkTreeViewColumn *col, 
 		free(options.current);
 		options.current = strdup(label);
 		options.managed = manage;
+		choose_result = CHOOSE_RESULT_LAUNCH;
 		g_value_unset(&label_v);
 		g_value_unset(&manage_v);
+		gtk_main_quit();
 	}
 }
 
 static gboolean
-on_button_press(GtkWidget *view, GdkEvent * event, gpointer user_data)
+on_button_press(GtkWidget *view, GdkEvent *event, gpointer user_data)
 {
 	GtkTreeSelection *selection;
 	GtkTreePath *path;
@@ -774,7 +797,64 @@ on_button_press(GtkWidget *view, GdkEvent * event, gpointer user_data)
 	return FALSE;		/* propagate event */
 }
 
+/** @brief create the selected session
+  * @param label - the application id of the XSession
+  * @param session - the desktop entry file for the XSession (or NULL)
+  *
+  * Launch the session specified by the label arguemtnwith the xsession desktop
+  * file pass in the session argument.  This function writes the selection and
+  * default to the user's current and default files in
+  * $XDG_CONFIG_HOME/xde/current and $XDG_CONFIG_HOME/xde/default, sets the
+  * option variables options.current and options.session.  A NULL session
+  * pointer means that a logout should be performed instead.
+  */
 void
+create_session(const char *label, GKeyFile *session)
+{
+	char *home = getenv("HOME") ? : ".";
+	char *xhome = getenv("XDG_CONFIG_HOME");
+	char *cdir, *file;
+	int len, dlen, flen;
+	FILE *f;
+
+	len = xhome ? strlen(xhome) : strlen(home) + strlen("/.config");
+	dlen = len + strlen("/xde");
+	flen = dlen + strlen("/default");
+	cdir = calloc(dlen, sizeof(*cdir));
+	file = calloc(flen, sizeof(*file));
+	if (xhome)
+		strcpy(cdir, xhome);
+	else {
+		strcpy(cdir, home);
+		strcat(cdir, "/.config");
+	}
+	strcat(cdir, "/xde");
+
+	strcpy(file, cdir);
+	strcat(file, "/current");
+	if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
+		if ((f = fopen(file, "w"))) {
+			fprintf(f, "%s\n", options.current ? : "");
+			fclose(f);
+		}
+	}
+
+	if (options.setdflt) {
+		strcpy(file, cdir);
+		strcat(file, "/default");
+		if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
+			if ((f = fopen(file, "w"))) {
+				fprintf(f, "%s\n", options.session ? : "");
+				fclose(f);
+			}
+		}
+	}
+
+	free(file);
+	free(cdir);
+}
+
+GKeyFile *
 make_login_choice(int argc, char *argv[])
 {
 	{
@@ -783,7 +863,8 @@ make_login_choice(int argc, char *argv[])
 		status = system("xsetroot -cursor_name left_ptr");
 		(void) status;
 	}
-	gtk_init(&argc, &argv);
+	gtk_init(NULL, NULL);
+	// gtk_init(&argc, &argv);
 
 	GtkWidget *w = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -885,6 +966,8 @@ make_login_choice(int argc, char *argv[])
 			,GTK_TYPE_BOOL		/* X-XDE-Managed original setting */
 	    );
 	/* *INDENT-ON* */
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
+					     COLUMN_MARKUP, GTK_SORT_ASCENDING);
 	view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
 	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
 	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), COLUMN_NAME);
@@ -989,9 +1072,11 @@ make_login_choice(int argc, char *argv[])
 		i = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
 					  G_KEY_FILE_DESKTOP_KEY_ICON, NULL);
 		n = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-						 G_KEY_FILE_DESKTOP_KEY_NAME, NULL, NULL) ? : "";
+						 G_KEY_FILE_DESKTOP_KEY_NAME, NULL,
+						 NULL) ? : g_strdup("");
 		c = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-						 G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL, NULL) ? : "";
+						 G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL,
+						 NULL) ? : g_strdup("");
 		k = g_strdup_printf("<b>%s</b>\n%s", n, c);
 		m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
 
@@ -1008,18 +1093,21 @@ make_login_choice(int argc, char *argv[])
 		g_free(k);
 
 		if (!strcmp(options.choice, label) ||
-		    !strcmp(options.choice, "choose" ||
-		      (!strcmp(options.choice, "default") && !strcmp(options.session, label)))) {
+		    ((!strcmp(options.choice, "choose") || !strcmp(options.choice, "default"))
+		     && !strcmp(options.session, label)
+		    )) {
 			gchar *string;
-			GtkTreePath *path;
 
 			gtk_tree_selection_select_iter(selection, &iter);
-			string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter);
-			path = gtk_tree_path_new_from_string(string);
-			g_free(string);
-			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor, NULL,
-							 FALSE);
-			gtk_tree_path_free(path);
+			if ((string =
+			     gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter))) {
+				GtkTreePath *path = gtk_tree_path_new_from_string(string);
+
+				g_free(string);
+				gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor,
+								 NULL, FALSE);
+				gtk_tree_path_free(path);
+			}
 		}
 	}
 	// gtk_window_set_default_size(GTK_WINDOW(w), -1, 400);
@@ -1036,25 +1124,93 @@ make_login_choice(int argc, char *argv[])
 
 	if (strcmp(options.current, "logout")) {
 		if (!(entry = (typeof(entry)) g_hash_table_lookup(xsessions, options.current))) {
-			EPRINTF("What happenned to entry for %s\n", options.current);
+			EPRINTF("What happenned to entry for %s?\n", options.current);
 			exit(EXIT_FAILURE);
 		}
 	}
+	return (entry);
 }
 
-gboolean
-choose(void)
+GKeyFile *
+choose(int argc, char *argv[])
 {
 	GHashTable *xsessions;
 	gchar **keys;
 	guint length = 0;
+	char *p;
+	GKeyFile *entry = NULL;
 
-	if (!(xsessions = get_xsessions()))
-		return FALSE;
-	if (!(keys = (typeof(keys)) g_hash_table_get_keys_as_array(xsessions, &length))) {
-		return FALSE;
+	if (!(xsessions = get_xsessions())) {
+		EPRINTF("cannot build XSessions\n");
+		return (entry);
 	}
-	return TRUE;
+	if (!(keys = (typeof(keys)) g_hash_table_get_keys_as_array(xsessions, &length))) {
+		EPRINTF("cannot find any XSessions\n");
+		return (entry);
+	}
+	if (!options.choice)
+		options.choice = strdup("default");
+	for (p = options.choice; p && *p; p++)
+		*p = tolower(*p);
+	if (!strcasecmp(options.choice, "default") && options.session) {
+		free(options.choice);
+		options.choice = strdup(options.session);
+	} else if (!strcasecmp(options.choice, "current") && options.current) {
+		free(options.choice);
+		options.choice = strdup(options.current);
+	}
+
+	if (options.session && !g_hash_table_contains(xsessions, options.session)) {
+		DPRINTF("Default %s is not available!\n", options.session);
+		if (!strcasecmp(options.choice, options.session)) {
+			free(options.choice);
+			options.choice = strdup("choose");
+		}
+	}
+	if (!strcasecmp(options.choice, "default") && !options.session) {
+		DPRINTF("Default is chosen but there is no default\n");
+		free(options.choice);
+		options.choice = strdup("choose");
+	}
+	if (strcasecmp(options.choice, "choose") &&
+	    !g_hash_table_contains(xsessions, options.choice)) {
+		DPRINTF("Choice %s is not available.\n", options.choice);
+		free(options.choice);
+		options.choice = strdup("choose");
+	}
+	if (!strcasecmp(options.choice, "choose"))
+		options.prompt = True;
+
+	DPRINTF("The default was: %s\n", options.session);
+	DPRINTF("Choosing %s...\n", options.choice);
+	if (options.prompt) {
+		entry = make_login_choice(argc, argv);
+	} else {
+		if (strcmp(options.current, "logout")) {
+			if (!
+			    (entry =
+			     (typeof(entry)) g_hash_table_lookup(xsessions, options.current))) {
+				EPRINTF("What happenned to entry for %s?\n", options.current);
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+	return (entry);
+}
+
+void
+run_chooser(int argc, char *argv[])
+{
+	GKeyFile *entry;
+
+	if (!(entry = choose(argc, argv))) {
+		DPRINTF("Logging out...\n");
+		fprintf(stdout, "logout");
+		return;
+	}
+	DPRINTF("Launching session %s...\n", options.current);
+	fprintf(stdout, options.current);
+	create_session(options.current, entry);
 }
 
 static void
@@ -1219,27 +1375,7 @@ General options:\n\
     -v, --verbose [LEVEL]  (%14$d)\n\
         increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
-",
-		argv[0],
-		options.banner,
-		show_bool(options.prompt),
-		show_side(options.side),
-		show_bool(options.noask),
-		options.charset,
-		options.language,
-		show_bool(options.dflt),
-		show_bool(options.execute),
-		show_bool(options.usexde),
-		options.timeout,
-		show_bool(options.dryrun),
-		options.debug,
-		options.output,
-		options.usexde ? "xde" : (options.gtk2_theme ? : "auto"),
-		options.usexde ? "xde" : (options.icon_theme ? : "auto"),
-		options.choice,
-		options.session ? : "",
-		options.current ? : ""
-	);
+", argv[0], options.banner, show_bool(options.prompt), show_side(options.side), show_bool(options.noask), options.charset, options.language, show_bool(options.setdflt), show_bool(options.execute), show_bool(options.usexde), options.timeout, show_bool(options.dryrun), options.debug, options.output, options.usexde ? "xde" : (options.gtk2_theme ? : "auto"), options.usexde ? "xde" : (options.icon_theme ? : "auto"), options.choice, options.session ? : "", options.current ? : "");
 }
 
 void
@@ -1459,7 +1595,7 @@ main(int argc, char *argv[])
 			options.language = strdup(optarg);
 			break;
 		case 'd':	/* -d, --default */
-			options.dflt = True;
+			options.setdflt = True;
 			break;
 		case 'i':	/* -i, --icons THEME */
 			free(options.icon_theme);
@@ -1557,6 +1693,9 @@ main(int argc, char *argv[])
 	}
 	switch (command) {
 	case COMMAND_CHOOSE:
+		if (options.debug)
+			fprintf(stderr, "%s: running chooser\n", argv[0]);
+		run_chooser(argc, argv);
 		break;
 	case COMMAND_HELP:
 		if (options.debug)
