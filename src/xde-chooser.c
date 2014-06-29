@@ -797,6 +797,55 @@ on_button_press(GtkWidget *view, GdkEvent *event, gpointer user_data)
 	return FALSE;		/* propagate event */
 }
 
+/** @brief transform window into pointer-grabbed window
+  * @param w - window to transform
+  *
+  * Trasform a window into a window that has a grab on the pointer on the window
+  * and restricts pointer movement to the window boundary.
+  */
+void
+grabbed_window(GtkWidget *w, gpointer user_data)
+{
+	GdkWindow *win = gtk_widget_get_window(w);
+	gdk_window_set_override_redirect(win, TRUE);
+	gdk_window_set_focus_on_map(win, TRUE);
+	gdk_window_set_accept_focus(win, TRUE);
+	gdk_window_set_keep_above(win, TRUE);
+	gdk_window_set_modal_hint(win, TRUE);
+	gdk_window_stick(win);
+	gdk_window_deiconify(win);
+	gdk_window_show(win);
+	gdk_window_focus(win, GDK_CURRENT_TIME);
+	gdk_keyboard_grab(win, TRUE, GDK_CURRENT_TIME);
+	/* *INDENT-OFF* */
+	gdk_pointer_grab(win, TRUE, 0
+		|GDK_POINTER_MOTION_MASK
+		|GDK_POINTER_MOTION_HINT_MASK
+#if 0
+		|GDK_BUTTON_MOTION_MASK
+		|GDK_BUTTON1_MOTION_MASK
+		|GDK_BUTTON2_MOTION_MASK
+		|GDK_BUTTON3_MOTION_MASK
+		|GDK_BUTTON_PRESS_MASK
+		|GDK_BUTTON_RELEASE_MASK
+		|GDK_ENTER_NOTIFY_MASK
+		|GDK_LEAVE_NOTIFY_MASK
+#endif
+		, win, NULL, GDK_CURRENT_TIME);
+	/* *INDENT-ON* */
+	if (!gdk_pointer_is_grabbed())
+		DPRINTF("pointer is NOT grabbed\n");
+}
+
+void
+ungrabbed_window(GtkWidget *w, gpointer user_data)
+{
+	GdkWindow *win = gtk_widget_get_window(w);
+	gdk_pointer_ungrab(GDK_CURRENT_TIME);
+	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
+	gdk_window_hide(win);
+}
+
 /** @brief create the selected session
   * @param label - the application id of the XSession
   * @param session - the desktop entry file for the XSession (or NULL)
@@ -1111,8 +1160,22 @@ make_login_choice(int argc, char *argv[])
 		}
 	}
 	// gtk_window_set_default_size(GTK_WINDOW(w), -1, 400);
+
+
+	/* most of this is just in case override-redirect fails */
+	gtk_window_set_focus_on_map(GTK_WINDOW(w), TRUE);
+	gtk_window_set_accept_focus(GTK_WINDOW(w), TRUE);
+	gtk_window_set_keep_above(GTK_WINDOW(w), TRUE);
+	gtk_window_set_modal(GTK_WINDOW(w), TRUE);
+	gtk_window_stick(GTK_WINDOW(w));
+	gtk_window_deiconify(GTK_WINDOW(w));
 	gtk_widget_show_all(GTK_WIDGET(w));
 	gtk_widget_grab_focus(GTK_WIDGET(buttons[3]));
+
+	gtk_widget_realize(GTK_WIDGET(w));
+	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(w));
+	gdk_window_set_override_redirect(win, TRUE);
+	grabbed_window(w, NULL);
 
 	/* TODO: we should really set a timeout and if no user interaction has
 	   occured before the timeout, we should continue if we have a viable
