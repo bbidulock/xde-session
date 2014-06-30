@@ -1185,16 +1185,14 @@ GKeyFile *
 choose(int argc, char *argv[])
 {
 	GHashTable *xsessions;
-	gchar **keys;
-	guint length = 0;
-	char *p;
 	GKeyFile *entry = NULL;
+	char *p;
 
 	if (!(xsessions = get_xsessions())) {
 		EPRINTF("cannot build XSessions\n");
 		return (entry);
 	}
-	if (!(keys = (typeof(keys)) g_hash_table_get_keys_as_array(xsessions, &length))) {
+	if (!g_hash_table_size(xsessions)) {
 		EPRINTF("cannot find any XSessions\n");
 		return (entry);
 	}
@@ -1237,9 +1235,7 @@ choose(int argc, char *argv[])
 		entry = make_login_choice(argc, argv);
 	} else {
 		if (strcmp(options.current, "logout")) {
-			if (!
-			    (entry =
-			     (typeof(entry)) g_hash_table_lookup(xsessions, options.current))) {
+			if (!(entry = (typeof(entry)) g_hash_table_lookup(xsessions, options.current))) {
 				EPRINTF("What happenned to entry for %s?\n", options.current);
 				exit(EXIT_FAILURE);
 			}

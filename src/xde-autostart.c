@@ -87,6 +87,7 @@ typedef struct {
 	Bool usexde;
 	Bool foreground;
 	char *client_id;
+        char **desktops;
 } Options;
 
 Options options = {
@@ -114,6 +115,7 @@ Options options = {
 	.usexde = False,
 	.foreground = False,
 	.client_id = NULL,
+        .desktops = NULL,
 };
 
 char **
@@ -180,10 +182,487 @@ get_config_dirs(int *np)
 	return (xdg_dirs);
 }
 
+GHashTable *autostarts;
+
+char **
+get_autostart_dirs(int *np)
+{
+	char *home, *xhome, *xconf, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_CONFIG_HOME");
+	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
+
+	len = (xconf ? strlen(xconf) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.config");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xconf);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end; n++,
+	     *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+        xdg_dirs = calloc(n, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1) {
+		len = strlen(pos) + strlen("/autostart") + 1;
+		xdg_dirs[n] = calloc(len, sizeof(*xdg_dirs[n]));
+		strcpy(xdg_dirs[n], pos);
+		strcat(xdg_dirs[n], "/autostart");
+	}
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
+static void
+autostart_key_free(gpointer data)
+{
+        free(data);
+}
+
+static void
+autostart_value_free(gpointer entry)
+{
+        g_key_file_free((GKeyFile *) entry);
+}
+
+static void
+get_autostart_entry(GHashTable *autostarts, const char *key, const char *file)
+{
+        GKeyFile *entry;
+
+        if (!(entry = g_key_file_new())) {
+                EPRINTF("%s: could not allocate key file\n", file);
+                return;
+        }
+        if (!g_key_file_load_from_file(entry, file, G_KEY_FILE_NONE, NULL)) {
+                EPRINTF("%s: could not load keyfile\n", file);
+                g_key_file_unref(entry);
+                return;
+        }
+        if (!g_key_file_has_group(entry, G_KEY_FILE_DESKTOP_GROUP)) {
+                EPRINTF("%s: has no [%s] section\n", file, G_KEY_FILE_DESKTOP_GROUP);
+                g_key_file_free(entry);
+                return;
+        }
+        if (!g_key_file_has_key(entry, G_KEY_FILE_DESKTOP_GROUP,
+                                G_KEY_FILE_DESKTOP_KEY_TYPE, NULL)) {
+                EPRINTF("%s: has no Type= section\n", file);
+                g_key_file_free(entry);
+                return;
+        }
+        DPRINTF("got autostart file: %s (%s)\n", key, file);
+        g_hash_table_replace(autostarts, strdup(key), entry);
+        return;
+}
+
+/** @brief wean out entries that should not be used
+  * @param key - pointer to the application id of the entry
+  * @param value - pointer to the key file entry
+  * @return gboolean - TRUE if removal required, FALSE otherwise
+  */
+static gboolean
+autostarts_filter(gpointer key, gpointer value, gpointer user_data)
+{
+        char *appid = (char *) key;
+        GKeyFile *entry = (GKeyFile *) value;
+        gchar *name, *exec, *tryexec, *binary;
+	gchar **item, **list, **desktop;
+
+        if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+                                        G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
+                DPRINTF("%s: no Name\n", appid);
+                return TRUE;
+        }
+        g_free(name);
+        if (!(exec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+                                        G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
+                /* TODO: handle DBus activation */
+                DPRINTF("%s: no Exec\n", appid);
+                return TRUE;
+        }
+        if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
+                                G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
+                DPRINTF("%s: is Hidden\n", appid);
+                return TRUE;
+        }
+#if 0
+        /* NoDisplay can be used to hide desktop entries from the application
+         * menu and does not indicate that it should not be executed as an
+         * autostart entry.  Use Hidden for that. */
+        if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
+                                G_KEY_FILE_DESKTOP_KEY_NO_DISPLAY, NULL)) {
+                DPRINTF("%s: is NoDisplay\n", appid);
+                return TRUE;
+        }
+#endif
+	if ((list = g_key_file_get_string_list(entry, G_KEY_FILE_DESKTOP_GROUP,
+					       G_KEY_FILE_DESKTOP_KEY_ONLY_SHOW_IN, NULL, NULL))) {
+                desktop = NULL;
+		for (item = list; *item; item++) {
+			for (desktop = options.desktops; *desktop; desktop++)
+				if (!strcmp(*item, *desktop))
+					break;
+			if (*desktop)
+				break;
+		}
+		g_strfreev(list);
+		if (!*desktop) {
+			DPRINTF("%s: %s not in OnlyShowIn\n", appid, options.desktop);
+			return TRUE;
+		}
+	}
+	if ((list = g_key_file_get_string_list(entry, G_KEY_FILE_DESKTOP_GROUP,
+					       G_KEY_FILE_DESKTOP_KEY_NOT_SHOW_IN, NULL, NULL))) {
+                desktop = NULL;
+		for (item = list; *item; item++) {
+			for (desktop = options.desktops; *desktop; desktop++)
+				if (!strcmp(*item, *desktop))
+					break;
+			if (*desktop)
+				break;
+		}
+		g_strfreev(list);
+		if (*desktop) {
+			DPRINTF("%s: %s in NotShowIn\n", appid, *desktop);
+			return TRUE;
+		}
+	}
+        if ((tryexec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+                                        G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, NULL))) {
+                        binary = g_strdup(tryexec);
+                        g_free(tryexec);
+        } else {
+                char *p;
+
+                /* parse the first word of the exec statement and see whether it
+                 * is executable or can be found in PATH */
+                binary = g_strdup(exec);
+                if ((p = strpbrk(binary, " \t")))
+                        *p = '\0';
+        }
+        g_free(exec);
+        if (binary[0] == '/') {
+                if (access(binary, X_OK)) {
+                        DPRINTF("%s: %s: %s\n", appid, binary, strerror(errno));
+                        DPRINTF("%s: not executable\n", appid);
+                        g_free(binary);
+                        return TRUE;
+                }
+        } else {
+                char *dir, *end;
+                char *path = strdup(getenv("PATH") ? : "");
+                int blen = strlen(binary) + 2;
+                gboolean execok = FALSE;
+
+                for (dir = path, end = dir + strlen(dir); dir < end;
+                        *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
+                for (dir = path; dir < end; dir += strlen(dir) + 1) {
+                        int len = strlen(dir) + blen;
+                        char *file = calloc(len, sizeof(*file));
+
+                        strcpy(file, dir);
+                        strcat(file, "/");
+                        strcat(file, binary);
+                        if (!access(file, X_OK)) {
+                                execok = TRUE;
+                                free(file);
+                                break;
+                        }
+                        // too much noise
+                        // DPRINTF("%s: %s: %s\n", appid, file, strerror(errno);
+                }
+                free(path);
+                if (!execok) {
+                        DPRINTF("%s: %s: not in executable in path\n", appid, binary);
+                        g_free(binary);
+                        return TRUE;
+                }
+        }
+        return FALSE;
+}
+
+GHashTable *
+get_autostarts(void)
+{
+        char **xdg_dirs, **dirs;
+        int i, n = 0;
+        static const char *suffix = ".desktop";
+        static const int suflen = 8;
+
+        if (!(xdg_dirs = get_autostart_dirs(&n)) || !n)
+                return (autostarts);
+
+        autostarts = g_hash_table_new_full(g_str_hash, g_str_equal,
+                        autostart_key_free, autostart_value_free);
+
+        /* got through them backward */
+        for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+                char *file, *p;
+                DIR *dir;
+                struct dirent *d;
+                int len;
+                char *key;
+                struct stat st;
+
+                if (!(dir = opendir(*dirs))) {
+                        DPRINTF("%s: %s\n", *dirs, strerror(errno));
+                        continue;
+                }
+                while ((d = readdir(dir))) {
+                        if (d->d_name[0] == '.')
+                                continue;
+                        if (!(p = strstr(d->d_name, suffix)) || p[suflen]) {
+                                DPRINTF("%s: no %s suffix\n", d->d_name, suffix);
+                                continue;
+                        }
+                        len = strlen(*dirs) + strlen(d->d_name) + 2;
+                        file = calloc(len, sizeof(*file));
+                        strcpy(file, *dirs);
+                        strcat(file, "/");
+                        strcat(file, d->d_name);
+                        if (stat(file, &st)) {
+                                EPRINTF("%s: %s\n", file, strerror(errno));
+                                free(file);
+                                continue;
+                        }
+                        if (!S_ISREG(st.st_mode)) {
+                                EPRINTF("%s: %s\n", file, "not a regular file");
+                                free(file);
+                                continue;
+                        }
+                        key = strdup(d->d_name);
+                        *strstr(key, suffix) = '\0';
+                        get_autostart_entry(autostarts, key, file);
+                        free(key);
+                        free(file);
+                }
+                closedir(dir);
+        }
+        for (i = 0; i < n; i++)
+                free(xdg_dirs[i]);
+        free(xdg_dirs);
+#if 0
+        /* don't filter stuff out because we want to show non-autostarted appids
+         * as insensitive buttons. */
+        g_hash_table_foreach_remove(autostarts, autostarts_filter, NULL);
+#endif
+        return (autostarts);
+}
+
+void
+relax()
+{
+	while (gtk_events_pending())
+		gtk_main_iteration();
+}
+
+GtkWidget *splash;
+GtkWidget *table;
+
+typedef struct {
+        int cols;       /* columns in the table */
+        int rows;       /* rows in the table */
+        int col;        /* column index of the next free cell */
+        int row;        /* row index of the next free cell */
+} TableContext;
+
+void
+create_splashscreen(TableContext *c)
+{
+	splash = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_wmclass(GTK_WINDOW(splash), "xde-autostart", "XDE-Autostart");
+#if 0
+	unique_app_watch_window(uapp, GTK_WINDOW(splash));
+	g_signal_connect(G_OBJECT(uapp), "message-received", G_CALLBACK(message_received), (gpointer) NULL);
+#endif
+	gtk_window_set_gravity(GTK_WINDOW(splash), GDK_GRAVITY_CENTER);
+	gtk_window_set_type_hint(GTK_WINDOW(splash), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
+	gtk_container_set_border_width(GTK_CONTAINER(splash), 20);
+	gtk_window_set_skip_pager_hint(GTK_WINDOW(splash), TRUE);
+	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(splash), TRUE);
+	gtk_window_set_keep_below(GTK_WINDOW(splash), TRUE);
+	gtk_window_set_position(GTK_WINDOW(splash), GTK_WIN_POS_CENTER_ALWAYS);
+
+	GtkWidget *hbox = gtk_hbox_new(FALSE, 5);
+	gtk_container_add(GTK_CONTAINER(splash), GTK_WIDGET(hbox));
+
+	GtkWidget *vbox = gtk_vbox_new(FALSE, 5);
+	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), TRUE, TRUE, 0);
+
+	GtkWidget *img = gtk_image_new_from_file(options.banner);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(img), FALSE, FALSE, 0);
+
+	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
+	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+	gtk_widget_set_size_request(GTK_WIDGET(sw), 800, -1);
+	gtk_box_pack_end(GTK_BOX(vbox), GTK_WIDGET(sw), TRUE, TRUE, 0);
+
+	table = gtk_table_new(c->rows, c->cols, TRUE);
+	gtk_table_set_col_spacings(GTK_TABLE(table), 1);
+	gtk_table_set_row_spacings(GTK_TABLE(table), 1);
+	gtk_table_set_homogeneous(GTK_TABLE(table), TRUE);
+	gtk_widget_set_size_request(GTK_WIDGET(table), 750, -1);
+	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(sw), GTK_WIDGET(table));
+
+	gtk_window_set_default_size(GTK_WINDOW(splash), -1, 600);
+	gtk_widget_show_all(GTK_WIDGET(splash));
+	gtk_widget_show_now(GTK_WIDGET(splash));
+	relax();
+}
+
+static GtkWidget *
+get_icon(GtkIconSize size, const char *name, const char *stock)
+{
+	GtkIconTheme *theme = gtk_icon_theme_get_default();
+	GtkWidget *image = NULL;
+
+	if (!image && name && gtk_icon_theme_has_icon(theme, name))
+		image = gtk_image_new_from_icon_name(name, size);
+	if (!image && stock)
+		image = gtk_image_new_from_stock(stock, size);
+	return (image);
+}
+
+typedef struct {
+        GtkWidget *button;      /* button corresponding to this task */
+        guint timer;            /* timer source for blinking button */
+        const char *appid;      /* application id */
+        GKeyFile *entry;        /* key file entry */
+        gboolean runnable;      /* whether the entry is runnable */
+} TaskState;
+
+static gboolean
+blink_button(gpointer user_data)
+{
+	TaskState *task = (typeof(task)) user_data;
+
+	if (!task->button) {
+		task->timer = 0;
+		return G_SOURCE_REMOVE;
+	}
+	if (gtk_widget_is_sensitive(task->button))
+		gtk_widget_set_sensitive(task->button, FALSE);
+	else
+		gtk_widget_set_sensitive(task->button, TRUE);
+	return G_SOURCE_CONTINUE;
+}
+
+void
+add_task_to_splash(TableContext *c, TaskState *task)
+{
+	char *name;
+	GtkWidget *icon, *but;
+
+	name = g_key_file_get_string(task->entry, G_KEY_FILE_DESKTOP_GROUP,
+				     G_KEY_FILE_DESKTOP_KEY_ICON, NULL);
+	icon = get_icon(GTK_ICON_SIZE_DIALOG, name, "gtk-missing-image");
+
+	name = g_key_file_get_locale_string(task->entry, G_KEY_FILE_DESKTOP_GROUP,
+					    G_KEY_FILE_DESKTOP_KEY_NAME, options.language, NULL);
+	if (!name)
+		name = g_strdup(task->appid);
+
+	but = task->button = gtk_button_new();
+	gtk_button_set_image_position(GTK_BUTTON(but), GTK_POS_TOP);
+	gtk_button_set_image(GTK_BUTTON(but), GTK_WIDGET(icon));
+#if 1
+	gtk_button_set_label(GTK_BUTTON(but), name);
+#endif
+	gtk_widget_set_tooltip_text(GTK_WIDGET(but), name);
+
+	g_free(name);
+
+	gtk_table_attach_defaults(GTK_TABLE(table), GTK_WIDGET(but),
+				  c->col, c->col + 1, c->row, c->row + 1);
+	gtk_widget_set_sensitive(GTK_WIDGET(but), task->runnable);
+	gtk_widget_show_all(GTK_WIDGET(but));
+	gtk_widget_show_now(GTK_WIDGET(but));
+	relax();
+
+	if (++c->col >= c->cols) {
+		c->row++;
+		c->col = 0;
+	}
+
+        if (task->runnable)
+                task->timer = g_timeout_add_seconds(1, blink_button, task);
+}
+
+void
+do_autostarts()
+{
+        GHashTable *autostarts;
+        TaskState *task;
+        GHashTableIter hiter;
+        gpointer key, value;
+        int count;
+        TableContext *c = NULL;
+
+
+        if (!(autostarts = get_autostarts())) {
+                EPRINTF("cannot build AutoStarts\n");
+                return;
+        }
+        if (!(count = g_hash_table_size(autostarts))) {
+                EPRINTF("cannot fine any AutoStarts\n");
+                return;
+        }
+        if (options.splash) {
+                c = calloc(1, sizeof(*c));
+
+                c->cols = 7; /* seems like a good number */
+                c->rows = (count + c->cols - 1) /c->cols;
+                c->col = 0;
+                c->row = 0;
+
+                create_splashscreen(c);
+        }
+
+        g_hash_table_iter_init(&hiter, autostarts);
+        while (g_hash_table_iter_next(&hiter, &key, &value)) {
+
+                task = calloc(1, sizeof(*task));
+                task->appid = key;
+                task->entry = value;
+                task->runnable = !autostarts_filter(key, value, NULL);
+
+                if (options.splash)
+                        add_task_to_splash(c, task);
+
+                if (!task->runnable) {
+                        free(task);
+                        continue;
+                }
+
+                /* FIXME: actually launch the task */
+
+        }
+}
+
+void
+do_executes()
+{
+}
+
 void
 run_autostart(int argc, char *argv[])
 {
+        gtk_init(NULL, NULL);
+        // gtk_init(argc, argv);
+
 	/* FIXME: write me */
+        do_executes();
+        do_autostarts();
+
+        gtk_main();
 }
 
 static void
@@ -474,6 +953,28 @@ set_default_file(void)
 }
 
 void
+split_desktops(void)
+{
+	char **desktops, *copy, *pos, *end;;
+	int n;
+
+	copy = strdup(options.desktop);
+
+	for (n = 0, pos = copy, end = pos + strlen(pos); pos < end;
+	     n++, *strchrnul(pos, ';') = '\0', pos += strlen(pos) + 1) ;
+
+        desktops = calloc(n + 1, sizeof(*desktops));
+
+        for (n = 0, pos = copy; pos < end; n++, pos += strlen(pos) + 1)
+                desktops[n] = strdup(pos);
+
+        free(copy);
+
+        free(options.desktops);
+        options.desktops = desktops;
+}
+
+void
 set_defaults(void)
 {
 	char *p, *a;
@@ -746,6 +1247,7 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
 	}
 	set_default_file();
+        split_desktops();
 	switch (command) {
 	case COMMAND_AUTOSTART:
 		if (options.debug)
