@@ -338,14 +338,12 @@ however, I hate to wait on computers so it was converted to C<C>.
 
 Brian Bidulock <bidulock@cpan.org>
 
+See B<--copying> for full copyright notice and copying permissions.
+
 =head1 SEE ALSO
 
-L<getopt_long_only(3)>,
-L<xde-logout(1)>,
-L<xde-session(1)>,
-L<xde-startup(1)>,
-L<xdg-launch(1)>,
-L<lxsession-logout(1)>,
+L<getopt_long_only(3)>, L<xde-logout(1)>, L<xde-session(1)>,
+L<xde-startup(1)>, L<xdg-launch(1)>, L<lxsession-logout(1)>,
 L<lxsession(1)>.
 
 =cut

@@ -41,8 +41,8 @@ stamp-h*
 .*.sw[op]
 THANKS
 TODO
-xde-dock
-xde-dock-*.tar.xz
+xde-session-*.tar.xz
+xde-autostart
 xde-chooser
 xde-input
 xde-logout

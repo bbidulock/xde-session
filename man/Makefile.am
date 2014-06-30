@@ -1,5 +1,6 @@
 
 xde_man_files = \
+	xde-autostart.man \
 	xde-chooser.man \
 	xde-input.man \
 	xde-logout.man \
@@ -12,6 +13,7 @@ nodist_man1_MANS = $(xde_man_files)
 CLEANFILES = $(xde_man_files)
 
 EXTRA_DIST = \
+	xde-autostart.pod \
 	xde-chooser.pod \
 	xde-input.pod \
 	xde-logout.pod \
@@ -19,6 +21,9 @@ EXTRA_DIST = \
 	xde-smproxy.pod \
 	xde-xchooser.pod \
 	xde-xlogin.man
+
+xde-autostart.man: MANNAME = XDE-AUTOSTART
+xde-autostart.man: xde-autostart.pod
 
 xde-chooser.man: MANNAME = XDE-CHOOSER
 xde-chooser.man: xde-chooser.pod

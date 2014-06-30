@@ -16,18 +16,23 @@ By default, B<xde-logout> presents a menu that includes:
 
 =over
 
+=item I<Cancel>
+
+Cancel the logging out process.
+
 =item I<Logout>
 
 Logging out of the current X Session.
 
 =item I<SwitchUser>
 
-Switch the logged in user.
+Switch the logged in user. (Not fully supported yet.)
 
 =item I<SwitchDesk>
 
 Switch the current desktop environment (X Session manager and window
-manager) to another.  A list of sessions is presented.
+manager) to another.  A list of sessions is presented.  (Not fully
+supported yet.)
 
 =back
 
@@ -281,14 +286,7 @@ under current development.
 
 Brian Bidulock <bidulock@openss7.org>
 
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2014 by OpenSS7 Corporation.
-All rights reserved.
-
-This program is free software; you basically stole it, and you can,
-therefore, do what you want with it, but we take no responsibility in
-that.
+See B<--copying> for full copyright notice and copying permissions.
 
 =head1 SEE ALSO
 

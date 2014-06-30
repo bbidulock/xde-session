@@ -3,6 +3,7 @@ AM_CFLAGS = $(X11_CFLAGS) $(XEXT_CFLAGS) $(XSCRNSAVER_CFLAGS) $(XINERAMA_CFLAGS)
 AM_LDFLAGS = $(WNCK_LIBS) $(GTK_LIBS) $(GDK_LIBS) $(CAIRO_LIBS) $(XINERAMA_LIBS) $(XRANDR_LIBS) $(XSCRNSAVER_LIBS) $(XEXT_LIBS) $(X11_LIBS)
 
 bin_PROGRAMS = \
+	xde-autostart \
 	xde-chooser \
 	xde-input \
 	xde-logout \
@@ -10,6 +11,12 @@ bin_PROGRAMS = \
 	xde-wmproxy \
 	xde-xchooser \
 	xde-xlogin
+
+
+xde_autostart_CPPFLAGS = -DNAME=\"xde-autostart\"
+xde_autostart_SOURCES = xde-autostart.c xde-autostart.h
+xde_autostart_CFLAGS = $(AM_CFLAGS)
+xde_autostart_LDFLAGS = $(AM_LDFLAGS)
 
 xde_chooser_CPPFLAGS = -DNAME=\"xde-chooser\"
 xde_chooser_SOURCES = xde-chooser.c xde-chooser.h
