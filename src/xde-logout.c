@@ -159,7 +159,7 @@ get_data_dirs(int *np)
 
 	home = getenv("HOME") ? : ".";
 	xhome = getenv("XDG_DATA_HOME");
-	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/loca/share:/usr/share";
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
 	dirs = calloc(len, sizeof(*dirs));

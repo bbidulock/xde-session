@@ -73,7 +73,7 @@ typedef struct {
 	int commands;
 	char *file;
 	Bool autostart;
-        Bool wait;
+	Bool wait;
 	unsigned int pause;
 	char *banner;
 	Bool splash;
@@ -100,7 +100,7 @@ Options options = {
 	.commands = 0,
 	.file = NULL,
 	.autostart = True,
-        .wait = True,
+	.wait = True,
 	.pause = 2,
 	.banner = NULL,
 	.splash = True,
@@ -124,7 +124,7 @@ get_data_dirs(int *np)
 
 	home = getenv("HOME") ? : ".";
 	xhome = getenv("XDG_DATA_HOME");
-	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/loca/share:/usr/share";
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
 	dirs = calloc(len, sizeof(*dirs));
@@ -366,28 +366,17 @@ General options:\n\
         increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
 ", argv[0]
-        ,options.display
-        ,options.desktop
-        ,options.session ?: "false"
-        ,options.file
-        ,show_bool(options.autostart)
-        ,show_bool(options.wait)
-        ,options.pause
-        ,options.splash ? options.banner : "false"
-        ,options.guard ,options.delay
-        ,options.charset
-        ,options.language
-        ,options.banner
-        ,show_side(options.side)
-        ,options.icon_theme ?: "auto"
-        ,options.gtk2_theme ?: "auto"
-        ,show_bool(options.usexde)
-        ,show_bool(options.foreground)
-        ,options.client_id ?: ""
-        ,show_bool(options.dryrun)
-        ,options.debug
-        ,options.output
-);
+		       , options.display, options.desktop, options.session ? : "",
+		       options.file ? : "", show_bool(options.autostart)
+		       , show_bool(options.wait)
+		       , options.pause, options.splash ? options.banner : "false", options.guard,
+		       options.delay, options.charset, options.language, options.banner,
+		       show_side(options.side)
+		       , options.icon_theme ? : "auto", options.gtk2_theme ? : "auto",
+		       show_bool(options.usexde)
+		       , show_bool(options.foreground)
+		       , options.client_id ? : "", show_bool(options.dryrun)
+		       , options.debug, options.output);
 }
 
 void
@@ -432,11 +421,63 @@ set_default_banner(void)
 	free(xdg_dirs);
 }
 
+/** @brief set default file list
+  *
+  * This can only be run after options processing...
+  */
+void
+set_default_file(void)
+{
+	char **xdg_dirs, **dirs, *file, *files;
+	int i, size, n = 0, next;
+
+	if (options.file)
+		return;
+	if (!options.session)
+		return;
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n)
+		return;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	files = NULL;
+	size = 0;
+	next = 0;
+
+	/* process in reverse order */
+	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+		strncpy(file, *dirs, PATH_MAX);
+		strncat(file, "/lxsession/", PATH_MAX);
+		strncat(file, options.session, PATH_MAX);
+		strncat(file, "/autostart", PATH_MAX);
+		if (access(file, R_OK)) {
+			DPRINTF("%s: %s\n", file, strerror(errno));
+			continue;
+		}
+		size += strlen(file) + 1;
+		files = realloc(files, size * sizeof(*files));
+		if (next)
+			strncat(files, ":", size);
+		else {
+			*files = '\0';
+			next = 1;
+		}
+		strncat(files, file, size);
+	}
+	options.file = files;
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+
 void
 set_defaults(void)
 {
 	char *p, *a;
-        const char *env;
+	const char *env;
 
 	set_default_banner();
 	if ((options.language = setlocale(LC_ALL, ""))) {
@@ -446,11 +487,11 @@ set_defaults(void)
 			strcpy(p, a);
 	}
 	options.charset = strdup(nl_langinfo(CODESET));
-        options.display = strdup(getenv("DISPLAY") ?: "");
-        if ((env = getenv("XDG_CURRENT_DESKTOP")))
-                options.desktop = strdup(env);
-        else
-                options.desktop = strdup("XDE");
+	options.display = strdup(getenv("DISPLAY") ? : "");
+	if ((env = getenv("XDG_CURRENT_DESKTOP")))
+		options.desktop = strdup(env);
+	else
+		options.desktop = strdup("XDE");
 }
 
 typedef enum {
@@ -511,8 +552,8 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "d:e:s:x:f:awp::l::W::c:L:b:S:i:t:XFnD::v::hVCH?", long_options,
-				     &option_index);
+		c = getopt_long_only(argc, argv, "d:e:s:x:f:awp::l::W::c:L:b:S:i:t:XFnD::v::hVCH?",
+				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "d:e:s:x:f:a1w2p:l:4W:c:L:b:S:i:t:XF3:nDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
@@ -540,7 +581,7 @@ main(int argc, char *argv[])
 			break;
 		case 'x':	/* -x, --exec COMMAND */
 			options.execute = realloc(options.execute, (options.commands + 1) *
-					sizeof(*options.execute));
+						  sizeof(*options.execute));
 			options.execute[options.commands++] = strdup(optarg);
 			break;
 		case 'f':	/* -f, --file FILE */
@@ -696,14 +737,15 @@ main(int argc, char *argv[])
 			exit(2);
 		}
 	}
-        if (optind < argc) {
-                fprintf(stderr, "%s: too many arguments\n", argv[0]);
-                goto bad_nonopt;
-        }
+	if (optind < argc) {
+		fprintf(stderr, "%s: too many arguments\n", argv[0]);
+		goto bad_nonopt;
+	}
 	if (options.debug) {
 		fprintf(stderr, "%s: option index = %d\n", argv[0], optind);
 		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
 	}
+	set_default_file();
 	switch (command) {
 	case COMMAND_AUTOSTART:
 		if (options.debug)
