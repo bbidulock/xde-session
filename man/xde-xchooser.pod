@@ -37,7 +37,7 @@ No options are necessary.  When launched by L<xdm(1)>, it will provide
 the appropriate arguments.  B<xde-xchooser> can be launched directly on
 the command line of an x-terminal to test its appearance and operation.
 In this mode arguments are still required but no options.  Absence of
-the B<-xdmaddress>, B<-clientaddress> and B<-connectionType> options
+the B<-xdmAddress>, B<-clientAddress> and B<-connectionType> options
 indicates to B<xde-xchooser> that it was not launched by L<xdm(1)> or an
 L<xdm(1)> workalike.
 
@@ -64,7 +64,7 @@ B<xde-xchooser> that adds the options:
  /usr/lib/X11/xdm/xde-xchooser -welcome "Welcome to X!" \
 	 -banner /usr/lib/X11/xdm/banner.png $@
 
-=item B<-xdmaddress> I<ADDRESS>
+=item B<-xdmAddress> I<ADDRESS>
 
 Specifies the address of a TCP socket upon which L<xdm(1)> is awaiting
 instructions for the server.  L<xdm(1)> encodes this as I<ADDRESS> as a
@@ -76,7 +76,7 @@ the IPv4 or IPv6 network-byte-order IP address.
 
 B<xde-xchooser> uses this option to communicate the selection back to L<xdm(1)>.
 
-=item B<-clientaddress> I<IPADDR>
+=item B<-clientAddress> I<IPADDR>
 
 Specifies the client IP address I<IPADDR> that initiated the request.
 L<xdm(1)> encodes this as a string of hexadecimal characters (with no 0x

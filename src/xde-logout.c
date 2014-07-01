@@ -1365,26 +1365,28 @@ set_default_banner(void)
 	if (!(xdg_dirs = get_data_dirs(&n)) || !n)
 		return;
 
-	pfx = getenv("XDG_MENU_PREFIX") ? : "";
-
 	free(options.banner);
 	options.banner = NULL;
 
 	file = calloc(PATH_MAX + 1, sizeof(*file));
 
-	for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
-		strncpy(file, *dirs, PATH_MAX);
-		strncat(file, "/images/", PATH_MAX);
-		strncat(file, pfx, PATH_MAX);
-		strncat(file, "banner", PATH_MAX);
-		suffix = file + strnlen(file, PATH_MAX);
+	for (pfx = getenv("XDG_MENU_PREFIX") ? : ""; pfx; pfx = *pfx ? "" : NULL) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
 
-		for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
-			strcpy(suffix, exts[j]);
-			if (!access(file, R_OK)) {
-				options.banner = strdup(file);
-				break;
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					options.banner = strdup(file);
+					break;
+				}
 			}
+			if (options.banner)
+				break;
 		}
 		if (options.banner)
 			break;

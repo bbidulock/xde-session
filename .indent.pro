@@ -24,6 +24,9 @@
 -ss
 -hnl
 -nbc
+-TPingHost
+-TARRAY8
+-TGIOChannel
 -TGtkWindow
 -TGtkTreePath
 -Tgchar

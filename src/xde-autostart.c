@@ -118,6 +118,37 @@ Options options = {
         .desktops = NULL,
 };
 
+typedef enum {
+	TaskStateIdle,		/* task is not running yet */
+	TaskStateStartup,	/* running but in startup notification */
+	TaskStateRunning,	/* completed startup notification */
+	TaskStateSignaled,	/* exited on a signal */
+	TaskStateFailed,	/* exited with non-zero exit status */
+	TaskStateDone,		/* exited with zero exit status */
+} TaskState;
+
+typedef struct {
+	TaskState state;	/* state of the task */
+        GtkWidget *button;      /* button corresponding to this task */
+        guint blink;            /* timer source for blinking button */
+        const char *appid;      /* application id */
+        GKeyFile *entry;        /* key file entry */
+        gboolean runnable;      /* whether the entry is runnable */
+	const char *cmd;	/* command to execute */
+} TaskContext;
+
+GHashTable *autostarts;
+
+GtkWidget *splash;
+GtkWidget *table;
+
+typedef struct {
+        int cols;       /* columns in the table */
+        int rows;       /* rows in the table */
+        int col;        /* column index of the next free cell */
+        int row;        /* row index of the next free cell */
+} TableContext;
+
 char **
 get_data_dirs(int *np)
 {
@@ -181,8 +212,6 @@ get_config_dirs(int *np)
 		*np = n;
 	return (xdg_dirs);
 }
-
-GHashTable *autostarts;
 
 char **
 get_autostart_dirs(int *np)
@@ -463,16 +492,6 @@ relax()
 		gtk_main_iteration();
 }
 
-GtkWidget *splash;
-GtkWidget *table;
-
-typedef struct {
-        int cols;       /* columns in the table */
-        int rows;       /* rows in the table */
-        int col;        /* column index of the next free cell */
-        int row;        /* row index of the next free cell */
-} TableContext;
-
 void
 create_splashscreen(TableContext *c)
 {
@@ -531,21 +550,13 @@ get_icon(GtkIconSize size, const char *name, const char *stock)
 	return (image);
 }
 
-typedef struct {
-        GtkWidget *button;      /* button corresponding to this task */
-        guint timer;            /* timer source for blinking button */
-        const char *appid;      /* application id */
-        GKeyFile *entry;        /* key file entry */
-        gboolean runnable;      /* whether the entry is runnable */
-} TaskState;
-
 static gboolean
 blink_button(gpointer user_data)
 {
-	TaskState *task = (typeof(task)) user_data;
+	TaskContext *task = (typeof(task)) user_data;
 
 	if (!task->button) {
-		task->timer = 0;
+		task->blink = 0;
 		return G_SOURCE_REMOVE;
 	}
 	if (gtk_widget_is_sensitive(task->button))
@@ -556,7 +567,7 @@ blink_button(gpointer user_data)
 }
 
 void
-add_task_to_splash(TableContext *c, TaskState *task)
+add_task_to_splash(TableContext *c, TaskContext *task)
 {
 	char *name;
 	GtkWidget *icon, *but;
@@ -593,14 +604,14 @@ add_task_to_splash(TableContext *c, TaskState *task)
 	}
 
         if (task->runnable)
-                task->timer = g_timeout_add_seconds(1, blink_button, task);
+                task->blink = g_timeout_add_seconds(1, blink_button, task);
 }
 
 void
 do_autostarts()
 {
         GHashTable *autostarts;
-        TaskState *task;
+        TaskContext *task;
         GHashTableIter hiter;
         gpointer key, value;
         int count;
@@ -868,26 +879,28 @@ set_default_banner(void)
 	if (!(xdg_dirs = get_data_dirs(&n)) || !n)
 		return;
 
-	pfx = getenv("XDG_MENU_PREFIX") ? : "";
-
 	free(options.banner);
 	options.banner = NULL;
 
 	file = calloc(PATH_MAX + 1, sizeof(*file));
 
-	for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
-		strncpy(file, *dirs, PATH_MAX);
-		strncat(file, "/images/", PATH_MAX);
-		strncat(file, pfx, PATH_MAX);
-		strncat(file, "banner", PATH_MAX);
-		suffix = file + strnlen(file, PATH_MAX);
+	for (pfx = getenv("XDG_MENU_PREFIX") ? : ""; pfx; pfx = *pfx ? "" : NULL) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
 
-		for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
-			strcpy(suffix, exts[j]);
-			if (!access(file, R_OK)) {
-				options.banner = strdup(file);
-				break;
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					options.banner = strdup(file);
+					break;
+				}
 			}
+			if (options.banner)
+				break;
 		}
 		if (options.banner)
 			break;
