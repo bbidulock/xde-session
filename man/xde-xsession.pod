@@ -1,0 +1,573 @@
+=pod
+
+=head1 NAME
+
+xde-xsession - launch an xsession
+
+=head1 SYNOPSIS
+
+B<xde-xsession> [I<OPTIONS>] [I<SESSION>]
+
+=head1 DESCRIPTION
+
+B<xde-xsession> is a C<C>-language program that can be lauched from, or
+in lieue of, F<~/.xinitrc> or F<~/.xsession> to choose, launch and
+manage an X session, or when already running to switch or control the X
+session.  It has the following features:
+
+=over
+
+=item 1.
+
+Integrated session management including X session L<xinit(1)>/L<xdm(1)>
+and window manager configuration setup for a wide range of known window
+managers.
+
+=item 2.
+
+Integrated X11R6 X Session Mangement with full XSM window manager
+assistance.
+
+=item 3.
+
+Integrated screen locker and user management (switch user) with
+L<systemd(8)> integration.
+
+=item 4.
+
+Integrated XDG Autostart and Application launcher with full startup
+notification assistance.
+
+=item 5.
+
+Integrated XINPUT and XSETTINGS management.
+
+=item 6.
+
+Full desktop theme support for a wide range of supported window managers
+and support for desktop themes for unsupported window managers
+conforming to EWMH/NetWM, GNOME1/WinWM, OSF/Motif or WindowMaker
+compliant window managers.
+
+=item 7.
+
+Window manager root menu and panel menu support.
+
+=item 8.
+
+The Kitchen Sink.
+
+=back
+
+=head1 ARGUMENTS
+
+B<xde-xsession> accepts one optional argument as follows:
+
+=over
+
+=item [I<SESSION>]
+
+THe name of the XDG session to use.  This can be any of the recognized
+session names or the special names: C<logout>, C<default>, C<current> or
+C<choose>.
+
+=over
+
+=item C<logout>
+
+Do not choose a session but logout an existing session or simply logout
+if no session exists.
+
+
+=item C<default>
+
+Do not choose a session, but simply run (typically without prompting)
+whichever session the user has set as a default.  (The default is
+located in the file F<$XDG_CONFIG_HOME/xde/default>).  When no default
+is configured, or when the configured default is not usable (e.g.
+missing executable), this argument has the same effect as C<choose>.
+
+=item C<current>
+
+Do not choose a session, but simply run (typically without prompting)
+whichever session the user last ran.  (The default is located in the
+file F<$XDG_CONFIG_HOME/xde/current>).  When no current session is
+configured, or when the last run session is not usable (e.g. missing
+executable), this argument has the same effect as C<choose>.
+
+=item C<choose>
+
+Launch a dialog to choose the session regardless of whether a default
+session is configured or available.  This is the most typical mode of
+B<xde-xsession>.
+
+=item I<SESSION>
+
+Launch the session, I<SESSION>, where I<SESSION> specifies the X session
+identifier of an XDG desktop session to launch.  The X session
+identifier, I<SESSION>, can be one of the following:
+
+=over
+
+=item 1.
+
+the name of a desktop entry file without the F<.desktop> suffix (e.g.
+C<fluxbox>); the name may contain a "/" if it is specified relative to a
+user or system xsession directory, in which case it must not start with
+a C</> or C<.>;
+
+=item 2.
+
+the name of a desktop entry file with the F<.desktop> suffix (e.g.
+C<fluxbox.desktop>); the same restrictions as (1), above, apply; or,
+
+=item 3.
+
+the full path (absolute or relative) and filename of a desktop entry
+file  (e.g. F</usr/share/xsession/fluxbox.desktop>); the full path must
+contain at least one C</> and start with either a C</> or a C<.>.
+
+=back
+
+When unspecified and the B<--xinit> flag is specified, the default is
+C<default>; otherwise, the default is C<current>.
+
+=back
+
+=head1 OPTIONS
+
+B<xde-xsession> uses L<getopt_long_only(3)> to parse options, so
+abbreviated or single-dash long options are recognized when not
+ambiguous.  B<xde-xsession> accepts the following options:
+
+=head2 COMMAND OPTIONS
+
+The following command options are mutually exclusive: the first option
+in this group encountered sets the mode of the program.  It is an error
+to specify more than one command option.  When no command option is
+specified, the program operates as though the B<--launch> option was
+specified.
+
+=over
+
+=item [B<--launch>]
+
+Launch the session as specified by I<SESSION>.  If there is an existing
+session, this command option (or default action) has the same effect as
+specifying B<--chooser>.
+
+=item B<--xinit>
+
+Launch the session as specified by I<SESSION> after performing normal
+F<~/.xinitrc> or F<~/.xsession> intializations.  If there is an existing
+session, this command option will fail.
+
+This option may be used directly from, or in lieue of, an F<~/.xinitrc>
+or F<~/.xsession> file or can be called directly from
+F</etc/X11/xinit/xinitrc> or F</exc/X11/xdm/Xsession> scripts.
+
+=item B<--chooser>
+
+Ask an existing session to provide a chooser dialog.  See also,
+L<xde-chooser(1)>.  This is also the default when B<xde-xsession> is
+called with a base C<argv[0]> of F<xde-chooser>.
+
+This option can be used with a I<SESSION> argument to directly launch a
+new X session (window manager) from within an existing X session.  The
+command will detect whether it was launched directly from within a
+window manager root menu I<replace> option (where the window manager
+process performs an C<exec> to the new window manager: i.e. the PID of
+the replacement X session is the PID of the old X sesssion) and do the
+right thing.
+
+=item B<--logout>
+
+Ask an existing session to provide a logout dialog.  See also,
+L<xde-logout(1)>.  This is also the default when B<xde-xsession> is
+called with a base C<argv[0]> of F<xde-logout>.
+
+This option can be used from inside of the X session to logout of the
+session, perform session management, perform power or reboot management,
+or choose another window manager.
+
+=item B<--manager>
+
+Ask an existing session to provide a manager dialog.  See also,
+L<xde-manager(1)>.  This is also the default when B<xde-xsession> is
+called with a base C<argv[0]> of F<xde-manager>.
+
+=item B<--help>, B<-h>
+
+Print usage information to standard error containing current defaults
+and exit.
+
+=item B<--version>, B<-v>
+
+Print the program version to standard output and exit.
+
+=item B<--copying>, B<-C>
+
+Print copying permissions to standard output and exit.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+The following general options can be used with most of the command
+options listed above.  Almost all options can be specified in the
+configuration file or have defaults that can be obtained from the
+C<XSession> desktop entry file.
+
+=over
+
+=item B<--display>, B<-d> I<DISPLAY>
+
+=item B<--desktop>, B<-e> I<DESKTOP>
+
+=item B<--session>, B<-s> I<SESSION>
+
+=item B<--startwm>, B<-m> I<EXECUTE>
+
+=item B<--file>, B<-f> I<FILE>
+
+=item B<--setup> I<COMMAND>
+
+=item B<--exec>, B<-x> I<COMMAND>
+
+=item B<--autostart>, B<--noautostart>, B<-a>
+
+=item B<--wait>, B<-w>, B<--nowait>
+
+=item B<--pause>, B<-p> [I<PAUSE>]
+
+=item B<--splash>, B<-l> [I<IMAGE>]
+
+=item B<--toolwait>, B<-W> [I<GUARD>][:I<DELAY>]
+
+=item B<--charset>, B<-c> I<CHARSET>
+
+=item B<--launguage>, B<-L> I<LANGUAGE>
+
+=item B<--vendor> I<VENDOR>
+
+=item B<--splash>, B<-l> [I<IMAGE>]
+
+=item B<--banner>, B<-b> I<BANNER>
+
+=item B<--side>, B<-S> {B<left>|B<top>|B<right>|B<bottom>}
+
+=item B<--icons>, B<-i> I<THEME>
+
+=item B<--theme>, B<-t> I<THEME>
+
+=item B<--cursors>, B<-z> I<THEME>
+
+=item B<--xde-theme>, B<-X>
+
+=item B<--foreground>, B<-F>
+
+=item B<--dry-run>, B<-n>
+
+=item B<--debug>, B<-d> [I<LEVEL>]
+
+=item B<--verbose>, B<-v> [I<LEVEL>]
+
+=back
+
+=head1 USAGE
+
+=head1 BEHAVIOR
+
+=head2 Session Management
+
+=head2 X11R6 Session Management
+
+=head2 Screen Locking (User Switch)
+
+=head2 
+
+=head1 WINDOW MANAGERS
+
+=head1 FILES
+
+=head2 CONFIGURATION FILE
+
+The B<xde-xsession> configuration file is an F<.ini> style key-value
+file.  The file is located in XDG user and system configuration
+directories under the path F<xde/$PROFILE/xsession.ini>, where $PROFILE
+is the value passed with the B<--session> option, or when no such file
+is found, a file located under the path F<xde/default/xsession.ini>.
+
+The normal XDG directory rules are used for locating the configuration
+file.  If no configuration file can be found B<xde-xsession> uses
+compiled configuration defaults.
+
+When the program goes to launch an XSession, it may also use the
+settings provided in XSession desktop file.
+
+In either file, the program recognizes key-value pairs contained in one
+group named C<XDE Session>.
+
+For the key-value pairs described below, a I<PATH> value can be a null,
+partial, absolute tilde-expanded or relative path.  Null paths disable
+the feature with which they are associated.  Partial paths are paths
+that do not begin with a tilde (C<~>), slash (C</>) or dot (C<.>), but
+may contain a slash (C</>).  Partial paths are looked up relative to XDG
+user and system configuration directories using the normal XDG directory
+precedence rules.  Absolute paths begin with either a tilde (C<~>) or a
+slash (C</>) where the tilde (C<~>) will be replaced with the user's
+B<HOME> directory.  Relative paths must begin with a dot (C<.>) and are
+looked up relative to the current directory at the time that
+B<xde-xsession> was invoked (normally the user's home directory).
+
+The following keys are recognized:
+
+=over
+
+=item B<DefaultXSession>=I<SESSION>
+
+This key-value pair defines the session that will be used when no
+I<SESSION> argument is provided.  Possible values are the same as
+described above under L</ARGUMENTS>.
+
+The default when this key is unspecified is C<choose>.
+
+This key cannot reasonably be used from an XSession file.
+
+=item B<Desktop>=I<STRING>
+
+The desktop environment to set in the $XDG_CURRENT_DESKTOP environment
+variable and to use for autostart and application launching when
+examining C<OnlyShowIn> and C<NotShowIn> key-value pairs in desktop
+entry files.  Will be overriden by the B<--desktop> command line option.
+Can be specified in an XSession file.
+
+=item B<StartupFile>=I<PATH>
+
+Specifies a null, partial, absolute tilde-expanded or relative path to a
+file from which to read formatted commands to launch before performing
+autostart, but after starting the XSession.  Defaults to an automatic
+lookup algorithm.  Will be overriden by the B<--file> command line
+option.  Can be specified in an XSession file.
+
+=item B<Wait>=I<BOOLEAN>
+
+Specifies whether (or not) to wait for a window manager to take control
+of the root window of the default screen of the display before starting
+further applications.  Will be overridden by the B<--wait> command line
+option.  Can be specified in an XSession file.
+
+=item B<Pause>=I<SECONDS>
+
+Specifies the interval of time, I<SECONDS>, in seconds, to wait after
+the window manager initialization phase before starting the first
+applications.  If B<Pause> is not specified, it defaults to 2 seconds.
+Will be overriden by the B<--pause> command line option.  Can be
+specified in an XSession file.
+
+=item B<ToolWait>=I<BOOLEAN>
+
+Specifies whether or not to perform tool wait on autostarted tasks where
+startup completion notification can be deteremined from the
+B<StartupNotify> and B<StartupWMClass> key-value pairs in the desktop
+entry file for the task.  The default when unspecified is to perform
+tool wait.  Can be overridden by the B<--toolwait> command line option.
+Not useful in an XSession file.
+
+=item B<ToolWaitGuard>=I<MILLISECONDS>
+
+When tool wait is being performed, only wait I<MILLISECONDS>
+milliseconds for startup notification completion before starting the
+next task.  The default is 200 milliseconds.  Ignored unless B<ToolWait>
+is C<true>.  Can be overridden by the B<--toolwait> command line option.
+Not useful in an XSession file.
+
+=item B<ToolWaitDelay>=I<MILLISECONDS>
+
+When tool wait is being performed, delay I<MILLISECONDS> milliseconds
+after the current task completes startup notification or whose guard
+timer expires before starting the next task.  The default is 0
+milliseconds.  Ignored unless B<ToolWait> is C<true>.  Can be overridden
+by the B<--toolwait> command line option.  Not useful in an XSession
+file.
+
+=item B<Language>=I<LANGUAGE>
+
+Specifies the language to use when looking up localized fields in
+desktop entry files.  Follows normal B<LC_ALL> environment variable
+formatting rules.  The character set is ignored.  Defaults to the
+currenr locale.  Can be overridden with the C<--language> option.  Not
+useful in an XSession file.
+
+=item B<Vendor>=I<STRING>
+
+Specifies a vendor identifier string, I<STRING>, to be used in branding.
+This affects the splash image, banner, and XDG application menu prefix.
+When unspecified, the default will depend on the $XDG_MENU_PREFIX and
+$XDG_VENDOR_ID environment variables.  Can be overridden with the
+C<--vendor> option.  Not useful in an XSession file.
+
+=item B<Splash>=I<BOOLEAN>
+
+Specifies whether or not a splash window is to be generated when
+performing initializations and starting applications.  The default when
+unspecified is to display a splash window.  Will be overriden by the
+B<--splash> command line option.  Can be specified in an XSession file. 
+
+=item B<SplashImage>=I<PATH>
+
+Specifies a null, partial, absolute tilde-expanded or relative path to
+an image file that will be used as a background image.  When
+unspecified, defaults to F<images/$VENDOR-splash.png>, then
+F<images/splash.png>.  Can be overridden with the B<--splash> command
+line option.  Not useful in an XSession file.
+
+=item B<Banner>=I<PATH>
+
+Specifies a null, partial, absolute tilde-expanded or relative path to a
+custom logo to use on the splash, chooser and logout windows.  When
+unspecified, defaults to F<images/$VENDOR-banner.png>, then
+F<images/banner.png>.  Can be overridden with the B<--banner> command
+line option.  Can be specified in an XSession file.
+
+=item B<ChooserPromptText>[]=I<TEXT>
+
+=item B<ChooserPromptMarkup>[]=I<MARKUP>
+
+=item B<LogoutPromptText>[]=I<TEXT>
+
+=item B<LogoutPromptMarkup>[]=I<MARKUP>
+
+Specifies a custom chooser and logout prompts either as text or pango
+markup.  Any occurence of I<%p> will be replaced with the I<SESSION>
+name converted to all uppercase.  Can be localized according to desktop
+entry file rules.  When unspecified, the logout prompt defaults to "Log
+out of %p session?"; the chooser prompt defaults to a null string (no
+prompt display).  The logout prompt can be overridden by the B<--prompt>
+command line argument.  Can be specified (and localized) in an XSession
+file.
+
+=item B<ChooserSide>={B<left>|B<top>|B<right>|B<bottom>}
+
+=item B<SplashSide>={B<left>|B<top>|B<right>|B<bottom>}
+
+=item B<LogoutSide>={B<left>|B<top>|B<right>|B<bottom>}
+
+Specifies the side of the chooser, splash and logout windows on which
+the banner will be displayed.  Ignored when there is no banner to
+display.  Defaults to C<left>, C<top> and C<left>, respectively.  Can be
+overridden with the B<--side> command line option.  Can be specified in
+an XSession file.
+
+=item B<IconTheme>=I<STRING>
+
+Specifies a separate desktop icon theme to use for B<xde-xsession>
+windows themselves.  The default is to use the user or system default
+settings.  Can be overridden with the B<--icons> command line option.
+Not useful in an XSession file.
+
+=item B<Theme>=I<STRING>
+
+Specifies a separate GTK2 theme to use for B<xde-xsession> windows
+themselves.  The default is to use the user or system default settings.
+Can be overridden with the B<--theme> command line option.  Not useful
+in an XSession file.
+
+=item B<CursorTheme>=I<STRING>
+
+Specifies the cursor theme to use for B<xde-xsession> windows
+themselves.  The default is to use the user or system default settings.
+Can be overridden with the B<--cursors> command line option.  Not useful
+in an XSession file.
+
+=item B<UseXDETheme>=I<BOOLEAN>
+
+Specifies whether or not to use the current XDE theme for
+B<xde-xsession> windows themselves.  The default is C<false>.  Can be
+overridden with the B<--xde-theme> command line option.  Not useful in
+an XSession file.
+
+=item B<SessionManagement>=I<BOOLEAN>
+
+Specifies whether or not to perform X11R6 Session Management on X
+sessions.  The default is C<true>.  Cannot be overridden with a command
+line option.  Can be specified in an XSession file.
+
+=item B<SessionManagementProxy>=I<BOOLEAN>
+
+Specifies whether or not to perform L<smproxy(1)> like services and
+assistance for window managers.  The default is C<true>.  Cannot be
+overridden with a command line option.  Can be specified in an XSession
+file.
+
+=item B<ScreenLocking>=I<BOOLEAN>
+
+Specifies whether or not to perform screen locking services and perform
+L<systemd(8)> integration for a multi-session system.  The default is
+C<true>.  Cannot be overridden with a command line option.  Can be
+specified in an XSession file.
+
+=item B<ScreenLockerProgram>=I<STRING>
+
+Specifies an external program and arguments, in shell syntax, to use for
+locking the screen.  Used with L<systemd(8)> integration for screen
+locking instead of internal screen locker when B<ScreenLocking> is C<true>.
+Executed in response to Lock Screen buttons in chooser and logout
+windows.  The default is null (use internal locker).  Cannot be
+overridden with a command line option.  Can be specified in an XSession
+file.
+
+=item B<AutoStart>=I<BOOLEAN>
+
+Specifies whether or not to perform XDG autostart functions.  The
+default is C<true>.  Can be overridden with the B<--autostart> command
+line option.  Can be specified in an XSession file.
+
+=item B<StartupNotificationAssist>=I<BOOLEAN>
+
+Specifies whether or not to perform XDG startup notification assistance
+to the XSession.  The default is C<true>.  Cannot be overridden with a
+command line option.  Can be specified in an XSesison file.
+
+=item B<XSettings>=I<BOOLEAN>
+
+Specifies whether or not to act as an XSettings daemon.  The default is
+C<true>.  Cannot be overridden with a command line option.  Can be
+Specifed in an XSession file.
+
+=item B<XInput>=I<BOOLEAN>
+
+Specifies whether or not to provide XInput (L<xset(1)>) settings
+services.  The default is C<true> (for all but WindowMaker where the
+default is C<false>).
+Cannot be overridden with a command line option.
+Can be specified in an XSession file.
+
+=item B<ThemeManagement>=I<BOOLEAN>
+
+Sepcifies whether or not to perform desktop theme management for the
+XSession.  The default is C<true>.  Cannot be overridden with a command
+line option.  Can be specified in an XSession file.  Useful for X
+sessions that manage the desktop theme (wallpapers) themselves (e.g.
+LXDE).
+
+=item B<ThemeManageDockApps>=I<BOOLEAN>
+
+Specifies whether desktop GTK+ themes should be enforced on dock
+applications.  The default is C<true>.  Ignored when B<ThemeManagement>
+is C<false>.  Cannot be overridden with a command line option.  Can be
+specified in an XSession file.
+
+=item B<ThemeManageSysTray>=I<BOOLEAN>
+
+Specifies whether desktop GTK+ themes should be enforced on system tray
+icons.  The default is C<true>.  Ignored when B<ThemeManagement> is
+C<false>.  Cannot be overridden with a command line option.  Can be
+specified in an XSession file.
+
+=back
+
+
+=cut
+
+# vim: set tw=72 nocin nosi:

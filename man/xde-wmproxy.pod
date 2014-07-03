@@ -61,33 +61,105 @@ actions on behalf of the window manager.
 
 =head1 BEHAVIOUR
 
-B<xde-wmproxy> registers with the session manager identified in the
-C<SESSION_MANAGER> environment variable and launches the window manager
-as specified as a child of the proxy, replacing the C<SESSION_MANAGER>
-environment variable first with its own transport addresses.
+=head2 SESSION MANAGEMENT
 
-Should the window manager register with the proxy for session
-management, the proxy becomes a transparent proxy, passing further
-information upward toward the upper layer manager.  When there is no
-upper layer manager, the proxy will act as the sole manager, saving its
-own state.
+When B<xde-wmproxy> starts, it observes the C<SESSION_MANAGER>
+environment variable and establishes a client connection to the session
+manager.  If the C<SESSION_MANAGER> environment variable is not set, it
+becomes its own session manager and populates the C<SESSION_MANAGER>
+environment variable before launching any window manager.
 
-When a checkpoint is requested, either by the upper layer manager or via
-a direct request to the proxy, a proxy that has not had a window manager
-register will determine the state of all windows under the control of
-the window manager and save that state for session re-establishment,
-just as the window manager would do on its own if it was session
-management capable.
+In either event, when managing the window manager from a session point
+of view, B<xde-wmproxy> manages X11 Session Management of the window
+manager state, either in parallel to or in lieue of X11 Session
+Management performed by the window manager itself.  It can also handle
+the concept of a session that is defined for more than one window
+manager.  It assists the window manager in the following ways:
 
-To avoid the situation where a window manager disrupts the window
-configuration and then exits, logout selections in root menus should
-request that the proxy shut down the window manager rather than having
-the window manager simply exit.  L<xde-logout(1)> can be used for this
-purpose.  When a window manager shutdown is requested, the proxy
-presents a window to the user to give them the opportunity of saving the
-session prior to exit.
+=over
+
+=item 1.
+
+Provides ICCCM 2.0 Section 5.2 Window Manager Support for Session
+Management.  It peforms this action as a meta-WM in parallel or in lieue
+of session management performed by the window manager itself.  For known
+window managers it can enhance session management by detecting and
+managing windowmaker dock applications and system tray icons. (Note that
+L<xde-dock(1)> can do this too.)
+
+=item 2.
+
+Provides the services of L<smproxy(1)>, but interrogating windows
+present on the display and performing old-style session management as
+necessary.
+
+=item 3.
+
+It can provide the ability to save the state of the session when a
+window manager exits or restarts.
+
+=item 4.
+
+There is no reason why it should not be able to provide multiple session
+management for styles, themes, menus, primary window manager
+configuration files, and other session configuration for known window
+managers.  XDE has an impressive list of known window managers.  (Note
+that L<xde-theme(1)> can do this too).
+
+=item 5.
+
+It can perform setup and autostart capabilities for window maangers as
+well.  Note that L<xde-autostart(1)> can perform autostart capabilities
+too; however, B<xde-wmproxy(1)> can make autostarted tasks children of
+the window manager itself.
+
+=item 6.
+
+It can perform startup notification assistance for window managers.
+
+=back
+
+=head2 WINDOW MANAGER MANAGEMENT
+
+B<xde-wmproxy> first takes ownership of the C<WM_S%d> manager selection
+for each screen on the X display identified by the B<DISPLAY>
+environment variable (or B<-display> option).  It then attempts to
+select C<SubstructureRedirect> on the root window of each managed screen.
+If it cannot obtain the C<WM_S%d> selection or C<SubstructureRedirect>
+input mask, a non-compliant window manager is running and it exits with
+an error.  This is what an ICCCM 2.0 compliant window manager does.  It
+ensures that no ICCCM 2.0 non-compliant window manager is running.
+
+It then releases the C<SubstructureRedirect> input selection mask and
+launches the specified window manager.  If the launched window manager
+is ICCCM 2.0 compliant, it will take ownership of the C<WM_S%d> manager
+selection; if it is not, B<xde-wmproxy> will retain ownership of the
+selection.
+
+If another window manager is run from within the first (as is possible
+from root menu selection on many window managers), the first manager
+will release its resources and then C<exec> the second.  The second
+window manager will have the same PID as the first.  If the first
+manager was ICCCM 2.0 compliant, it will release the manager selection
+by destroying its selection window.  Once the second window manager has
+started up, B<xde-wmproxy> will reacquire the B<WM_S%d> window manager
+selection if it has not been obtained by the second manager.
+
+If another window manager is run from outside of the first, and the
+second window manager is ICCCM 2.0 compliant, it will attempt to obtain
+the C<WM_S%d> selection, either from the first window manager or from
+B<xde-wmproxy>.  When B<xde-wmproxy> gets the C<WM_S%d> selection taken
+from it, it will kill the ICCCM 2.0 non-compliant first window manager
+before destroying its selection window.
+
+If the second window manager is not ICCCM 2.0 compliant, it will not run
+because the first window manager will not release the
+C<SubstructureRedirect> input selection mask on the root window of the
+managed screen.  Such a second window manager can still be run from
+outside of the first by invoking it using xde-wmproxy as a wrapper to
+launch the window manager.
 
 
 =cut
 
-# vim: set tw=72 nocin:
+# vim: set tw=72 nocin nosi:

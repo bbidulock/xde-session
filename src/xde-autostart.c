@@ -118,6 +118,85 @@ Options options = {
         .desktops = NULL,
 };
 
+/*
+ * The run state of the program.  There are several states as follows:
+ *
+ * RunStateStartup - the program is starting up and initializing.  On completion
+ *	check for a window manager and if not present start guard timer and move
+ *	to RunStatePhase1.
+ *
+ * RunStatePhase1 - waiting for a window manager to appear.  Upon expiry of the
+ *	guard timer or appearance of a window manager move to RunStatePhase2.
+ *	Set the desktop session to the window manager name when one appears.
+ *	When none appears, fall back to command-line options of default for
+ *	desktop session.  Set DESKTOP_SESSION and XDG_CURRENT_DESKTOP
+ *	environment variables.  Start spawned thread to begin reading autostart
+ *	database.
+ *
+ * RunStatePhase2 - post window-manager pause state.  We detect window manager
+ *	startup quite quickly, so there is an optional pause after detection
+ *	before proceeding.  This state waits for the pause timer to expire
+ *	before proceeding to RunStatePhase3.
+ *
+ * RunStatePhase3 - performing execs.  Read the startup file and perform any
+ *	commands, also from command-line arguments (--exec flag).  Still apply
+ *	whatever startup detection is possible (appearance of windows with
+ *	associated PIDs).  We might be able to get xde-launch to do the job for
+ *	us anyway because it can perform startup notification even for basic
+ *	commands.  Note that these commands represent independent tasks, not
+ *	just a list of simple commands.  It should not really matter in what
+ *	order they are executed.  After the last guard/delay timers have
+ *	expired, move to RunStatePhase4.
+ *
+ * RunStatePhase4 - performing autostart.  Read the autostart desktop entry
+ *      database.  (Note we can overlap reading of the desktop entries with the
+ *      previous phases by spawning a thread and joining it here instead of
+ *      serializing.)  Execute eacn autostart task in turn, following command
+ *      line options for guard, delay, possibly serialization or parallel start;
+ *      once done, move to RunStatePhase5.  Each task has its own state.
+ *
+ * RunStatePhase5 - awaiting startup completion.  Await the startup completion
+ *	or failure of each launched task.  We should provide desktop
+ *	notification for tasks that fail or fail to signal competion.  Once all
+ *	tasks have finalized, move to RunStateMonitor.
+ *
+ * RunStateMonitor - monitoring.  Monitor child processes checking whether we
+ *	should restart tasks upon failure.  Continue to provide notification of
+ *	failures and provide restart options to user.  We can checkpoint with a
+ *	session manager when entering this phase.  If the window manager changes
+ *	during this phase, we may wish to tear down any children that had an
+ *	OnlyShowIn  or NotShowIn that no longer applies, or start a task for one
+ *	that newly applies.  We might also perform similar changes on
+ *	notification of changes to the autostart directories.  For window
+ *	manager changes, we may choose to tear down all autostart tasks and
+ *	start again from scratch: this is because the whole autostart process
+ *	largely expects tasks to execute _after_ the window manager appears.  So
+ *	a window manager change is more like logging out and logging back in
+ *	again, which is ok.  So, for a window manager change, tear down all
+ *	tasks and go back to Phase 2.
+ *
+ *
+ */
+typedef enum {
+	RunStateStartup,		/* starting up */
+	RunStatePhase1,			/* waiting for window manager */
+	RunStatePhase2,			/* post-window-manager pause */
+	RunStatePhase3,			/* running execs */
+	RunStatePhase4,			/* running autostarts */
+	RunStatePhase5,			/* waiting for startup completion */
+	RunStateMonitor,		/* monitoring window manager */
+} XdeRunState;
+
+XdeRunState runstate = RunStateStartup;
+
+typedef struct {
+	XdeRunState state;
+	guint timer;
+
+} XdeContext;
+
+XdeContext ctx;
+
 typedef enum {
 	TaskStateIdle,		/* task is not running yet */
 	TaskStateStartup,	/* running but in startup notification */
@@ -619,7 +698,7 @@ handler(Display *display, XErrorEvent *xev)
 
 		snprintf(num, sizeof(num), "%d", xev->request_code);
 		snprintf(def, sizeof(def), "[request_code=%d]", xev->request_code);
-		XGetErrorDatabaseText(dpy, "xdg-launch", num, def, req, sizeof(req));
+		XGetErrorDatabaseText(dpy, NAME, num, def, req, sizeof(req));
 		if (XGetErrorText(dpy, xev->error_code, msg, sizeof(msg)) != Success)
 			msg[0] = '\0';
 		fprintf(stderr, "X error %s(0x%lx): %s\n", req, xev->resourceid, msg);
@@ -4448,6 +4527,110 @@ void
 do_executes()
 {
 }
+
+/** @brief do run state startup
+  *
+  * RunStateStartup: the program is starting up and initializing.  Upon
+  * completion move to RunStatePhase2.
+  */
+void
+run_state_Startup(void)
+{
+	relax();
+	runstate = RunStatePhase1;
+}
+
+static gboolean
+phase1_timeout(gpointer user_data)
+{
+	gtk_main_quit();
+	return G_SOURCE_REMOVE;
+}
+
+/** @brief do run state phase 1
+  *
+  * RunStatePhase1: waiting for a window manager to appear.  Upon expiry of the
+  * guard timer or appearance of a window manager move to RunStatePhase2.  Set
+  * the desktop session to the window manager name when one appears.  When none
+  * appears, fall back to command-line options of default for desktop session.
+  * Set DESKTOP_SESSION and XDG_CURRENT_DESKTOP environment variables.  Start
+  * spawned thread to begin reading autostart database.
+  */
+void
+run_state_Phase1(void)
+{
+	if (!check_window_manager() && options.wait) {
+		ctx.timer = g_timeout_add_seconds(options.pause, phase1_timeout, NULL);
+		gtk_main();
+	}
+}
+
+/** @brief do run state phase 2
+  */
+void
+run_state_Phase2(void)
+{
+}
+
+/** @brief do run state phase 3
+  */
+void
+run_state_Phase3(void)
+{
+}
+
+/** @brief do run state phase 4
+  */
+void
+run_state_Phase4(void)
+{
+}
+
+/** @brief do run state phase 5
+  */
+void
+run_state_Phase5(void)
+{
+}
+
+/** @brief do run state monitoring
+  */
+void
+run_state_Monitor(void)
+{
+}
+
+void
+run_state_machine(void)
+{
+	runstate = RunStateStartup;
+	while (running) {
+		switch (runstate) {
+		case RunStateStartup:
+			run_state_Startup();
+			break;
+		case RunStatePhase1:
+			run_state_Phase1();
+			break;
+		case RunStatePhase2:
+			run_state_Phase2();
+			break;
+		case RunStatePhase3:
+			run_state_Phase3();
+			break;
+		case RunStatePhase4:
+			run_state_Phase4();
+			break;
+		case RunStatePhase5:
+			run_state_Phase5();
+			break;
+		case RunStateMonitor:
+			run_state_Monitor();
+			break;
+		}
+	}
+}
+
 
 void
 run_autostart(int argc, char *argv[])

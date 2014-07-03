@@ -7,7 +7,9 @@ xde_man_files = \
 	xde-session.man \
 	xde-smproxy.man \
 	xde-xchooser.man \
-	xde-xlogin.man
+	xde-xlogin.man \
+	xde-wmproxy.man \
+	xde-xsession.man
 
 nodist_man1_MANS = $(xde_man_files)
 CLEANFILES = $(xde_man_files)
@@ -20,7 +22,9 @@ EXTRA_DIST = \
 	xde-session.pod \
 	xde-smproxy.pod \
 	xde-xchooser.pod \
-	xde-xlogin.man
+	xde-xlogin.pod \
+	xde-wmproxy.pod \
+	xde-xsession.pod
 
 xde-autostart.man: MANNAME = XDE-AUTOSTART
 xde-autostart.man: xde-autostart.pod
@@ -45,6 +49,12 @@ xde-xchooser.man: xde-xchooser.pod
 
 xde-xlogin.man: MANNAME = XDE-XLOGIN
 xde-xlogin.man: xde-xlogin.pod
+
+xde-wmproxy.man: MANNAME = XDE-WMPROXY
+xde-wmproxy.man: xde-wmproxy.pod
+
+xde-xsession.man: MANNAME = XDE-XSESSION
+xde-xsession.man: xde-xsession.pod
 
 SUFFIXES = .man .pod
 
