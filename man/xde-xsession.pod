@@ -290,6 +290,106 @@ C<XSession> desktop entry file.
 
 =head1 FILES
 
+=head2 AUTOSTART DESKTOP ENTRY FILE
+
+B<xde-session> reads the B<AutoStart> formatted F<.desktop> file in the
+F<autostart> subdirectory of each use and system XDG config directory.
+Normal XDG precedence rules apply for F<.desktop> files in these
+directories.
+
+B<xde-session> recognizes the key-value pairs in the C<Desktop Entry>
+group in the file.  It also recognizes the following GNOME-defined keys:
+
+=over
+
+=item B<X-GNOME-AutoRestart>=I<BOOLEAN>
+
+=item B<X-GNOME-Autostart-Delay>=I<BOOLEAN>
+
+=item B<X-GNOME-Autostart-enabled>=I<BOOLEAN>
+
+=item B<X-GNOME-Autostart-Notify>=I<BOOLEAN>
+
+=item B<X-GNOME-Autostart-Phase>={B<Applications>|B<Desktop>|B<Initialization>|B<Panel>|B<WindowManager>}
+
+=item B<X-GNOME-Provides>=I<ARRAY>;{B<filemanager>|B<login-sound>|B<panel>|B<windowmanager>}
+
+=item B<X-GNOME-Settings-Panel>=I<string>
+
+=over
+
+=item background
+
+=item datetime
+
+=item display
+
+=item empathy-accounts
+
+=item info
+
+=item keyboard
+
+=item media
+
+=item mouse
+
+=item network
+
+=item power
+
+=item printers
+
+=item region
+
+=item screen
+
+=item sound
+
+=item universal-access
+
+=item user-accounts
+
+=back
+
+=item B<X-GNOME-UsesNotifications>=I<BOOLEAN>
+
+=item B<X-GNOME=WMName>=I<STRING>
+
+This is the name that is put on the window manager check window.  That
+is, the B<_NET_WM_NAME> property on the B<_NET_SUPPORTING_WM_CHECK>
+window.
+
+=item B<X-GNOME-WMSettingsModule>=I<STRING>
+
+=back
+
+=head2 XSESSION DESKTOP ENTRY FILE
+
+B<xde-xsession> reads the B<XSession> formatted F<.desktop> files in the
+F<xsessions> subdirectory of each user and system XDG data directory.
+Normal XDG precedence rules apply for F<.desktop> files in these
+directories.
+
+B<xde-session> recognizes the key-value pairs in the C<Desktop Entry>
+group in the file.  It also recognizes the GNOME-defined keys described
+under L</AUTOSTART DESKTOP ENTRY FILE>, above.
+
+It also recognizes key-value pairs in any C<XDE Session> group found in
+the file as described under L</CONFIGURATION FILE>, below.
+
+B<xde-session> also recognizes key-value pairs in any C<Window Manager>
+group found in the file roughly the same way as GNOME did as follows:
+
+=over
+
+=item B<SessionManaged>=I<BOOLEAN>
+
+=item B<StartupNotification>=I<BOOLEAN>
+
+
+=back
+
 =head2 CONFIGURATION FILE
 
 The B<xde-xsession> configuration file is an F<.ini> style key-value
