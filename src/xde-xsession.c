@@ -42,10 +42,6 @@
 
  *****************************************************************************/
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #include "xde-xsession.h"
 
 #ifdef _GNU_SOURCE
@@ -55,112 +51,13 @@
 #include <langinfo.h>
 #include <locale.h>
 
-typedef enum {
-	LOGO_SIDE_LEFT,
-	LOGO_SIDE_RIGHT,
-	LOGO_SIDE_TOP,
-	LOGO_SIDE_BOTTOM,
-} LogoSide;
-
-typedef struct {
-	int output;
-	int debug;
-	Bool dryrun;
-	char *display;
-        char *rcfile;
-	char *desktop;
-	char *profile;
-	char *startwm;
-	char *file;
-	char *setup;
-	char **exec;
-	int exec_num;
-	Bool autostart;
-	Bool wait;
-	unsigned long pause;
-	Bool toolwait;
-	unsigned long guard;
-	unsigned long delay;
-	Bool splash;
-	char *image;
-	char *banner;
-	LogoSide side;
-	char *icons;
-	char *theme;
-	char *cursors;
-	Bool usexde;
-	Bool xinit;
-	char *argument;
-} Options;
-
-typedef struct {
-	char *output;
-	char *debug;
-	char *dryrun;
-	char *display;
-        char *rcfile;
-	char *desktop;
-	char *profile;
-	char *startwm;
-	char *file;
-	char *setup;
-	char *exec;
-	char *autostart;
-	char *wait;
-	char *pause;
-	char *toolwait;
-	char *guard;
-        char *delay;
-	char *splash;
-	char *image;
-	char *banner;
-	char *side;
-	char *icons;
-	char *theme;
-	char *cursors;
-	char *usexde;
-        char *xinit;
-	char *argument;
-} Optargs;
-
-Optargs optargs = { NULL, };
-
-Optargs defaults = {
-	.output = "1",
-	.debug = "0",
-	.dryrun = "false",
-	.display = "$DISPLAY",
-        .rcfile = "$XDG_CONFIG_HOME/xde/default/session.ini",
-	.desktop = "",
-	.profile = "default",
-	.startwm = "",
-	.file = "xde/$PROFILE/autostart",
-	.setup = "",
-	.exec = "",
-	.autostart = "true",
-	.wait = "true",
-	.pause = "2000",
-	.toolwait = "false",
-	.guard = "200",
-	.delay = "0",
-	.splash = "images/${XDG_MENU_PREFIX}splash.png",
-	.image = "images/${XDG_MENU_PREFIX}splash.png",
-	.banner = "images/${XDG_MENU_PREFIX}banner.png",
-	.side = "top",
-	.icons = "",
-	.theme = "",
-	.cursors = "",
-	.usexde = "false",
-        .xinit = "false",
-	.argument = "choose",
-};
-
 Options options = {
 	.output = 1,
 	.debug = 0,
+	.command = COMMAND_DEFAULT,
 	.dryrun = False,
 	.display = NULL,
-        .rcfile = NULL,
+	.rcfile = NULL,
 	.desktop = NULL,
 	.profile = NULL,
 	.startwm = NULL,
@@ -174,18 +71,166 @@ Options options = {
 	.toolwait = True,
 	.guard = 200,
 	.delay = 0,
-	.splash = NULL,
+	.charset = NULL,
+	.language = NULL,
+	.vendor = NULL,
+	.splash = True,
+	.image = NULL,
 	.banner = NULL,
-	.side = LOGO_SIDE_LEFT,
+	.side = {
+		 .splash = LOGO_SIDE_TOP,
+		 .chooser = LOGO_SIDE_LEFT,
+		 .logout = LOGO_SIDE_LEFT,
+		 },
 	.icons = NULL,
 	.theme = NULL,
 	.cursors = NULL,
 	.usexde = False,
 	.xinit = False,
-	.argument = NULL,
+	.choice = NULL,
+	.manage = {
+		   .session = True,
+		   .proxy = True,
+		   .dockapps = True,
+		   .systray = True,
+		   },
+	.slock = {
+		  .lock = True,
+		  .program = NULL,
+		  },
+	.assist = True,
+	.xsettings = True,
+	.xinput = True,
+	.style = {
+		  .theme = True,
+		  .dockapps = True,
+		  .systray = True,
+		  },
 };
 
-static const char *XDESessionGroup = "XDE Session";
+Optargs optargs = { NULL, };
+
+Optargs defaults = {
+	.output = "1",
+	.debug = "0",
+	.dryrun = "false",
+	.display = "$DISPLAY",
+	.rcfile = "",
+	.desktop = "XDE",
+	.profile = "default",
+	.startwm = "",
+	.file = "",
+	.setup = "",
+	.exec = "",
+	.autostart = "true",
+	.wait = "true",
+	.pause = "2000",
+	.toolwait = "false",
+	.guard = "200",
+	.delay = "0",
+	.charset = "LC_CHARSET",
+	.language = "LC_ALL",
+	.vendor = "xde",
+	.splash = "true",
+	.image = "",
+	.banner = "",
+	.side = {
+		 .splash = "top",
+		 .chooser = "left",
+		 .logout = "left",
+		 },
+	.icons = "",
+	.theme = "",
+	.cursors = "",
+	.usexde = "false",
+	.xinit = "false",
+	.choice = "choose",
+	.prompt = {
+		   .chooser = {
+			       .text = "",
+			       .markup = "",
+			       },
+		   .logout = {
+			      .text = "Log out of %p session?",
+			      .markup = "Log out of <b>%p</b> session?",
+			      },
+		   },
+	.manage = {
+		   .session = "true",
+		   .proxy = "true",
+		   .dockapps = "true",
+		   .systray = "true",
+		   },
+	.slock = {
+		  .lock = "true",
+		  .program = "",
+		  },
+	.assist = "true",
+	.xsettings = "true",
+	.xinput = "true",
+	.style = {
+		  .theme = "true",
+		  .dockapps = "true",
+		  .systray = "true",
+		  },
+};
+
+XdgDirectories xdg_dirs;
+
+void
+get_directories(void)
+{
+	char *home;
+	char *xhome, *xdirs, *xboth;
+	int len;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_CONFIG_HOME");
+	if (xhome)
+		xhome = strdup(xhome);
+	else {
+		len = strlen(home) + strlen("/.config") + 1;
+		xhome = calloc(len, sizeof(*xhome));
+		strncpy(xhome, home, len);
+		strncat(xhome, "/.config", len);
+	}
+	xdirs = strdup(getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg");
+	len = strlen(xhome) + 1 + strlen(xdirs) + 1;
+	xboth = calloc(len, sizeof(*xboth));
+	strncpy(xboth, xhome, len);
+	strncat(xboth, ":", len);
+	strncat(xboth, xdirs, len);
+
+	free(xdg_dirs.conf.home);
+	xdg_dirs.conf.home = xhome;
+	free(xdg_dirs.conf.dirs);
+	xdg_dirs.conf.dirs = xdirs;
+	free(xdg_dirs.conf.both);
+	xdg_dirs.conf.both = xboth;
+
+	xhome = getenv("XDG_DATA_HOME");
+	if (xhome)
+		xhome = strdup(xhome);
+	else {
+		len = strlen(home) + strlen("/.local/share") + 1;
+		xhome = calloc(len, sizeof(*xhome));
+		strncpy(xhome, home, len);
+		strncat(xhome, "/.local/share", len);
+	}
+	xdirs = strdup(getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share");
+	len = strlen(xhome) + 1 + strlen(xdirs) + 1;
+	xboth = calloc(len, sizeof(*xboth));
+	strncpy(xboth, xhome, len);
+	strncat(xboth, ":", len);
+	strncat(xboth, xdirs, len);
+
+	free(xdg_dirs.data.home);
+	xdg_dirs.data.home = xhome;
+	free(xdg_dirs.data.dirs);
+	xdg_dirs.data.dirs = xdirs;
+	free(xdg_dirs.data.both);
+	xdg_dirs.data.both = xboth;
+}
 
 /** @brief set configuration file defaults
   * @param config - key file in which to set defaults
@@ -193,116 +238,109 @@ static const char *XDESessionGroup = "XDE Session";
 void
 set_config_defaults(GKeyFile *config)
 {
-        const char *key;
+	const char *key;
+	const char *group = "XDE Session";
 
-        key = "DefaultXSession";
-	if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-		g_key_file_set_string(config, XDESessionGroup, key, "choose");
-        key = "Desktop";
-	if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "$PROFILE");
-        key = "StartupFile";
-	if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "xde/$PROFILE/autostart");
-        key = "Wait";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, FALSE);
-        key = "Pause";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_uint64(config, XDESessionGroup, key, 2);
-        key = "ToolWait";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, FALSE);
-        key = "ToolWaitGuard";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_uint64(config, XDESessionGroup, key, 200);
-        key = "ToolWaitDelay";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_uint64(config, XDESessionGroup, key, 0);
-        key = "Language";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                ;
-        key = "Vendor";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                ;
-        key = "Splash";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "SplashImage";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                ;
-        key = "ChooserPromptText";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "");
-        key = "ChooserPromptMarkup";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "");
-        key = "LogoutPromptText";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "Log out of %p session?");
-        key = "LogoutPromptMarkup";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "Log out of <b>%p</b> session?");
-        key = "ChooserSide";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "left");
-        key = "SplashSide";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "top");
-        key = "LogoutSide";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_string(config, XDESessionGroup, key, "left");
-        key = "IconTheme";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                ;
-        key = "Theme";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                ;
-        key = "CursorTheme";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                ;
-        key = "UseXDETheme";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, FALSE);
-        key = "SessionManagement";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "SessionManagementProxy";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "SessionManageDockApps";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "SessionManageSysTray";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "ScreenLocking";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "ScreenLockerProgram";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                ;
-        key = "AutoStart";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "StartupNotificationAssist";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "XSettings";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "XInput";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "ThemeManagement";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "ThemeManageDockApps";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
-        key = "ThemeManageSysTray";
-        if (!g_key_file_has_key(config, XDESessionGroup, key, NULL))
-                g_key_file_set_boolean(config, XDESessionGroup, key, TRUE);
+	key = "DefaultXSession";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, defaults.choice);
+	key = "Desktop";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, defaults.desktop);
+	key = "StartupFile";
+	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	key = "Wait";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, FALSE);
+	key = "Pause";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_uint64(config, group, key, 2);
+	key = "ToolWait";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, FALSE);
+	key = "ToolWaitGuard";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_uint64(config, group, key, 200);
+	key = "ToolWaitDelay";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_uint64(config, group, key, 0);
+	key = "Language";
+	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	key = "Vendor";
+	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	key = "Splash";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "SplashImage";
+	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	key = "ChooserPromptText";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, "");
+	key = "ChooserPromptMarkup";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, "");
+	key = "LogoutPromptText";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, "Log out of %p session?");
+	key = "LogoutPromptMarkup";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, "Log out of <b>%p</b> session?");
+	key = "ChooserSide";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, "left");
+	key = "SplashSide";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, "top");
+	key = "LogoutSide";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_string(config, group, key, "left");
+	key = "IconTheme";
+	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	key = "Theme";
+	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	key = "CursorTheme";
+	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	key = "UseXDETheme";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, FALSE);
+	key = "SessionManage";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "SessionManageProxy";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "SessionManageDockApps";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "SessionManageSysTray";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "ScreenLock";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "ScreenLockProgram";
+	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	key = "AutoStart";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "StartupNotificationAssist";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "XSettings";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "XInput";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "ThemeManage";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "ThemeManageDockApps";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
+	key = "ThemeManageSysTray";
+	if (!g_key_file_has_key(config, group, key, NULL))
+		g_key_file_set_boolean(config, group, key, TRUE);
 }
 
 /** @brief find and read the configuration file with defaults set
@@ -316,54 +354,35 @@ find_read_config(void)
 
 	if (!(config = g_key_file_new())) {
 		EPRINTF("could not alllocate key file\n");
-                exit(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 		return (config);
 	}
-	if (options.rcfile) {
+	if (optargs.rcfile) {
 		if (access(options.rcfile, R_OK))
 			EPRINTF("%s: %s\n", options.rcfile, strerror(errno));
 		else {
-			if (g_key_file_load_file(config, options.rcfile, flags, NULL))
+			if (g_key_file_load_from_file(config, options.rcfile, flags, NULL))
 				rcfile = strdup(options.rcfile);
 			else
 				EPRINTF("%s: could not load key file\n", rcfile);
 		}
 	}
 	if (!rcfile) {
-		char *home = getenv("HOME") ? : ".";
-		char *xhome = getenv("XDG_CONFIG_HOME");
-		char *xdirs = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
 		char *dirs, *file, *dir, *end;
 		int len;
 
-		if (xhome)
-			xhome = strdup(xhome);
-		else {
-			len = strlen(home) + strlen("/.config") + 1;
-			xhome = calloc(len, sizeof(*xhome));
-			strncpy(xhome, home, len);
-			strncat(xhome, "/.config", len);
-		}
-		len = strlen(xhome) + 1 + strlen(xdirs) + 1;
-		dirs = calloc(len, sizeof(*dirs));
-		strncpy(dirs, xhome, len);
-		strncat(dirs, ":", len);
-		strncat(dirs, xdirs, len);
-		/* go through then forward */
+		dirs = strdup(xdg_dirs.conf.both);
+		/* go through them forward */
 		for (dir = dirs, end = dirs + strlen(dirs); dir < end;
-		     *strchrnul(dir, ":") = '\0', dir += strlen(dir) + 1) {
+		     *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) {
 			if (!*dir)
 				continue;
-			len = strlen(dir) + strlen("xde/") +
-			    strlen(options.profile) + strlen("/session.ini")
-			    + 1;
+			len = strlen(dir) + strlen("xde/session.ini") + 1;
 			file = calloc(len, sizeof(*file));
 			strncpy(file, dir, len);
-			strncat(file, "xde/", len);
-			strncat(file, options.profile, len);
-			strncat(file, "/session.ini", len);
+			strncat(file, "xde/session.ini", len);
 			if (!access(file, R_OK)) {
-				if (g_key_file_load(config, file, flags, NULL)) {
+				if (g_key_file_load_from_file(config, file, flags, NULL)) {
 					rcfile = file;
 					break;
 				}
@@ -372,146 +391,561 @@ find_read_config(void)
 			free(file);
 		}
 		free(dirs);
-		free(xhome);
 	}
 	if (rcfile)
-		g_key_file_set_string(config, XDESessionGroup, "FileName", rcfile);
+		g_key_file_set_string(config, "XDE Session", "FileName", rcfile);
 	free(rcfile);
-	set_config_defaults(config);
+	// set_config_defaults(config);
 	return (config);
+}
+
+void
+set_default_splash(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char *dirs, *dir, *end, *pfx, *suffix, *file;
+	int i;
+
+	dirs = strdup(xdg_dirs.data.both);
+	end = dirs + strlen(dirs);
+	for (dir = dirs; dir < end; *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
+
+	free(options.image);
+	options.image = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	for (pfx = getenv("XDG_MENU_PREFIX") ? : ""; pfx; pfx = *pfx ? "" : NULL) {
+		for (dir = dirs; dir < end; dir += strlen(dir) + 1) {
+			if (!*dir)
+				continue;
+			strncpy(file, dir, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "splash", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (i = 0; i < sizeof(exts) / sizeof(exts[0]); i++) {
+				strcpy(suffix, exts[i]);
+				if (!access(file, R_OK)) {
+					options.image = strdup(file);
+					break;
+				}
+				DPRINTF("%s: %s\n", file, strerror(errno));
+			}
+			if (options.image)
+				break;
+		}
+		if (options.image)
+			break;
+	}
+	free(file);
+	free(dirs);
+}
+
+void
+set_default_banner(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char *dirs, *dir, *end, *pfx, *suffix, *file;
+	int i;
+
+	dirs = strdup(xdg_dirs.data.both);
+	end = dirs + strlen(dirs);
+	for (dir = dirs; dir < end; *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
+
+	free(options.banner);
+	options.banner = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	for (pfx = getenv("XDG_MENU_PREFIX") ? : ""; pfx; pfx = *pfx ? "" : NULL) {
+		for (dir = dirs; dir < end; dir += strlen(dir) + 1) {
+			if (!*dir)
+				continue;
+			strncpy(file, dir, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (i = 0; i < sizeof(exts) / sizeof(exts[0]); i++) {
+				strcpy(suffix, exts[i]);
+				if (!access(file, R_OK)) {
+					options.banner = strdup(file);
+					break;
+				}
+				DPRINTF("%s: %s\n", file, strerror(errno));
+			}
+			if (options.banner)
+				break;
+		}
+		if (options.banner)
+			break;
+	}
+	free(file);
+	free(dirs);
+}
+
+void
+set_default_rcfile(void)
+{
+	char *dirs, *dir, *end, *file;
+
+	dirs = strdup(xdg_dirs.conf.both);
+	end = dirs + strlen(dirs);
+	for (dir = dirs; dir < end; *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
+
+	free(options.rcfile);
+	options.rcfile = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	for (dir = dirs; dir < end; dir += strlen(dir) + 1) {
+		if (!*dir)
+			continue;
+		strncpy(file, dir, PATH_MAX);
+		strncat(file, "/xde/session.ini", PATH_MAX);
+		if (!access(file, R_OK)) {
+			options.rcfile = strdup(file);
+			break;
+		}
+		DPRINTF("%s: %s\n", file, strerror(errno));
+	}
+	free(file);
+	free(dirs);
 }
 
 void
 set_defaults(void)
 {
-	options.profile = strdup("default");
+	const char *env;
+	int len;
+
+	get_directories();
+
+	defaults.display = getenv("DISPLAY") ? : "";
+	options.display = strdup(defaults.display);
+	options.desktop = strdup("XDE");
+
+	if ((env = getenv("XDG_VENDOR_ID")) && *env) {
+		options.vendor = strdup(env);
+	} else if ((env = getenv("XDG_MENU_PREFIX")) && *env) {
+		char *vendor = strdup(env);
+
+		if (vendor[strlen(vendor) - 1] == '-')
+			vendor[strlen(vendor) - 1] = '\0';
+		options.vendor = vendor;
+	}
+	if (options.vendor) {
+		char *prefix;
+
+		len = strlen(options.vendor) + 2;
+		prefix = calloc(len, sizeof(*prefix));
+		strncpy(prefix, options.vendor, len);
+		strncat(prefix, "-", len);
+		setenv("XDG_MENU_PREFIX", prefix, 0);
+		free(prefix);
+		setenv("XDG_VENDOR_ID", options.vendor, 0);
+	}
+	set_default_rcfile();
+	set_default_banner();
+	set_default_splash();
+	if (options.banner && !options.image)
+		options.image = strdup(options.banner);
+
+	if ((env = setlocale(LC_ALL, "")))
+		options.language = strdup(env);
+	options.charset = strdup(nl_langinfo(CODESET));
+
 }
 
 void
 get_defaults(void)
 {
-	GKeyFile *config = find_read_config();
-	const char *key;
-	gchar *string;
-	gboolean boolean;
-	guint64 time;
-	GError *err = NULL;
+	GKeyFile *c = find_read_config();
+	const char *g = "XDE Session";
+	gchar *s;
+	gboolean b;
+	guint64 u;
+	GError *e = NULL;
 
 	if (!optargs.desktop) {
-		string = g_key_file_get_string(config, XDESessionGroup, "Desktop", &err);
-		if (err)
-			err = NULL;
-		else if (string) {
-			options.desktop = optargs.desktop = strdup(string);
-			gfree(string);
+		s = g_key_file_get_string(c, g, "Desktop", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.desktop = optargs.desktop = strdup(s);
+			g_free(s);
 		}
 	}
 	if (!optargs.profile) {
-		string = g_key_file_get_string(config, XDESessionGroup, "Profile", &err);
-		if (err)
-			err = NULL;
-		else if (string) {
-			options.profile = optargs.profile = strdup(string);
-			gfree(string);
+		s = g_key_file_get_string(c, g, "Profile", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.profile = optargs.profile = strdup(s);
+			g_free(s);
 		}
 	}
 	if (!optargs.file) {
-		string = g_key_file_get_string(config, XDESessionGroup, "StartupFile", &err);
-		if (err)
-			err = NULL;
-		else if (string) {
-			options.file = optargs.file = strdup(string);
-			gfree(string);
+		s = g_key_file_get_string(c, g, "StartupFile", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.file = optargs.file = strdup(s);
+			g_free(s);
 		}
 	}
 	if (!optargs.wait) {
-		boolean = g_key_file_get_boolean(config, XDESessionGroup, "Wait", &err);
-		if (err)
-			err = NULL;
+		b = g_key_file_get_boolean(c, g, "Wait", &e);
+		if (e)
+			e = NULL;
 		else {
-			options.wait = boolean ? True : False;
-			optargs.wait = boolean ? "true" : "false";
+			options.wait = b ? True : False;
+			optargs.wait = b ? "true" : "false";
 		}
 	}
 	if (!optargs.pause) {
-		time = g_key_file_get_uint64(config, XDESessionGroup, "Pause", &err);
-		if (err)
-			err = NULL;
+		u = g_key_file_get_uint64(c, g, "Pause", &e);
+		if (e)
+			e = NULL;
 		else {
 			static char static_string[16];
 
-			options.pause = time;
-			sprintf(static_string, "%d", (int) time);
+			options.pause = u;
+			sprintf(static_string, "%d", (int) u);
 			optargs.pause = static_string;
 		}
 	}
 	if (!optargs.toolwait) {
-		boolean = g_key_file_get_boolean(config, XDESessionGroup, "ToolWait", &err);
-		if (err)
-			err = NULL;
+		b = g_key_file_get_boolean(c, g, "ToolWait", &e);
+		if (e)
+			e = NULL;
 		else {
-			options.toolwait = boolean ? True : False;
-			optargs.toolwait = boolean ? "true" : "false";
+			options.toolwait = b ? True : False;
+			optargs.toolwait = b ? "true" : "false";
 		}
 	}
 	if (!optargs.guard) {
-		time = g_key_file_get_uint64(config, XDESessionGroup, "ToolWaitGuard", &err);
-		if (err)
-			err = NULL;
+		u = g_key_file_get_uint64(c, g, "ToolWaitGuard", &e);
+		if (e)
+			e = NULL;
 		else {
 			static char static_string[16];
 
-			options.guard = time;
-			sprintf(static_string, "%d", (int) time);
+			options.guard = u;
+			sprintf(static_string, "%d", (int) u);
 			optargs.guard = static_string;
 		}
 	}
 	if (!optargs.delay) {
-		time = g_key_file_get_uint64(config, XDESessionGroup, "ToolWaitDelay", &err);
-		if (err)
-			err = NULL;
+		u = g_key_file_get_uint64(c, g, "ToolWaitDelay", &e);
+		if (e)
+			e = NULL;
 		else {
 			static char static_string[16];
 
-			options.delay = time;
-			sprintf(static_string, "%d", (int) time);
+			options.delay = u;
+			sprintf(static_string, "%d", (int) u);
 			optargs.delay = static_string;
 		}
 	}
 	if (!optargs.language) {
-		string = g_key_file_get_string(config, XDESessionGroup, "Language", &err);
-		if (err)
-			err = NULL;
-		else if (string) {
-			options.language = optargs.language = strdup(string);
-			gfree(string);
+		s = g_key_file_get_string(c, g, "Language", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.language = optargs.language = strdup(s);
+			g_free(s);
 		}
 	}
 	if (!optargs.vendor) {
-		string = g_key_file_get_string(config, XDESessionGroup, "Vendor", &err);
-		if (err)
-			err = NULL;
-		else if (string) {
-			options.vendor = optargs.vendor = strdup(string);
-			gfree(string);
+		s = g_key_file_get_string(c, g, "Vendor", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.vendor = optargs.vendor = strdup(s);
+			g_free(s);
 		}
 	}
 	if (!optargs.splash) {
-		boolean = g_key_file_get_boolean(config, XDESessionGroup, "Splash", &err);
-		if (err)
-			err = NULL;
+		b = g_key_file_get_boolean(c, g, "Splash", &e);
+		if (e)
+			e = NULL;
 		else {
-			options.splash = boolean ? True : False;
-			optargs.splash = boolean ? "true" : "false";
+			options.splash = b ? True : False;
+			optargs.splash = b ? "true" : "false";
 		}
 	}
 	if (!optargs.image) {
-		string = g_key_file_get_string(config, XDESessionGroup, "SplashImage", &err);
-		if (err)
-			err = NULL;
-		else if (string) {
-			options.image = optargs.image = strdup(string);
-			gfree(string);
+		s = g_key_file_get_string(c, g, "SplashImage", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.image = optargs.image = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.banner) {
+		s = g_key_file_get_string(c, g, "Banner", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.banner = optargs.banner = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.prompt.chooser.text) {
+		s = g_key_file_get_locale_string(c, g, "ChooserPromptText", options.language, &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.prompt.chooser.text = optargs.prompt.chooser.text = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.prompt.chooser.markup) {
+		s = g_key_file_get_locale_string(c, g, "ChooserPromptMarkup", options.language, &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.prompt.chooser.markup = optargs.prompt.chooser.markup = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.prompt.logout.text) {
+		s = g_key_file_get_locale_string(c, g, "LogoutPromptText", options.language, &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.prompt.logout.text = optargs.prompt.logout.text = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.prompt.logout.markup) {
+		s = g_key_file_get_locale_string(c, g, "LogoutPromptMarkup", options.language, &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.prompt.logout.markup = optargs.prompt.logout.markup = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.side.splash) {
+		s = g_key_file_get_string(c, g, "SplashSide", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			if (strcmp(s, "left")) {
+				optargs.side.splash = "left";
+				options.side.splash = LOGO_SIDE_LEFT;
+			} else if (strcmp(s, "right")) {
+				optargs.side.splash = "right";
+				options.side.splash = LOGO_SIDE_RIGHT;
+			} else if (strcmp(s, "top")) {
+				optargs.side.splash = "top";
+				options.side.splash = LOGO_SIDE_TOP;
+			} else if (strcmp(s, "bottom")) {
+				optargs.side.splash = "bottom";
+				options.side.splash = LOGO_SIDE_BOTTOM;
+			}
+			g_free(s);
+		}
+	}
+	if (!optargs.side.chooser) {
+		s = g_key_file_get_string(c, g, "ChooserSide", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			if (strcmp(s, "left")) {
+				optargs.side.chooser = "left";
+				options.side.chooser = LOGO_SIDE_LEFT;
+			} else if (strcmp(s, "right")) {
+				optargs.side.chooser = "right";
+				options.side.chooser = LOGO_SIDE_RIGHT;
+			} else if (strcmp(s, "top")) {
+				optargs.side.chooser = "top";
+				options.side.chooser = LOGO_SIDE_TOP;
+			} else if (strcmp(s, "bottom")) {
+				optargs.side.chooser = "bottom";
+				options.side.chooser = LOGO_SIDE_BOTTOM;
+			}
+			g_free(s);
+		}
+	}
+	if (!optargs.side.logout) {
+		s = g_key_file_get_string(c, g, "LogoutSide", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			if (strcmp(s, "left")) {
+				optargs.side.logout = "left";
+				options.side.logout = LOGO_SIDE_LEFT;
+			} else if (strcmp(s, "right")) {
+				optargs.side.logout = "right";
+				options.side.logout = LOGO_SIDE_RIGHT;
+			} else if (strcmp(s, "top")) {
+				optargs.side.logout = "top";
+				options.side.logout = LOGO_SIDE_TOP;
+			} else if (strcmp(s, "bottom")) {
+				optargs.side.logout = "bottom";
+				options.side.logout = LOGO_SIDE_BOTTOM;
+			}
+			g_free(s);
+		}
+	}
+	if (!optargs.icons) {
+		s = g_key_file_get_string(c, g, "IconTheme", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.icons = optargs.icons = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.theme) {
+		s = g_key_file_get_string(c, g, "Theme", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.theme = optargs.theme = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.cursors) {
+		s = g_key_file_get_string(c, g, "CursorTheme", &e);
+		if (e)
+			e = NULL;
+		else if (s) {
+			options.cursors = optargs.cursors = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.usexde) {
+		b = g_key_file_get_boolean(c, g, "UseXDETheme", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.usexde = b ? True : False;
+			optargs.usexde = b ? "true" : "false";
+		}
+	}
+	if (!optargs.manage.session) {
+		b = g_key_file_get_boolean(c, g, "SessionManage", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.manage.session = b ? True : False;
+			optargs.manage.session = b ? "true" : "false";
+		}
+	}
+	if (!optargs.manage.proxy) {
+		b = g_key_file_get_boolean(c, g, "SessionManageProxy", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.manage.proxy = b ? True : False;
+			optargs.manage.proxy = b ? "true" : "false";
+		}
+	}
+	if (!optargs.manage.dockapps) {
+		b = g_key_file_get_boolean(c, g, "SessionManageDockApps", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.manage.dockapps = b ? True : False;
+			optargs.manage.dockapps = b ? "true" : "false";
+		}
+	}
+	if (!optargs.manage.systray) {
+		b = g_key_file_get_boolean(c, g, "SessionManageSysTray", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.manage.systray = b ? True : False;
+			optargs.manage.systray = b ? "true" : "false";
+		}
+	}
+	if (!optargs.slock.lock) {
+		b = g_key_file_get_boolean(c, g, "ScreenLock", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.slock.lock = b ? True : False;
+			optargs.slock.lock = b ? "true" : "false";
+		}
+	}
+	if (!optargs.slock.program) {
+		s = g_key_file_get_string(c, g, "ScreenLockProgram", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.slock.program = optargs.slock.program = strdup(s);
+			g_free(s);
+		}
+	}
+	if (!optargs.autostart) {
+		b = g_key_file_get_boolean(c, g, "AutoStart", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.autostart = b ? True : False;
+			optargs.autostart = b ? "true" : "false";
+		}
+	}
+	if (!optargs.assist) {
+		b = g_key_file_get_boolean(c, g, "StartupNotificationAssist", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.assist = b ? True : False;
+			optargs.assist = b ? "true" : "false";
+		}
+	}
+	if (!optargs.xsettings) {
+		b = g_key_file_get_boolean(c, g, "XSettings", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.xsettings = b ? True : False;
+			optargs.xsettings = b ? "true" : "false";
+		}
+	}
+	if (!optargs.xinput) {
+		b = g_key_file_get_boolean(c, g, "XInput", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.xinput = b ? True : False;
+			optargs.xinput = b ? "true" : "false";
+		}
+	}
+	if (!optargs.style.theme) {
+		b = g_key_file_get_boolean(c, g, "ThemeManage", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.style.theme = b ? True : False;
+			optargs.style.theme = b ? "true" : "false";
+		}
+	}
+	if (!optargs.style.dockapps) {
+		b = g_key_file_get_boolean(c, g, "ThemeManageDockApps", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.style.dockapps = b ? True : False;
+			optargs.style.dockapps = b ? "true" : "false";
+		}
+	}
+	if (!optargs.style.systray) {
+		b = g_key_file_get_boolean(c, g, "ThemeManageSysTray", &e);
+		if (e)
+			e = NULL;
+		else {
+			options.style.systray = b ? True : False;
+			optargs.style.systray = b ? "true" : "false";
 		}
 	}
 }
@@ -609,7 +1043,7 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [OPTIONS] [XSESSION]\n\
+    %1$s [OPTIONS] [XSESSION|SPECIAL]\n\
     %1$s [OPTIONS] {-h|--help}\n\
     %1$s [OPTIONS] {-V|--version}\n\
     %1$s [OPTIONS] {-C|--copying}\n\
@@ -623,81 +1057,111 @@ help(int argc, char *argv[])
 		return;
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [OPTIONS] [XSESSION]\n\
+    %1$s [OPTIONS] [XSESSION|SPECIAL]\n\
     %1$s [OPTIONS] {-h|--help}\n\
     %1$s [OPTIONS] {-V|--version}\n\
     %1$s [OPTIONS] {-C|--copying}\n\
 Arguments:\n\
-    XSESSION                            (%2$s)\n\
-        The name of the XDG session to execute, or \"default\"\n\
-        or \"choose\" or \"logout\" or \"manage\".\n\
+    XSESSION | SPECIAL                  (%2$s)\n\
+        The name of the XDG session to execute or one of:\n\
+        \"default\", run default session without prompting\n\
+        \"current\", run current session without prompting\n\
+        \"choose\",  post a desktop chooser dialog\n\
+        \"logout\",  post a desktop logout dialog\n\
+        \"manage\",  post a session manager dialog\n\
 Command Options:\n\
+   [--launch]\n\
+        launch the session specified by XSESSION\n\
+    --choose\n\
+        launch a desktop chooser dialog\n\
+    --logout\n\
+        launch a desktop logout dialog\n\
+    --manage\n\
+        launch a desktop manager dialog\n\
+    -h, --help\n\
+        print this usage information and exit\n\
+    -V, --version\n\
+        print program version and exit\n\
+    -C, --copying\n\
+        print copying permission and exit\n\
 General Options:\n\
-  --xinit                               (%3$s)\n\
-  --display, -d DISPLAY                 (%4$s)\n\
-  --desktop, -e DESKTOP                 (%5$s)\n\
-  --session, -s PROFILE                 (%6$s)\n\
-  --startwm, -m COMMAND                 (%7$s)\n\
-  --file, -f FILE                       (%8$s)\n\
-  --setup COMMAND                       (%9$s)\n\
-  --exec COMMAND                        (%10$s)\n\
-  --(no)autostart, -a                   (%11$s)\n\
-  --(no)wait, -w                        (%12$s)\n\
-  --pause, -p [PAUSE]                   (%13$s)\n\
-  --(no)toolwait, -W [GUARD][:DELAY]    (%14$s)\n\
-  --charset, -c CHARSET                 (%15$s)\n\
-  --language, -L LANGUAGE               (%16$s)\n\
-  --vendor VENDOR                       (%17$s)\n\
-  --(no)splash, -l [IMAGE]              (%18$s)\n\
-  --banner, -b BANNER                   (%19$s)\n\
-  --side {top|left|right|bottom}        (%20$s)\n\
-  --icons, -i THEME                     (%21$s)\n\
-  --theme, -t THEME                     (%22$s)\n\
-  --cursors, -z THEME                   (%23$s)\n\
-  --xde-theme, -X                       (%24$s)\n\
-  --dryrun, -n                          (%25$s)\n\
-  --debug, -D [LEVEL]                   (%26$d)\n\
-  --verbose, -v [LEVEL]                 (%27$d)\n\
+    -0, --xinit                         (%3$s)\n\
+        perform additional .xinitrc initializations\n\
+    -d, --display DISPLAY               (%4$s)\n\
+        specify the X display to use\n\
+    -r, --rcfile CONFIG                 (%28$s)\n\
+        specify a custom configuration file\n\
+    -e, --desktop DESKTOP               (%5$s)\n\
+        specify the desktop environment\n\
+    -s, --session PROFILE               (%6$s)\n\
+        specify the lxsesion(1) compatible profile\n\
+    -m, --startwm COMMAND               (%7$s)\n\
+        specify command to start the window manager\n\
+    -f, --file FILE                     (%8$s)\n\
+        specify file from which to read commands\n\
+    -I, --setup COMMAND                 (%9$s)\n\
+        specify setup command to run before window manager\n\
+    -x, --exec COMMAND                  (%10$s)\n\
+        specify commands to execute before autostart\n\
+        this option may be repeated\n\
+    -a, --noautostart | --autostart     (%11$s)\n\
+        (do not) perform XDG autostart of tasks\n\
+    -w, --wait | --nowait               (%12$s)\n\
+        (do not) wait for window manager to start\n\
+    -p, --pause [PAUSE]                 (%13$s)\n\
+        pause for PAUSE seconds before running\n\
+    -W, --toolwait [GUARD][:DELAY]      (%14$s)\n\
+        perform xtoolwait on autostart tasks\n\
+          GUARD is the longest time to wait for tool start\n\
+        DELAY is the time to wait for unknown startup\n\
+    -c, --charset CHARSET               (%15$s)\n\
+        specify the character set\n\
+    -L, --language LANGUAGE             (%16$s)\n\
+        specify the language for XDG translations\n\
+    -O, --vendor VENDOR                 (%17$s)\n\
+        specify the vendor id for branding\n\
+    -l, --splash [IMAGE] | --nosplash   (%18$s)\n\
+        display (or not) startup splash page\n\
+    -b, --banner BANNER                 (%19$s)\n\
+        specify custom session branding\n\
+    -S, --side {top|left|right|bottom}  (%20$s)\n\
+        specify side of splash or dialog for logo placement\n\
+    -i, --icons THEME                   (%21$s)\n\
+        set the icon theme to use\n\
+    -t, --theme THEME                   (%22$s)\n\
+        set the GTK+ theme to use\n\
+    -z, --cursors THEME                 (%23$s)\n\
+        set the cursor theme to use\n\
+    -X, --xde-theme                     (%24$s)\n\
+        use the XDE desktop theme for the selection window\n\
+    -n, --dryrun                        (%25$s)\n\
+        do not do anything: just print it\n\
+    -D, --debug [LEVEL]                 (%26$d)\n\
+        increment or set debug LEVEL\n\
+        this option may be repeated.\n\
+    -v, --verbose [LEVEL]               (%27$d)\n\
+        increment or set output verbosity LEVEL\n\
+        this option may be repeated.\n\
 ", argv[0]
-       , optargs.argument ? : defaults.argument
-       , optargs.xinit ? : defaults.xinit
-       , optargs.display ? : defaults.display
-       , optargs.desktop ? : defaults.desktop
-       , optargs.profile ? : defaults.profile
-       , optargs.startwm ? : defaults.startwm
-       , optargs.file ? : defaults.file
-       , optargs.setup ? : defaults.setup
-       , optargs.exec ? : defaults.exec
-       , optargs.autostart ? : defaults.autostart
-       , optargs.wait ? : defaults.wait
-       , optargs.pause ? : defaults.pause
-       , optargs.toolwait ? : defaults.toolwait
-       , optargs.charset ? : defaults.charset
-       , optargs.language ? : defaults.language
-       , optargs.vendor ? : defaults.vendor
-       , optargs.splash ? : defaults.splash
-       , optargs.banner ? : defaults.banner
-       , optargs.side ? : defaults.side
-       , optargs.icons ? : defaults.icons
-       , optargs.theme ? : defaults.theme
-       , optargs.cursors ? : defaults.cursors
-       , optargs.usexde ? : defaults.usexde
-       , optargs.dryrun ? : defaults.dryrun
-       , options.debug
-       , options.output
-);
+		       , options.choice ? : (optargs.choice ? : defaults.choice)
+		       , optargs.xinit ? : defaults.xinit, optargs.display ? : defaults.display,
+		       optargs.desktop ? : defaults.desktop, optargs.profile ? : defaults.profile,
+		       optargs.startwm ? : defaults.startwm, optargs.file ? : defaults.file,
+		       optargs.setup ? : defaults.setup, optargs.exec ? : defaults.exec,
+		       optargs.autostart ? : defaults.autostart, optargs.wait ? : defaults.wait,
+		       optargs.pause ? : defaults.pause, optargs.toolwait ? : defaults.toolwait,
+		       options.charset ? : (optargs.charset ? : defaults.charset)
+		       , options.language ? : (optargs.language ? : defaults.language)
+		       , options.vendor ? : (optargs.vendor ? : defaults.vendor)
+		       , options.image ? : (optargs.image ? : defaults.image)
+		       , options.banner ? : (optargs.banner ? : defaults.banner)
+		       , optargs.side.splash ? : defaults.side.splash,
+		       optargs.icons ? : defaults.icons, optargs.theme ? : defaults.theme,
+		       optargs.cursors ? : defaults.cursors, optargs.usexde ? : defaults.usexde,
+		       optargs.dryrun ? : defaults.dryrun, options.debug, options.output,
+		       options.rcfile ? : (optargs.rcfile ? : defaults.rcfile)
+	    );
 }
-
-typedef enum {
-	COMMAND_DEFAULT,
-	COMMAND_LAUNCH,
-	COMMAND_CHOOSE,
-	COMMAND_LOGOUT,
-	COMMAND_MANAGE,
-	COMMAND_HELP,
-	COMMAND_VERSION,
-	COMMAND_COPYING,
-} CommandType;
 
 int
 main(int argc, char *argv[])
@@ -713,19 +1177,19 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-			{"launch",	no_argument,		NULL, '0'},
-			{"chooser",	no_argument,		NULL, '2'},
+			{"launch",	no_argument,		NULL, '1'},
+			{"choose",	no_argument,		NULL, '2'},
 			{"logout",	no_argument,		NULL, '3'},
-			{"manager",	no_argument,		NULL, '4'},
+			{"manage",	no_argument,		NULL, '4'},
 
-			{"xinit",	no_argument,		NULL, '1'},
+			{"xinit",	no_argument,		NULL, '0'},
 			{"display",	required_argument,	NULL, 'd'},
                         {"rcfile",      required_argument,      NULL, 'r'},
 			{"desktop",	required_argument,	NULL, 'e'},
 			{"session",	required_argument,	NULL, 's'},
 			{"startwm",	required_argument,	NULL, 'm'},
 			{"file",	required_argument,	NULL, 'f'},
-			{"setup",	required_argument,	NULL, '5'},
+			{"setup",	required_argument,	NULL, 'I'},
 			{"exec",	required_argument,	NULL, 'x'},
 			{"autostart",	no_argument,		NULL, '6'},
 			{"noautostart",	no_argument,		NULL, 'a'},
@@ -736,7 +1200,7 @@ main(int argc, char *argv[])
 			{"notoolwait",	optional_argument,	NULL, '8'},
 			{"charset",	required_argument,	NULL, 'c'},
 			{"language",	required_argument,	NULL, 'L'},
-			{"vendor",	required_argument,	NULL, '9'},
+			{"vendor",	required_argument,	NULL, 'O'},
 			{"splash",	optional_argument,	NULL, 'l'},
 			{"nosplash",	no_argument,		NULL, '!'},
 			{"banner",	required_argument,	NULL, 'b'},
@@ -757,9 +1221,9 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "nD::v::hVCH?", long_options, &option_index);
+		c = getopt_long_only(argc, argv, "0d:r:e:s:m:f:I:x:awp::W::c:L:O:l::b:S:i:t:z:XnD::v::hVCH?", long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "nDvhVCH?");
+		c = getopt(argc, argv, "0d:r:e:s:m:f:I:x:awp:W:c:L:O:l:b:S:i:t:z:XnDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			if (options.debug)
@@ -770,32 +1234,40 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case '0':	/* --launch */
-			if (command != COMMAND_DEFAULT)
+		case '1':	/* --launch */
+			if (options.command != COMMAND_DEFAULT)
 				goto bad_option;
-			command = COMMAND_LAUNCH;
-			defaults.argument = "choose";
+			if (command == COMMAND_DEFAULT)
+				command = COMMAND_LAUNCH;
+			options.command = COMMAND_LAUNCH;
+			defaults.choice = "choose";
 			break;
 		case '2':	/* --chooser */
-			if (command != COMMAND_DEFAULT)
+			if (options.command != COMMAND_DEFAULT)
 				goto bad_option;
-			command = COMMAND_CHOOSE;
-			defaults.argument = "choose";
+			if (command == COMMAND_DEFAULT)
+				command = COMMAND_CHOOSE;
+			options.command = COMMAND_CHOOSE;
+			defaults.choice = "choose";
 			break;
 		case '3':	/* --logout */
-			if (command != COMMAND_DEFAULT)
+			if (options.command != COMMAND_DEFAULT)
 				goto bad_option;
-			command = COMMAND_LOGOUT;
-			defaults.argument = "logout";
+			if (command == COMMAND_DEFAULT)
+				command = COMMAND_LOGOUT;
+			options.command = COMMAND_LOGOUT;
+			defaults.choice = "logout";
 			break;
 		case '4':	/* --manager */
-			if (command != COMMAND_DEFAULT)
+			if (options.command != COMMAND_DEFAULT)
 				goto bad_option;
-			command = COMMAND_MANAGE;
-			defaults.argument = "manage";
+			if (command == COMMAND_DEFAULT)
+				command = COMMAND_MANAGE;
+			options.command = COMMAND_MANAGE;
+			defaults.choice = "manage";
 			break;
 
-		case '1':	/* --xinit */
+		case '0':	/* -0, --xinit */
 			options.xinit = True;
 			break;
 		case 'd':	/* -d, --display DISPLAY */
@@ -803,11 +1275,11 @@ main(int argc, char *argv[])
 			options.display = strdup(optarg);
 			optargs.display = optarg;
 			break;
-                case 'r':       /* -r, --rcfile FILENAME */
-                        free(options.rcfile);
-                        options.rcfile = strdup(optarg);
-                        optargs.rcfile = optarg;
-                        break;
+		case 'r':	/* -r, --rcfile FILENAME */
+			free(options.rcfile);
+			options.rcfile = strdup(optarg);
+			optargs.rcfile = optarg;
+			break;
 		case 'e':	/* -e, --desktop DESKTOP */
 			free(options.desktop);
 			options.desktop = strdup(optarg);
@@ -828,13 +1300,13 @@ main(int argc, char *argv[])
 			options.file = strdup(optarg);
 			optargs.file = optarg;
 			break;
-		case 'S':	/* -S, --setup COMMAND */
+		case 'I':	/* -I, --setup COMMAND */
 			free(options.setup);
 			options.setup = strdup(optarg);
 			optargs.setup = optarg;
 			break;
 		case 'x':	/* -x, --exec COMMAND */
-			options.exec = realloc(options.exec, (options.exec_num + 1)
+			options.exec = realloc(options.exec, (options.exec_num + 1) *
 					       sizeof(*options.exec));
 			options.exec[options.exec_num + 1] = NULL;
 			options.exec[options.exec_num++] = strdup(optarg);
@@ -872,16 +1344,16 @@ main(int argc, char *argv[])
 				if ((d = strchr(optarg, ':'))) {
 					if (d != optarg)
 						g = optarg;
-                                        *d = '\0';
+					*d = '\0';
 					d++;
 				}
-                                optargs.guard = g;
-                                optargs.delay = d;
+				optargs.guard = g;
+				optargs.delay = d;
 				options.guard = g ? strtoul(g, NULL, 0) : 200;
 				options.delay = d ? strtoul(d, NULL, 0) : 0;
 			} else {
-                                optargs.guard = NULL;
-                                optargs.delay = NULL;
+				optargs.guard = NULL;
+				optargs.delay = NULL;
 				options.guard = 200;
 				options.delay = 0;
 			}
@@ -896,7 +1368,7 @@ main(int argc, char *argv[])
 			options.language = strdup(optarg);
 			optargs.language = optarg;
 			break;
-		case '9':	/* --vendor VENDOR */
+		case 'O':	/* -O, --vendor VENDOR */
 			free(options.vendor);
 			options.vendor = strdup(optarg);
 			optargs.vendor = optarg;
@@ -920,15 +1392,15 @@ main(int argc, char *argv[])
 			optargs.banner = optarg;
 			break;
 		case 'S':	/* -S, --side {top|left|right|bottom} */
-			optargs.side = optarg;
+			optargs.side.splash = optarg;
 			if (!strncasecmp(optarg, "left", strlen(optarg)))
-				options.side = LOGO_SIDE_LEFT;
+				options.side.splash = LOGO_SIDE_LEFT;
 			else if (!strncasecmp(optarg, "top", strlen(optarg)))
-				options.side = LOGO_SIDE_TOP;
+				options.side.splash = LOGO_SIDE_TOP;
 			else if (!strncasecmp(optarg, "right", strlen(optarg)))
-				options.side = LOGO_SIDE_RIGHT;
+				options.side.splash = LOGO_SIDE_RIGHT;
 			else if (!strncasecmp(optarg, "bottom", strlen(optarg)))
-				options.side = LOGO_SIDE_BOTTOM;
+				options.side.splash = LOGO_SIDE_BOTTOM;
 			break;
 		case 'i':	/* -i, --icons THEME */
 			free(options.icons);
@@ -980,19 +1452,21 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (command != COMMAND_AUTOSTART)
-				goto bad_option;
 			command = COMMAND_HELP;
 			break;
 		case 'V':	/* -V, --version */
-			if (command != COMMAND_AUTOSTART)
+			if (options.command != COMMAND_DEFAULT)
 				goto bad_option;
-			command = COMMAND_VERSION;
+			if (command == COMMAND_DEFAULT)
+				command = COMMAND_VERSION;
+			options.command = COMMAND_VERSION;
 			break;
 		case 'C':	/* -C, --copying */
-			if (command != COMMAND_AUTOSTART)
+			if (options.command != COMMAND_DEFAULT)
 				goto bad_option;
-			command = COMMAND_COPYING;
+			if (command == COMMAND_DEFAULT)
+				command = COMMAND_COPYING;
+			options.command = COMMAND_COPYING;
 			break;
 		case '?':
 		default:
@@ -1018,28 +1492,28 @@ main(int argc, char *argv[])
 		}
 	}
 	if (optind < argc) {
-		free(options.argument);
-		options.argument = strdup(argv[optind]);
-		if (strcasecmp(options.argument, "default")) {
-			if (command != COMMAND_DEFAULT && command != COMMAND_LAUNCH)
+		free(options.choice);
+		options.choice = strdup(argv[optind]);
+		if (strcasecmp(options.choice, "default")) {
+			if (options.command != COMMAND_DEFAULT && options.command != COMMAND_LAUNCH)
 				goto bad_nonopt;
-			command = COMMAND_LAUNCH;
-		} else if (strcasecmp(options.argument, "current")) {
-			if (command != COMMAND_DEFAULT && command != COMMAND_LAUNCH)
+			options.command = COMMAND_LAUNCH;
+		} else if (strcasecmp(options.choice, "current")) {
+			if (options.command != COMMAND_DEFAULT && options.command != COMMAND_LAUNCH)
 				goto bad_nonopt;
-			command = COMMAND_LAUNCH;
-		} else if (strcasecmp(options.argument, "choose")) {
-			if (command != COMMAND_DEFAULT && command != COMMAND_CHOOSE)
+			options.command = COMMAND_LAUNCH;
+		} else if (strcasecmp(options.choice, "choose")) {
+			if (options.command != COMMAND_DEFAULT && options.command != COMMAND_CHOOSE)
 				goto bad_nonopt;
-			command = COMMAND_CHOOSE;
-		} else if (strcasecmp(options.argument, "logout")) {
-			if (command != COMMAND_DEFAULT && command != COMMAND_LOGOUT)
+			options.command = COMMAND_CHOOSE;
+		} else if (strcasecmp(options.choice, "logout")) {
+			if (options.command != COMMAND_DEFAULT && options.command != COMMAND_LOGOUT)
 				goto bad_nonopt;
-			command = COMMAND_LOGOUT;
-		} else if (strcasecmp(options.argument, "manage")) {
-			if (command != COMMAND_DEFAULT && command != COMMAND_MANAGE)
+			options.command = COMMAND_LOGOUT;
+		} else if (strcasecmp(options.choice, "manage")) {
+			if (options.command != COMMAND_DEFAULT && options.command != COMMAND_MANAGE)
 				goto bad_nonopt;
-			command = COMMAND_MANAGE;
+			options.command = COMMAND_MANAGE;
 		}
 		if (++optind < argc) {
 			fprintf(stderr, "%s: too many arguments\n", argv[0]);

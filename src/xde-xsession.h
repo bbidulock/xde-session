@@ -49,6 +49,10 @@
 #include "autoconf.h"
 #endif
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -97,6 +101,7 @@
 #endif
 #include <gtk/gtk.h>
 #include <cairo.h>
+#include <glib.h>
 
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
@@ -114,5 +119,162 @@
 #define DPRINT() do { if (options.debug) { \
 	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
+
+typedef enum {
+	LOGO_SIDE_LEFT,
+	LOGO_SIDE_RIGHT,
+	LOGO_SIDE_TOP,
+	LOGO_SIDE_BOTTOM,
+} LogoSide;
+
+typedef enum {
+	COMMAND_DEFAULT,
+	COMMAND_LAUNCH,
+	COMMAND_CHOOSE,
+	COMMAND_LOGOUT,
+	COMMAND_MANAGE,
+	COMMAND_HELP,
+	COMMAND_VERSION,
+	COMMAND_COPYING,
+} CommandType;
+
+typedef struct {
+	int output;
+	int debug;
+	CommandType command;
+	Bool dryrun;
+	char *display;
+	char *rcfile;
+	char *desktop;
+	char *profile;
+	char *startwm;
+	char *file;
+	char *setup;
+	char **exec;
+	int exec_num;
+	Bool autostart;
+	Bool wait;
+	unsigned long pause;
+	Bool toolwait;
+	unsigned long guard;
+	unsigned long delay;
+	char *charset;
+	char *language;
+	char *vendor;
+	Bool splash;
+	char *image;
+	char *banner;
+	struct {
+		LogoSide splash;
+		LogoSide chooser;
+		LogoSide logout;
+	} side;
+	char *icons;
+	char *theme;
+	char *cursors;
+	Bool usexde;
+	Bool xinit;
+	char *choice;
+	struct {
+		struct {
+			char *text;
+			char *markup;
+		} chooser, logout;
+	} prompt;
+	struct {
+		Bool session;
+		Bool proxy;
+		Bool dockapps;
+		Bool systray;
+	} manage;
+	struct {
+		Bool lock;
+		char *program;
+	} slock;
+	Bool assist;
+	Bool xsettings;
+	Bool xinput;
+	struct {
+		Bool theme;
+		Bool dockapps;
+		Bool systray;
+	} style;
+} Options;
+
+extern Options options;
+
+typedef struct {
+	char *output;
+	char *debug;
+	char *dryrun;
+	char *display;
+	char *rcfile;
+	char *desktop;
+	char *profile;
+	char *startwm;
+	char *file;
+	char *setup;
+	char *exec;
+	char *autostart;
+	char *wait;
+	char *pause;
+	char *toolwait;
+	char *guard;
+	char *delay;
+	char *charset;
+	char *language;
+	char *vendor;
+	char *splash;
+	char *image;
+	char *banner;
+	struct {
+		char *splash;
+		char *chooser;
+		char *logout;
+	} side;
+	char *icons;
+	char *theme;
+	char *cursors;
+	char *usexde;
+	char *xinit;
+	char *choice;
+	struct {
+		struct {
+			char *text;
+			char *markup;
+		} chooser, logout;
+	} prompt;
+	struct {
+		char *session;
+		char *proxy;
+		char *dockapps;
+		char *systray;
+	} manage;
+	struct {
+		char *lock;
+		char *program;
+	} slock;
+	char *assist;
+	char *xsettings;
+	char *xinput;
+	struct {
+		char *theme;
+		char *dockapps;
+		char *systray;
+	} style;
+} Optargs;
+
+extern Optargs optargs;
+extern Optargs defaults;
+
+typedef struct {
+	struct {
+		char *home;
+		char *dirs;
+		char *both;
+	} conf, data;
+} XdgDirectories;
+
+extern XdgDirectories xdg_dirs;
 
 #endif				/* __XDE_XSESSION_H__ */

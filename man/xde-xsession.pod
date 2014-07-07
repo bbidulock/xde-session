@@ -157,7 +157,7 @@ specified.
 
 Launch the session as specified by I<SESSION>.  If there is an existing
 session, this command option (or default action) has the same effect as
-specifying B<--chooser>.
+specifying B<--choose>.
 
 =item B<--xinit>
 
@@ -169,7 +169,7 @@ This option may be used directly from, or in lieue of, an F<~/.xinitrc>
 or F<~/.xsession> file or can be called directly from
 F</etc/X11/xinit/xinitrc> or F</exc/X11/xdm/Xsession> scripts.
 
-=item B<--chooser>
+=item B<--choose>
 
 Ask an existing session to provide a chooser dialog.  See also,
 L<xde-chooser(1)>.  This is also the default when B<xde-xsession> is
@@ -193,7 +193,7 @@ This option can be used from inside of the X session to logout of the
 session, perform session management, perform power or reboot management,
 or choose another window manager.
 
-=item B<--manager>
+=item B<--manage>
 
 Ask an existing session to provide a manager dialog.  See also,
 L<xde-manager(1)>.  This is also the default when B<xde-xsession> is
@@ -590,13 +590,13 @@ B<xde-xsession> windows themselves.  The default is C<false>.  Can be
 overridden with the B<--xde-theme> command line option.  Not useful in
 an XSession file.
 
-=item B<SessionManagement>=I<BOOLEAN>
+=item B<SessionManage>=I<BOOLEAN>
 
 Specifies whether or not to perform X11R6 Session Management on X
 sessions.  The default is C<true>.  Cannot be overridden with a command
 line option.  Can be specified in an XSession file.
 
-=item B<SessionManagementProxy>=I<BOOLEAN>
+=item B<SessionManageProxy>=I<BOOLEAN>
 
 Specifies whether or not to perform L<smproxy(1)> like services and
 assistance for window managers.  The default is C<true>.  Cannot be
@@ -607,28 +607,28 @@ file.
 
 Specifies whether or not to perform session management proxy services on
 WindowMaker dock applications.  The default is C<true>.  Ignored unless
-B<SessionManagementProxy> is C<true>.  Cannot be overridden with a
+B<SessionManageProxy> is C<true>.  Cannot be overridden with a
 command line option.  Can be specified in an XSession file.
 
 =item B<SessionManageSysTray>=I<BOOLEAN>
 
 Specifies whether or not to perform session management proxy services on
 system tray status icons.  The default is C<true>.  Ignored unless
-B<SessionManagementProxy> is C<true>.  Cannot be overridden with a
+B<SessionManageProxy> is C<true>.  Cannot be overridden with a
 command line option.  Can be specified in an XSession file.
 
-=item B<ScreenLocking>=I<BOOLEAN>
+=item B<ScreenLock>=I<BOOLEAN>
 
 Specifies whether or not to perform screen locking services and perform
 L<systemd(8)> integration for a multi-session system.  The default is
 C<true>.  Cannot be overridden with a command line option.  Can be
 specified in an XSession file.
 
-=item B<ScreenLockerProgram>=I<STRING>
+=item B<ScreenLockProgram>=I<STRING>
 
 Specifies an external program and arguments, in shell syntax, to use for
 locking the screen.  Used with L<systemd(8)> integration for screen
-locking instead of internal screen locker when B<ScreenLocking> is C<true>.
+locking instead of internal screen locker when B<ScreenLock> is C<true>.
 Executed in response to Lock Screen buttons in chooser and logout
 windows.  The default is null (use internal locker).  Cannot be
 overridden with a command line option.  Can be specified in an XSession
@@ -660,7 +660,7 @@ default is C<false>).
 Cannot be overridden with a command line option.
 Can be specified in an XSession file.
 
-=item B<ThemeManagement>=I<BOOLEAN>
+=item B<ThemeManage>=I<BOOLEAN>
 
 Sepcifies whether or not to perform desktop theme management for the
 XSession.  The default is C<true>.  Cannot be overridden with a command
@@ -671,14 +671,14 @@ LXDE).
 =item B<ThemeManageDockApps>=I<BOOLEAN>
 
 Specifies whether desktop GTK+ themes should be enforced on dock
-applications.  The default is C<true>.  Ignored when B<ThemeManagement>
+applications.  The default is C<true>.  Ignored when B<ThemeManage>
 is C<false>.  Cannot be overridden with a command line option.  Can be
 specified in an XSession file.
 
 =item B<ThemeManageSysTray>=I<BOOLEAN>
 
 Specifies whether desktop GTK+ themes should be enforced on system tray
-icons.  The default is C<true>.  Ignored when B<ThemeManagement> is
+icons.  The default is C<true>.  Ignored when B<ThemeManage> is
 C<false>.  Cannot be overridden with a command line option.  Can be
 specified in an XSession file.
 

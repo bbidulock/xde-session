@@ -24,6 +24,7 @@
 -ss
 -hnl
 -nbc
+-TXSession
 -TPingHost
 -TARRAY8
 -TGIOChannel

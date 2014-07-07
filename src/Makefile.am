@@ -10,7 +10,8 @@ bin_PROGRAMS = \
 	xde-session \
 	xde-wmproxy \
 	xde-xchooser \
-	xde-xlogin
+	xde-xlogin \
+        xde-xsession
 
 
 xde_autostart_CPPFLAGS = -DNAME=\"xde-autostart\"
@@ -52,4 +53,9 @@ xde_xlogin_CPPFLAGS = -DNAME=\"xde-xlogin\"
 xde_xlogin_SOURCES = xde-xlogin.c xde-xlogin.h
 xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS)
 xde_xlogin_LDFLAGS = $(XFT_LIBS) $(AM_LDFLAGS)
+
+xde_xsession_CPPFLAGS = -DNAME=\"xde-xsession\"
+xde_xsession_SOURCES = xde-xsession.c xde-xsession.h
+xde_xsession_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS)
+xde_xsession_LDFLAGS = $(XFT_LIBS) $(AM_LDFLAGS)
 
