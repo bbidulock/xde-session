@@ -45,6 +45,7 @@
 #include "xde-xsession.h"
 #include "xsession.h"
 #include "autostart.h"
+#include "display.h"
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -193,6 +194,12 @@ Optargs defaults = {
 };
 
 XdgDirectories xdg_dirs;
+
+XdgScreen *screens;
+
+Display *dpy = NULL;
+int nscr;
+XdgScreen *scr;
 
 void
 get_directories(void)
@@ -1145,11 +1152,16 @@ Usage:\n\
 Arguments:\n\
     XSESSION | SPECIAL                  (%2$s)\n\
         The name of the XDG session to execute or one of:\n\
-        \"default\", run default session without prompting\n\
-        \"current\", run current session without prompting\n\
-        \"choose\",  post a desktop chooser dialog\n\
-        \"logout\",  post a desktop logout dialog\n\
-        \"manage\",  post a session manager dialog\n\
+        \"default\"                       (%29$s)\n\
+            run default session without prompting\n\
+        \"current\"                       (%30$s)\n\
+            run current session without prompting\n\
+        \"choose\"\n\
+            post a desktop chooser dialog\n\
+        \"logout\"\n\
+            post a desktop logout dialog\n\
+        \"manage\"\n\
+            post a session manager dialog\n\
 Command Options:\n\
    [--launch]\n\
         launch the session specified by XSESSION\n\
@@ -1251,6 +1263,8 @@ General Options:\n\
                 , options.debug
                 , options.output
                 , options.rcfile ? : (optargs.rcfile ? : defaults.rcfile)
+                , options.session
+                , options.current
         );
         /* *INDENT-ON* */
 }

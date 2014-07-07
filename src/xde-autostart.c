@@ -338,6 +338,8 @@ typedef struct {
 	int len;			/* number of message bytes */
 } Message;
 
+Sequence *sequences;			/* sequences for this display */
+
 typedef struct {
 	int screen;			/* screen number */
 	Window root;			/* root window of screen */
@@ -354,7 +356,6 @@ typedef struct {
 	Atom stray_atom;		/* _NET_SYSTEM_TRAY_S%d atom this screen */
 	Atom slctn_atom;		/* _XDE_AUTOSTART_S%d atom this screen */
 	Client *clients;		/* clients for this screen */
-	Sequence *sequences;		/* sequences for this screen */
 } XdgScreen;
 
 XdgScreen *screens;
@@ -1762,7 +1763,7 @@ find_startup_seq(Client *c)
 
 	/* search by startup id */
 	if (c->startup_id) {
-		for (seq = scr->sequences; seq; seq = seq->next) {
+		for (seq = sequences; seq; seq = seq->next) {
 			if (!seq->f.id) {
 				EPRINTF("sequence with null id!\n");
 				continue;
@@ -1780,7 +1781,7 @@ find_startup_seq(Client *c)
 
 	/* search by wmclass */
 	if (c->ch.res_name || c->ch.res_class) {
-		for (seq = scr->sequences; seq; seq = seq->next) {
+		for (seq = sequences; seq; seq = seq->next) {
 			const char *wmclass;
 
 			if (seq->client)
@@ -1802,7 +1803,7 @@ find_startup_seq(Client *c)
 
 	/* search by binary */
 	if (c->command) {
-		for (seq = scr->sequences; seq; seq = seq->next) {
+		for (seq = sequences; seq; seq = seq->next) {
 			const char *binary;
 
 			if (seq->client)
@@ -1823,7 +1824,7 @@ find_startup_seq(Client *c)
 
 	/* search by wmclass (this time case insensitive) */
 	if (c->ch.res_name || c->ch.res_class) {
-		for (seq = scr->sequences; seq; seq = seq->next) {
+		for (seq = sequences; seq; seq = seq->next) {
 			const char *wmclass;
 
 			if (seq->client)
@@ -1847,7 +1848,7 @@ find_startup_seq(Client *c)
 
 	/* search by pid and hostname */
 	if (c->pid && c->hostname) {
-		for (seq = scr->sequences; seq; seq = seq->next) {
+		for (seq = sequences; seq; seq = seq->next) {
 			const char *hostname;
 			pid_t pid;
 
@@ -2191,7 +2192,7 @@ find_seq_by_id(char *id)
 {
 	Sequence *seq;
 
-	for (seq = scr->sequences; seq; seq = seq->next)
+	for (seq = sequences; seq; seq = seq->next)
 		if (!strcmp(seq->f.id, id))
 			break;
 	return (seq);
@@ -2231,7 +2232,7 @@ unref_sequence(Sequence *seq)
 			Sequence *s, **prev;
 
 			DPRINTF("deleting sequence\n");
-			for (prev = &scr->sequences, s = *prev; s && s != seq;
+			for (prev = &sequences, s = *prev; s && s != seq;
 			     prev = &s->next, s = *prev) ;
 			if (s) {
 				*prev = s->next;
@@ -2263,7 +2264,7 @@ remove_sequence(Sequence *del)
 
 	DPRINTF("Removing sequence:\n");
 	show_sequence(del);
-	for (prev = &scr->sequences, seq = *prev; seq && seq != del;
+	for (prev = &sequences, seq = *prev; seq && seq != del;
 	     prev = &seq->next, seq = *prev) ;
 	if (seq) {
 		*prev = seq->next;
@@ -2309,8 +2310,8 @@ add_sequence(Sequence *seq)
 {
 	seq->refs = 1;
 	seq->client = NULL;
-	seq->next = scr->sequences;
-	scr->sequences = seq;
+	seq->next = sequences;
+	sequences = seq;
 	if (seq->state == StartupNotifyNew) {
 	}
 	seq->timer = g_timeout_add(options.guard, sequence_timeout_callback, (gpointer) seq);

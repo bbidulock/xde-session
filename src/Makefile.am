@@ -60,5 +60,6 @@ xde_xsession_LDFLAGS = $(XFT_LIBS) $(AM_LDFLAGS)
 xde_xsession_SOURCES = \
                 xde-xsession.c xde-xsession.h \
                 xsessions.c xsession.h \
-                autostart.c autostart.h
+                autostart.c autostart.h \
+                display.c display.h
 
