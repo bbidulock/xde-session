@@ -42,18 +42,17 @@
 
  *****************************************************************************/
 
-#ifndef __LOCAL_XSESSION_H__
-#define __LOCAL_XSESSION_H__
+#ifndef __LOCAL_AUTOSTART_H__
+#define __LOCAL_AUTOSTART_H__
 
 typedef struct {
         char *appid;
         char *file;
         GKeyFile *entry;
-} XSession;
+} AutoStart;
 
-extern GHashTable *xsessions;
-extern GHashTable *get_xsessions(void);
-extern gboolean read_xsession(XSession *);
-extern GKeyFile *make_login_choice(int, char *[]);
+extern GHashTable *autostarts;
+extern GHashTable *get_autostarts(void);
+extern gboolean read_autostart(AutoStart *);
 
-#endif				/* __LOCAL_XSESSION_H__ */
+#endif				/* __LOCAL_AUTOSTART_H__ */

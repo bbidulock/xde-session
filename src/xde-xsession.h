@@ -169,12 +169,15 @@ typedef struct {
 		LogoSide chooser;
 		LogoSide logout;
 	} side;
-	char *icons;
-	char *theme;
-	char *cursors;
+	char *icon_theme;
+	char *gtk2_theme;
+	char *curs_theme;
 	Bool usexde;
 	Bool xinit;
+        Bool managed;
 	char *choice;
+        char *current;
+        char *session;
 	struct {
 		struct {
 			char *text;
@@ -232,12 +235,15 @@ typedef struct {
 		char *chooser;
 		char *logout;
 	} side;
-	char *icons;
-	char *theme;
-	char *cursors;
+	char *icon_theme;
+	char *gtk2_theme;
+	char *curs_theme;
 	char *usexde;
 	char *xinit;
+        char *managed;
 	char *choice;
+        char *current;
+        char *session;
 	struct {
 		struct {
 			char *text;

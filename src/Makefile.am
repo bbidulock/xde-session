@@ -55,7 +55,10 @@ xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS)
 xde_xlogin_LDFLAGS = $(XFT_LIBS) $(AM_LDFLAGS)
 
 xde_xsession_CPPFLAGS = -DNAME=\"xde-xsession\"
-xde_xsession_SOURCES = xde-xsession.c xde-xsession.h
 xde_xsession_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS)
 xde_xsession_LDFLAGS = $(XFT_LIBS) $(AM_LDFLAGS)
+xde_xsession_SOURCES = \
+                xde-xsession.c xde-xsession.h \
+                xsessions.c xsession.h \
+                autostart.c autostart.h
 

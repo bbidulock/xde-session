@@ -43,6 +43,8 @@
  *****************************************************************************/
 
 #include "xde-xsession.h"
+#include "xsession.h"
+#include "autostart.h"
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -81,23 +83,28 @@ Options options = {
 		 .splash = LOGO_SIDE_TOP,
 		 .chooser = LOGO_SIDE_LEFT,
 		 .logout = LOGO_SIDE_LEFT,
-		 },
-	.icons = NULL,
-	.theme = NULL,
-	.cursors = NULL,
+		 }
+	,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.curs_theme = NULL,
 	.usexde = False,
 	.xinit = False,
+	.managed = False,
 	.choice = NULL,
+        .current = NULL,
 	.manage = {
 		   .session = True,
 		   .proxy = True,
 		   .dockapps = True,
 		   .systray = True,
-		   },
+		   }
+	,
 	.slock = {
 		  .lock = True,
 		  .program = NULL,
-		  },
+		  }
+	,
 	.assist = True,
 	.xsettings = True,
 	.xinput = True,
@@ -105,7 +112,8 @@ Options options = {
 		  .theme = True,
 		  .dockapps = True,
 		  .systray = True,
-		  },
+		  }
+	,
 };
 
 Optargs optargs = { NULL, };
@@ -138,33 +146,41 @@ Optargs defaults = {
 		 .splash = "top",
 		 .chooser = "left",
 		 .logout = "left",
-		 },
-	.icons = "",
-	.theme = "",
-	.cursors = "",
+		 }
+	,
+	.icon_theme = "",
+	.gtk2_theme = "",
+	.curs_theme = "",
 	.usexde = "false",
 	.xinit = "false",
+	.managed = "flase",
 	.choice = "choose",
+        .current = "",
 	.prompt = {
 		   .chooser = {
 			       .text = "",
 			       .markup = "",
-			       },
+			       }
+		   ,
 		   .logout = {
 			      .text = "Log out of %p session?",
 			      .markup = "Log out of <b>%p</b> session?",
-			      },
-		   },
+			      }
+		   ,
+		   }
+	,
 	.manage = {
 		   .session = "true",
 		   .proxy = "true",
 		   .dockapps = "true",
 		   .systray = "true",
-		   },
+		   }
+	,
 	.slock = {
 		  .lock = "true",
 		  .program = "",
-		  },
+		  }
+	,
 	.assist = "true",
 	.xsettings = "true",
 	.xinput = "true",
@@ -172,7 +188,8 @@ Optargs defaults = {
 		  .theme = "true",
 		  .dockapps = "true",
 		  .systray = "true",
-		  },
+		  }
+	,
 };
 
 XdgDirectories xdg_dirs;
@@ -400,6 +417,68 @@ find_read_config(void)
 }
 
 void
+set_default_session(void)
+{
+	char *dirs, *dir, *end, *file, *line, *p;
+	static const char *session = "/xde/default";
+	static const char *current = "/xde/current";
+
+	free(options.session);
+	options.session = NULL;
+	free(options.current);
+	options.current = NULL;
+
+	dirs = strdup(xdg_dirs.conf.both);
+	end = dirs + strlen(dirs);
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	line = calloc(BUFSIZ + 1, sizeof(*line));
+
+	/* go through them forward */
+	for (dir = dirs; dir < end; *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
+	for (dir = dirs; dir < end; dir += strlen(dir) + 1) {
+		FILE *f;
+
+		if (!*dir)
+			continue;
+		if (!options.session) {
+			strncpy(file, dir, PATH_MAX);
+			strncat(file, session, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						options.session = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+
+		}
+		if (!options.current) {
+			strncpy(file, dir, PATH_MAX);
+			strncat(file, current, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						options.current = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+		}
+	}
+	free(line);
+	free(file);
+	free(dirs);
+}
+
+void
 set_default_splash(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
@@ -551,6 +630,7 @@ set_defaults(void)
 	set_default_rcfile();
 	set_default_banner();
 	set_default_splash();
+        set_default_session();
 	if (options.banner && !options.image)
 		options.image = strdup(options.banner);
 
@@ -795,30 +875,30 @@ get_defaults(void)
 			g_free(s);
 		}
 	}
-	if (!optargs.icons) {
+	if (!optargs.icon_theme) {
 		s = g_key_file_get_string(c, g, "IconTheme", &e);
 		if (e)
 			e = NULL;
 		else if (s) {
-			options.icons = optargs.icons = strdup(s);
+			options.icon_theme = optargs.icon_theme = strdup(s);
 			g_free(s);
 		}
 	}
-	if (!optargs.theme) {
+	if (!optargs.gtk2_theme) {
 		s = g_key_file_get_string(c, g, "Theme", &e);
 		if (e)
 			e = NULL;
 		else if (s) {
-			options.theme = optargs.theme = strdup(s);
+			options.gtk2_theme = optargs.gtk2_theme = strdup(s);
 			g_free(s);
 		}
 	}
-	if (!optargs.cursors) {
+	if (!optargs.curs_theme) {
 		s = g_key_file_get_string(c, g, "CursorTheme", &e);
 		if (e)
 			e = NULL;
 		else if (s) {
-			options.cursors = optargs.cursors = strdup(s);
+			options.curs_theme = optargs.curs_theme = strdup(s);
 			g_free(s);
 		}
 	}
@@ -1055,6 +1135,7 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
+        /* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [OPTIONS] [XSESSION|SPECIAL]\n\
@@ -1142,25 +1223,36 @@ General Options:\n\
     -v, --verbose [LEVEL]               (%27$d)\n\
         increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
-", argv[0]
-		       , options.choice ? : (optargs.choice ? : defaults.choice)
-		       , optargs.xinit ? : defaults.xinit, optargs.display ? : defaults.display,
-		       optargs.desktop ? : defaults.desktop, optargs.profile ? : defaults.profile,
-		       optargs.startwm ? : defaults.startwm, optargs.file ? : defaults.file,
-		       optargs.setup ? : defaults.setup, optargs.exec ? : defaults.exec,
-		       optargs.autostart ? : defaults.autostart, optargs.wait ? : defaults.wait,
-		       optargs.pause ? : defaults.pause, optargs.toolwait ? : defaults.toolwait,
-		       options.charset ? : (optargs.charset ? : defaults.charset)
-		       , options.language ? : (optargs.language ? : defaults.language)
-		       , options.vendor ? : (optargs.vendor ? : defaults.vendor)
-		       , options.image ? : (optargs.image ? : defaults.image)
-		       , options.banner ? : (optargs.banner ? : defaults.banner)
-		       , optargs.side.splash ? : defaults.side.splash,
-		       optargs.icons ? : defaults.icons, optargs.theme ? : defaults.theme,
-		       optargs.cursors ? : defaults.cursors, optargs.usexde ? : defaults.usexde,
-		       optargs.dryrun ? : defaults.dryrun, options.debug, options.output,
-		       options.rcfile ? : (optargs.rcfile ? : defaults.rcfile)
-	    );
+"               , argv[0]
+                , options.choice ? : (optargs.choice ? : defaults.choice)
+                , optargs.xinit ? : defaults.xinit
+                , optargs.display ? : defaults.display
+                , optargs.desktop ? : defaults.desktop
+                , optargs.profile ? : defaults.profile
+                , optargs.startwm ? : defaults.startwm
+                , optargs.file ? : defaults.file
+                , optargs.setup ? : defaults.setup
+                , optargs.exec ? : defaults.exec
+                , optargs.autostart ? : defaults.autostart
+                , optargs.wait ? : defaults.wait
+                , optargs.pause ? : defaults.pause
+                , optargs.toolwait ? : defaults.toolwait
+                , options.charset ? : (optargs.charset ? : defaults.charset)
+                , options.language ? : (optargs.language ? : defaults.language)
+                , options.vendor ? : (optargs.vendor ? : defaults.vendor)
+                , options.image ? : (optargs.image ? : defaults.image)
+                , options.banner ? : (optargs.banner ? : defaults.banner)
+                , optargs.side.splash ? : defaults.side.splash
+                , optargs.icon_theme ? : defaults.icon_theme
+                , optargs.gtk2_theme ? : defaults.gtk2_theme
+                , optargs.curs_theme ? : defaults.curs_theme
+                , optargs.usexde ? : defaults.usexde
+                , optargs.dryrun ? : defaults.dryrun
+                , options.debug
+                , options.output
+                , options.rcfile ? : (optargs.rcfile ? : defaults.rcfile)
+        );
+        /* *INDENT-ON* */
 }
 
 int
@@ -1221,7 +1313,9 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "0d:r:e:s:m:f:I:x:awp::W::c:L:O:l::b:S:i:t:z:XnD::v::hVCH?", long_options, &option_index);
+		c = getopt_long_only(argc, argv,
+				     "0d:r:e:s:m:f:I:x:awp::W::c:L:O:l::b:S:i:t:z:XnD::v::hVCH?",
+				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "0d:r:e:s:m:f:I:x:awp:W:c:L:O:l:b:S:i:t:z:XnDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
@@ -1403,19 +1497,19 @@ main(int argc, char *argv[])
 				options.side.splash = LOGO_SIDE_BOTTOM;
 			break;
 		case 'i':	/* -i, --icons THEME */
-			free(options.icons);
-			options.icons = strdup(optarg);
-			optargs.icons = optarg;
+			free(options.icon_theme);
+			options.icon_theme = strdup(optarg);
+			optargs.icon_theme = optarg;
 			break;
 		case 't':	/* -t, --theme THEME */
-			free(options.theme);
-			options.theme = strdup(optarg);
-			optargs.theme = optarg;
+			free(options.gtk2_theme);
+			options.gtk2_theme = strdup(optarg);
+			optargs.gtk2_theme = optarg;
 			break;
 		case 'z':	/* -z, --cursors THEME */
-			free(options.cursors);
-			options.cursors = strdup(optarg);
-			optargs.cursors = optarg;
+			free(options.curs_theme);
+			options.curs_theme = strdup(optarg);
+			optargs.curs_theme = optarg;
 			break;
 		case 'X':	/* -X, --xde-theme */
 			options.usexde = True;

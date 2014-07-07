@@ -24,6 +24,7 @@
 -ss
 -hnl
 -nbc
+-TAutoStart
 -TXSession
 -TPingHost
 -TARRAY8
