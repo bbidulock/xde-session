@@ -394,7 +394,7 @@ init_display(void)
 			scr->icccm_atom = XInternAtom(dpy, sel, False);
 			snprintf(sel, sizeof(sel), "_NET_SYSTEM_TRAY_S%d", s);
 			scr->stray_atom = XInternAtom(dpy, sel, False);
-			snprintf(sel, sizeof(sel), "_XDE_AUTOSTART_S%d", s);
+			snprintf(sel, sizeof(sel), "_XDE_SESSION_S%d", s);
 			scr->slctn_atom = XInternAtom(dpy, sel, False);
 		}
 		s = DefaultScreen(dpy);
@@ -487,13 +487,15 @@ get_atoms(Window win, Atom prop, Atom type, long *n)
 	return (Atom *) get_cardinals(win, prop, type, n);
 }
 
-Bool
+#if 0
+static Bool
 get_atom(Window win, Atom prop, Atom type, Atom *atom_ret)
 {
 	return get_cardinal(win, prop, type, (long *) atom_ret);
 }
+#endif
 
-XWMState *
+static XWMState *
 XGetWMState(Display *d, Window win)
 {
 	Atom real;
@@ -516,7 +518,7 @@ XGetWMState(Display *d, Window win)
 
 }
 
-XEmbedInfo *
+static XEmbedInfo *
 XGetEmbedInfo(Display *d, Window win)
 {
 	Atom real;
@@ -538,7 +540,7 @@ XGetEmbedInfo(Display *d, Window win)
 	return NULL;
 }
 
-Bool
+static Bool
 latertime(Time last, Time time)
 {
 	if (time == CurrentTime)
@@ -548,14 +550,14 @@ latertime(Time last, Time time)
 	return False;
 }
 
-void
+static void
 pushtime(Time *last, Time time)
 {
 	if (latertime(*last, time))
 		*last = time;
 }
 
-void
+static void
 pulltime(Time *last, Time time)
 {
 	if (!latertime(*last, time))
@@ -567,7 +569,7 @@ pulltime(Time *last, Time time)
   * @param type - property type
   * @return Window - the recursive window property or None
   */
-Window
+static Window
 check_recursive(Atom atom, Atom type)
 {
 	Atom real;
@@ -615,7 +617,7 @@ check_recursive(Atom atom, Atom type)
   * @param atom - property type
   * @return Window - the recursive window property or None
   */
-Window
+static Window
 check_nonrecursive(Atom atom, Atom type)
 {
 	Atom real;
@@ -900,7 +902,7 @@ pc_handle_MOTIF_WM_INFO(XPropertyEvent *e, Client *c)
 	handle_wmchange();
 }
 
-Bool
+static Bool
 set_screen_of_root(Window sroot)
 {
 	int s;
@@ -915,7 +917,7 @@ set_screen_of_root(Window sroot)
 	return False;
 }
 
-Bool
+static Bool
 find_window_screen(Window w)
 {
 	Window wroot, dw, *dwp;
@@ -929,7 +931,7 @@ find_window_screen(Window w)
 	return set_screen_of_root(wroot);
 }
 
-Bool
+static Bool
 find_screen(Window w)
 {
 	Client *c = NULL;
@@ -943,7 +945,7 @@ find_screen(Window w)
 	return find_window_screen(w);
 }
 
-Client *
+static Client *
 find_client(Window w)
 {
 	Client *c = NULL;
@@ -956,7 +958,7 @@ find_client(Window w)
 	return (c);
 }
 
-void
+static void
 apply_quotes(char **str, char *q)
 {
 	char *p;
@@ -971,9 +973,7 @@ apply_quotes(char **str, char *q)
 	*str = p;
 }
 
-Bool running;
-
-void
+static void
 send_msg(char *msg)
 {
 	XEvent xev;
@@ -3419,20 +3419,24 @@ handle_event(XEvent *e)
 		if (s < nscr)
 			break;
 #endif
-		DPRINTF("lost _XDE_AUTOSTART_S%d selection: exiting\n", scr->screen);
+		DPRINTF("lost _XDE_SESSION_S%d selection: exiting\n", scr->screen);
 		exit(EXIT_SUCCESS);
 	}
 }
 
-int signum;
+static Bool running;
 
-void
+#if 0
+static int signum;
+
+static void
 sighandler(int sig)
 {
 	signum = sig;
 }
+#endif
 
-gboolean
+static gboolean
 on_xfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
@@ -3518,7 +3522,7 @@ selectionreleased(Display *d, XEvent *e, XPointer arg)
 
 /** @brief run without replacing a running instance
   *
-  * This is performed by detecting owners of the _XDE_AUTOSTART_S%d selection for
+  * This is performed by detecting owners of the _XDE_SESSION_S%d selection for
   * any screen and aborting when one exists.
   */
 void
@@ -3553,7 +3557,7 @@ do_run(int argc, char *argv[])
 
 /** @brief replace running instance with this one
   *
-  * This is performed by detecting owners of the _XDE_AUTOSTART_S%d selection for
+  * This is performed by detecting owners of the _XDE_SESSION_S%d selection for
   * each screen and setting the selection to our own window.  When the runing
   * instance detects the selection clear event for a managed screen, it will
   * destroy the selection window and exit when no more screens are managed.
@@ -3595,7 +3599,7 @@ do_replace(int argc, char *argv[])
 
 /** @brief ask running instance to quit
   *
-  * This is performed by detecting owners of the _XDE_AUTOSTART_S%d selection for
+  * This is performed by detecting owners of the _XDE_SESSION_S%d selection for
   * each screen and clearing the selection to None.  When the running instance
   * detects the selection clear event for a managed screen, it will destroy
   * the selection window and exit when no more screens are managed.

@@ -210,6 +210,7 @@ struct _Client {
 };
 
 extern Bool init_display(void);
+extern void setup_main_loop(int, char *[]);
 
 extern XContext PropertyContext;	/* atom to property context */
 extern XContext ClientMessageContext;	/* atom to client message context */
