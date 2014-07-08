@@ -34,7 +34,7 @@ upper layer session manager.
 
 Peform proxy services also for L<wmaker(1)> dock apps.  This is seldom
 necessary as L<xde-dock(1)> provides a proxy for session management of
-L<maker(1)> dock apps on its own.
+L<wmaker(1)> dock apps on its own.
 
 =item B<-s>, B<-systemTray>
 

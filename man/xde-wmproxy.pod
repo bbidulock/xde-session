@@ -34,8 +34,8 @@ upper layer session manager.
 
 =head1 USAGE
 
-B<xde-wmproxy> allows X window managers that do not support X11R7
-session management to participate in an X11R7 session.  For
+B<xde-wmproxy> allows X window managers that do not support X11R6
+session management to participate in an X11R6 session.  For
 B<xde-wmproxy> to act as a proxy for a window manager, B<xde-wmproxy>
 must be used to launch the window manager.
 
@@ -57,6 +57,9 @@ ICCCM 2.0 says the following:
 Should the window manager not register with B<xde-wmproxy> to obtain its
 own session management client-ID, B<xde-wmproxy> will perform these
 actions on behalf of the window manager.
+
+Should the window manager register, B<xde-wmproxy> will still perform
+actions on behalf of the window manager to the extent possible.
 
 
 =head1 BEHAVIOUR
