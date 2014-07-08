@@ -24,6 +24,10 @@
 -ss
 -hnl
 -nbc
+-TXErrorEvent
+-TTime
+-TXPropertyEvent
+-TClient
 -TAutoStart
 -TXSession
 -TPingHost

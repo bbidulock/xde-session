@@ -274,75 +274,6 @@ extern Atom _XA_XEMBED;
 extern Atom _XA_XEMBED_INFO;
 extern Atom _XA_UTF8_STRING;
 
-extern void pc_handle_MOTIF_WM_INFO(XPropertyEvent *, Client *);
-extern void pc_handle_NET_ACTIVE_WINDOW(XPropertyEvent *, Client *);
-extern void pc_handle_NET_CLIENT_LIST(XPropertyEvent *, Client *);
-extern void pc_handle_NET_CLIENT_LIST_STACKING(XPropertyEvent *, Client *);
-extern void pc_handle_NET_STARTUP_ID(XPropertyEvent *, Client *);
-extern void pc_handle_NET_SUPPORTED(XPropertyEvent *, Client *);
-extern void pc_handle_NET_SUPPORTING_WM_CHECK(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_ALLOWED_ACTIONS(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_FULLSCREEN_MONITORS(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_ICON_GEOMETRY(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_ICON_NAME(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_NAME(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_PID(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_STATE(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_USER_TIME_WINDOW(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_USER_TIME(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_VISIBLE_ICON_NAME(XPropertyEvent *, Client *);
-extern void pc_handle_NET_WM_VISIBLE_NAME(XPropertyEvent *, Client *);
-extern void pc_handle_SM_CLIENT_ID(XPropertyEvent *, Client *);
-extern void pc_handle_TIMESTAMP_PROP(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_APP_STATE(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_CLIENT_LIST(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_CLIENT_MOVING(XPropertyEvent *, Client *);
-extern void pc_handle_WINDOWMAKER_NOTICEBOARD(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_FOCUS(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_HINTS(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_LAYER(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_PROTOCOLS(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_STATE(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_SUPPORTING_WM_CHECK(XPropertyEvent *, Client *);
-extern void pc_handle_WIN_WORKSPACE(XPropertyEvent *, Client *);
-extern void pc_handle_WM_CLASS(XPropertyEvent *, Client *);
-extern void pc_handle_WM_CLIENT_LEADER(XPropertyEvent *, Client *);
-extern void pc_handle_WM_CLIENT_MACHINE(XPropertyEvent *, Client *);
-extern void pc_handle_WM_COMMAND(XPropertyEvent *, Client *);
-extern void pc_handle_WM_HINTS(XPropertyEvent *, Client *);
-extern void pc_handle_WM_ICON_NAME(XPropertyEvent *, Client *);
-extern void pc_handle_WM_ICON_SIZE(XPropertyEvent *, Client *);
-extern void pc_handle_WM_NAME(XPropertyEvent *, Client *);
-extern void pc_handle_WM_NORMAL_HINTS(XPropertyEvent *, Client *);
-extern void pc_handle_WM_PROTOCOLS(XPropertyEvent *, Client *);
-extern void pc_handle_WM_SIZE_HINTS(XPropertyEvent *, Client *);
-extern void pc_handle_WM_STATE(XPropertyEvent *, Client *);
-extern void pc_handle_WM_TRANSIENT_FOR(XPropertyEvent *, Client *);
-extern void pc_handle_WM_WINDOW_ROLE(XPropertyEvent *, Client *);
-extern void pc_handle_WM_ZOOM_HINTS(XPropertyEvent *, Client *);
-extern void pc_handle_XEMBED_INFO(XPropertyEvent *, Client *);
-
-extern void cm_handle_KDE_WM_CHANGE_STATE(XClientMessageEvent *, Client *);
-extern void cm_handle_MANAGER(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_ACTIVE_WINDOW(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_CLOSE_WINDOW(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_MOVERESIZE_WINDOW(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_REQUEST_FRAME_EXTENTS(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_RESTACK_WINDOW(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_STARTUP_INFO_BEGIN(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_STARTUP_INFO(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_WM_ALLOWED_ACTIONS(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_WM_FULLSCREEN_MONITORS(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_WM_MOVERESIZE(XClientMessageEvent *, Client *);
-extern void cm_handle_NET_WM_STATE(XClientMessageEvent *, Client *);
-extern void cm_handle_WIN_LAYER(XClientMessageEvent *, Client *);
-extern void cm_handle_WIN_STATE(XClientMessageEvent *, Client *);
-extern void cm_handle_WIN_WORKSPACE(XClientMessageEvent *, Client *);
-extern void cm_handle_WM_CHANGE_STATE(XClientMessageEvent *, Client *);
-extern void cm_handle_WM_PROTOCOLS(XClientMessageEvent *, Client *);
-extern void cm_handle_WM_STATE(XClientMessageEvent *, Client *);
-extern void cm_handle_XEMBED(XClientMessageEvent *, Client *);
-
 typedef void (*pc_handler_t) (XPropertyEvent *, Client *);
 typedef void (*cm_handler_t) (XClientMessageEvent *, Client *);
 
@@ -355,5 +286,42 @@ struct atoms {
 };
 
 extern struct atoms atoms[];
+
+enum {
+	XEMBED_EMBEDDED_NOTIFY,
+	XEMBED_WINDOW_ACTIVATE,
+	XEMBED_WINDOW_DEACTIVATE,
+	XEMBED_REQUEST_FOCUS,
+	XEMBED_FOCUS_IN,
+	XEMBED_FOCUS_OUT,
+	XEMBED_FOCUS_NEXT,
+	XEMBED_FOCUS_PREV,
+	XEMBED_GRAB_KEY,
+	XEMBED_UNGRAB_KEY,
+	XEMBED_MODALITY_ON,
+	XEMBED_MODALITY_OFF,
+	XEMBED_REGISTER_ACCELERATOR,
+	XEMBED_UNREGISTER_ACCELERATOR,
+	XEMBED_ACTIVATE_ACCELERATOR,
+};
+
+/* detail for XEMBED_FOCUS_IN: */
+enum {
+	XEMBED_FOCUS_CURRENT,
+	XEMBED_FOCUS_FIRST,
+	XEMBED_FOCUS_LAST,
+};
+
+enum {
+	XEMBED_MODIFIER_SHIFT = (1 << 0),
+	XEMBED_MODIFIER_CONTROL = (1 << 1),
+	XEMBED_MODIFIER_ALT = (1 << 2),
+	XEMBED_MODIFIER_SUPER = (1 << 3),
+	XEMBED_MODIFIER_HYPER = (1 << 4),
+};
+
+enum {
+	XEMBED_ACCELERATOR_OVERLOADED = (1 << 0),
+};
 
 #endif				/* __LOCAL_DISPLAY_H__ */
