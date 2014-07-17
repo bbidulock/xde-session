@@ -16,8 +16,8 @@ bin_PROGRAMS = \
 
 xde_autostart_CPPFLAGS = -DNAME=\"xde-autostart\"
 xde_autostart_SOURCES = xde-autostart.c xde-autostart.h
-xde_autostart_CFLAGS = $(AM_CFLAGS)
-xde_autostart_LDFLAGS = $(AM_LDFLAGS)
+xde_autostart_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
+xde_autostart_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
 
 xde_chooser_CPPFLAGS = -DNAME=\"xde-chooser\"
 xde_chooser_SOURCES = xde-chooser.c xde-chooser.h

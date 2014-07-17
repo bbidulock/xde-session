@@ -747,7 +747,7 @@ on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 
 	if (!(ice = IceAcceptConnection(obj, &status))) {
 		if (options.debug)
-			fprintf(stderr, "IceAcceptConnection: failed\n");
+			EPRINTF("IceAcceptConnection: failed\n");
 		return FALSE;
 	}
 	while ((cstatus = IceConnectionStatus(ice)) == IceConnectPending)
@@ -757,16 +757,15 @@ on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 			int ifd = IceConnectionNumber(ice);
 			char *connstr = IceConnectionString(ice);
 
-			fprintf(stderr,
-				"ICE connection opened by client, fd = %d, accepted at networkId %s\n",
+			EPRINTF("ICE connection opened by client, fd = %d, accepted at networkId %s\n",
 				ifd, connstr);
 			free(connstr);
 		}
 	} else {
 		if (cstatus == IceConnectIOError)
-			fprintf(stderr, "IO error during ICE connection\n");
+			EPRINTF("IO error during ICE connection\n");
 		else
-			fprintf(stderr, "ICE connection rejected\n");
+			EPRINTF("ICE connection rejected\n");
 		IceCloseConnection(ice);
 	}
 	return TRUE;		/* keep event source */

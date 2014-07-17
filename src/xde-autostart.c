@@ -2117,8 +2117,8 @@ update_startup_client(Sequence * seq)
 		   timestamps to filter out the false positives, but that is
 		   for later. */
 		return;
-	/* TODO: things to update are: _NET_WM_PID, WM_CLIENT_MACHINE, ...
-	   Note that _NET_WM_STARTUP_ID should already be set. */
+	/* TODO: things to update are: _NET_WM_PID, WM_CLIENT_MACHINE, ... Note 
+	   that _NET_WM_STARTUP_ID should already be set. */
 }
 
 static void
@@ -2625,8 +2625,8 @@ managed_client(Client *c, Time t)
 			return;
 		/* We are not expecting that the client will generate startup
 		   notification completion on its own.  Either we generate the
-		   completion or wait for a supporting window manager to do
-		   so. */
+		   completion or wait for a supporting window manager to do so. 
+		 */
 		send_remove(seq);
 		break;
 	}
@@ -3822,6 +3822,103 @@ void
 sighandler(int sig)
 {
 	signum = sig;
+}
+
+static void
+autoSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
+		int interactStyle, Bool fast)
+{
+}
+
+static void
+autoDieCB(SmcConn smcConn, SmPointer data)
+{
+	SmcCloseConnection(smcConn, 0, NULL);
+	exit(EXIT_SUCCESS);
+}
+
+static void
+autoSaveCompleteCB(SmcConn smcConn, SmPointer data)
+{
+}
+
+static void
+autoShutdownCancelledCB(SmcConn smcConn, SmPointer data)
+{
+	/* nothing to do really */
+}
+
+static IceConn iceConn;
+static SmcConn smcConn;
+
+unsigned long autoCBMask =
+    SmcSaveYourselfProcMask | SmcDieProcMask |
+    SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
+
+static SmcCallbacks autoCBs = {
+	.save_yourself = {
+		.callback = &autoSaveYourselfCB,
+		.client_data = NULL,
+	},
+	.die = {
+		.callback = &autoDieCB,
+		.client_data = NULL,
+	},
+	.save_complete = {
+		.callback = &autoSaveCompleteCB,
+		.client_data = NULL,
+	},
+	.shutdown_cancelled = {
+		.callback = &autoShutdownCancelledCB,
+		.client_data = NULL,
+	},
+};
+
+static gboolean
+on_ifd_watch(GIOChannel *chan, GIOCondition cond, pointer data)
+{
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
+		EPRINTF("poll failed: %s %s %s\n", (cond & G_IO_NVAL) ? "NVAL" : "",
+			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
+	      return G_SOURCE_REMOVE;
+	} else if (cond & (G_IO_IN | G_IO_PRI)) {
+		IceProcessMessages(iceConn, NULL, NULL);
+	}
+	return G_SOURCE_CONTINUE;	/* keep event source */
+}
+
+void
+init_proxy(void)
+{
+	char err[256] = { 0, };
+	GIOChannel *chan;
+	int ifd, mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
+	char *env;
+
+	if (smcConn) {
+		DPRINTF("already connected\n");
+		return;
+	}
+	if (!(env = getenv("SESSION_MANAGER"))) {
+		if (options.client_id)
+			EPRINTF("clientId provided by no SESSION_MANAGER\n");
+		return;
+	}
+
+	smcConn = SmcOpenConnection(env, NULL, SmProtoMajor, SmProtoMinor,
+				    autoCBMask, &autoCBs, options.client_id,
+				    &options.client_id, sizeof(err), err);
+
+	if (!smcConn) {
+		EPRINTF("SmcOpenConnection: %s\n", err);
+		exit(EXIT_FAILURE);
+	}
+
+	iceConn = SmcGetIceConnection(smcConn);
+
+	ifd = IceConnectionNumber(iceConn);
+	chan = g_io_channel_unix_new(ifd);
+	g_io_add_watch(chan, mask, on_ifd_watch, NULL);
 }
 
 gboolean

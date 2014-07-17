@@ -42,11 +42,15 @@
 
  *****************************************************************************/
 
-#ifndef __XDE_AUTOSTART_H__
-#define __XDE_AUTOSTART_H__
+#ifndef __XDE_XSESSION_H__
+#define __XDE_XSESSION_H__
 
 #ifdef HAVE_CONFIG_H
 #include "autoconf.h"
+#endif
+
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
 #endif
 
 #include <stddef.h>
@@ -90,13 +94,14 @@
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#include <X11/SM/SMlib.h>
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
 #include <gtk/gtk.h>
 #include <cairo.h>
-#include <X11/SM/SMlib.h>
+#include <glib.h>
 
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
@@ -115,4 +120,4 @@
 	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
-#endif				/* __XDE_AUTOSTART_H__ */
+#endif				/* __XDE_XSESSION_H__ */

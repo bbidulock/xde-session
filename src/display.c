@@ -300,8 +300,7 @@ struct atoms wmprops[] = {
 };
 
 XContext PropertyContext;		/* atom to property handler context */
-XContext ClientMessageContext;		/* atom to client message handler
-					   context */
+XContext ClientMessageContext;		/* atom to client message context */
 XContext ScreenContext;			/* window to screen context */
 XContext ClientContext;			/* window to client context */
 XContext MessageContext;		/* window to message context */

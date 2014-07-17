@@ -24,6 +24,8 @@
 -ss
 -hnl
 -nbc
+-TSmClient
+-TSmsCallbacks
 -TXErrorEvent
 -TTime
 -TXPropertyEvent
