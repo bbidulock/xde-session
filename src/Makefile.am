@@ -31,8 +31,8 @@ xde_input_LDFLAGS = $(AM_LDFLAGS)
 
 xde_logout_CPPFLAGS = -DNAME=\"xde-logout\"
 xde_logout_SOURCES = xde-logout.c xde-logout.h
-xde_logout_CFLAGS = $(AM_CFLAGS) $(DBUS_GLIB_CFLAGS)
-xde_logout_LDFLAGS = $(DBUS_GLIB_LIBS) $(AM_LDFLAGS)
+xde_logout_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(DBUS_GLIB_CFLAGS)
+xde_logout_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(DBUS_GLIB_LIBS) $(AM_LDFLAGS)
 
 xde_session_CPPFLAGS = -DNAME=\"xde-session\"
 xde_session_SOURCES = xde-session.c xde-session.h

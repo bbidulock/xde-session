@@ -96,6 +96,7 @@
 #endif
 #include <gtk/gtk.h>
 #include <cairo.h>
+#include <X11/SM/SMlib.h>
 
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \

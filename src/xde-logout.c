@@ -49,10 +49,14 @@
 #include "xde-logout.h"
 
 #include <dbus/dbus-glib.h>
+#include <pwd.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
 #endif
+
+static int saveArgc;
+static char **saveArgv;
 
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
@@ -74,6 +78,8 @@ typedef struct {
 	char *gtk2_theme;
 	Bool usexde;
 	unsigned int timeout;
+	char *clientId;
+	char *saveFile;
 } Options;
 
 Options options = {
@@ -89,6 +95,8 @@ Options options = {
 	.gtk2_theme = NULL,
 	.usexde = False,
 	.timeout = 15,
+	.clientId = NULL,
+	.saveFile = NULL,
 };
 
 typedef enum {
@@ -785,11 +793,340 @@ make_logout_choice()
 	return action_result;
 }
 
+static void
+logoutSetProperties(SmcConn smcConn, SmPointer data)
+{
+	char procID[20], userID[20];
+	int i, argc = saveArgc;
+	char **argv = saveArgv, **env, *cwd;
+	char hint;
+	struct passwd *pw;
+
+	SmPropValue propval[11];
+
+	SmProp prop[11] = {
+		[0] = {SmCloneCommand, SmLISTofARRAY8, 1, &propval[0]},
+		[1] = {SmCurrentDirectory, SmARRAY8, 1, &propval[0]},
+		[2] = {SmDiscardCommand, SmLISTofARRAY8, 1, &propval[0]},
+		[3] = {SmEnvironment, SmLISTofARRAY8, 1, &propval[0]},
+		[4] = {SmProcessID, SmARRAY8, 1, &propval[0]},
+		[5] = {SmProgram, SmARRAY8, 1, &propval[0]},
+		[6] = {SmRestartCommand, SmLISTofARRAY8, 1, &propval[0]},
+		[7] = {SmResignCommand, SmLISTofARRAY8, 1, &propval[0]},
+		[8] = {SmRestartStyleHint, SmARRAY8, 1, &propval[0]},
+		[9] = {SmShutdownCommand, SmLISTofARRAY8, 1, &propval[0]},
+		[10] = {SmUserID, SmARRAY8, 1, &propval[0]},
+	};
+	SmProp *props[11] = {
+		[0] = &prop[0],
+		[1] = &prop[1],
+		[2] = &prop[2],
+		[3] = &prop[3],
+		[4] = &prop[4],
+		[5] = &prop[5],
+		[6] = &prop[6],
+		[7] = &prop[7],
+		[8] = &prop[8],
+		[9] = &prop[9],
+		[10] = &prop[10],
+	};
+
+	/* CloneCommand: This is like the RestartCommand except it restarts a
+	   copy of the application.  The only difference is that the
+	   application doesn't supply its client id at register time.  On POSIX 
+	   systems the type should be a LISTofARRAY8. */
+	prop[0].vals = calloc(argc, sizeof(SmPropValue));
+	prop[0].num_vals = 0;
+	for (i = 0; i < argc; i++) {
+		if (!strcmp(argv[i], "-clientId") || !strcmp(argv[i], "-restore"))
+			i++;
+		else {
+			prop[0].vals[prop[0].num_vals].value = (SmPointer) argv[i];
+			prop[0].vals[prop[0].num_vals++].length = strlen(argv[i]);
+		}
+	}
+
+	/* CurrentDirectory: On POSIX-based systems, specifies the value of the 
+	   current directory that needs to be set up prior to starting the
+	   program and should be of type ARRAY8. */
+	propval[1].value = NULL;
+	propval[1].length = 0;
+	cwd = calloc(PATH_MAX + 1, sizeof(propval[0].value[0]));
+	if (getcwd(cwd, PATH_MAX)) {
+		propval[1].value = cwd;
+		propval[1].length = strlen(propval[1].value);
+	} else {
+		free(cwd);
+	}
+
+	/* DiscardCommand: The discard command contains a command that when
+	   delivered to the host that the client is running on (determined from 
+	   the connection), will cause it to discard any information about the
+	   current state.  If this command is not specified, the SM will assume 
+	   that all of the client's state is encoded in the RestartCommand [and 
+	   properties].  On POSIX systems the type should be LISTofARRAY8. */
+	propval[2].value = "/bin/true";
+	propval[2].length = strlen("/bin/true");
+
+	/* Environment: On POSIX based systems, this will be of type
+	   LISTofARRAY8 where the ARRAY8s alternate between environment
+	   variable name and environment variable value. */
+	/* XXX: we might want to filter a few out */
+	for (i = 0, env = environ; *env; i += 2, env++) ;
+	prop[2].vals = calloc(i, sizeof(SmPropValue));
+	prop[2].num_vals = i;
+	for (i = 0, env = environ; *env; i += 2, env++) {
+		char *equal;
+		int len;
+
+		equal = strchrnul(*env, '=');
+		len = (int) (*env - equal);
+		if (*equal)
+			equal++;
+		prop[2].vals[i].value = *env;
+		prop[2].vals[i].length = len;
+		prop[2].vals[i + 1].value = equal;
+		prop[2].vals[i + 1].length = strlen(equal);
+	}
+
+	/* ProcessID: This specifies an OS-specific identifier for the process. 
+	   On POSIX systems this should be of type ARRAY8 and contain the
+	   return of getpid() turned into a Latin-1 (decimal) string. */
+	snprintf(procID, sizeof(procID), "%ld", (long) getpid());
+	propval[4].value = procID;
+	propval[4].length = strlen(procID);
+
+	/* Program: The name of the program that is running.  On POSIX systems, 
+	   this should eb the first parameter passed to execve(3) and should be 
+	   of type ARRAY8. */
+	propval[5].value = argv[0];
+	propval[5].length = strlen(argv[0]);
+
+	/* RestartCommand: The restart command contains a command that when
+	   delivered to the host that the client is running on (determined from
+	   the connection), will cause the client to restart in its current
+	   state.  On POSIX-based systems this if of type LISTofARRAY8 and each
+	   of the elements in the array represents an element in the argv[]
+	   array.  This restart command should ensure that the client restarts
+	   with the specified client-ID.  */
+	prop[6].vals = calloc(argc + 4, sizeof(SmPropValue));
+	prop[6].num_vals = 0;
+	for (i = 0; i < argc; i++) {
+		if (!strcmp(argv[i], "-clientId") || !strcmp(argv[i], "-restore"))
+			i++;
+		else {
+			prop[6].vals[prop[6].num_vals].value = (SmPointer) argv[i];
+			prop[6].vals[prop[6].num_vals++].length = strlen(argv[i]);
+		}
+	}
+	prop[6].vals[prop[6].num_vals].value = (SmPointer) "-clientId";
+	prop[6].vals[prop[6].num_vals++].length = 9;
+	prop[6].vals[prop[6].num_vals].value = (SmPointer) options.clientId;
+	prop[6].vals[prop[6].num_vals++].length = strlen(options.clientId);
+
+	prop[6].vals[prop[6].num_vals].value = (SmPointer) "-restore";
+	prop[6].vals[prop[6].num_vals++].length = 9;
+	prop[6].vals[prop[6].num_vals].value = (SmPointer) options.saveFile;
+	prop[6].vals[prop[6].num_vals++].length = strlen(options.saveFile);
+
+	/* ResignCommand: A client that sets the RestartStyleHint to
+	   RestartAnyway uses this property to specify a command that undoes
+	   the effect of the client and removes any saved state. */
+	propval[7].value = "/bin/true";
+	propval[7].length = strlen("/bin/true");
+
+	/* RestartStyleHint: If the RestartStyleHint property is present, it
+	   will contain the style of restarting the client prefers.  If this
+	   flag is not specified, RestartIfRunning is assumed.  The possible
+	   values are as follows: RestartIfRunning(0), RestartAnyway(1),
+	   RestartImmediately(2), RestartNever(3).  The RestartIfRunning(0)
+	   style is used in the usual case.  The client should be restarted in
+	   the next session if it is connected to the session manager at the
+	   end of the current session. The RestartAnyway(1) style is used to
+	   tell the SM that the application should be restarted in the next
+	   session even if it exits before the current session is terminated.
+	   It should be noted that this is only a hint and the SM will follow
+	   the policies specified by its users in determining what applications 
+	   to restart.  A client that uses RestartAnyway(1) should also set the
+	   ResignCommand and ShutdownCommand properties to the commands that
+	   undo the state of the client after it exits.  The
+	   RestartImmediately(2) style is like RestartAnyway(1) but in addition,
+	   the client is meant to run continuously.  If the client exits, the SM
+	   should try to restart it in the current session.  The RestartNever(3)
+	   style specifies that the client does not wish to be restarted in the
+	   next session. */
+	hint = SmRestartIfRunning;
+	propval[8].value = &hint;
+	propval[8].length = 1;
+
+	/* ShutdownCommand: This command is executed at shutdown time to clean
+	   up after a client that is no longer running but retained its state
+	   by setting RestartStyleHint to RestartAnyway(1).  The command must
+	   not remove any saved state as the client is still part of the
+	   session. */
+	propval[9].value = "/bin/true";
+	propval[9].length = strlen("/bin/true");
+
+	/* UserID: Specifies the user's ID.  On POSIX-based systems this will
+	   contain the user's name (the pw_name field of struct passwd).  */
+	errno = 0;
+	if ((pw = getpwuid(getuid())))
+		strncpy(userID, pw->pw_name, sizeof(userID) - 1);
+	else {
+		EPRINTF("%s: %s\n", "getpwuid()", strerror(errno));
+		snprintf(userID, sizeof(userID), "%ld", (long) getuid());
+	}
+	propval[10].value = userID;
+	propval[10].length = strlen(userID);
+
+	SmcSetProperties(smcConn, sizeof(props) / sizeof(props[0]), props);
+
+	free(prop[0].vals);
+	free(propval[1].value);
+	free(prop[2].vals);
+	free(prop[6].vals);
+}
+
+/** @brief save yourself
+  *
+  * The session manager sends a "Save Yourself" message to a client either to
+  * check-point it or just before termination so that it can save its state.
+  * The client responds with zero or more calls to SmcSetProperties to update
+  * the properties indicating how to restart the client.  When all the
+  * properties have been set, the client calls SmcSaveYourselfDone.
+  *
+  * If interact_type is SmcInteractStyleNone, the client must not interact with
+  * the user while saving state.  If interact_style is SmInteractStyleErrors,
+  * the client may interact with the user only if an error condition arises.  If
+  * interact_style is  SmInteractStyleAny then the client may interact with the
+  * user for any purpose.  Because only one client can interact with the user at
+  * a time, the client must call SmcInteractRequest and wait for an "Interact"
+  * message from the session maanger.  When the client is done interacting with
+  * the user, it calls SmcInteractDone.  The client may only call
+  * SmcInteractRequest() after it receives a "Save Yourself" message and before
+  * it calls SmcSaveYourSelfDone().
+  */
+static void
+logoutSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
+		     int interactStyle, Bool fast)
+{
+	logoutSetProperties(smcConn, data);
+}
+
+/** @brief die
+  *
+  * The session manager sends a "Die" message to a client when it wants it to
+  * die.  The client should respond by calling SmcCloseConnection.  A session
+  * manager that behaves properly will send a "Save Yourself" message before the
+  * "Die" message.
+  */
+static void
+logoutDieCB(SmcConn smcConn, SmPointer data)
+{
+	SmcCloseConnection(smcConn, 0, NULL);
+	exit(EXIT_SUCCESS);
+}
+
+static void
+logoutSaveCompleteCB(SmcConn smcConn, SmPointer data)
+{
+}
+
+/** @brief shutdown cancelled
+  *
+  * The session manager sends a "Shutdown Cancelled" message when the user
+  * cancelled the shutdown during an interaction (see Section 5.5, "Interacting
+  * With the User").  The client can now continue as if the shutdown had never
+  * happended.  If the client has not called SmcSaveYourselfDone() yet, it can
+  * either abort the save and then send SmcSaveYourselfDone() with the success
+  * argument set to False or it can continue with the save and then call
+  * SmcSaveYourselfDone() with the success argument set to reflect the outcome
+  * of the save.
+  */
+static void
+logoutShutdownCancelledCB(SmcConn smcConn, SmPointer data)
+{
+	/* nothing to do really */
+}
+
+static unsigned long logoutCBMask =
+    SmcSaveYourselfProcMask | SmcDieProcMask |
+    SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
+
+static SmcCallbacks logoutCBs = {
+	.save_yourself = {
+			  .callback = &logoutSaveYourselfCB,
+			  .client_data = NULL,
+			  },
+	.die = {
+		.callback = &logoutDieCB,
+		.client_data = NULL,
+		},
+	.save_complete = {
+			  .callback = &logoutSaveCompleteCB,
+			  .client_data = NULL,
+			  },
+	.shutdown_cancelled = {
+			       .callback = &logoutShutdownCancelledCB,
+			       .client_data = NULL,
+			       },
+};
+
+static gboolean
+on_ifd_watch(GIOChannel *chan, GIOCondition cond, pointer data)
+{
+	SmcConn smcConn = (typeof(smcConn)) data;
+	IceConn iceConn = SmcGetIceConnection(smcConn);
+
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
+		EPRINTF("poll failed: %s %s %s\n", (cond & G_IO_NVAL) ? "NVAL" : "",
+			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
+		return G_SOURCE_REMOVE;
+	} else if (cond & (G_IO_IN | G_IO_PRI)) {
+		IceProcessMessages(iceConn, NULL, NULL);
+	}
+	return G_SOURCE_CONTINUE;	/* keep event source */
+}
+
+static void
+init_smclient(void)
+{
+	char err[256] = { 0, };
+	GIOChannel *chan;
+	int ifd, mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
+	char *env;
+	IceConn iceConn;
+	SmcConn smcConn;
+
+	if (!(env = getenv("SESSSION_MANAGER"))) {
+		if (options.clientId)
+			EPRINTF("clientId provided but no SESSION_MANAGER\n");
+		return;
+	}
+
+	smcConn = SmcOpenConnection(env, NULL, SmProtoMajor, SmProtoMinor,
+				    logoutCBMask, &logoutCBs, options.clientId,
+				    &options.clientId, sizeof(err), err);
+	if (!smcConn) {
+		EPRINTF("SmcOpenConnection: %s\n", err);
+		exit(EXIT_FAILURE);
+	}
+
+	iceConn = SmcGetIceConnection(smcConn);
+
+	ifd = IceConnectionNumber(iceConn);
+	chan = g_io_channel_unix_new(ifd);
+	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
+}
+
 void
 run_logout(int argc, char *argv[])
 {
 	LogoutActionResult result;
 	int i;
+
+	/* initialize session managerment functions */
+	init_smclient();
 
 	/* determine which functions are available */
 	test_power_functions();
@@ -1419,6 +1756,9 @@ main(int argc, char *argv[])
 	CommandType command = COMMAND_LOGOUT;
 
 	set_defaults();
+
+	saveArgc = argc;
+	saveArgv = argv;
 
 	while (1) {
 		int c, val;

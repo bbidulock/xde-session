@@ -3851,7 +3851,7 @@ autoShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 static IceConn iceConn;
 static SmcConn smcConn;
 
-unsigned long autoCBMask =
+static unsigned long autoCBMask =
     SmcSaveYourselfProcMask | SmcDieProcMask |
     SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
 
