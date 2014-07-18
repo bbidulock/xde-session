@@ -65,6 +65,14 @@ typedef enum _LogoSide {
 	LOGO_SIDE_BOTTOM,
 } LogoSide;
 
+typedef enum {
+	CommandDefault,
+	CommandLogout,
+	CommandHelp,
+	CommandVersion,
+	CommandCopying,
+} Command;
+
 typedef struct {
 	int output;
 	int debug;
@@ -80,6 +88,7 @@ typedef struct {
 	unsigned int timeout;
 	char *clientId;
 	char *saveFile;
+	Command command;
 } Options;
 
 Options options = {
@@ -97,10 +106,11 @@ Options options = {
 	.timeout = 15,
 	.clientId = NULL,
 	.saveFile = NULL,
+	.command = CommandDefault,
 };
 
 typedef enum {
-	LOGOUT_ACTION_POWEROFF,		/* power of the computer */
+	LOGOUT_ACTION_POWEROFF,		/* power off the computer */
 	LOGOUT_ACTION_REBOOT,		/* reboot the computer */
 	LOGOUT_ACTION_SUSPEND,		/* suspend the computer */
 	LOGOUT_ACTION_HIBERNATE,	/* hibernate the computer */
@@ -108,6 +118,8 @@ typedef enum {
 	LOGOUT_ACTION_SWITCHUSER,	/* switch users */
 	LOGOUT_ACTION_SWITCHDESK,	/* switch desktops */
 	LOGOUT_ACTION_LOCKSCREEN,	/* lock screen */
+	LOGOUT_ACTION_CHECKPOINT,	/* checkpoint the current session */
+	LOGOUT_ACTION_SHUTDOWN,		/* checkpoint and shutdown session */
 	LOGOUT_ACTION_LOGOUT,		/* logout of current session */
 	LOGOUT_ACTION_RESTART,		/* restart current session */
 	LOGOUT_ACTION_CANCEL,		/* cancel logout */
@@ -153,6 +165,8 @@ static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SWITCHUSER]	= AvailStatusUndef,
 	[LOGOUT_ACTION_SWITCHDESK]	= AvailStatusUndef,
 	[LOGOUT_ACTION_LOCKSCREEN]	= AvailStatusUndef,
+	[LOGOUT_ACTION_CHECKPOINT]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SHUTDOWN]	= AvailStatusUndef,
 	[LOGOUT_ACTION_LOGOUT]		= AvailStatusUndef,
 	[LOGOUT_ACTION_RESTART]		= AvailStatusUndef,
 	[LOGOUT_ACTION_CANCEL]		= AvailStatusUndef,
@@ -394,6 +408,8 @@ test_user_functions()
 	action_can[LOGOUT_ACTION_SWITCHDESK] = AvailStatusNa;
 }
 
+static SmcConn smcConn;
+
 /** @brief test availability of session functions
   *
   * For now, always let the user logout or cancel, but not restart the current
@@ -405,6 +421,14 @@ test_session_functions()
 	action_can[LOGOUT_ACTION_LOGOUT] = AvailStatusYes;
 	action_can[LOGOUT_ACTION_RESTART] = AvailStatusNa;
 	action_can[LOGOUT_ACTION_CANCEL] = AvailStatusYes;
+
+	if (smcConn) {
+		action_can[LOGOUT_ACTION_CHECKPOINT] = AvailStatusYes;
+		action_can[LOGOUT_ACTION_SHUTDOWN] = AvailStatusYes;
+	} else {
+		action_can[LOGOUT_ACTION_CHECKPOINT] = AvailStatusNa;
+		action_can[LOGOUT_ACTION_SHUTDOWN] = AvailStatusNa;
+	}
 }
 
 /** @brief transform a window into a grabbed window
@@ -520,6 +544,8 @@ static const char *button_tips[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SWITCHUSER]	= "Switch users.",
 	[LOGOUT_ACTION_SWITCHDESK]	= "Switch window managers.",
 	[LOGOUT_ACTION_LOCKSCREEN]	= "Lock the screen.",
+	[LOGOUT_ACTION_CHECKPOINT]	= "Checkpoint the current session.",
+	[LOGOUT_ACTION_SHUTDOWN]	= "Checkpoint and shutdown current session.",
 	[LOGOUT_ACTION_LOGOUT]		= "Log out of current session.",
 	[LOGOUT_ACTION_RESTART]		= "Restart current session.",
 	[LOGOUT_ACTION_CANCEL]		= "Cancel",
@@ -536,6 +562,8 @@ static const char *button_labels[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SWITCHUSER]	= "Switch User",
 	[LOGOUT_ACTION_SWITCHDESK]	= "Switch Desktop",
 	[LOGOUT_ACTION_LOCKSCREEN]	= "Lock Screen",
+	[LOGOUT_ACTION_CHECKPOINT]	= "Checkpoint",
+	[LOGOUT_ACTION_SHUTDOWN]	= "Shutdown",
 	[LOGOUT_ACTION_LOGOUT]		= "Logout",
 	[LOGOUT_ACTION_RESTART]		= "Restart",
 	[LOGOUT_ACTION_CANCEL]		= "Cancel",
@@ -554,6 +582,8 @@ static const char *button_icons[LOGOUT_ACTION_COUNT][3] = {
 	[LOGOUT_ACTION_SWITCHUSER]	= { "gtk-quit",		    "system-switch-user",	    "gnome-session-switch"	},
 	[LOGOUT_ACTION_SWITCHDESK]	= { "gtk-quit",		    "system-switch-user",	    "gnome-session-switch"	},
 	[LOGOUT_ACTION_LOCKSCREEN]	= { "gtk-redo",		    "gtk-refresh",		    "gtk-refresh"		},
+	[LOGOUT_ACTION_CHECKPOINT]	= { "gtk-save",		    "gtk-save",			    "gtk-save"			},
+	[LOGOUT_ACTION_SHUTDOWN]	= { "gtk-stop",		    "gtk-stop",			    "gtk-stop"			},
 	[LOGOUT_ACTION_LOGOUT]		= { "gtk-missing-image",    "system-lock-screen",	    "gnome-lock-screen"		},
 	[LOGOUT_ACTION_RESTART]		= { "gtk-quit",		    "system-log-out",		    "gnome-logout"		},
 	[LOGOUT_ACTION_CANCEL]		= { "gtk-cancel",	    "gtk-cancel",		    "gtk-cancel"		},
@@ -596,6 +626,8 @@ static void action_LockScreen(void);
 static void action_Logout(void);
 static void action_Restart(void);
 static void action_Cancel(void);
+static void action_Checkpoint(void);
+static void action_Shutdown(void);
 
 typedef void (*ActionFunctionPointer) (void);
 
@@ -609,6 +641,8 @@ static const ActionFunctionPointer logout_actions[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SWITCHUSER]	= &action_SwitchUser,
 	[LOGOUT_ACTION_SWITCHDESK]	= &action_SwitchDesk,
 	[LOGOUT_ACTION_LOCKSCREEN]	= &action_LockScreen,
+	[LOGOUT_ACTION_CHECKPOINT]	= &action_Checkpoint,
+	[LOGOUT_ACTION_SHUTDOWN]	= &action_Shutdown,
 	[LOGOUT_ACTION_LOGOUT]		= &action_Logout,
 	[LOGOUT_ACTION_RESTART]		= &action_Restart,
 	[LOGOUT_ACTION_CANCEL]		= &action_Cancel,
@@ -625,6 +659,8 @@ static const char *check_message[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SWITCHUSER]	= NULL,
 	[LOGOUT_ACTION_SWITCHDESK]	= NULL,
 	[LOGOUT_ACTION_LOCKSCREEN]	= NULL,
+	[LOGOUT_ACTION_CHECKPOINT]	= NULL,
+	[LOGOUT_ACTION_SHUTDOWN]	= NULL,
 	[LOGOUT_ACTION_LOGOUT]		= NULL,
 	[LOGOUT_ACTION_RESTART]		= NULL,
 	[LOGOUT_ACTION_CANCEL]		= NULL,
@@ -777,11 +813,11 @@ make_logout_choice()
 	gtk_window_stick(GTK_WINDOW(w));
 	gtk_window_deiconify(GTK_WINDOW(w));
 	gtk_widget_show_all(GTK_WIDGET(w));
-	gtk_widget_grab_focus(GTK_WIDGET(buttons[LOGOUT_ACTION_LOGOUT]));
 
 	gtk_widget_realize(GTK_WIDGET(w));
 	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(w));
 
+	gtk_widget_grab_focus(GTK_WIDGET(buttons[LOGOUT_ACTION_LOGOUT]));
 	gdk_window_set_override_redirect(win, TRUE);
 	grabbed_window(GTK_WINDOW(w));
 
@@ -796,85 +832,94 @@ make_logout_choice()
 static void
 logoutSetProperties(SmcConn smcConn, SmPointer data)
 {
-	char procID[20], userID[20];
-	int i, argc = saveArgc;
-	char **argv = saveArgv, **env, *cwd;
+	char userID[20];
+	int i, j, argc = saveArgc;
+	char **argv = saveArgv;
+	char *cwd = NULL;
 	char hint;
 	struct passwd *pw;
-
+	SmPropValue *penv = NULL, *prst = NULL, *pcln = NULL;
 	SmPropValue propval[11];
-
-	SmProp prop[11] = {
-		[0] = {SmCloneCommand, SmLISTofARRAY8, 1, &propval[0]},
-		[1] = {SmCurrentDirectory, SmARRAY8, 1, &propval[0]},
-		[2] = {SmDiscardCommand, SmLISTofARRAY8, 1, &propval[0]},
-		[3] = {SmEnvironment, SmLISTofARRAY8, 1, &propval[0]},
-		[4] = {SmProcessID, SmARRAY8, 1, &propval[0]},
-		[5] = {SmProgram, SmARRAY8, 1, &propval[0]},
-		[6] = {SmRestartCommand, SmLISTofARRAY8, 1, &propval[0]},
-		[7] = {SmResignCommand, SmLISTofARRAY8, 1, &propval[0]},
-		[8] = {SmRestartStyleHint, SmARRAY8, 1, &propval[0]},
-		[9] = {SmShutdownCommand, SmLISTofARRAY8, 1, &propval[0]},
-		[10] = {SmUserID, SmARRAY8, 1, &propval[0]},
-	};
+	SmProp prop[11];
 	SmProp *props[11] = {
-		[0] = &prop[0],
-		[1] = &prop[1],
-		[2] = &prop[2],
-		[3] = &prop[3],
-		[4] = &prop[4],
-		[5] = &prop[5],
-		[6] = &prop[6],
-		[7] = &prop[7],
-		[8] = &prop[8],
-		[9] = &prop[9],
-		[10] = &prop[10],
+		&prop[0], &prop[1], &prop[2], &prop[3], &prop[4],
+		&prop[5], &prop[6], &prop[7], &prop[8], &prop[9],
+		&prop[10]
 	};
+
+	j = 0;
 
 	/* CloneCommand: This is like the RestartCommand except it restarts a
 	   copy of the application.  The only difference is that the
 	   application doesn't supply its client id at register time.  On POSIX 
 	   systems the type should be a LISTofARRAY8. */
-	prop[0].vals = calloc(argc, sizeof(SmPropValue));
-	prop[0].num_vals = 0;
+	prop[j].name = SmCloneCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = pcln = calloc(argc, sizeof(*pcln));
+	prop[j].num_vals = 0;
+	props[j] = &prop[j];
 	for (i = 0; i < argc; i++) {
 		if (!strcmp(argv[i], "-clientId") || !strcmp(argv[i], "-restore"))
 			i++;
 		else {
-			prop[0].vals[prop[0].num_vals].value = (SmPointer) argv[i];
-			prop[0].vals[prop[0].num_vals++].length = strlen(argv[i]);
+			prop[j].vals[prop[j].num_vals].value = (SmPointer) argv[i];
+			prop[j].vals[prop[j].num_vals++].length = strlen(argv[i]);
 		}
 	}
+	j++;
 
+#if 0
 	/* CurrentDirectory: On POSIX-based systems, specifies the value of the 
 	   current directory that needs to be set up prior to starting the
 	   program and should be of type ARRAY8. */
-	propval[1].value = NULL;
-	propval[1].length = 0;
-	cwd = calloc(PATH_MAX + 1, sizeof(propval[0].value[0]));
+	prop[j].name = SmCurrentDirectory;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = NULL;
+	propval[j].length = 0;
+	cwd = calloc(PATH_MAX + 1, sizeof(propval[j].value[0]));
 	if (getcwd(cwd, PATH_MAX)) {
-		propval[1].value = cwd;
-		propval[1].length = strlen(propval[1].value);
+		propval[j].value = cwd;
+		propval[j].length = strlen(propval[j].value);
+		j++;
 	} else {
 		free(cwd);
+		cwd = NULL;
 	}
+#endif
 
+#if 0
 	/* DiscardCommand: The discard command contains a command that when
 	   delivered to the host that the client is running on (determined from 
 	   the connection), will cause it to discard any information about the
 	   current state.  If this command is not specified, the SM will assume 
 	   that all of the client's state is encoded in the RestartCommand [and 
 	   properties].  On POSIX systems the type should be LISTofARRAY8. */
-	propval[2].value = "/bin/true";
-	propval[2].length = strlen("/bin/true");
+	prop[j].name = SmDiscardCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = "/bin/true";
+	propval[j].length = strlen("/bin/true");
+	j++;
+#endif
+
+#if 0
+	char **env;
 
 	/* Environment: On POSIX based systems, this will be of type
 	   LISTofARRAY8 where the ARRAY8s alternate between environment
 	   variable name and environment variable value. */
 	/* XXX: we might want to filter a few out */
 	for (i = 0, env = environ; *env; i += 2, env++) ;
-	prop[2].vals = calloc(i, sizeof(SmPropValue));
-	prop[2].num_vals = i;
+	prop[j].name = SmEnvironment;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = penv = calloc(i, sizeof(*penv));
+	prop[j].num_vals = i;
+	props[j] = &prop[j];
 	for (i = 0, env = environ; *env; i += 2, env++) {
 		char *equal;
 		int len;
@@ -883,24 +928,42 @@ logoutSetProperties(SmcConn smcConn, SmPointer data)
 		len = (int) (*env - equal);
 		if (*equal)
 			equal++;
-		prop[2].vals[i].value = *env;
-		prop[2].vals[i].length = len;
-		prop[2].vals[i + 1].value = equal;
-		prop[2].vals[i + 1].length = strlen(equal);
+		prop[j].vals[i].value = *env;
+		prop[j].vals[i].length = len;
+		prop[j].vals[i + 1].value = equal;
+		prop[j].vals[i + 1].length = strlen(equal);
 	}
+	j++;
+#endif
+
+#if 0
+	char procID[20];
 
 	/* ProcessID: This specifies an OS-specific identifier for the process. 
 	   On POSIX systems this should be of type ARRAY8 and contain the
 	   return of getpid() turned into a Latin-1 (decimal) string. */
+	prop[j].name = SmProcessID;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
 	snprintf(procID, sizeof(procID), "%ld", (long) getpid());
-	propval[4].value = procID;
-	propval[4].length = strlen(procID);
+	propval[j].value = procID;
+	propval[j].length = strlen(procID);
+	j++;
+#endif
 
 	/* Program: The name of the program that is running.  On POSIX systems, 
 	   this should eb the first parameter passed to execve(3) and should be 
 	   of type ARRAY8. */
-	propval[5].value = argv[0];
-	propval[5].length = strlen(argv[0]);
+	prop[j].name = SmProgram;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = argv[0];
+	propval[j].length = strlen(argv[0]);
+	j++;
 
 	/* RestartCommand: The restart command contains a command that when
 	   delivered to the host that the client is running on (determined from
@@ -909,31 +972,43 @@ logoutSetProperties(SmcConn smcConn, SmPointer data)
 	   of the elements in the array represents an element in the argv[]
 	   array.  This restart command should ensure that the client restarts
 	   with the specified client-ID.  */
-	prop[6].vals = calloc(argc + 4, sizeof(SmPropValue));
-	prop[6].num_vals = 0;
+	prop[j].name = SmRestartCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = prst = calloc(argc + 4, sizeof(*prst));
+	prop[j].num_vals = 0;
+	props[j] = &prop[j];
 	for (i = 0; i < argc; i++) {
 		if (!strcmp(argv[i], "-clientId") || !strcmp(argv[i], "-restore"))
 			i++;
 		else {
-			prop[6].vals[prop[6].num_vals].value = (SmPointer) argv[i];
-			prop[6].vals[prop[6].num_vals++].length = strlen(argv[i]);
+			prop[j].vals[prop[j].num_vals].value = (SmPointer) argv[i];
+			prop[j].vals[prop[j].num_vals++].length = strlen(argv[i]);
 		}
 	}
-	prop[6].vals[prop[6].num_vals].value = (SmPointer) "-clientId";
-	prop[6].vals[prop[6].num_vals++].length = 9;
-	prop[6].vals[prop[6].num_vals].value = (SmPointer) options.clientId;
-	prop[6].vals[prop[6].num_vals++].length = strlen(options.clientId);
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) "-clientId";
+	prop[j].vals[prop[j].num_vals++].length = 9;
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) options.clientId;
+	prop[j].vals[prop[j].num_vals++].length = strlen(options.clientId);
 
-	prop[6].vals[prop[6].num_vals].value = (SmPointer) "-restore";
-	prop[6].vals[prop[6].num_vals++].length = 9;
-	prop[6].vals[prop[6].num_vals].value = (SmPointer) options.saveFile;
-	prop[6].vals[prop[6].num_vals++].length = strlen(options.saveFile);
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) "-restore";
+	prop[j].vals[prop[j].num_vals++].length = 9;
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) options.saveFile;
+	prop[j].vals[prop[j].num_vals++].length = strlen(options.saveFile);
+	j++;
 
+#if 0
 	/* ResignCommand: A client that sets the RestartStyleHint to
 	   RestartAnyway uses this property to specify a command that undoes
 	   the effect of the client and removes any saved state. */
-	propval[7].value = "/bin/true";
-	propval[7].length = strlen("/bin/true");
+	prop[j].name = SmResignCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = "/bin/true";
+	propval[j].length = strlen("/bin/true");
+	j++;
+#endif
 
 	/* RestartStyleHint: If the RestartStyleHint property is present, it
 	   will contain the style of restarting the client prefers.  If this
@@ -955,36 +1030,66 @@ logoutSetProperties(SmcConn smcConn, SmPointer data)
 	   should try to restart it in the current session.  The RestartNever(3)
 	   style specifies that the client does not wish to be restarted in the
 	   next session. */
-	hint = SmRestartIfRunning;
-	propval[8].value = &hint;
-	propval[8].length = 1;
+	prop[j].name = SmRestartStyleHint;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[0];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	hint = SmRestartNever;
+	propval[j].value = &hint;
+	propval[j].length = 1;
+	j++;
 
+#if 0
 	/* ShutdownCommand: This command is executed at shutdown time to clean
 	   up after a client that is no longer running but retained its state
 	   by setting RestartStyleHint to RestartAnyway(1).  The command must
 	   not remove any saved state as the client is still part of the
 	   session. */
-	propval[9].value = "/bin/true";
-	propval[9].length = strlen("/bin/true");
+	prop[j].name = SmShutdownCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = "/bin/true";
+	propval[j].length = strlen("/bin/true");
+	j++;
+#endif
 
 	/* UserID: Specifies the user's ID.  On POSIX-based systems this will
 	   contain the user's name (the pw_name field of struct passwd).  */
 	errno = 0;
+	prop[j].name = SmUserID;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
 	if ((pw = getpwuid(getuid())))
 		strncpy(userID, pw->pw_name, sizeof(userID) - 1);
 	else {
 		EPRINTF("%s: %s\n", "getpwuid()", strerror(errno));
 		snprintf(userID, sizeof(userID), "%ld", (long) getuid());
 	}
-	propval[10].value = userID;
-	propval[10].length = strlen(userID);
+	propval[j].value = userID;
+	propval[j].length = strlen(userID);
+	j++;
 
-	SmcSetProperties(smcConn, sizeof(props) / sizeof(props[0]), props);
+	SmcSetProperties(smcConn, j, props);
 
-	free(prop[0].vals);
-	free(propval[1].value);
-	free(prop[2].vals);
-	free(prop[6].vals);
+	free(cwd);
+	free(pcln);
+	free(prst);
+	free(penv);
+}
+
+static Bool saving_yourself;
+static Bool shutting_down;
+
+static void
+logoutSaveYourselfPhase2CB(SmcConn smcConn, SmPointer data)
+{
+	logoutSetProperties(smcConn, data);
+	SmcSaveYourselfDone(smcConn, True);
 }
 
 /** @brief save yourself
@@ -1010,7 +1115,14 @@ static void
 logoutSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
 		     int interactStyle, Bool fast)
 {
+	if (!(shutting_down = shutdown)) {
+		if (!SmcRequestSaveYourselfPhase2(smcConn,
+				logoutSaveYourselfPhase2CB, data))
+			SmcSaveYourselfDone(smcConn, False);
+		return;
+	}
 	logoutSetProperties(smcConn, data);
+	SmcSaveYourselfDone(smcConn, True);
 }
 
 /** @brief die
@@ -1024,12 +1136,17 @@ static void
 logoutDieCB(SmcConn smcConn, SmPointer data)
 {
 	SmcCloseConnection(smcConn, 0, NULL);
-	exit(EXIT_SUCCESS);
+	shutting_down = False;
+	gtk_main_quit();
 }
 
 static void
 logoutSaveCompleteCB(SmcConn smcConn, SmPointer data)
 {
+	if (saving_yourself) {
+		saving_yourself = False;
+		gtk_main_quit();
+	}
 }
 
 /** @brief shutdown cancelled
@@ -1046,7 +1163,8 @@ logoutSaveCompleteCB(SmcConn smcConn, SmPointer data)
 static void
 logoutShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 {
-	/* nothing to do really */
+	shutting_down = False;
+	gtk_main_quit();
 }
 
 static unsigned long logoutCBMask =
@@ -1096,7 +1214,6 @@ init_smclient(void)
 	int ifd, mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
 	char *env;
 	IceConn iceConn;
-	SmcConn smcConn;
 
 	if (!(env = getenv("SESSSION_MANAGER"))) {
 		if (options.clientId)
@@ -1109,7 +1226,7 @@ init_smclient(void)
 				    &options.clientId, sizeof(err), err);
 	if (!smcConn) {
 		EPRINTF("SmcOpenConnection: %s\n", err);
-		exit(EXIT_FAILURE);
+		return;
 	}
 
 	iceConn = SmcGetIceConnection(smcConn);
@@ -1340,6 +1457,33 @@ action_SwitchDesk(void)
 static void
 action_LockScreen(void)
 {
+}
+
+static gboolean
+session_timeout(gpointer user)
+{
+	gtk_main_quit();
+	return G_SOURCE_REMOVE;
+}
+
+static void
+action_Checkpoint(void)
+{
+	saving_yourself = True;
+	shutting_down = False;
+	SmcRequestSaveYourself(smcConn, SmSaveBoth, False, SmInteractStyleAny, False, True);
+	g_timeout_add_seconds(5, session_timeout, NULL);
+	gtk_main();
+}
+
+static void
+action_Shutdown(void)
+{
+	saving_yourself = False;
+	shutting_down = True;
+	SmcRequestSaveYourself(smcConn, SmSaveLocal, True, SmInteractStyleErrors, True, True);
+	g_timeout_add_seconds(5, session_timeout, NULL);
+	gtk_main();
 }
 
 /** @brief perform the logout action
@@ -1743,17 +1887,17 @@ set_defaults(void)
 	set_default_banner();
 }
 
-typedef enum {
-	COMMAND_LOGOUT,
-	COMMAND_HELP,
-	COMMAND_VERSION,
-	COMMAND_COPYING,
-} CommandType;
+void
+get_defaults(void)
+{
+	if (options.command == CommandDefault)
+		options.command = CommandLogout;
+}
 
 int
 main(int argc, char *argv[])
 {
-	CommandType command = COMMAND_LOGOUT;
+	Command command = CommandDefault;
 
 	set_defaults();
 
@@ -1871,19 +2015,21 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (command != COMMAND_LOGOUT)
-				goto bad_option;
-			command = COMMAND_HELP;
+			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (command != COMMAND_LOGOUT)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			command = COMMAND_VERSION;
+			if (command == CommandDefault)
+				command = CommandVersion;
+			options.command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (command != COMMAND_LOGOUT)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			command = COMMAND_COPYING;
+			if (command == CommandDefault)
+				command = CommandCopying;
+			options.command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -1915,23 +2061,25 @@ main(int argc, char *argv[])
 	if (optind < argc) {
 		goto bad_nonopt;
 	}
+	get_defaults();
 	switch (command) {
-	case COMMAND_LOGOUT:
+	case CommandDefault:
+	case CommandLogout:
 		if (options.debug)
 			fprintf(stderr, "%s: running logout\n", argv[0]);
 		run_logout(argc, argv);
 		break;
-	case COMMAND_HELP:
+	case CommandHelp:
 		if (options.debug)
 			fprintf(stderr, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
-	case COMMAND_VERSION:
+	case CommandVersion:
 		if (options.debug)
 			fprintf(stderr, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
-	case COMMAND_COPYING:
+	case CommandCopying:
 		if (options.debug)
 			fprintf(stderr, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
