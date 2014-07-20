@@ -50,6 +50,7 @@
 
 #include <dbus/dbus-glib.h>
 #include <pwd.h>
+#include <systemd/sd-login.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -320,6 +321,172 @@ test_lock_screen_program()
 	return;
 }
 
+void
+test_login_functions()
+{
+	const char *seat;
+	int ret;
+	
+	seat = getenv("XDG_SEAT") ?: "seat0";
+	ret = sd_seat_can_multi_session(seat);
+	if (ret > 0) {
+		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusYes;
+		DPRINTF("%s: mutisession: true\n", seat);
+	} else if (ret == 0) {
+		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusNa;
+		DPRINTF("%s: mutisession: false\n", seat);
+	} else if (ret < 0) {
+		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusUnknown;
+		DPRINTF("%s: mutisession: unknown\n", seat);
+	}
+}
+
+GtkMenu *
+get_user_menu(void)
+{
+	const char *seat;
+	char **sessions = NULL, **s;
+	GtkMenu *menu = NULL;
+	int ret;
+
+	seat = getenv("XDG_SEAT") ? : "seat0";
+	ret = sd_seat_get_sessions(seat, &sessions, NULL, NULL);
+	if (ret < 0) {
+		EPRINTF("Cannot determine available sessions\n");
+		free(sessions);
+		return (NULL);
+	}
+#if 0
+	if (ret < 2) {
+		DPRINTF("No available sessions to switch to\n");
+		if (sessions) {
+			free(*sessions);
+			free(sessions);
+		}
+		return (NULL);
+	}
+#endif
+	for (s = sessions; s && *s; s++) {
+		char *type = NULL;
+		char *klass = NULL;
+		char *display = NULL;
+		char *service = NULL;
+		char *host = NULL;
+		char *user = NULL;
+		char *tty = NULL;
+		uid_t uid = 0;
+		int active, remote;
+		unsigned int vt = -1U;
+
+		ret = sd_session_get_type(*s, &type);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session type\n", *s);
+		}
+		ret = sd_session_get_class(*s, &klass);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session class\n", *s);
+		}
+		ret = sd_session_get_display(*s, &display);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session display\n", *s);
+		}
+		ret = sd_session_get_service(*s, &service);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session service\n", *s);
+		}
+		ret = sd_session_get_uid(*s, &uid);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session uid\n", *s);
+			uid = 0;
+		}
+		active = sd_session_is_active(*s);
+		if (active < 0) {
+			DPRINTF("%s: could not determine session activity\n", *s);
+			active = 0;
+		}
+		remote = sd_session_is_remote(*s);
+		if (remote < 0) {
+			DPRINTF("%s: could not determine session remoteness\n", *s);
+			remote = 0;
+		}
+		ret = sd_session_get_remote_host(*s, &host);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session remote host\n", *s);
+		}
+		ret = sd_session_get_remote_user(*s, &user);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session remote user\n", *s);
+		}
+		ret = sd_session_get_vt(*s, &vt);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session vt\n", *s);
+			vt = -1U;
+		}
+		ret = sd_session_get_tty(*s, &tty);
+		if (ret < 0) {
+			DPRINTF("%s: could not determine session tty\n", *s);
+		}
+		if (options.debug) {
+			fprintf(stderr, "Session: %s\n", *s);
+			fprintf(stderr, "\ttype: %s\n", type);
+			fprintf(stderr, "\tclass: %s\n", klass);
+			fprintf(stderr, "\tdisplay: %s\n", display);
+			fprintf(stderr, "\tservice: %s\n", service);
+			fprintf(stderr, "\tuid: %d\n", (int) uid);
+			fprintf(stderr, "\tactive: %s\n", active ? "true" : "false");
+			fprintf(stderr, "\tremote: %s\n", remote ? "true" : "false");
+			fprintf(stderr, "\thost: %s\n", host);
+			fprintf(stderr, "\tuser: %s\n", user);
+			fprintf(stderr, "\ttty: %s\n", tty);
+			fprintf(stderr, "\tvt: %d\n", (int) vt);
+		}
+		free(*s);
+	}
+	free(sessions);
+	/* for now */
+	action_result = LOGOUT_ACTION_CANCEL;
+	gtk_main_quit();
+	/* for now */
+	return (menu);
+}
+
+void
+test_manager_functions()
+{
+	GError *error = NULL;
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+//	gboolean ok;
+	const char *env;
+	char *path;
+
+	path = calloc(PATH_MAX + 1, sizeof(*path));
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
+		EPRINTF("cannot access system bus\n");
+		free(path);
+		return;
+	} else
+		error = NULL;
+
+	if ((env = getenv("XDG_SEAT_PATH"))) {
+		strncpy(path, env, PATH_MAX);
+	} else if ((env = getenv("XDG_SEAT"))) {
+		strncpy(path, "/org/freedesktop/DisplayManager/", PATH_MAX);
+		strncat(path, env, PATH_MAX);
+	} else
+		strncpy(path, "/org/freedesktop/DisplayManager/Seat0", PATH_MAX);
+
+	proxy = dbus_g_proxy_new_for_name(bus, "org.freedesktop.DisplayManager", path,
+			"org.freedesktop.DisplayManager.Seat");
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy for %s\n", path);
+		free(path);
+		return;
+	}
+
+}
+
 /** @brief test availability of power functions
   *
   * Uses DBUsGProxy and the login1 service to test for available power
@@ -399,12 +566,11 @@ test_power_functions()
 
 /** @brief test availability of user functions
   *
-  * For now, do not let the user switch users or window managers.
+  * For now, do not let the user switch window managers.
   */
 void
 test_user_functions()
 {
-	action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusNa;
 	action_can[LOGOUT_ACTION_SWITCHDESK] = AvailStatusNa;
 }
 
@@ -694,6 +860,33 @@ on_clicked(GtkButton *button, gpointer data)
 	gtk_main_quit();
 }
 
+static void
+at_pointer(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer user)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+
+	gdk_display_get_pointer(disp, NULL, x, y, NULL);
+	*push_in = TRUE;
+}
+
+static void
+on_switchuser(GtkButton *button, gpointer data)
+{
+	LogoutActionResult action = (typeof(action)) (long) data;
+	GtkMenu *menu;
+
+	if (action_can[action] < AvailStatusChallenge) {
+		EPRINTF("Button %s is disabled!\n", button_labels[action]);
+		return;
+	}
+	if (!(menu = get_user_menu())) {
+		DPRINTF("No users to switch to!\n");
+		return;
+	}
+	gtk_menu_popup(menu, NULL, NULL, at_pointer, NULL, 1, GDK_CURRENT_TIME);
+	return;
+}
+
 LogoutActionResult
 make_logout_choice()
 {
@@ -780,28 +973,45 @@ make_logout_choice()
 
 	GtkWidget *bb = gtk_vbutton_box_new();
 
-	gtk_container_set_border_width(GTK_CONTAINER(bb), 5);
+// #define BB_INT_PADDING  ?
+// #define BB_BOX_SPACING  5
+// #define BB_BORDER_WIDTH 5
+// #define BU_BORDER_WIDTH 2
+// #define BB_PACK_PADDING 5
+
+#define BB_INT_PADDING  0
+#define BB_BOX_SPACING  2
+#define BB_BORDER_WIDTH 0
+#define BU_BORDER_WIDTH 0
+#define BB_PACK_PADDING 0
+
+	gtk_container_set_border_width(GTK_CONTAINER(bb), BB_BORDER_WIDTH);
 	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_SPREAD);
-	gtk_box_set_spacing(GTK_BOX(bb), 5);
+	gtk_button_box_set_child_ipadding(GTK_BUTTON_BOX(bb), BB_INT_PADDING, BB_INT_PADDING);
+	gtk_box_set_spacing(GTK_BOX(bb), BB_BOX_SPACING);
 	gtk_box_pack_end(GTK_BOX(v), GTK_WIDGET(bb), FALSE, TRUE, 0);
 
-	/* FIXME: fill out buttons */
 	GtkWidget *b, *im;
 	int i;
 
 	for (i = 0; i < LOGOUT_ACTION_COUNT; i++) {
 		b = buttons[i] = gtk_button_new();
-		gtk_container_set_border_width(GTK_CONTAINER(b), 2);
+		gtk_container_set_border_width(GTK_CONTAINER(b), BU_BORDER_WIDTH);
 		gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
 		gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
 		im = get_icon(GTK_ICON_SIZE_BUTTON, button_icons[i], 3);
 		gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(im));
 		gtk_button_set_label(GTK_BUTTON(b), button_labels[i]);
-		g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_clicked),
-				 (gpointer) (long) i);
+		if (i == LOGOUT_ACTION_SWITCHUSER) {
+			g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_switchuser),
+					(gpointer) (long) i);
+		} else {
+			g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_clicked),
+					 (gpointer) (long) i);
+		}
 		gtk_widget_set_sensitive(GTK_WIDGET(b), (action_can[i] >= AvailStatusChallenge));
 		gtk_widget_set_tooltip_text(GTK_WIDGET(b), button_tips[i]);
-		gtk_box_pack_start(GTK_BOX(bb), GTK_WIDGET(b), TRUE, TRUE, 5);
+		gtk_box_pack_start(GTK_BOX(bb), GTK_WIDGET(b), TRUE, TRUE, BB_PACK_PADDING);
 	}
 	// gtk_window_set_default_size(GTK_WINDOW(w), -1, 350);
 
@@ -1246,6 +1456,7 @@ run_logout(int argc, char *argv[])
 	init_smclient();
 
 	/* determine which functions are available */
+	test_login_functions();
 	test_power_functions();
 	test_lock_screen_program();
 	test_user_functions();

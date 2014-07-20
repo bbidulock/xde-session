@@ -42,8 +42,8 @@
 
  *****************************************************************************/
 
-#ifndef __XDE_LOGOUT_H__
-#define __XDE_LOGOUT_H__
+#ifndef __XDE_LOGIN_H__
+#define __XDE_LOGIN_H__
 
 #ifdef HAVE_CONFIG_H
 #include "autoconf.h"
@@ -115,4 +115,4 @@
 	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
-#endif				/* __XDE_LOGOUT_H__ */
+#endif				/* __XDE_LOGIN_H__ */

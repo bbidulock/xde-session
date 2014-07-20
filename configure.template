@@ -53,6 +53,7 @@ AC_CHECK_FUNCS([gethostname memmove select strcasecmp strchr strcspn strdup stre
 
 PKG_CHECK_MODULES([X11],[x11])
 PKG_CHECK_MODULES([XEXT],[xext])
+PKG_CHECK_MODULES([XAU],[xau])
 PKG_CHECK_MODULES([XSCRNSAVER],[xscrnsaver])
 PKG_CHECK_MODULES([XDMCP],[xdmcp])
 PKG_CHECK_MODULES([ICE],[ice])
@@ -67,6 +68,7 @@ PKG_CHECK_MODULES([GTK],[gtk+-2.0 >= 2.4.0])
 PKG_CHECK_MODULES([UNIQUE],[unique-1.0])
 PKG_CHECK_MODULES([WNCK],[libwnck-1.0])
 PKG_CHECK_MODULES([CAIRO],[cairo])
+PKG_CHECK_MODULES([SYSTEMD],[libsystemd])
 
 AC_ARG_ENABLE([xrandr],
 	AC_HELP_STRING([--disable-xrandr],

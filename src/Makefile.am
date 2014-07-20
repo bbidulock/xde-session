@@ -11,7 +11,9 @@ bin_PROGRAMS = \
 	xde-wmproxy \
 	xde-xchooser \
 	xde-xlogin \
-        xde-xsession
+        xde-xsession \
+	xde-login \
+	test-login
 
 
 xde_autostart_CPPFLAGS = -DNAME=\"xde-autostart\"
@@ -31,8 +33,8 @@ xde_input_LDFLAGS = $(AM_LDFLAGS)
 
 xde_logout_CPPFLAGS = -DNAME=\"xde-logout\"
 xde_logout_SOURCES = xde-logout.c xde-logout.h
-xde_logout_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(DBUS_GLIB_CFLAGS)
-xde_logout_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(DBUS_GLIB_LIBS) $(AM_LDFLAGS)
+xde_logout_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_logout_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_session_CPPFLAGS = -DNAME=\"xde-session\"
 xde_session_SOURCES = xde-session.c xde-session.h
@@ -62,4 +64,14 @@ xde_xsession_SOURCES = \
                 xsessions.c xsession.h \
                 autostart.c autostart.h \
                 display.c display.h
+
+xde_login_CPPFLAGS = -DNAME=\"xde-login\"
+xde_login_SOURCES = xde-login.c xde-login.h
+xde_login_CFLAGS = $(AM_CFLAGS) $(XAU_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_login_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(XAU_LIBS) -lpam_misc -lpam $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+
+test_login_CPPFLAGS = -DNAME=\"test-login\"
+test_login_CFLAGS = $(AM_CFLAGS) $(SYSTEMD_CFLAGS)
+test_login_LDFLAGS = $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+test_login_SOURCES = test-login.c xde-xsession.h
 
