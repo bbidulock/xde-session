@@ -250,6 +250,43 @@ lxsession_check()
 {
 }
 
+/** @brief test screen locking ability using systemd
+  *
+  * First off, if we have an XDG_SESSION_ID then we are running under a systemd
+  * session.  Because anything of ours that properly registers a graphical
+  * session with systemd can likely lock the screen as long as we can talk to
+  * login1 on the DBUS, consider that sufficient.
+  */
+void
+test_session_lock()
+{
+	GError *error = NULL;
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+
+	if (!getenv("XDG_SESSION_ID")) {
+		DPRINTF("no XDG_SESSION_ID supplied\n");
+		return;
+	}
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
+		EPRINTF("cannot access system bus\n");
+		return;
+	} else
+		error = NULL;
+	proxy = dbus_g_proxy_new_for_name(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktop.login1",
+			"org.freedesktop.login1.Manager");
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy\n");
+		return;
+	} else
+		error = NULL;
+	g_object_unref(G_OBJECT(proxy));
+
+	action_can[LOGOUT_ACTION_LOCKSCREEN] = AvailStatusYes;
+}
+
 struct prog_cmd {
 	char *name;
 	char *cmd;
