@@ -216,6 +216,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 		DPRINTF("family is AF_UNIX\n");
 		ctype = FamilyLocal;
 		port = 0;
+		/* FIXME: display address in debug mode */
 		break;
 	}
 	default:
@@ -742,6 +743,10 @@ Choose(short type, char *name)
 			addr = (struct sockaddr *) &in6_addr;
 			len = sizeof(in6_addr);
 			break;
+		case AF_UNIX:
+			/* FIXME: why not AF_UNIX? If the Display happens to be
+			 * on the local host, why not offer a AF_UNIX
+			 * connection? */
 		default:
 		{
 			/* should not happen: we should not be displaying
