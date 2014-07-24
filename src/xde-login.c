@@ -71,6 +71,7 @@ typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	char *host;
 	char *user;
 	char *display;
 	char *seat;
@@ -90,6 +91,7 @@ Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.host = NULL,
 	.user = NULL,
 	.seat = NULL,
 	.service = NULL,
@@ -167,11 +169,37 @@ run_login(int argc, char **argv)
 	pam_handle_t *pamh = NULL;
 	const char *env;
 	pid_t pid;
+	uid_t uid;
 	int result, status;
 	struct pam_conv conv = { pam_conv_cb, NULL };
+	FILE *dummy;
 	const char **var, *vars[] =
 	    { "PATH", "LANG", "USER", "LOGNAME", "HOME", "SHELL", "XDG_SEAT", "XDG_VNTR", NULL };
 
+	uid = getuid();
+	if (setresuid(0, 0, 0)) {
+		EPRINTF("setresuid: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	switch ((pid = fork())) {
+	case 0: /* the child */
+		dummy = freopen("/dev/null", "r", stdin);
+		dummy = freopen("/dev/null", "w", stdout);
+		(void) dummy;
+		if (setsid() < 0) {
+			EPRINTF("setsid: %s\n", strerror(errno));
+			exit(errno);
+		}
+		break;
+	case -1:
+		EPRINTF("fork: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	default: /* the parent */
+		waitpid(pid, &status, 0);
+		if (WIFEXITED(status) && !WEXITSTATUS(status))
+			exit(EXIT_SUCCESS);
+		exit(EXIT_FAILURE);
+	}
 	DPRINTF("adjusting environment variables\n");
 	unsetenv("XDG_SESSION_ID");
 
@@ -208,6 +236,10 @@ run_login(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	DPRINTF("setting PAM items\n");
+	if (options.user)
+		pam_set_item(pamh, PAM_RUSER, options.user);
+	if (options.host)
+		pam_set_item(pamh, PAM_RHOST, options.host);
 	if (options.tty)
 		pam_set_item(pamh, PAM_TTY, options.tty);
 	else if (options.display)
@@ -242,6 +274,13 @@ run_login(int argc, char **argv)
 		pam_end(pamh, result);
 		exit(EXIT_FAILURE);
 	}
+	DPRINTF("trying to close previous session\n");
+	result = pam_close_session(pamh, 0);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
+		pam_end(pamh, result);
+		exit(EXIT_FAILURE);
+	}
 	DPRINTF("opening session\n");
 	result = pam_open_session(pamh, 0);
 	if (result != PAM_SUCCESS) {
@@ -259,6 +298,11 @@ run_login(int argc, char **argv)
 	DPRINTF("forking child\n");
 	switch ((pid = fork())) {
 	case 0:		/* the child */
+		/* drop privileges */
+		if (setresuid(uid, uid, uid)) {
+			EPRINTF("setuid: %s\n", strerror(errno));
+			_exit(errno);
+		}
 		if (setsid() < 0) {
 			EPRINTF("setsid: %s\n", strerror(errno));
 			_exit(errno);
@@ -497,6 +541,7 @@ set_defaults(void)
 	const char *env;
 	uid_t me;
 	struct passwd *pw;
+	char buf[HOST_NAME_MAX + 1] = { 0, };
 
 	options.display = (env = getenv("DISPLAY")) ? strdup(env) : NULL;
 	options.authfile = (env = XauFileName())? strdup(env) : NULL;
@@ -513,6 +558,10 @@ set_defaults(void)
 	me = getuid();
 	if ((pw = getpwuid(me)))
 		options.user = strdup(pw->pw_name);
+	if (gethostname(buf, HOST_NAME_MAX) == -1)
+		EPRINTF("gethostname: %s\n", strerror(errno));
+	else
+		options.host = strdup(buf);
 }
 
 void
@@ -610,7 +659,7 @@ main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"authfile",	required_argument,  NULL,   'A'},
 			{"desktop",	required_argument,  NULL,   'E'},
-			{"user",	required_argument,  NULL,   'u'},
+//			{"user",	required_argument,  NULL,   'u'},
 			{"seat",	required_argument,  NULL,   's'},
 			{"service",	required_argument,  NULL,   'S'},
 			{"vt",		required_argument,  NULL,   'T'},
