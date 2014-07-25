@@ -995,6 +995,7 @@ InitXDMCP(char *argv[], int argc)
 					sa_family_t family;
 					socklen_t addrlen;
 					struct sockaddr *ifa_addr;
+					struct sockaddr_in *sin;
 
 					(void) index;
 					if (ifa->ifa_flags & IFF_LOOPBACK) {
@@ -1022,37 +1023,26 @@ InitXDMCP(char *argv[], int argc)
 							ifa->ifa_name);
 						continue;
 					}
-					if (!(ifa_addr = ifa->ifa_broadaddr)) {
-						EPRINTF("interface %s has missing broadcast\n",
-							ifa->ifa_name);
-						continue;
-					}
 					family = ifa_addr->sa_family;
 					if (family == AF_INET)
 						addrlen = sizeof(struct sockaddr_in);
-					else if (family == AF_INET6)
-						addrlen = sizeof(struct sockaddr_in6);
 					else {
 						DPRINTF("interface %s has wrong family %d\n",
 							ifa->ifa_name, (int) family);
 						continue;
 					}
+					if (!(ifa_addr = ifa->ifa_broadaddr)) {
+						EPRINTF("interface %s has missing broadcast\n",
+							ifa->ifa_name);
+						continue;
+					}
 					DPRINTF("interace %s is ok\n", ifa->ifa_name);
 					ha = calloc(1, sizeof(*ha));
 					memcpy(&ha->addr, ifa_addr, addrlen);
-					if (family == AF_INET) {
-						struct sockaddr_in *sin;
-
-						sin = (typeof(sin)) & ha->addr;
-						sin->sin_port = htons(XDM_UDP_PORT);
-					} else {
-						struct sockaddr_in6 *sin6;
-
-						sin6 = (typeof(sin6)) & ha->addr;
-						sin6->sin6_port = htons(XDM_UDP_PORT);
-					}
+					sin = (typeof(sin)) & ha->addr;
+					sin->sin_port = htons(XDM_UDP_PORT);
 					ha->addrlen = addrlen;
-					ha->sfd = (family == AF_INET) ? sock4 : sock6;
+					ha->sfd = sock4;
 					ha->type = BROADCAST_QUERY;
 					ha->next = hostAddrdb;
 					hostAddrdb = ha;
@@ -1124,7 +1114,8 @@ InitXDMCP(char *argv[], int argc)
 						ha->next = hostAddrdb;
 						hostAddrdb = ha;
 					} else if (ai->ai_family == AF_INET6) {
-						struct sockaddr_in6 *sin6 = (typeof(sin6)) ai->ai_addr;
+						struct sockaddr_in6 *sin6 =
+						    (typeof(sin6)) ai->ai_addr;
 
 						ha = calloc(1, sizeof(*ha));
 						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
