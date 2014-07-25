@@ -82,14 +82,10 @@ struct Options options = {
 	.dryrun = False,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
-	.connectionType = FamilyInternet,
+	.connectionType = FamilyWild,
 	.banner = NULL,		/* "/usr/lib/X11/xdm/banner.png" */
 	.welcome = NULL,
 };
-
-GtkListStore *model;
-GtkWidget *view;
-GtkWindow *top;
 
 #define PING_TRIES	3
 #define PING_INTERVAL	2	/* 2 seconds */
@@ -106,17 +102,444 @@ enum {
 };
 
 enum {
-	COLUMN_HOSTNAME,
-	COLUMN_REMOTENAME,
-	COLUMN_WILLING,
-	COLUMN_STATUS,
-	COLUMN_IPADDR,
-	COLUMN_CTYPE,
-	COLUMN_SERVICE,
-	COLUMN_PORT,
-	COLUMN_MARKUP,
-	COLUMN_TOOLTIP,
+	XDM_COL_HOSTNAME,		/* the manager hostname */
+	XDM_COL_REMOTENAME,		/* the manager remote name */
+	XDM_COL_WILLING,		/* the willing status */
+	XDM_COL_STATUS,			/* the status */
+	XDM_COL_IPADDR,			/* the ip address */
+	XDM_COL_CTYPE,			/* the connection type */
+	XDM_COL_SERVICE,		/* the service */
+	XDM_COL_PORT,			/* the port number */
+	XDM_COL_MARKUP,			/* the combined markup description */
+	XDM_COL_TOOLTIP,		/* the tooltip information */
 };
+
+enum {
+	XSESS_COL_PIXBUF,		/* the icon name for the pixbuf */
+	XSESS_COL_NAME,			/* the Name= of the XSession */
+	XSESS_COL_COMMENT,		/* the Comment= of the XSession */
+	XSESS_COL_MARKUP,		/* Combined Name/Comment markup */
+	XSESS_COL_LABEL,		/* the label (appid) of the XSession */
+	XSESS_COL_MANAGED,		/* XDE-Managed? editable setting */
+	XSESS_COL_ORIGINAL,		/* XDE-Managed? original setting */
+	XSESS_COL_FILENAME,		/* the full file name */
+};
+
+
+GtkListStore *store;	    /* list store for XSessions */
+GtkWidget *sess;
+
+void
+on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer user_data)
+{
+	GtkTreeIter iter;
+
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter, path)) {
+		GValue user_v = G_VALUE_INIT;
+		GValue orig_v = G_VALUE_INIT;
+		gboolean user;
+		gboolean orig;
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter, XSESS_COL_MANAGED, &user_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter, XSESS_COL_ORIGINAL, &orig_v);
+		user = g_value_get_boolean(&user_v);
+		orig = g_value_get_boolean(&orig_v);
+		if (orig) {
+			user = user ? FALSE : TRUE;
+			g_value_set_boolean(&user_v, user);
+			gtk_list_store_set_value(GTK_LIST_STORE(store), &iter, XSESS_COL_MANAGED,
+						 &user_v);
+		}
+		g_value_unset(&user_v);
+		g_value_unset(&orig_v);
+	}
+}
+
+void
+on_render_pixbuf(GtkCellLayout *sess, GtkCellRenderer *cell, GtkTreeModel
+		*store, GtkTreeIter *iter, gpointer data)
+{
+	GValue iname_v = G_VALUE_INIT;
+	const gchar *iname;
+	gchar *name = NULL, *p;
+	gboolean has;
+	GValue pixbuf_v = G_VALUE_INIT;
+
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), iter, XSESS_COL_PIXBUF, &iname_v);
+	if ((iname = g_value_get_string(&iname_v))) {
+		name = g_strdup(iname);
+		/* should we really do this? */
+		if ((p = strstr(name, ".xpm")) && !p[4])
+			*p = '\0';
+		else if ((p = strstr(name, ".svg")) && !p[4])
+			*p = '\0';
+		else if ((p = strstr(name, ".png")) && !p[4])
+			*p = '\0';
+	} else
+		name = g_strdup("preferences-system-windows");
+	g_value_unset(&iname_v);
+	XPRINTF("will try to render icon name = \"%s\"\n", name);
+
+	GtkIconTheme *theme = gtk_icon_theme_get_default();
+	GdkPixbuf *pixbuf = NULL;
+
+	XPRINTF("checking icon \"%s\"\n", name);
+	has = gtk_icon_theme_has_icon(theme, name);
+	if (has) {
+		XPRINTF("trying to load icon \"%s\"\n", name);
+		pixbuf = gtk_icon_theme_load_icon(theme, name, 16,
+						  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
+						  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+	}
+	if (!has || !pixbuf) {
+		g_free(name);
+		name = g_strdup("preferences-system-windows");
+		XPRINTF("checking icon \"%s\"\n", name);
+		has = gtk_icon_theme_has_icon(theme, name);
+		if (has) {
+			XPRINTF("tyring to load icon \"%s\"\n", name);
+			pixbuf = gtk_icon_theme_load_icon(theme, name, 16,
+							  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
+							  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+		}
+		if (!has || !pixbuf) {
+			GtkWidget *image;
+
+			XPRINTF("tyring to load image \"%s\"\n", "gtk-missing-image");
+			if ((image = gtk_image_new_from_stock("gtk-missing-image",
+							      GTK_ICON_SIZE_MENU))) {
+				XPRINTF("tyring to load icon \"%s\"\n", "gtk-missing-image");
+				pixbuf = gtk_widget_render_icon(GTK_WIDGET(image),
+								"gtk-missing-image",
+								GTK_ICON_SIZE_MENU, NULL);
+				g_object_unref(G_OBJECT(image));
+			}
+		}
+	}
+	if (pixbuf) {
+		XPRINTF("setting pixbuf for cell renderrer\n");
+		g_value_init(&pixbuf_v, G_TYPE_OBJECT);
+		g_value_take_object(&pixbuf_v, pixbuf);
+		g_object_set_property(G_OBJECT(cell), "pixbuf", &pixbuf_v);
+		g_value_unset(&pixbuf_v);
+	}
+}
+
+char **
+get_xsession_dirs(int *np)
+{
+	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end; n++,
+	     *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1) {
+		len = strlen(pos) + strlen("/xsessions") + 1;
+		xdg_dirs[n] = calloc(len, sizeof(*xdg_dirs[n]));
+		strcpy(xdg_dirs[n], pos);
+		strcat(xdg_dirs[n], "/xsessions");
+	}
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
+GKeyFile *
+get_xsession_entry(const char *key, const char *file)
+{
+	GKeyFile *entry;
+
+	if (!(entry = g_key_file_new())) {
+		EPRINTF("%s: could not allocate key file\n", file);
+		return (NULL);
+	}
+	if (!g_key_file_load_from_file(entry, file, G_KEY_FILE_NONE, NULL)) {
+		EPRINTF("%s: could not load keyfile\n", file);
+		g_key_file_unref(entry);
+		return (NULL);
+	}
+	if (!g_key_file_has_group(entry, G_KEY_FILE_DESKTOP_GROUP)) {
+		EPRINTF("%s: has no [%s] section\n", file, G_KEY_FILE_DESKTOP_GROUP);
+		g_key_file_free(entry);
+		return (NULL);
+	}
+	if (!g_key_file_has_key(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_TYPE, NULL)) {
+		EPRINTF("%s: has no %s= entry\n", file, G_KEY_FILE_DESKTOP_KEY_TYPE);
+		g_key_file_free(entry);
+		return (NULL);
+	}
+	DPRINTF("got xsession file: %s (%s)\n", key, file);
+	return (entry);
+}
+
+/** @brief wean out entries that should not be used
+  */
+gboolean
+bad_xsession(const char *appid, GKeyFile *entry)
+{
+	gchar *name, *exec, *tryexec, *binary;
+
+	if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					   G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
+		DPRINTF("%s: no Name\n", appid);
+		return TRUE;
+	}
+	g_free(name);
+	if (!(exec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					   G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
+		DPRINTF("%s: no Exec\n", appid);
+		return TRUE;
+	}
+	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
+				   G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
+		DPRINTF("%s: is Hidden\n", appid);
+		return TRUE;
+	}
+#if 0
+	/* NoDisplay is often used to hide XSession desktop entries from the
+	   application menu and does not indicate that it should not be
+	   displayed as an XSession entry. */
+
+	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
+				   G_KEY_FILE_DESKTOP_KEY_NO_DISPLAY, NULL)) {
+		DPRINTF("%s: is NoDisplay\n", appid);
+		return TRUE;
+	}
+#endif
+	if ((tryexec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					     G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, NULL))) {
+		binary = g_strdup(tryexec);
+		g_free(tryexec);
+	} else {
+		char *p;
+
+		/* parse the first word of the exec statement and see whether
+		   it is executable or can be found in PATH */
+		binary = g_strdup(exec);
+		if ((p = strpbrk(binary, " \t")))
+			*p = '\0';
+
+	}
+	g_free(exec);
+	if (binary[0] == '/') {
+		if (access(binary, X_OK)) {
+			DPRINTF("%s: %s: %s\n", appid, binary, strerror(errno));
+			g_free(binary);
+			return TRUE;
+		}
+	} else {
+		char *dir, *end;
+		char *path = strdup(getenv("PATH") ? : "");
+		int blen = strlen(binary) + 2;
+		gboolean execok = FALSE;
+
+		for (dir = path, end = dir + strlen(dir); dir < end;
+		     *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
+		for (dir = path; dir < end; dir += strlen(dir) + 1) {
+			int len = strlen(dir) + blen;
+			char *file = calloc(len, sizeof(*file));
+
+			strcpy(file, dir);
+			strcat(file, "/");
+			strcat(file, binary);
+			if (!access(file, X_OK)) {
+				execok = TRUE;
+				free(file);
+				break;
+			}
+			// to much noise
+			// DPRINTF("%s: %s: %s\n", appid, file,
+			// strerror(errno));
+		}
+		free(path);
+		if (!execok) {
+			DPRINTF("%s: %s: not executable\n", appid, binary);
+			g_free(binary);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static void
+xsession_key_free(gpointer data)
+{
+	free(data);
+}
+
+static void
+xsession_value_free(gpointer filename)
+{
+	free(filename);
+}
+
+/** @brief just gets the filenames of the xsession files
+  *
+  * This just gest the filenames of the xsession files to avoid performing a lot
+  * of time consuming startup during the login.  We process the actual xession
+  * files and add them to the list out of an idle loop.
+  */
+GHashTable *
+get_xsessions(void)
+{
+	char **xdg_dirs, **dirs;
+	int i, n = 0;
+	static const char *suffix = ".desktop";
+	static const int suflen = 8;
+	GHashTable *xsessions = NULL;
+
+	if (!(xdg_dirs = get_xsession_dirs(&n)) || !n)
+		return (xsessions);
+
+	xsessions = g_hash_table_new_full(g_str_hash, g_str_equal,
+			xsession_key_free, xsession_value_free);
+
+	/* go through them backward */
+	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+		char *file, *p;
+		DIR *dir;
+		struct dirent *d;
+		int len;
+		char *key;
+
+		if (!(dir = opendir(*dirs))) {
+			DPRINTF("%s: %s\n", *dirs, strerror(errno));
+			continue;
+		}
+		while ((d = readdir(dir))) {
+			if (d->d_name[0] == '.')
+				continue;
+			if (!(p = strstr(d->d_name, suffix)) || p[suflen]) {
+				DPRINTF("%s: no %s suffix\n", d->d_name, suffix);
+				continue;
+			}
+			len = strlen(*dirs) + strlen(d->d_name) + 2;
+			file = calloc(len, sizeof(*file));
+			strcpy(file, *dirs);
+			strcat(file, "/");
+			strcat(file, d->d_name);
+			key = strdup(d->d_name);
+			*strstr(key, suffix) = '\0';
+			g_hash_table_replace(xsessions, key, file);
+		}
+		closedir(dir);
+	}
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+	return (xsessions);
+}
+
+gboolean
+on_idle(gpointer data)
+{
+	static GHashTable *xsessions = NULL;
+	static GHashTableIter hiter;
+	const char *key;
+	const char *file;
+	GKeyFile *entry;
+	GtkTreeIter iter;
+
+	if (!xsessions) {
+		if (!(xsessions = get_xsessions())) {
+			EPRINTF("cannot build XSessions\n");
+			return G_SOURCE_REMOVE;
+		}
+		if (!g_hash_table_size(xsessions)) {
+			EPRINTF("cannot find any XSessions\n");
+			return G_SOURCE_REMOVE;
+		}
+		g_hash_table_iter_init(&hiter, xsessions);
+	}
+	if (!g_hash_table_iter_next(&hiter, (gpointer *)&key, (gpointer *)&file))
+		return G_SOURCE_REMOVE;
+
+	if (!(entry = get_xsession_entry(key, file)))
+		return G_SOURCE_CONTINUE;
+
+	if (bad_xsession(key, entry)) {
+		g_key_file_free(entry);
+		return G_SOURCE_CONTINUE;
+	}
+
+	gchar *i, *n, *c, *k, *l, *f;
+	gboolean m;
+
+	f = g_strdup(file);
+	l = g_strdup(key);
+	i = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+				  G_KEY_FILE_DESKTOP_KEY_ICON, NULL);
+	n = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					 G_KEY_FILE_DESKTOP_KEY_NAME, NULL, NULL) ? : g_strdup("");
+	c = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					 G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL,
+					 NULL) ? : g_strdup("");
+	k = g_strdup_printf("<b>%s</b>\n%s", n, c);
+	m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
+	gtk_list_store_append(store, &iter);
+	/* *INDENT-OFF* */
+	gtk_list_store_set(store, &iter,
+			XSESS_COL_PIXBUF,	i,
+			XSESS_COL_NAME,		n,
+			XSESS_COL_COMMENT,	c,
+			XSESS_COL_MARKUP,	k,
+			XSESS_COL_LABEL,	l,
+			XSESS_COL_MANAGED,	m,
+			XSESS_COL_ORIGINAL,	m,
+			XSESS_COL_FILENAME,	f,
+			-1);
+	/* *INDENT-ON* */
+	g_free(f);
+	g_free(l);
+	g_free(i);
+	g_free(n);
+	g_free(k);
+	g_key_file_free(entry);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
+			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING);
+
+#if 0
+	if (!strcmp(options.choice, key) ||
+	    ((!strcmp(options.choice, "choose") || !strcmp(options.choice, "default")) &&
+	     !strcmp(options.session, key)
+	    )) {
+		gchar *string;
+
+		/* FIXME: don't do this if the user has made a selection in the
+		 * mean time. */
+		if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
+			GtkTreePath *path = gtk_tree_path_new_from_string(string);
+
+			g_free(string);
+			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view),
+					path, cursor, NULL, FALSE);
+			gtk_tree_path_free(path);
+		}
+	}
+#endif
+	return G_SOURCE_CONTINUE;
+}
+
+GtkListStore *model;
+GtkWidget *view;
+GtkWindow *top;
 
 void
 relax()
@@ -155,6 +578,25 @@ get_data_dirs(int *np)
 	if (np)
 		*np = n;
 	return (xdg_dirs);
+}
+
+gint
+xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, gpointer data)
+{
+	GValue a_v = G_VALUE_INIT;
+	GValue b_v = G_VALUE_INIT;
+	const gchar *astr;
+	const gchar *bstr;
+	gint ret;
+
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), a, XSESS_COL_NAME, &a_v);
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), b, XSESS_COL_NAME, &b_v);
+	astr = g_value_get_string(&a_v);
+	bstr = g_value_get_string(&b_v);
+	ret = g_ascii_strcasecmp(astr, bstr);
+	g_value_unset(&a_v);
+	g_value_unset(&b_v);
+	return (ret);
 }
 
 Bool
@@ -222,7 +664,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	default:
 		return False;
 	}
-	if (options.connectionType != ctype) {
+	if (options.connectionType != FamilyWild && options.connectionType != ctype) {
 		DPRINTF("wrong connection type\n");
 		return False;
 	}
@@ -241,8 +683,8 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 		const gchar *addr;
 		const gchar *name;
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_IPADDR, &addr_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_HOSTNAME, &name_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XDM_COL_IPADDR, &addr_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XDM_COL_HOSTNAME, &name_v);
 		addr = g_value_get_string(&addr_v);
 		name = g_value_get_string(&name_v);
 		if (!strcmp(addr, ipaddr) && !strcmp(name, hostname)) {
@@ -256,14 +698,14 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	if (!valid)
 		gtk_list_store_append(model, &iter);
 	gtk_list_store_set(model, &iter,
-			   COLUMN_HOSTNAME, hostname,
-			   COLUMN_REMOTENAME, remotename,
-			   COLUMN_WILLING, opc,
-			   COLUMN_STATUS, status,
-			   COLUMN_IPADDR, ipaddr,
-			   COLUMN_CTYPE, ctype,
-			   COLUMN_SERVICE, service,
-			   COLUMN_PORT, port,
+			   XDM_COL_HOSTNAME, hostname,
+			   XDM_COL_REMOTENAME, remotename,
+			   XDM_COL_WILLING, opc,
+			   XDM_COL_STATUS, status,
+			   XDM_COL_IPADDR, ipaddr,
+			   XDM_COL_CTYPE, ctype,
+			   XDM_COL_SERVICE, service,
+			   XDM_COL_PORT, port,
 			   -1);
 
 	const char *conntype;
@@ -355,8 +797,8 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	DPRINTF("tooltip is:\n%s\n", tooltip);
 
 	gtk_list_store_set(model, &iter,
-			COLUMN_MARKUP, markup,
-			COLUMN_TOOLTIP, tooltip,
+			XDM_COL_MARKUP, markup,
+			XDM_COL_TOOLTIP, tooltip,
 			-1);
 
 	relax();
@@ -505,7 +947,7 @@ InitXDMCP(char *argv[], int argc)
 	header.version = XDM_PROTOCOL_VERSION;
 	header.opcode = (CARD16) BROADCAST_QUERY;
 	header.length = 1;
-	for (i = 0; i < (int)AuthenticationNames.length; i++)
+	for (i = 0; i < (int) AuthenticationNames.length; i++)
 		header.length += 2 + AuthenticationNames.data[i].length;
 	XdmcpWriteHeader(&broadcastBuffer, &header);
 	XdmcpWriteARRAYofARRAY8(&broadcastBuffer, &AuthenticationNames);
@@ -513,7 +955,7 @@ InitXDMCP(char *argv[], int argc)
 	header.version = XDM_PROTOCOL_VERSION;
 	header.opcode = (CARD16) QUERY;
 	header.length = 1;
-	for (i = 0; i < (int)AuthenticationNames.length; i++)
+	for (i = 0; i < (int) AuthenticationNames.length; i++)
 		header.length += 2 + AuthenticationNames.data[i].length;
 	XdmcpWriteHeader(&directBuffer, &header);
 	XdmcpWriteARRAYofARRAY8(&directBuffer, &AuthenticationNames);
@@ -600,11 +1042,13 @@ InitXDMCP(char *argv[], int argc)
 					memcpy(&ha->addr, ifa_addr, addrlen);
 					if (family == AF_INET) {
 						struct sockaddr_in *sin;
-						sin = (typeof(sin)) &ha->addr;
+
+						sin = (typeof(sin)) & ha->addr;
 						sin->sin_port = htons(XDM_UDP_PORT);
 					} else {
 						struct sockaddr_in6 *sin6;
-						sin6 = (typeof(sin6)) &ha->addr;
+
+						sin6 = (typeof(sin6)) & ha->addr;
 						sin6->sin6_port = htons(XDM_UDP_PORT);
 					}
 					ha->addrlen = addrlen;
@@ -669,19 +1113,25 @@ InitXDMCP(char *argv[], int argc)
 
 				for (ai = result; ai; ai = ai->ai_next) {
 					if (ai->ai_family == AF_INET) {
+						struct sockaddr_in *sin = (typeof(sin)) ai->ai_addr;
+
 						ha = calloc(1, sizeof(*ha));
 						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
 						ha->addrlen = ai->ai_addrlen;
 						ha->sfd = sock4;
-						ha->type = QUERY;
+						ha->type = IN_MULTICAST(sin->sin_addr.s_addr) ?
+						    BROADCAST_QUERY : QUERY;
 						ha->next = hostAddrdb;
 						hostAddrdb = ha;
 					} else if (ai->ai_family == AF_INET6) {
+						struct sockaddr_in6 *sin6 = (typeof(sin6)) ai->ai_addr;
+
 						ha = calloc(1, sizeof(*ha));
 						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
 						ha->addrlen = ai->ai_addrlen;
 						ha->sfd = sock6;
-						ha->type = QUERY;
+						ha->type = IN6_IS_ADDR_MULTICAST(&sin6->sin6_addr) ?
+						    BROADCAST_QUERY : QUERY;
 						ha->next = hostAddrdb;
 						hostAddrdb = ha;
 					}
@@ -839,7 +1289,7 @@ DoAccept(GtkButton *button, gpointer data)
 		return;
 	}
 
-	gtk_tree_model_get_value(model, &iter, COLUMN_WILLING, &willing);
+	gtk_tree_model_get_value(model, &iter, XDM_COL_WILLING, &willing);
 	willingness = g_value_get_int(&willing);
 	g_value_unset(&willing);
 
@@ -860,7 +1310,7 @@ DoAccept(GtkButton *button, gpointer data)
 		return;
 	}
 
-	gtk_tree_model_get_value(model, &iter, COLUMN_CTYPE, &ctype);
+	gtk_tree_model_get_value(model, &iter, XDM_COL_CTYPE, &ctype);
 	connectionType = g_value_get_int(&ctype);
 	g_value_unset(&ctype);
 	if (connectionType != options.connectionType) {
@@ -878,7 +1328,7 @@ DoAccept(GtkButton *button, gpointer data)
 		return;
 	}
 
-	gtk_tree_model_get_value(model, &iter, COLUMN_IPADDR, &ipaddr);
+	gtk_tree_model_get_value(model, &iter, XDM_COL_IPADDR, &ipaddr);
 	ipAddress = g_value_dup_string(&ipaddr);
 	g_value_unset(&ipaddr);
 
@@ -1152,9 +1602,50 @@ GetWindow()
 
 				gtk_table_attach_defaults(GTK_TABLE(login), xsess, 0, 1, 2, 3);
 
-				GtkWidget *sess = gtk_option_menu_new();
+				// GtkWidget *sess = gtk_option_menu_new();
 				// gtk_button_set_label(GTK_BUTTON(sess), GTK_STOCK_PREFERENCES);
 				// gtk_button_set_use_stock(GTK_BUTTON(sess), TRUE);
+
+				/* *INDENT-OFF* */
+				store = gtk_list_store_new(8
+						,G_TYPE_STRING	/* icon */
+						,G_TYPE_STRING	/* Name */
+						,G_TYPE_STRING	/* Comment */
+						,G_TYPE_STRING	/* Name and Comment Markup */
+						,G_TYPE_STRING  /* Label */
+						,G_TYPE_BOOLEAN	/* SessionManaged?  XDE-Managed?  */
+						,G_TYPE_BOOLEAN /* X-XDE-managed original setting */
+						,G_TYPE_STRING	/* the file name */
+					);
+				/* *INDENT-ON* */
+				gtk_tree_sortable_set_default_sort_func(GTK_TREE_SORTABLE(store),
+						xsession_compare_function, NULL, NULL);
+				gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
+						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING);
+				sess = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+
+				GtkCellRenderer *rend;
+
+				// rend = gtk_cell_renderer_toggle_new();
+				// gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), TRUE);
+				// g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), NULL);
+				// gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
+				// gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "active", XSESS_COL_MANAGED);
+
+				rend = gtk_cell_renderer_pixbuf_new();
+				gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 0, 0);
+				gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
+				// gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "icon-name", XSESS_COL_PIXBUF);
+				gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(sess),
+						GTK_CELL_RENDERER(rend),
+						on_render_pixbuf, NULL, NULL);
+
+				rend = gtk_cell_renderer_text_new();
+				gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 5, 0);
+				gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
+				gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "text", XSESS_COL_NAME);
+
+				g_idle_add(on_idle, store);
 
 				gtk_table_attach_defaults(GTK_TABLE(login), sess, 1, 2, 2, 3);
 
@@ -1187,13 +1678,13 @@ GetWindow()
 				    );
 				/* *INDENT-ON* */
 				gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
-						COLUMN_MARKUP, GTK_SORT_ASCENDING);
+						XDM_COL_MARKUP, GTK_SORT_ASCENDING);
 				view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
 				gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
 				gtk_tree_view_set_search_column(GTK_TREE_VIEW(view),
-								COLUMN_HOSTNAME);
+								XDM_COL_HOSTNAME);
 				gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(view),
-								 COLUMN_TOOLTIP);
+								 XDM_COL_TOOLTIP);
 
 				gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(view));
 
@@ -1207,10 +1698,10 @@ GetWindow()
 				GtkTreeViewColumn *column =
 				    gtk_tree_view_column_new_with_attributes(title, renderer,
 									     "markup",
-									     COLUMN_MARKUP, NULL);
+									     XDM_COL_MARKUP, NULL);
 
 				free(title);
-				gtk_tree_view_column_set_sort_column_id(column, COLUMN_HOSTNAME);
+				gtk_tree_view_column_set_sort_column_id(column, XDM_COL_HOSTNAME);
 				gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(column));
 				g_signal_connect(G_OBJECT(view), "row_activated",
 						 G_CALLBACK(on_row_activated), (gpointer) NULL);
