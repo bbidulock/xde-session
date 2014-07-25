@@ -788,7 +788,7 @@ static const char *button_icons[LOGOUT_ACTION_COUNT][3] = {
 	[LOGOUT_ACTION_CHECKPOINT]	= { "gtk-save",		    "gtk-save",			    "gtk-save"			},
 	[LOGOUT_ACTION_SHUTDOWN]	= { "gtk-stop",		    "gtk-stop",			    "gtk-stop"			},
 	[LOGOUT_ACTION_LOGOUT]		= { "gtk-missing-image",    "system-lock-screen",	    "gnome-lock-screen"		},
-	[LOGOUT_ACTION_RESTART]		= { "gtk-quit",		    "system-log-out",		    "gnome-logout"		},
+	[LOGOUT_ACTION_RESTART]		= { "gtk-quit",		    "system-restart",		    "gnome-logout"		},
 	[LOGOUT_ACTION_CANCEL]		= { "gtk-cancel",	    "gtk-cancel",		    "gtk-cancel"		},
 	/* *INDENT-ON* */
 };
