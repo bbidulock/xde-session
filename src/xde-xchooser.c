@@ -922,6 +922,83 @@ on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column
 {
 }
 
+typedef enum {
+	ACTION_POWEROFF,
+	ACTION_REBOOT,
+	ACTION_SUSPEND,
+	ACTION_HIBERNATE,
+	ACTION_HYBRIDSLEEP,
+	ACTION_SWITCHUSER,
+	ACTION_LOGOUT,
+	ACTION_LOGIN,
+	ACTION_CONNECT,
+} ActionResult;
+
+typedef enum {
+	AvailStatusUndef,		/* undefined */
+	AvailStatusUnknown,		/* not known */
+	AvailStatusNa,			/* not available */
+	AvailStatusNo,			/* available not permitted */
+	AvailStatusChallenge,		/* available with password */
+	AvailStatusYes,			/* available and permitted */
+} AvailStatus;
+
+typedef struct {
+	const char *label;
+	const char *comment;
+	const char *icons[3];
+	AvailStatus status;
+} OptionImage;
+
+static OptionImage option_images[] = {
+	/* *INDENT-OFF* */
+	[ACTION_POWEROFF]	= { "Power Off",	"Shutdown the computer.",
+		{ GTK_STOCK_STOP,		"system-shutdown",		"gnome-session-halt"	 },	AvailStatusUndef },
+	[ACTION_REBOOT]		= { "Reboot",		"Reboot the computer.",
+		{ GTK_STOCK_REFRESH,		"system-reboot",		"gnome-session-reboot"	 },	AvailStatusUndef },
+	[ACTION_SUSPEND]	= { "Suspend",		"Suspend the computer.",
+		{ GTK_STOCK_SAVE,		"system-suspend",		"gnome-session-suspend"	 },	AvailStatusUndef },
+	[ACTION_HIBERNATE]	= { "Hibernate",	"Hibernate the computer.",
+		{ GTK_STOCK_SAVE_AS,		"system-hybernate",		"gnome-session-hibernate"},	AvailStatusUndef },
+	[ACTION_HYBRIDSLEEP]	= { "Hybrid Sleep",	"Hybrid sleep the computer.",
+		{ GTK_STOCK_REVERT_TO_SAVED,	"system-suspend-hybernate",	"gnome-session-sleep"	 },	AvailStatusUndef },
+	[ACTION_SWITCHUSER]	= { "Switch User",	"Switch users.",
+		{ GTK_STOCK_QUIT,		"system-switch-user",		"gnome-session-switch"	 },	AvailStatusUndef },
+	[ACTION_LOGOUT]		= { "Logout",		"Logout of current session.",
+		{ GTK_STOCK_DISCONNECT,	"system-log-out",		"gnome-session-logout"	 },	AvailStatusUndef },
+	[ACTION_LOGIN]		= { "Login",		"Log into a session.",
+		{ GTK_STOCK_EXECUTE,		"system-run",			"gnome-session"		 },	AvailStatusUndef },
+	[ACTION_CONNECT]	= { "Connect",		"Connect to a display manager.",
+		{ GTK_STOCK_CONNECT,		GTK_STOCK_CONNECT,		"gnome-remote-desktop"	 },	AvailStatusUndef },
+	/* *INDENT-ON* */
+};
+
+GtkWidget *
+get_action_menu(void)
+{
+	GtkIconTheme *theme = gtk_icon_theme_get_default();
+	GtkWidget *menu;
+	OptionImage *im;
+	int i, j;
+
+	menu = gtk_menu_new();
+	for (i = 0, im = option_images; i < sizeof(option_images) / sizeof(option_images[0]); i++, im++) {
+		GtkWidget *image = NULL, *item;
+
+		for (j = 1; j < 3; j++)
+			if (im->icons[j] && gtk_icon_theme_has_icon(theme, im->icons[j])
+			    && (image = gtk_image_new_from_icon_name(im->icons[j], GTK_ICON_SIZE_MENU)))
+				break;
+		if (!image && im->icons[0])
+			image = gtk_image_new_from_stock(im->icons[0], GTK_ICON_SIZE_MENU);
+		item = gtk_image_menu_item_new_with_label(im->label);
+		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), image);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	}
+	return (menu);
+}
+
+
 GtkWidget *user;
 GtkWidget *pass;
 
@@ -1003,9 +1080,14 @@ GetWindow()
 			GtkWidget *button;
 
 			button = gtk_option_menu_new();
-			gtk_button_set_label(GTK_BUTTON(button), GTK_STOCK_EXECUTE);
+			gtk_button_set_label(GTK_BUTTON(button), GTK_STOCK_JUMP_TO);
 			gtk_button_set_use_stock(GTK_BUTTON(button), TRUE);
 			gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
+
+			button = gtk_option_menu_new();
+			gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
+			gtk_option_menu_set_menu(GTK_OPTION_MENU(button), get_action_menu());
+			gtk_option_menu_set_history(GTK_OPTION_MENU(button), ACTION_LOGIN);
 
 #if 0
 			button = gtk_option_menu_new();
@@ -1013,11 +1095,6 @@ GetWindow()
 			gtk_button_set_use_stock(GTK_BUTTON(button), TRUE);
 			gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
 #endif
-
-			button = gtk_option_menu_new();
-			gtk_button_set_label(GTK_BUTTON(button), GTK_STOCK_JUMP_TO);
-			gtk_button_set_use_stock(GTK_BUTTON(button), TRUE);
-			gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
 
 		}
 		{
