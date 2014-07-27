@@ -365,7 +365,7 @@ test_login_functions()
 	int ret;
 	
 	seat = getenv("XDG_SEAT") ?: "seat0";
-	ret = sd_seat_can_multi_session(seat);
+	ret = sd_seat_can_multi_session(NULL);
 	if (ret > 0) {
 		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusYes;
 		DPRINTF("%s: mutisession: true\n", seat);
@@ -485,6 +485,21 @@ get_user_menu(void)
 	gtk_main_quit();
 	/* for now */
 	return (menu);
+}
+
+int
+fill_session_store(GtkListStore *sess)
+{
+	const char *seat;
+	char **sessions = NULL, **s;
+	int ret;
+
+	seat = getenv("XDG_SEAT") ? : "seat0";
+	ret = sd_seat_get_sessions(seat, &sessions, NULL, NULL);
+	(void) ret;
+	(void) s;
+
+	return (0);
 }
 
 void
@@ -906,7 +921,7 @@ at_pointer(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer user)
 	*push_in = TRUE;
 }
 
-static void
+void
 on_switchuser(GtkButton *button, gpointer data)
 {
 	LogoutActionResult action = (typeof(action)) (long) data;
@@ -1032,17 +1047,45 @@ make_logout_choice()
 	int i;
 
 	for (i = 0; i < LOGOUT_ACTION_COUNT; i++) {
-		b = buttons[i] = gtk_button_new();
-		gtk_container_set_border_width(GTK_CONTAINER(b), BU_BORDER_WIDTH);
-		gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
-		gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
-		im = get_icon(GTK_ICON_SIZE_BUTTON, button_icons[i], 3);
-		gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(im));
-		gtk_button_set_label(GTK_BUTTON(b), button_labels[i]);
 		if (i == LOGOUT_ACTION_SWITCHUSER) {
-			g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_switchuser),
-					(gpointer) (long) i);
+			GtkListStore *sess;
+
+			/* *INDENT-OFF* */
+			sess = gtk_list_store_new(4
+					,G_TYPE_STRING /* icon-name */
+					,G_TYPE_INT    /* vt number */
+					,G_TYPE_STRING /* session name */
+					,G_TYPE_STRING /* user */
+					);
+			/* *INDENT-ON* */
+			b = buttons[i] = gtk_combo_box_new_with_model(GTK_TREE_MODEL(sess));
+
+			GtkCellRenderer *rend;
+
+			rend = gtk_cell_renderer_pixbuf_new();
+			gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 0, 0);
+			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), FALSE);
+			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), "icon-name", 0);
+
+			rend = gtk_cell_renderer_text_new();
+			gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 5, 0);
+			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), FALSE);
+			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), "text", 1);
+
+			rend = gtk_cell_renderer_text_new();
+			gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 0, 0);
+			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), FALSE);
+			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), "text", 3);
+
+			fill_session_store(sess);
 		} else {
+			b = buttons[i] = gtk_button_new();
+			gtk_container_set_border_width(GTK_CONTAINER(b), BU_BORDER_WIDTH);
+			gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
+			gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+			im = get_icon(GTK_ICON_SIZE_BUTTON, button_icons[i], 3);
+			gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(im));
+			gtk_button_set_label(GTK_BUTTON(b), button_labels[i]);
 			g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_clicked),
 					 (gpointer) (long) i);
 		}

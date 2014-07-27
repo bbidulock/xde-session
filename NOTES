@@ -1,0 +1,63 @@
+NOTES
+=====
+:Author: Brian Bidulock
+:Email: <bidulock@openss7.org>
+:Date: 2014-07-24T05:41:13+0000
+:Revision: @VERSION@
+
+
+XDM Notes
+---------
+
+To get good systemd and xdm interworking use the xdm available at
+https:github.com/bbidulock/xdm.
+
+Indirect Query
+~~~~~~~~~~~~~~
+
+The processing by XDM of indirect queries is as follows:
+
+ Display                                    Manager
+ -------                                    -------
+ IndirectQuery ---------------------------->
+ 
+        <---------------------------------- Willing
+ 
+ Request ---------------------------------->
+ 
+        <---------------------------------- Accept
+ 
+ Manage ----------------------------------->
+ 
+        <================================== XOpenDisplay
+ 
+                 user selects host
+               manager remembers slection
+ 
+        <================================== XCloseDisplay
+ 
+ IndirectQuery ---------------------------->
+ 
+                         <----------------- ForwardQuery
+                 to selected manager
+ 
+        <------------ Willing
+ 
+ Request ----------->
+ 
+        <------------ Accept
+ 
+ Manage ------------>
+ 
+        <============ XOpenDisplay
+
+NOTE: There is no reason why the chooser could not provide a login
+screen when it first opens the display as well as choices.
+
+Query
+~~~~~
+
+
+
+
+# vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:

@@ -82,7 +82,7 @@ struct Options options = {
 	.dryrun = False,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
-	.connectionType = FamilyWild,
+	.connectionType = FamilyInternet6,
 	.banner = NULL,		/* "/usr/lib/X11/xdm/banner.png" */
 	.welcome = NULL,
 };
@@ -664,7 +664,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	default:
 		return False;
 	}
-	if (options.connectionType != FamilyWild && options.connectionType != ctype) {
+	if (options.connectionType != FamilyInternet6 && options.connectionType != ctype) {
 		DPRINTF("wrong connection type\n");
 		return False;
 	}
@@ -1304,7 +1304,7 @@ DoAccept(GtkButton *button, gpointer data)
 	gtk_tree_model_get_value(model, &iter, XDM_COL_CTYPE, &ctype);
 	connectionType = g_value_get_int(&ctype);
 	g_value_unset(&ctype);
-	if (connectionType != options.connectionType) {
+	if (options.connectionType != FamilyInternet6 && connectionType != options.connectionType) {
 		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
 								    GTK_DIALOG_DESTROY_WITH_PARENT,
 								    GTK_MESSAGE_ERROR,
@@ -1363,6 +1363,20 @@ on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column
 {
 }
 
+static void
+on_user_activate(GtkEntry *user, gpointer data)
+{
+	GtkEntry *pass = data;
+	(void) pass;
+}
+
+static void
+on_pass_activate(GtkEntry *pass, gpointer data)
+{
+	GtkEntry *user = data;
+	(void) user;
+}
+
 typedef enum {
 	ACTION_POWEROFF,
 	ACTION_REBOOT,
@@ -1408,7 +1422,7 @@ static OptionImage option_images[] = {
 	[ACTION_LOGOUT]		= { "Logout",		"Logout of current session.",
 		{ GTK_STOCK_DISCONNECT,	"system-log-out",		"gnome-session-logout"	 },	AvailStatusUndef },
 	[ACTION_LOGIN]		= { "Login",		"Log into a session.",
-		{ GTK_STOCK_EXECUTE,		"system-run",			"gnome-session"		 },	AvailStatusUndef },
+		{ GTK_STOCK_OPEN,		"notanicon",			"gnome-session"		 },	AvailStatusUndef },
 	[ACTION_CONNECT]	= { "Connect",		"Connect to a display manager.",
 		{ GTK_STOCK_CONNECT,		GTK_STOCK_CONNECT,		"gnome-remote-desktop"	 },	AvailStatusUndef },
 	/* *INDENT-ON* */
@@ -1472,274 +1486,278 @@ GetWindow()
 
 	vbox = gtk_vbox_new(FALSE, 0);
 	gtk_container_set_border_width(GTK_CONTAINER(vbox), 0);
-	gtk_container_add(GTK_CONTAINER(win), GTK_WIDGET(vbox));
-	{
-		GtkWidget *lab = gtk_label_new(NULL);
-		gchar *markup;
+	gtk_container_add(GTK_CONTAINER(win), vbox);
 
-		markup = g_markup_printf_escaped
-		    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
-		gtk_label_set_markup(GTK_LABEL(lab), markup);
-		gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
-		gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
-		g_free(markup);
-		gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(lab), FALSE, TRUE, 0);
-	}
-	{
-		GtkWidget *tab = gtk_table_new(1, 2, FALSE);
+	GtkWidget *lab = gtk_label_new(NULL);
+	gchar *markup;
 
-		gtk_table_set_col_spacings(GTK_TABLE(tab), 5);
-		gtk_box_pack_end(GTK_BOX(vbox), GTK_WIDGET(tab), TRUE, TRUE, 0);
-		{
-			GtkWidget *vbox2 = gtk_vbox_new(FALSE, 0);
+	markup = g_markup_printf_escaped
+	    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
+	gtk_label_set_markup(GTK_LABEL(lab), markup);
+	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
+	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
+	g_free(markup);
+	gtk_box_pack_start(GTK_BOX(vbox), lab, FALSE, TRUE, 0);
 
-			gtk_table_attach_defaults(GTK_TABLE(tab), GTK_WIDGET(vbox2), 0, 1, 0, 1);
+	GtkWidget *tab = gtk_table_new(1, 2, FALSE);
 
-			GtkWidget *bin = gtk_frame_new(NULL);
+	gtk_table_set_col_spacings(GTK_TABLE(tab), 5);
+	gtk_box_pack_end(GTK_BOX(vbox), tab, TRUE, TRUE, 0);
 
-			gtk_frame_set_shadow_type(GTK_FRAME(bin), GTK_SHADOW_ETCHED_IN);
-			gtk_container_set_border_width(GTK_CONTAINER(bin), 0);
-			gtk_box_pack_start(GTK_BOX(vbox2), bin, TRUE, TRUE, 4);
+	GtkWidget *vbox2 = gtk_vbox_new(FALSE, 0);
 
-			GtkWidget *pan = gtk_frame_new(NULL);
+	gtk_table_attach_defaults(GTK_TABLE(tab), vbox2, 0, 1, 0, 1);
 
-			gtk_frame_set_shadow_type(GTK_FRAME(pan), GTK_SHADOW_NONE);
-			gtk_container_set_border_width(GTK_CONTAINER(pan), 15);
-			gtk_container_add(GTK_CONTAINER(bin), GTK_WIDGET(pan));
+	GtkWidget *bin = gtk_frame_new(NULL);
 
-			GtkWidget *img = gtk_image_new_from_file(options.banner);
+	gtk_frame_set_shadow_type(GTK_FRAME(bin), GTK_SHADOW_ETCHED_IN);
+	gtk_container_set_border_width(GTK_CONTAINER(bin), 0);
+	gtk_box_pack_start(GTK_BOX(vbox2), bin, TRUE, TRUE, 4);
 
-			gtk_container_add(GTK_CONTAINER(pan), GTK_WIDGET(img));
+	GtkWidget *pan = gtk_frame_new(NULL);
 
-			GtkWidget *bbox = gtk_hbutton_box_new();
+	gtk_frame_set_shadow_type(GTK_FRAME(pan), GTK_SHADOW_NONE);
+	gtk_container_set_border_width(GTK_CONTAINER(pan), 15);
+	gtk_container_add(GTK_CONTAINER(bin), pan);
 
-			gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_SPREAD);
-			//gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_EDGE);
-			gtk_box_set_spacing(GTK_BOX(bbox), 2);
-			gtk_box_pack_end(GTK_BOX(vbox2), GTK_WIDGET(bbox), FALSE, TRUE, 4);
+	GtkWidget *img;
 
-			GtkWidget *button;
+	if (options.banner && (img = gtk_image_new_from_file(options.banner)))
+		gtk_container_add(GTK_CONTAINER(pan), img);
 
-			button = gtk_option_menu_new();
-			gtk_button_set_label(GTK_BUTTON(button), GTK_STOCK_JUMP_TO);
-			gtk_button_set_use_stock(GTK_BUTTON(button), TRUE);
-			gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
+	GtkWidget *bbox = gtk_hbutton_box_new();
 
-			button = gtk_option_menu_new();
-			gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
-			gtk_option_menu_set_menu(GTK_OPTION_MENU(button), get_action_menu());
-			gtk_option_menu_set_history(GTK_OPTION_MENU(button), ACTION_LOGIN);
+	gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_SPREAD);
+	// gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_EDGE);
+	gtk_box_set_spacing(GTK_BOX(bbox), 2);
+	gtk_box_pack_end(GTK_BOX(vbox2), bbox, FALSE, TRUE, 4);
+
+	GtkWidget *button;
+
+	button = gtk_option_menu_new();
+	gtk_button_set_label(GTK_BUTTON(button), GTK_STOCK_JUMP_TO);
+	gtk_button_set_use_stock(GTK_BUTTON(button), TRUE);
+	gtk_container_add(GTK_CONTAINER(bbox), button);
+
+	button = gtk_option_menu_new();
+	gtk_container_add(GTK_CONTAINER(bbox), button);
+	gtk_option_menu_set_menu(GTK_OPTION_MENU(button), get_action_menu());
+	gtk_option_menu_set_history(GTK_OPTION_MENU(button), ACTION_LOGIN);
 
 #if 0
-			button = gtk_option_menu_new();
-			gtk_button_set_label(GTK_BUTTON(button), GTK_STOCK_PREFERENCES);
-			gtk_button_set_use_stock(GTK_BUTTON(button), TRUE);
-			gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
+	button = gtk_option_menu_new();
+	gtk_button_set_label(GTK_BUTTON(button), GTK_STOCK_PREFERENCES);
+	gtk_button_set_use_stock(GTK_BUTTON(button), TRUE);
+	gtk_container_add(GTK_CONTAINER(bbox), button);
 #endif
 
-		}
-		{
-			GtkWidget *vbox2 = gtk_vbox_new(FALSE, 0);
+	vbox2 = gtk_vbox_new(FALSE, 0);
 
-			gtk_table_attach_defaults(GTK_TABLE(tab), GTK_WIDGET(vbox2), 1, 2, 0, 1);
-			{
-				GtkWidget *inp = gtk_frame_new(NULL);
+	gtk_table_attach_defaults(GTK_TABLE(tab), vbox2, 1, 2, 0, 1);
 
-				gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
-				gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
+	GtkWidget *inp = gtk_frame_new(NULL);
 
-				gtk_box_pack_start(GTK_BOX(vbox2), GTK_WIDGET(inp), FALSE, FALSE, 4);
+	gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
+	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
 
-				GtkWidget *login = gtk_table_new(3, 2, FALSE);
+	gtk_box_pack_start(GTK_BOX(vbox2), inp, FALSE, FALSE, 4);
 
-				gtk_container_set_border_width(GTK_CONTAINER(login), 5);
-				gtk_table_set_col_spacings(GTK_TABLE(login), 5);
-				gtk_table_set_row_spacings(GTK_TABLE(login), 5);
-				gtk_table_set_col_spacing(GTK_TABLE(login), 0, 0);
-				gtk_container_add(GTK_CONTAINER(inp), login);
+	GtkWidget *login = gtk_table_new(3, 3, TRUE);
 
-				GtkWidget *uname = gtk_label_new(NULL);
-				gtk_label_set_markup(GTK_LABEL(uname), "<span font=\"Liberation Sans 9\"><b>Username:</b></span>");
-				gtk_misc_set_alignment(GTK_MISC(uname), 1.0, 0.5);
-				gtk_misc_set_padding(GTK_MISC(uname), 5, 2);
+	gtk_container_set_border_width(GTK_CONTAINER(login), 5);
+	gtk_table_set_col_spacings(GTK_TABLE(login), 5);
+	gtk_table_set_row_spacings(GTK_TABLE(login), 5);
+	gtk_table_set_col_spacing(GTK_TABLE(login), 0, 0);
+	gtk_container_add(GTK_CONTAINER(inp), login);
 
-				gtk_table_attach_defaults(GTK_TABLE(login), uname, 0, 1, 0, 1);
+	GtkWidget *uname = gtk_label_new(NULL);
+	gtk_label_set_markup(GTK_LABEL(uname), "<span font=\"Liberation Sans 9\"><b>Username:</b></span>");
+	gtk_misc_set_alignment(GTK_MISC(uname), 1.0, 0.5);
+	gtk_misc_set_padding(GTK_MISC(uname), 5, 2);
+	gtk_table_attach_defaults(GTK_TABLE(login), uname, 0, 1, 0, 1);
 
-				user = gtk_entry_new();
-				gtk_entry_set_visibility(GTK_ENTRY(user), TRUE);
-				gtk_widget_set_can_default(GTK_WIDGET(user), TRUE);
-				gtk_widget_set_can_focus(GTK_WIDGET(user), TRUE);
+	user = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(user), 10);
+	gtk_entry_set_visibility(GTK_ENTRY(user), TRUE);
+	gtk_widget_set_can_default(user, TRUE);
+	gtk_widget_set_can_focus(user, TRUE);
+	gtk_table_attach_defaults(GTK_TABLE(login), user, 1, 2, 0, 1);
 
-				gtk_table_attach_defaults(GTK_TABLE(login), user, 1, 2, 0, 1);
+	GtkWidget *pword = gtk_label_new(NULL);
+	gtk_label_set_markup(GTK_LABEL(pword), "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
+	gtk_misc_set_alignment(GTK_MISC(pword), 1.0, 0.5);
+	gtk_misc_set_padding(GTK_MISC(pword), 5, 2);
+	gtk_table_attach_defaults(GTK_TABLE(login), pword, 0, 1, 1, 2);
 
-				GtkWidget *pword = gtk_label_new(NULL);
-				gtk_label_set_markup(GTK_LABEL(pword), "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
-				gtk_misc_set_alignment(GTK_MISC(pword), 1.0, 0.5);
-				gtk_misc_set_padding(GTK_MISC(pword), 5, 2);
+	pass = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(pass), 10);
+	gtk_entry_set_visibility(GTK_ENTRY(pass), FALSE);
+	gtk_widget_set_can_default(pass, TRUE);
+	gtk_widget_set_can_focus(pass, TRUE);
+	gtk_table_attach_defaults(GTK_TABLE(login), pass, 1, 2, 1, 2);
 
-				gtk_table_attach_defaults(GTK_TABLE(login), pword, 0, 1, 1, 2);
+	GtkWidget *xsess = gtk_label_new(NULL);
 
-				pass = gtk_entry_new();
-				gtk_entry_set_visibility(GTK_ENTRY(pass), FALSE);
-				gtk_widget_set_can_default(GTK_WIDGET(pass), TRUE);
-				gtk_widget_set_can_focus(GTK_WIDGET(pass), TRUE);
+	gtk_label_set_markup(GTK_LABEL(xsess),
+			     "<span font=\"Liberation Sans 9\"><b>XSession:</b></span>");
+	gtk_misc_set_alignment(GTK_MISC(xsess), 1.0, 0.5);
+	gtk_misc_set_padding(GTK_MISC(xsess), 5, 2);
 
-				gtk_table_attach_defaults(GTK_TABLE(login), pass, 1, 2, 1, 2);
+	gtk_table_attach_defaults(GTK_TABLE(login), xsess, 0, 1, 2, 3);
 
-				GtkWidget *xsess = gtk_label_new(NULL);
-				gtk_label_set_markup(GTK_LABEL(xsess), "<span font=\"Liberation Sans 9\"><b>XSession:</b></span>");
-				gtk_misc_set_alignment(GTK_MISC(xsess), 1.0, 0.5);
-				gtk_misc_set_padding(GTK_MISC(xsess), 5, 2);
+	// GtkWidget *sess = gtk_option_menu_new();
+	// gtk_button_set_label(GTK_BUTTON(sess), GTK_STOCK_PREFERENCES);
+	// gtk_button_set_use_stock(GTK_BUTTON(sess), TRUE);
 
-				gtk_table_attach_defaults(GTK_TABLE(login), xsess, 0, 1, 2, 3);
+	/* *INDENT-OFF* */
+	store = gtk_list_store_new(8
+			,G_TYPE_STRING	/* icon */
+			,G_TYPE_STRING	/* Name */
+			,G_TYPE_STRING	/* Comment */
+			,G_TYPE_STRING	/* Name and Comment Markup */
+			,G_TYPE_STRING  /* Label */
+			,G_TYPE_BOOLEAN	/* SessionManaged?  XDE-Managed?  */
+			,G_TYPE_BOOLEAN /* X-XDE-managed original setting */
+			,G_TYPE_STRING	/* the file name */
+		);
+	/* *INDENT-ON* */
 
-				// GtkWidget *sess = gtk_option_menu_new();
-				// gtk_button_set_label(GTK_BUTTON(sess), GTK_STOCK_PREFERENCES);
-				// gtk_button_set_use_stock(GTK_BUTTON(sess), TRUE);
-
-				/* *INDENT-OFF* */
-				store = gtk_list_store_new(8
-						,G_TYPE_STRING	/* icon */
-						,G_TYPE_STRING	/* Name */
-						,G_TYPE_STRING	/* Comment */
-						,G_TYPE_STRING	/* Name and Comment Markup */
-						,G_TYPE_STRING  /* Label */
-						,G_TYPE_BOOLEAN	/* SessionManaged?  XDE-Managed?  */
-						,G_TYPE_BOOLEAN /* X-XDE-managed original setting */
-						,G_TYPE_STRING	/* the file name */
-					);
-				/* *INDENT-ON* */
-				gtk_tree_sortable_set_default_sort_func(GTK_TREE_SORTABLE(store),
+	gtk_tree_sortable_set_default_sort_func(GTK_TREE_SORTABLE(store),
 						xsession_compare_function, NULL, NULL);
-				gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
-						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING);
-				sess = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
+					     GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
+					     GTK_SORT_ASCENDING);
+	GtkTreeIter iter;
+	gtk_list_store_append(store, &iter);
+	gtk_list_store_set(store, &iter,
+			XSESS_COL_PIXBUF, "",
+			XSESS_COL_NAME, "(Default)",
+			XSESS_COL_COMMENT, "",
+			XSESS_COL_MARKUP, "",
+			XSESS_COL_LABEL, "default",
+			XSESS_COL_MANAGED, FALSE,
+			XSESS_COL_ORIGINAL, FALSE,
+			XSESS_COL_FILENAME, "",
+			-1);
 
-				GtkCellRenderer *rend;
+	sess = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
 
-				// rend = gtk_cell_renderer_toggle_new();
-				// gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), TRUE);
-				// g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), NULL);
-				// gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
-				// gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "active", XSESS_COL_MANAGED);
+	GtkCellRenderer *rend;
 
-				rend = gtk_cell_renderer_pixbuf_new();
-				gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 0, 0);
-				gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
-				// gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "icon-name", XSESS_COL_PIXBUF);
-				gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(sess),
-						GTK_CELL_RENDERER(rend),
-						on_render_pixbuf, NULL, NULL);
+	// rend = gtk_cell_renderer_toggle_new();
+	// gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), 
+	// TRUE);
+	// g_signal_connect(G_OBJECT(rend), "toggled",
+	// G_CALLBACK(on_managed_toggle), NULL);
+	// gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess),
+	// GTK_CELL_RENDERER(rend), FALSE);
+	// gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess),
+	// GTK_CELL_RENDERER(rend), "active", XSESS_COL_MANAGED);
 
-				rend = gtk_cell_renderer_text_new();
-				gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 5, 0);
-				gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
-				gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "text", XSESS_COL_NAME);
+	rend = gtk_cell_renderer_pixbuf_new();
+	gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 0, 0);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
+	// gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess),
+	// GTK_CELL_RENDERER(rend), "icon-name", XSESS_COL_PIXBUF);
+	gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(sess),
+					   GTK_CELL_RENDERER(rend), on_render_pixbuf, NULL, NULL);
 
-				g_idle_add(on_idle, store);
+	rend = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 5, 0);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
+	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "text",
+				      XSESS_COL_NAME);
 
-				gtk_table_attach_defaults(GTK_TABLE(login), sess, 1, 2, 2, 3);
+	g_idle_add(on_idle, store);
 
-				// g_signal_connect(G_OBJECT(user), "activate", G_CALLBACK(on_user_activate), pass);
-				// g_signal_connect(G_OBJECT(pass), "activate", G_CALLBACK(on_pass_activate), user);
+	gtk_table_attach_defaults(GTK_TABLE(login), sess, 1, 2, 2, 3);
 
-			}
-			{
-				GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
+	g_signal_connect(G_OBJECT(user), "activate", G_CALLBACK(on_user_activate), pass);
+	g_signal_connect(G_OBJECT(pass), "activate", G_CALLBACK(on_pass_activate), user);
 
-				gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw),
-								    GTK_SHADOW_ETCHED_IN);
-				gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
-							       GTK_POLICY_NEVER,
-							       GTK_POLICY_AUTOMATIC);
-				gtk_box_pack_start(GTK_BOX(vbox2), GTK_WIDGET(sw), TRUE, TRUE, 4);
+	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
 
-				/* *INDENT-OFF* */
-				model = gtk_list_store_new(10
-						,GTK_TYPE_STRING	/* hostname */
-						,GTK_TYPE_STRING	/* remotename */
-						,GTK_TYPE_INT		/* willing */
-						,GTK_TYPE_STRING	/* status */
-						,GTK_TYPE_STRING	/* IP Address */
-						,GTK_TYPE_INT		/* connection type */
-						,GTK_TYPE_STRING	/* service */
-						,GTK_TYPE_INT		/* port */
-						,GTK_TYPE_STRING	/* markup */
-						,GTK_TYPE_STRING	/* tooltip */
-				    );
-				/* *INDENT-ON* */
-				gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
-						XDM_COL_MARKUP, GTK_SORT_ASCENDING);
-				view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
-				gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
-				gtk_tree_view_set_search_column(GTK_TREE_VIEW(view),
-								XDM_COL_HOSTNAME);
-				gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(view),
-								 XDM_COL_TOOLTIP);
+	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
+				       GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+	gtk_box_pack_start(GTK_BOX(vbox2), sw, TRUE, TRUE, 4);
 
-				gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(view));
+	/* *INDENT-OFF* */
+	model = gtk_list_store_new(10
+			,GTK_TYPE_STRING	/* hostname */
+			,GTK_TYPE_STRING	/* remotename */
+			,GTK_TYPE_INT		/* willing */
+			,GTK_TYPE_STRING	/* status */
+			,GTK_TYPE_STRING	/* IP Address */
+			,GTK_TYPE_INT		/* connection type */
+			,GTK_TYPE_STRING	/* service */
+			,GTK_TYPE_INT		/* port */
+			,GTK_TYPE_STRING	/* markup */
+			,GTK_TYPE_STRING	/* tooltip */
+	    );
+	/* *INDENT-ON* */
 
-				int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
-				char *title = calloc(len, sizeof(*title));
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
+					     XDM_COL_MARKUP, GTK_SORT_ASCENDING);
+	view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
+	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
+	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), XDM_COL_HOSTNAME);
+	gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(view), XDM_COL_TOOLTIP);
 
-				strncpy(title, "XDCMP Host Menu from ", len);
-				strncat(title, hostname, len);
+	gtk_container_add(GTK_CONTAINER(sw), view);
 
-				GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-				GtkTreeViewColumn *column =
-				    gtk_tree_view_column_new_with_attributes(title, renderer,
+	int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
+	char *title = calloc(len, sizeof(*title));
+
+	strncpy(title, "XDCMP Host Menu from ", len);
+	strncat(title, hostname, len);
+
+	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(title, renderer,
 									     "markup",
 									     XDM_COL_MARKUP, NULL);
 
-				free(title);
-				gtk_tree_view_column_set_sort_column_id(column, XDM_COL_HOSTNAME);
-				gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(column));
-				g_signal_connect(G_OBJECT(view), "row_activated",
-						 G_CALLBACK(on_row_activated), (gpointer) NULL);
+	free(title);
+	gtk_tree_view_column_set_sort_column_id(column, XDM_COL_HOSTNAME);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(column));
+	g_signal_connect(G_OBJECT(view), "row_activated",
+			 G_CALLBACK(on_row_activated), (gpointer) NULL);
 
-				// gtk_widget_set_size_request(GTK_WIDGET(sw), -1, 300);
-			}
-			{
-				GtkWidget *bbox = gtk_hbutton_box_new();
+	// gtk_widget_set_size_request(sw, -1, 300);
 
-				gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_SPREAD);
-				//gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_EDGE);
-				gtk_box_set_spacing(GTK_BOX(bbox), 2);
-				gtk_box_pack_end(GTK_BOX(vbox2), GTK_WIDGET(bbox), FALSE, TRUE, 4);
+	bbox = gtk_hbutton_box_new();
 
-				GtkWidget *button;
+	gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_SPREAD);
+	// gtk_button_box_set_layout(GTK_BUTTON_BOX(bbox), GTK_BUTTONBOX_EDGE);
+	gtk_box_set_spacing(GTK_BOX(bbox), 2);
+	gtk_box_pack_end(GTK_BOX(vbox2), bbox, FALSE, TRUE, 4);
 
-				button = gtk_button_new_from_stock(GTK_STOCK_REFRESH);
-				g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(DoPing),
-						 (gpointer) win);
-				gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
+	button = gtk_button_new_from_stock(GTK_STOCK_REFRESH);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(DoPing), (gpointer) win);
+	gtk_container_add(GTK_CONTAINER(bbox), button);
 
-				button = gtk_button_new_from_stock(GTK_STOCK_QUIT);
-				g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(DoCancel),
-						 (gpointer) win);
-				gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
+	button = gtk_button_new_from_stock(GTK_STOCK_QUIT);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(DoCancel), (gpointer) win);
+	gtk_container_add(GTK_CONTAINER(bbox), button);
 
-				button = gtk_button_new_from_stock(GTK_STOCK_CONNECT);
-				g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(DoAccept),
-						 (gpointer) win);
-				gtk_container_add(GTK_CONTAINER(bbox), GTK_WIDGET(button));
+	button = gtk_button_new_from_stock(GTK_STOCK_CONNECT);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(DoAccept), (gpointer) win);
+	gtk_container_add(GTK_CONTAINER(bbox), button);
 
-			}
-		}
-	}
-	// gtk_window_set_default_size(GTK_WINDOW(win), -1, 400);
+	gtk_window_set_default_size(GTK_WINDOW(win), -1, 300);
 
+	/* most of this is just in case override-redirect fails */
 	gtk_window_set_focus_on_map(GTK_WINDOW(win), TRUE);
 	gtk_window_set_accept_focus(GTK_WINDOW(win), TRUE);
 	gtk_window_set_keep_above(GTK_WINDOW(win), TRUE);
 	gtk_window_set_modal(GTK_WINDOW(win), TRUE);
 	gtk_window_stick(GTK_WINDOW(win));
 	gtk_window_deiconify(GTK_WINDOW(win));
-	gtk_widget_show_all(GTK_WIDGET(win));
-	gtk_widget_show_now(GTK_WIDGET(win));
+	gtk_widget_show_all(win);
+	gtk_widget_show_now(win);
 	relax();
-	gtk_widget_grab_default(GTK_WIDGET(user));
-	gtk_widget_grab_focus(GTK_WIDGET(user));
+	gtk_widget_grab_default(user);
+	gtk_widget_grab_focus(user);
 	return GTK_WINDOW(win);
 }
 

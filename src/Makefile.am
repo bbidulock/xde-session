@@ -13,7 +13,8 @@ bin_PROGRAMS = \
 	xde-xlogin \
         xde-xsession \
 	xde-login \
-	test-login
+	test-login \
+	test-root
 
 
 xde_autostart_CPPFLAGS = -DNAME=\"xde-autostart\"
@@ -74,4 +75,9 @@ test_login_CPPFLAGS = -DNAME=\"test-login\"
 test_login_CFLAGS = $(AM_CFLAGS) $(SYSTEMD_CFLAGS)
 test_login_LDFLAGS = $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 test_login_SOURCES = test-login.c xde-xsession.h
+
+test_root_CPPFLAGS = -DNAME=\"test-root\"
+test_root_CFLAGS = $(AM_CFLAGS) $(SYSTEMD_CFLAGS)
+test_root_LDFLAGS = $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+test_root_SOURCES = test-root.c
 
