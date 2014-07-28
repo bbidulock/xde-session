@@ -82,6 +82,7 @@ typedef struct {
 	char *choice;
 	Bool usexde;
 	unsigned int timeout;
+	GKeyFile *dmrc;
 } Options;
 
 Options options = {
@@ -104,6 +105,7 @@ Options options = {
 	.choice = NULL,
 	.usexde = False,
 	.timeout = 15,
+	.dmrc = NULL,
 };
 
 typedef enum {
@@ -620,12 +622,25 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 
 		if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
 			if ((f = fopen(file, "w"))) {
-				fprintf(f, "%s\n", label);
+				fprintf(f, "%s\n", label ? : "");
 				gtk_widget_set_sensitive(buttons[1], FALSE);
 				gtk_widget_set_sensitive(buttons[2], FALSE);
 				gtk_widget_set_sensitive(buttons[3], TRUE);
 				fclose(f);
 			}
+		}
+		if (label && label[0] && options.dmrc) {
+			char *dmrc;
+
+			len = strlen(home) + strlen("/.dmrc");
+			dmrc = calloc(len + 1, sizeof(*dmrc));
+			strncpy(dmrc, home, len);
+			strncat(dmrc, "/.dmrc", len);
+
+			g_key_file_set_string(options.dmrc, "Desktop", "Session", label);
+			g_key_file_save_to_file(options.dmrc, dmrc, NULL);
+
+			free(dmrc);
 		}
 
 		g_value_unset(&label_v);
@@ -884,6 +899,19 @@ create_session(const char *label, GKeyFile *session)
 				fprintf(f, "%s\n", options.session ? : "");
 				fclose(f);
 			}
+		}
+		if (options.session && options.dmrc) {
+			char *dmrc;
+
+			len = strlen(home) + strlen("/.dmrc");
+			dmrc = calloc(len + 1, sizeof(*dmrc));
+			strncpy(dmrc, home, len);
+			strncat(dmrc, "/.dmrc", len);
+
+			g_key_file_set_string(options.dmrc, "Desktop", "Session", options.session);
+			g_key_file_save_to_file(options.dmrc, dmrc, NULL);
+
+			free(dmrc);
 		}
 	}
 
@@ -1434,16 +1462,44 @@ set_default_session(void)
 	int i, n = 0;
 	static const char *session = "/xde/default";
 	static const char *current = "/xde/current";
+	static const char *dmrc = "/.dmrc";
+	const char *home = getenv("HOME") ? : ".";
 
 	free(options.session);
 	options.session = NULL;
 	free(options.current);
 	options.current = NULL;
 
-	if (!(xdg_dirs = get_config_dirs(&n)) || !n)
-		return;
-
 	file = calloc(PATH_MAX + 1, sizeof(*file));
+	strncpy(file, home, PATH_MAX);
+	strncat(file, dmrc, PATH_MAX);
+
+	if (!options.dmrc)
+		options.dmrc = g_key_file_new();
+	if (options.dmrc) {
+		if (g_key_file_load_from_file(options.dmrc, file,
+					      G_KEY_FILE_KEEP_COMMENTS |
+					      G_KEY_FILE_KEEP_TRANSLATIONS, NULL)) {
+			gchar *sess;
+
+			if ((sess = g_key_file_get_string(options.dmrc,
+							  "Desktop", "Session", NULL))) {
+				free(options.session);
+				options.session = strdup(sess);
+				free(options.current);
+				options.current = strdup(sess);
+				g_free(sess);
+				free(file);
+				return;
+			}
+		}
+	}
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n) {
+		free(file);
+		return;
+	}
+
 	line = calloc(BUFSIZ + 1, sizeof(*line));
 
 	/* go through them forward */
@@ -1660,10 +1716,10 @@ main(int argc, char *argv[])
 		case 'e':	/* -e, --exec */
 			options.execute = True;
 			break;
-		case 'x':
+		case 'x':	/* -x, --xde-theme */
 			options.usexde = True;
 			break;
-		case 'T':
+		case 'T':	/* -T, --timeout TIMEOUT */
 			options.timeout = strtoul(optarg, NULL, 0);
 			break;
 

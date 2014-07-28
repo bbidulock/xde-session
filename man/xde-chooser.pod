@@ -43,10 +43,10 @@ simply reprinting C<logout> to standard output and exiting.
 
 Do not choose a session but simply run (typically without prompting)
 whichever session the user has set as a default.  (The default is
-located in the file F<$XDG_CONFIG_HOME/xde/default>).  When no default
-is configured, or when the configured default is not usable (e.g.
-missing executable), this argument has the same effect as C<choose>,
-below.
+located in the file F<$HOME/.dmrc> or F<$XDG_CONFIG_HOME/xde/default>.)
+When no default is configured, or when the configured default is not
+usable (e.g.  missing executable), this argument has the same effect as
+C<choose>, below.
 
 =item C<choose>
 
@@ -238,6 +238,27 @@ F<wmaker>, F<wmii>, F<xfce>.
 
 =over
 
+=item F<$HOME/.dmrc>
+
+This file contains the default session in the C<Session=> key of the
+C<[Desktop]> section.  This file will be written whenever the a new
+default is chosen.  It will be read in preference to the
+F<$XDG_CONFIG_HOME/xde/default> file.
+
+=item F<$XDG_CONFIG_HOME/xde/default>
+
+This file contains the default session.  The file consists of a single
+line containing the session name.
+Remember that the session name is the name of the F<.desktop> file
+without the C<.desktop> suffix.
+
+=item F<$XDG_CONFIG_HOME/xde/current>
+
+This file contains the current session.  The file consists of a single
+line containing the session name.
+Remember that the session name is the name of the F<.desktop> file
+without the C<.desktop> suffix.
+
 =item F<@XDG_DATA_DIRS/xsessions/*.desktop>
 
 These locations are searched for F<.desktop> files that describe which X
@@ -260,25 +281,16 @@ L<xde-startup(1)> with the session as an argument.  See
 L<xde-startup(1)/WINDOW MANAGERS> for a list of supported window
 managers.
 
-=item F<$XDG_CONFIG_HOME/xde/default>
-
-This file contains the default session.  The file consists of a single
-line containing the session name.
-Remember that the session name is the name of the F<.desktop> file
-without the C<.desktop> suffix.
-
-=item F<$XDG_CONFIG_HOME/xde/current>
-
-This file contains the current session.  The file consists of a single
-line containing the session name.
-Remember that the session name is the name of the F<.desktop> file
-without the C<.desktop> suffix.
-
 =back
 
 =head1 ENVIRONMENT
 
 =over
+
+=item B<HOME>
+
+Specifies the location of the user's home directory.  When unspecified,
+defaults to the current working directory.
 
 =item B<XDG_DATA_HOME>
 
