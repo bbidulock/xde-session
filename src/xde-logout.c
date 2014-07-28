@@ -275,7 +275,7 @@ test_session_lock()
 		error = NULL;
 	proxy = dbus_g_proxy_new_for_name(bus,
 			"org.freedesktop.login1",
-			"/org/freedesktop.login1",
+			"/org/freedesktop/login1",
 			"org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");

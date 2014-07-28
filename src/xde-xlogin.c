@@ -128,11 +128,16 @@
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
 
+#include <dbus/dbus-glib.h>
+#include <pwd.h>
+#include <systemd/sd-login.h>
 #include <security/pam_appl.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
 #endif
+
+#define NO_XSESSION 1
 
 enum {
 	OBEYSESS_DISPLAY, /* obey multipleSessions resource */
@@ -450,13 +455,15 @@ bad_xsession(const char *appid, GKeyFile *entry)
 	return FALSE;
 }
 
-GtkListStore *model;
-GtkWidget *view;
-GtkTreeViewColumn *cursor;
+#ifndef NO_XSESSION
+static GtkListStore *model;
+static GtkWidget *view;
+static GtkTreeViewColumn *cursor;
+#endif
 
-GtkWidget *l_uname, *l_pword, *l_lstat;
-GtkWidget *user, *pass;
-GtkWidget *buttons[5];
+static GtkWidget *buttons[5];
+static GtkWidget *l_uname, *l_pword, *l_lstat;
+static GtkWidget *user, *pass;
 
 static int
 xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp, void *appdata_ptr)
@@ -485,10 +492,12 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_label_set_text(GTK_LABEL(l_lstat), "");
 			gtk_widget_set_sensitive(user, TRUE);
 			gtk_widget_set_sensitive(pass, FALSE);
+#ifndef NO_XSESSION
 			gtk_widget_set_sensitive(view, FALSE);
-			gtk_widget_set_sensitive(buttons[0], FALSE);
 			gtk_widget_set_sensitive(buttons[1], FALSE);
 			gtk_widget_set_sensitive(buttons[2], FALSE);
+#endif
+			gtk_widget_set_sensitive(buttons[0], FALSE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			gtk_main();
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(user)));
@@ -502,10 +511,12 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_label_set_text(GTK_LABEL(l_lstat), "");
 			gtk_widget_set_sensitive(user, FALSE);
 			gtk_widget_set_sensitive(pass, TRUE);
+#ifndef NO_XSESSION
 			gtk_widget_set_sensitive(view, TRUE);
-			gtk_widget_set_sensitive(buttons[0], FALSE);
 			gtk_widget_set_sensitive(buttons[1], FALSE);
 			gtk_widget_set_sensitive(buttons[2], FALSE);
+#endif
+			gtk_widget_set_sensitive(buttons[0], FALSE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			gtk_main();
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(pass)));
@@ -536,7 +547,205 @@ struct pam_conv xde_pam_conv = {
 	.appdata_ptr = NULL,
 };
 
-void
+#ifdef NO_XSESSION
+
+static void
+on_switch_session(GtkMenuItem *item, gpointer data)
+{
+	gchar *session = data;
+	GError *error = NULL;
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
+		EPRINTF("cannot access system buss\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktop/login1",
+			"org.freedesktop.login1.Manager");
+	ok = dbus_g_proxy_call(proxy, "ActivateSession", &error, G_TYPE_STRING,
+			session, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok || error)
+		DPRINTF("ActivateSession: %s: call failed\n", session);
+	g_object_unref(G_OBJECT(proxy));
+}
+
+static void
+free_string(gpointer data, GClosure *unused)
+{
+	free(data);
+}
+
+static void
+append_switch_users(GtkMenu * menu)
+{
+	const char *seat, *sess;
+	char **sessions = NULL, **s;
+	GtkWidget *submenu, *jumpto;
+	gboolean gotone = FALSE;
+
+	if (!menu)
+		return;
+
+	jumpto = gtk_image_menu_item_new_with_label(GTK_STOCK_JUMP_TO);
+	gtk_image_menu_item_set_use_stock(GTK_IMAGE_MENU_ITEM(jumpto), TRUE);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), jumpto);
+
+	submenu = gtk_menu_new();
+
+	seat = getenv("XDG_SEAT") ? : "seat0";
+	sess = getenv("XDG_SESSION_ID");
+	if (sd_seat_can_multi_session(NULL) <= 0) {
+		DPRINTF("%s: cannot multi-session\n", seat);
+		return;
+	}
+	if (sd_seat_get_sessions(seat, &sessions, NULL, NULL) < 0) {
+		EPRINTF("%s: cannot get sessions\n", seat);
+		return;
+	}
+	for (s = sessions; s && *s; free(*s), s++) {
+		char *type = NULL, *klass = NULL, *user = NULL, *host = NULL,
+		    *tty = NULL, *disp = NULL;
+		unsigned int vtnr = 0;
+		uid_t uid = -1;
+
+		DPRINTF("%s(%s): considering session\n", seat, *s);
+		if (sess && !strcmp(*s, sess)) {
+			DPRINTF("%s(%s): cannot switch to own session\n", seat, *s);
+			continue;
+		}
+		if (sd_session_is_active(*s)) {
+			DPRINTF("%s(%s): cannot switch to active session\n", seat, *s);
+			continue;
+		}
+		sd_session_get_vt(*s, &vtnr);
+		if (vtnr == 0) {
+			DPRINTF("%s(%s): cannot switch to non-vt session\n", seat, *s);
+			continue;
+		}
+		sd_session_get_type(*s, &type);
+		sd_session_get_class(*s, &klass);
+		sd_session_get_uid(*s, &uid);
+		if (sd_session_is_remote(*s) > 0) {
+			sd_session_get_remote_user(*s, &user);
+			sd_session_get_remote_host(*s, &host);
+		}
+		sd_session_get_tty(*s, &tty);
+		sd_session_get_display(*s, &disp);
+
+		GtkWidget *imag;
+		GtkWidget *item;
+		char *iname = GTK_STOCK_JUMP_TO;
+		gchar *label;
+
+		if (type) {
+			if (!strcmp(type, "tty"))
+				iname = "utilities-terminal";
+			else if (!strcmp(type, "x11"))
+				iname = "preferences-system-windows";
+		}
+		if (klass) {
+			if (!strcmp(klass, "user")) {
+				struct passwd *pw;
+
+				if (user)
+					label = g_strdup_printf("%u: %s", vtnr, user);
+				else if (uid != -1 && (pw = getpwuid(uid)))
+					label = g_strdup_printf("%u: %s", vtnr, pw->pw_name);
+				else
+					label = g_strdup_printf("%u: %s", vtnr, "(unknown)");
+			} else if (!strcmp(klass, "greeter"))
+				label = g_strdup_printf("%u: login", vtnr);
+			else
+				label = g_strdup_printf("%u: session %s", vtnr, *s);
+		} else
+			label = g_strdup_printf("%u: session %s", vtnr, *s);
+
+		item = gtk_image_menu_item_new_with_label(label);
+		imag = gtk_image_new_from_icon_name(iname, GTK_ICON_SIZE_MENU);
+		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
+		DPRINTF("%s(%s): adding item to menu: %s\n", seat, *s, label);
+		g_free(label);
+		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
+		g_signal_connect_data(G_OBJECT(item), "activate",
+				G_CALLBACK(on_switch_session),
+				strdup(*s), free_string, G_CONNECT_AFTER);
+		gtk_widget_show(item);
+		gotone = TRUE;
+	}
+	free(sessions);
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(jumpto), submenu);
+	if (gotone)
+		gtk_widget_show_all(jumpto);
+}
+
+static GtkMenu *
+create_action_menu(void)
+{
+	GtkWidget *menu;
+
+	menu = gtk_menu_new();
+	if (menu) {
+		append_switch_users(GTK_MENU(menu));
+		return GTK_MENU(menu);
+	}
+	return NULL;
+}
+
+static void
+on_action_clicked(GtkButton *button, gpointer user_data)
+{
+	static GtkMenu *menu = NULL;
+
+	if (!menu)
+		menu = create_action_menu();
+	if (!menu)
+		return;
+	gtk_menu_popup(menu, NULL, NULL, NULL, NULL, 1, GDK_CURRENT_TIME);
+}
+
+static void
+on_login_clicked(GtkButton *button, gpointer user_data)
+{
+	GtkWidget **buttons = (typeof(buttons)) user_data;
+
+	switch (state) {
+	case LoginStateInit:
+		gtk_widget_grab_default(user);
+		gtk_widget_grab_focus(user);
+		gtk_widget_set_sensitive(buttons[3], FALSE);
+		break;
+	case LoginStateUsername:
+		gtk_widget_grab_default(pass);
+		gtk_widget_grab_focus(pass);
+		gtk_widget_set_sensitive(buttons[3], FALSE);
+		break;
+	case LoginStatePassword:
+	case LoginStateReady:
+		choose_result = CHOOSE_RESULT_LAUNCH;
+		gtk_widget_set_sensitive(buttons[3], FALSE);
+		gtk_main_quit();
+		break;
+	}
+}
+
+static void
+on_logout_clicked(GtkButton *button, gpointer user_data)
+{
+	GtkWidget **buttons = (typeof(buttons)) user_data;
+
+	(void)buttons;
+
+	choose_result = CHOOSE_RESULT_LOGOUT;
+	gtk_main_quit();
+}
+
+#else
+
+static void
 on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer user_data)
 {
 	GtkTreeIter iter;
@@ -720,6 +929,7 @@ on_launch_clicked(GtkButton *button, gpointer user_data)
 		break;
 	}
 }
+#endif
 
 static void
 on_user_activate(GtkEntry *user, gpointer data)
@@ -754,9 +964,9 @@ on_pass_activate(GtkEntry *pass, gpointer data)
 
 	if ((password = gtk_entry_get_text(pass))) {
 		options.password = strdup(password);
-		gtk_widget_set_sensitive(buttons[3], TRUE);
 		state = LoginStatePassword;
 		/* FIXME: do the authorization */
+		gtk_widget_set_sensitive(buttons[3], TRUE);
 		gtk_widget_grab_default(buttons[3]);
 		gtk_widget_grab_focus(buttons[3]);
 	}
@@ -819,6 +1029,7 @@ get_xsessions(void)
 	return (xsessions);
 }
 
+#ifndef NO_XSESSION
 static void
 on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 {
@@ -936,6 +1147,7 @@ on_button_press(GtkWidget *view, GdkEvent *event, gpointer user_data)
 	}
 	return FALSE;		/* propagate event */
 }
+#endif
 
 void
 on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
@@ -1007,7 +1219,8 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	}
 }
 
-gboolean
+#ifndef NO_XSESSION
+static gboolean
 on_idle(gpointer data)
 {
 	static GHashTable *xsessions = NULL;
@@ -1095,6 +1308,7 @@ on_idle(gpointer data)
 #endif
 	return G_SOURCE_CONTINUE;
 }
+#endif
 
 static gboolean
 on_destroy(GtkWidget *widget, gpointer user_data)
@@ -1181,7 +1395,11 @@ GetWindow()
 	g_free(markup);
 	gtk_box_pack_start(GTK_BOX(vbox), lab, FALSE, TRUE, 0);
 
+#ifdef NO_XSESSION
+	GtkWidget *tab = gtk_table_new(1, 2, TRUE);
+#else
 	GtkWidget *tab = gtk_table_new(1, 2, FALSE);
+#endif
 
 	gtk_table_set_col_spacings(GTK_TABLE(tab), 5);
 	gtk_box_pack_end(GTK_BOX(vbox), tab, TRUE, TRUE, 0);
@@ -1216,7 +1434,14 @@ GetWindow()
 	gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
 	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
 
+#ifdef NO_XSESSION
+	gtk_box_pack_start(GTK_BOX(vbox2), inp, TRUE, TRUE, 4);
+
+	GtkWidget *align = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
+	gtk_container_add(GTK_CONTAINER(inp), align);
+#else
 	gtk_box_pack_start(GTK_BOX(vbox2), inp, FALSE, FALSE, 4);
+#endif
 
 	GtkWidget *login = gtk_table_new(2, 3, TRUE);
 
@@ -1224,7 +1449,11 @@ GetWindow()
 	gtk_table_set_col_spacings(GTK_TABLE(login), 5);
 	gtk_table_set_row_spacings(GTK_TABLE(login), 5);
 	gtk_table_set_col_spacing(GTK_TABLE(login), 0, 0);
+#ifdef NO_XSESSION
+	gtk_container_add(GTK_CONTAINER(align), login);
+#else
 	gtk_container_add(GTK_CONTAINER(inp), login);
+#endif
 
 	l_uname = gtk_label_new(NULL);
 	gtk_label_set_markup(GTK_LABEL(l_uname), "<span font=\"Liberation Sans 9\"><b>Username:</b></span>");
@@ -1255,6 +1484,59 @@ GetWindow()
 	g_signal_connect(G_OBJECT(user), "activate", G_CALLBACK(on_user_activate), pass);
 	g_signal_connect(G_OBJECT(pass), "activate", G_CALLBACK(on_pass_activate), user);
 
+#ifdef NO_XSESSION
+	GtkWidget *bb = gtk_hbutton_box_new();
+	gtk_box_set_spacing(GTK_BOX(bb), 5);
+	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_SPREAD);
+	gtk_box_pack_end(GTK_BOX(vbox2), bb, FALSE, TRUE, 0);
+
+	GtkWidget *i;
+	GtkWidget *b;
+
+	buttons[0] = b = gtk_button_new();
+	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
+	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
+	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+	if ((getenv("DISPLAY") ? : "")[0] == ':') {
+		if ((i = gtk_image_new_from_stock("gtk-quit", GTK_ICON_SIZE_BUTTON)))
+			gtk_button_set_image(GTK_BUTTON(b), i);
+		gtk_button_set_label(GTK_BUTTON(b), "Logout");
+	} else {
+		if ((i = gtk_image_new_from_stock("gtk-disconnect", GTK_ICON_SIZE_BUTTON)))
+			gtk_button_set_image(GTK_BUTTON(b), i);
+		gtk_button_set_label(GTK_BUTTON(b), "Disconnect");
+	}
+	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_logout_clicked), buttons);
+	gtk_widget_set_sensitive(b, TRUE);
+
+	buttons[4] = b = gtk_button_new();
+	gtk_widget_set_can_default(b, FALSE);
+	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
+	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+	if ((i = gtk_image_new_from_stock("gtk-execute", GTK_ICON_SIZE_BUTTON)))
+		gtk_button_set_image(GTK_BUTTON(b), i);
+	gtk_button_set_label(GTK_BUTTON(b), "Actions");
+	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_action_clicked), buttons);
+	if ((getenv("DISPLAY") ? : "")[0] == ':')
+		gtk_widget_set_sensitive(b, TRUE);
+	else
+		gtk_widget_set_sensitive(b, FALSE);
+
+	buttons[3] = b = gtk_button_new();
+	gtk_widget_set_can_default(b, TRUE);
+	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
+	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
+	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+	if ((i = gtk_image_new_from_stock("gtk-ok", GTK_ICON_SIZE_BUTTON)))
+		gtk_button_set_image(GTK_BUTTON(b), i);
+	gtk_button_set_label(GTK_BUTTON(b), "Login");
+	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_login_clicked), buttons);
+	gtk_widget_set_sensitive(b, FALSE);
+
+#else
 	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
 
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
@@ -1385,6 +1667,7 @@ GetWindow()
 	g_signal_connect(G_OBJECT(view), "button_press_event", G_CALLBACK(on_button_press), buttons);
 
 	g_idle_add(on_idle, model);
+#endif
 
 	gtk_window_set_default_size(GTK_WINDOW(win), -1, 300);
 
