@@ -46,7 +46,74 @@
 #define _XOPEN_SOURCE 600
 #endif
 
-#include "xde-xlogin.h"
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
+#endif
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/timerfd.h>
+#include <sys/ioctl.h>
+#include <sys/wait.h>
+#include <sys/poll.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <time.h>
+#include <signal.h>
+#include <syslog.h>
+#include <sys/utsname.h>
+
+#include <assert.h>
+#include <locale.h>
+#include <stdarg.h>
+#include <strings.h>
+#include <regex.h>
+
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xproto.h>
+#include <X11/Xutil.h>
+#include <X11/Xresource.h>
+#ifdef XRANDR
+#include <X11/extensions/Xrandr.h>
+#include <X11/extensions/randr.h>
+#endif
+#ifdef XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+#ifdef STARTUP_NOTIFICATION
+#define SN_API_NOT_YET_FROZEN
+#include <libsn/sn.h>
+#endif
+#include <gtk/gtk.h>
+#include <cairo.h>
+
+#define XPRINTF(args...) do { } while (0)
+#define OPRINTF(args...) do { if (options.output > 1) { \
+	fprintf(stderr, "I: "); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define DPRINTF(args...) do { if (options.debug) { \
+	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define EPRINTF(args...) do { \
+	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr);   } while (0)
+#define DPRINT() do { if (options.debug) { \
+	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fflush(stderr); } } while (0)
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -61,6 +128,7 @@
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
 
+#include <security/pam_appl.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -386,8 +454,87 @@ GtkListStore *model;
 GtkWidget *view;
 GtkTreeViewColumn *cursor;
 
+GtkWidget *l_uname, *l_pword, *l_lstat;
 GtkWidget *user, *pass;
 GtkWidget *buttons[5];
+
+static int
+xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp, void *appdata_ptr)
+{
+	struct pam_response *r, *rarray;
+	const struct pam_message **m;
+	int i;
+
+	if (num_msg <= 0)
+		return PAM_SUCCESS;
+	if (!(rarray = calloc(num_msg, sizeof(*rarray))))
+		return PAM_BUF_ERR;
+
+	for (i = 0, m = msg, r = rarray; i < num_msg; i++, msg++, r++) {
+		if (!*m) {
+			r->resp_retcode = 0;
+			continue;
+		}
+		switch ((*m)->msg_style) {
+		case PAM_PROMPT_ECHO_ON:	/* obtain a string whilst echoing */
+		{
+			gchar *prompt = g_strdup_printf("<span font=\"Liberation Sans 9\"><b>%s</b></span>", (*m)->msg);
+			gtk_label_set_markup(GTK_LABEL(l_uname), prompt);
+			gtk_label_set_text(GTK_LABEL(user), "");
+			gtk_label_set_text(GTK_LABEL(pass), "");
+			gtk_label_set_text(GTK_LABEL(l_lstat), "");
+			gtk_widget_set_sensitive(user, TRUE);
+			gtk_widget_set_sensitive(pass, FALSE);
+			gtk_widget_set_sensitive(view, FALSE);
+			gtk_widget_set_sensitive(buttons[0], FALSE);
+			gtk_widget_set_sensitive(buttons[1], FALSE);
+			gtk_widget_set_sensitive(buttons[2], FALSE);
+			gtk_widget_set_sensitive(buttons[3], FALSE);
+			gtk_main();
+			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(user)));
+			break;
+		}
+		case PAM_PROMPT_ECHO_OFF:	/* obtain a string without echoing */
+		{
+			gchar *prompt = g_strdup_printf("<span font=\"Liberation Sans 9\"><b>%s</b></span>", (*m)->msg);
+			gtk_label_set_markup(GTK_LABEL(l_pword), prompt);
+			gtk_label_set_text(GTK_LABEL(pass), "");
+			gtk_label_set_text(GTK_LABEL(l_lstat), "");
+			gtk_widget_set_sensitive(user, FALSE);
+			gtk_widget_set_sensitive(pass, TRUE);
+			gtk_widget_set_sensitive(view, TRUE);
+			gtk_widget_set_sensitive(buttons[0], FALSE);
+			gtk_widget_set_sensitive(buttons[1], FALSE);
+			gtk_widget_set_sensitive(buttons[2], FALSE);
+			gtk_widget_set_sensitive(buttons[3], FALSE);
+			gtk_main();
+			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(pass)));
+			break;
+		}
+		case PAM_ERROR_MSG:		/* display an error message */
+		{
+			gchar *prompt = g_strdup_printf("<span font=\"Liberation Sans 9\" color=\"red\"><b>%s</b></span>", (*m)->msg);
+			gtk_label_set_markup(GTK_LABEL(l_lstat), prompt);
+			relax();
+			break;
+		}
+		case PAM_TEXT_INFO:		/* display some text */
+		{
+			gchar *prompt = g_strdup_printf("<span font=\"Liberation Sans 9\"><b>%s</b></span>", (*m)->msg);
+			gtk_label_set_markup(GTK_LABEL(l_lstat), prompt);
+			relax();
+			break;
+		}
+		}
+	}
+	*resp = rarray;
+	return PAM_SUCCESS;
+}
+
+struct pam_conv xde_pam_conv = {
+	.conv = xde_conv,
+	.appdata_ptr = NULL,
+};
 
 void
 on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer user_data)
@@ -1079,11 +1226,11 @@ GetWindow()
 	gtk_table_set_col_spacing(GTK_TABLE(login), 0, 0);
 	gtk_container_add(GTK_CONTAINER(inp), login);
 
-	GtkWidget *uname = gtk_label_new(NULL);
-	gtk_label_set_markup(GTK_LABEL(uname), "<span font=\"Liberation Sans 9\"><b>Username:</b></span>");
-	gtk_misc_set_alignment(GTK_MISC(uname), 1.0, 0.5);
-	gtk_misc_set_padding(GTK_MISC(uname), 5, 2);
-	gtk_table_attach_defaults(GTK_TABLE(login), uname, 0, 1, 0, 1);
+	l_uname = gtk_label_new(NULL);
+	gtk_label_set_markup(GTK_LABEL(l_uname), "<span font=\"Liberation Sans 9\"><b>Username:</b></span>");
+	gtk_misc_set_alignment(GTK_MISC(l_uname), 1.0, 0.5);
+	gtk_misc_set_padding(GTK_MISC(l_uname), 5, 2);
+	gtk_table_attach_defaults(GTK_TABLE(login), l_uname, 0, 1, 0, 1);
 
 	user = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(user), 10);
@@ -1092,11 +1239,11 @@ GetWindow()
 	gtk_widget_set_can_focus(user, TRUE);
 	gtk_table_attach_defaults(GTK_TABLE(login), user, 1, 2, 0, 1);
 
-	GtkWidget *pword = gtk_label_new(NULL);
-	gtk_label_set_markup(GTK_LABEL(pword), "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
-	gtk_misc_set_alignment(GTK_MISC(pword), 1.0, 0.5);
-	gtk_misc_set_padding(GTK_MISC(pword), 5, 2);
-	gtk_table_attach_defaults(GTK_TABLE(login), pword, 0, 1, 1, 2);
+	l_pword = gtk_label_new(NULL);
+	gtk_label_set_markup(GTK_LABEL(l_pword), "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
+	gtk_misc_set_alignment(GTK_MISC(l_pword), 1.0, 0.5);
+	gtk_misc_set_padding(GTK_MISC(l_pword), 5, 2);
+	gtk_table_attach_defaults(GTK_TABLE(login), l_pword, 0, 1, 1, 2);
 
 	pass = gtk_entry_new();
 	gtk_entry_set_width_chars(GTK_ENTRY(pass), 10);
