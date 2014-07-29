@@ -95,14 +95,14 @@
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
+#include <X11/Xdmcp.h>
+#include <X11/SM/SMlib.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
-#include <X11/SM/SMlib.h>
 
 #include <dbus/dbus-glib.h>
 #include <pwd.h>
 #include <systemd/sd-login.h>
-
 #include <security/pam_appl.h>
 
 #ifdef _GNU_SOURCE
@@ -236,6 +236,35 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev, XdeScreen * xscr)
 		fprintf(stderr, "    --> time = %lu\n", ev->time);
 		fprintf(stderr, "<== XScreenSaverNotify:\n");
 	}
+}
+
+static gboolean
+on_destroy(GtkWidget *widget, gpointer user_data)
+{
+	return FALSE;
+}
+
+gboolean
+on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	// logout_result = LOGOUT_ACTION_CANCEL;
+	gtk_main_quit();
+	return TRUE;		/* propagate */
+}
+
+gboolean
+on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	GdkPixbuf *p = GDK_PIXBUF(data);
+	GdkWindow *w = gtk_widget_get_window(GTK_WIDGET(widget));
+	cairo_t *cr = gdk_cairo_create(GDK_DRAWABLE(w));
+
+	gdk_cairo_set_source_pixbuf(cr, p, 0, 0);
+	cairo_paint(cr);
+	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
+	gdk_cairo_set_source_color(cr, &color);
+	cairo_paint_with_alpha(cr, 0.7);
+	return FALSE;
 }
 
 /** @brief transform a window into a grabbed window
@@ -405,51 +434,102 @@ GetScreens(void)
 	}
 }
 
+/** @brief get a pixbuf for the screen
+  *
+  * This pixbuf can either be the background image, if one is defined in
+  * _XROOTPMAP_ID or ESETROOT_PMAP_ID, or an copy of the root window otherwise.
+  */
+GdkPixbuf *
+get_pixbuf(GdkScreen * scrn)
+{
+	GdkDisplay *disp = gdk_screen_get_display(scrn);
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	gint width = gdk_screen_get_width(scrn);
+	gint height = gdk_screen_get_height(scrn);
+	GdkDrawable *draw = GDK_DRAWABLE(root);
+	GdkColormap *cmap = gdk_drawable_get_colormap(draw);
+	Atom prop = None;
+
+	if (!(prop = XInternAtom(dpy, "_XROOTPMAP_ID", True)))
+		prop = XInternAtom(dpy, "ESETROOT_PMAP_ID", True);
+
+	if (prop) {
+		Window w = GDK_WINDOW_XID(root);
+		Atom actual = None;
+		int format = 0;
+		unsigned long nitems = 0, after = 0;
+		long *data = NULL;
+
+		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data) {
+			Pixmap p;
+
+			if ((p = data[0])) {
+				GdkPixmap *pmap;
+				
+				pmap = gdk_pixmap_foreign_new_for_display(disp, p);
+				gdk_pixmap_get_size(pmap, &width, &height);
+				draw = GDK_DRAWABLE(pmap);
+			}
+		}
+		if (data)
+			XFree(data);
+	}
+	GdkPixbuf *pbuf = gdk_pixbuf_get_from_drawable(NULL, draw, cmap, 0, 0,
+			0, 0, width, height);
+	return (pbuf);
+}
+
 GtkWidget *wind; /* screen sized window */
 GtkWidget *ebox; /* event box window within the screen */
 
 void
 GetWindow(void)
 {
-	GValue val = G_VALUE_INIT;
+	char hostname[64] = { 0, };
 
 	wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-
 	g_signal_connect(G_OBJECT(wind), "delete-event", G_CALLBACK(on_delete_event), NULL);
 	gtk_window_set_wmclass(GTK_WINDOW(wind), "xde-xlock", "XDE-XLock");
 	gtk_window_set_title(GTK_WINDOW(wind), "XLock");
 	gtk_window_set_modal(GTK_WINDOW(wind), TRUE);
 	gtk_window_set_gravity(GTK_WINDOW(wind), GDK_GRAVITY_CENTER);
-	gtk_window_set_position(GTK_WINDOW(wind), GTK_WIN_POS_CENTER_ALWAYS);
+	gtk_window_set_type_hint(GTK_WINDOW(wind), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
 	gtk_window_set_icon_name(GTK_WINDOW(wind), "xdm");
-	gtk_container_set_border_width(GTK_WINDOW(wind), 15);
-	// gtk_window_set_default_size(GTK_WINDOW(wind), 800, 600);
-	gtk_window_set_type_hint(GTK_WINDOW(wind), GDK_WINDOW_TYPE_HINT_DIALOG);
-	g_value_init(&val, G_TYPE_BOOLEAN);
-	g_value_set_boolean(&val, FALSE);
-	g_object_set_property(G_OBJECT(wind), "allow-grow", &val);
-	g_object_set_property(G_OBJECT(wind), "allow-shrink", &val);
-	gtk_window_set_resizable(GTK_WINDOW(wind), FALSE);
-	gtk_window_set_decorated(GTK_WINDOW(wind), FALSE);
+	gtk_container_set_border_width(GTK_CONTAINER(wind), 15);
 	gtk_window_set_skip_pager_hint(GTK_WINDOW(wind), TRUE);
 	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(wind), TRUE);
-	g_signal_connect(G_OBJECT(wind), "destroy", G_CALLBACK(on_destroy), NULL);
+	gtk_window_set_position(GTK_WINDOW(wind), GTK_WIN_POS_CENTER_ALWAYS);
 	gtk_window_fullscreen(GTK_WINDOW(wind));
+	gtk_window_set_decorated(GTK_WINDOW(wind), FALSE);
 
 	GdkScreen *scrn = gdk_screen_get_default();
-	GdkWindow *root = gdk_screen_get_root_window(scrn);
 	gint width = gdk_screen_get_width(scrn);
 	gint height = gdk_screen_get_height(scrn);
-	gint nmons = gdk_screen_get_n_monitors(scrn);
+
+	char *geom = g_strdup_printf("%dx%d+0+0", width, height);
+
+	gtk_window_parse_geometry(GTK_WINDOW(wind), geom);
+	g_free(geom);
 
 	gtk_window_set_default_size(GTK_WINDOW(wind), width, height);
 	gtk_widget_set_app_paintable(wind, TRUE);
 
-	GdkPixbuf *pixbuf = gdk_pixbuf_get_from_drawable(NULL, GDK_DRAWABLE(root),
-							 NULL, 0, 0, 0, 0, width, height);
+	GdkPixbuf *pixbuf = get_pixbuf(scrn);
+
+	g_signal_connect(G_OBJECT(wind), "destroy", G_CALLBACK(on_destroy), NULL);
+
+	/* Ultimately this has to be a GtkFixed instead of a GtkAlignment,
+	   because we need to place the window in the center of the active
+	   monitor. */
 	GtkWidget *a = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
 
 	gtk_container_add(GTK_CONTAINER(wind), GTK_WIDGET(a));
+
+	gethostname(hostname, sizeof(hostname));
 
 	ebox = gtk_event_box_new();
 
@@ -458,8 +538,19 @@ GetWindow(void)
 	g_signal_connect(G_OBJECT(wind), "expose-event", G_CALLBACK(on_expose_event), pixbuf);
 
 	GtkWidget *v = gtk_vbox_new(FALSE, 5);
-
+	gtk_container_set_border_width(GTK_CONTAINER(v), 15);
 	gtk_container_add(GTK_CONTAINER(ebox), v);
+
+	GtkWidget *lab = gtk_label_new(NULL);
+	gchar *markup;
+
+	markup = g_markup_printf_escaped
+	    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
+	gtk_label_set_markup(GTK_LABEL(lab), markup);
+	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
+	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
+	g_free(markup);
+	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
 
 	GtkWidget *h = gtk_hbox_new(FALSE, 5);
 
@@ -485,6 +576,7 @@ GetWindow(void)
 	}
 
 	GtkWidget *f = gtk_frame_new(NULL);
+
 	gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
 	gtk_box_pack_start(GTK_BOX(h), f, TRUE, TRUE, 0);
 
@@ -496,27 +588,32 @@ GetWindow(void)
 	gtk_container_add(GTK_CONTAINER(v), a);
 
 	GtkWidget *t = gtk_table_new(3, 1, FALSE);
+
 	gtk_table_set_col_spacings(GTK_TABLE(t), 5);
 	gtk_container_add(GTK_CONTAINER(a), t);
 
 	GtkWidget *l = gtk_label_new(NULL);
-	gtk_label_set_markup(GTK_LABEL(l), "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
+
+	gtk_label_set_markup(GTK_LABEL(l),
+			     "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
 	gtk_misc_set_alignment(GTK_MISC(l), 0.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(t), l, 0, 1, 0, 1);
 
 	GtkWidget *i = gtk_entry_new();
+
 	gtk_table_attach_defaults(GTK_TABLE(t), i, 0, 1, 1, 2);
 
 	GtkWidget *s = gtk_label_new(NULL);
+
 	gtk_misc_set_alignment(GTK_MISC(s), 0.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(s), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(t), i, 0, 1, 2, 3);
 
-	// gtk_window_set_default_size(GTK_WINDOW(wind), -1, 350)
+	// gtk_window_set_default_size(GTK_WINDOW(ebox), -1, 300)
 
 	/* most of this is just in case override-reidrect fails */
-	gtk_window_set_focuse_on_map(GTK_WINDOW(wind), TRUE);
+	gtk_window_set_focus_on_map(GTK_WINDOW(wind), TRUE);
 	gtk_window_set_accept_focus(GTK_WINDOW(wind), TRUE);
 	gtk_window_set_keep_above(GTK_WINDOW(wind), TRUE);
 	gtk_window_set_modal(GTK_WINDOW(wind), TRUE);
@@ -524,10 +621,15 @@ GetWindow(void)
 	gtk_window_deiconify(GTK_WINDOW(wind));
 	gtk_widget_show_all(wind);
 
+
 	gtk_widget_realize(wind);
 	GdkWindow *win = gtk_widget_get_window(wind);
+
 	gdk_window_set_override_redirect(win, TRUE);
 	grabbed_window(GTK_WINDOW(wind));
+
+	// gtk_widget_grab_default(user);
+	// gtk_widget_grab_focus(user);
 
 }
 

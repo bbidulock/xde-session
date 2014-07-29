@@ -42,12 +42,12 @@
 
  *****************************************************************************/
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "autoconf.h"
+#endif
+
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
 #endif
 
 #include <stddef.h>
@@ -95,8 +95,20 @@
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
+#include <X11/Xdmcp.h>
+#include <X11/SM/SMlib.h>
+#include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
+
+#include <dbus/dbus-glib.h>
+#include <pwd.h>
+#include <systemd/sd-login.h>
+#include <security/pam_appl.h>
+
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
 
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
@@ -114,30 +126,6 @@
 #define DPRINT() do { if (options.debug) { \
 	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
-
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <ctype.h>
-#include <sys/socket.h>
-#include <ifaddrs.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <X11/Xdmcp.h>
-#include <X11/Xauth.h>
-
-#include <dbus/dbus-glib.h>
-#include <pwd.h>
-#include <systemd/sd-login.h>
-#include <security/pam_appl.h>
-
-#ifdef _GNU_SOURCE
-#include <getopt.h>
-#endif
-
-#define NO_XSESSION 1
 
 enum {
 	OBEYSESS_DISPLAY, /* obey multipleSessions resource */
@@ -455,12 +443,6 @@ bad_xsession(const char *appid, GKeyFile *entry)
 	return FALSE;
 }
 
-#ifndef NO_XSESSION
-static GtkListStore *model;
-static GtkWidget *view;
-static GtkTreeViewColumn *cursor;
-#endif
-
 static GtkWidget *buttons[5];
 static GtkWidget *l_uname, *l_pword, *l_lstat;
 static GtkWidget *user, *pass;
@@ -492,11 +474,6 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_label_set_text(GTK_LABEL(l_lstat), "");
 			gtk_widget_set_sensitive(user, TRUE);
 			gtk_widget_set_sensitive(pass, FALSE);
-#ifndef NO_XSESSION
-			gtk_widget_set_sensitive(view, FALSE);
-			gtk_widget_set_sensitive(buttons[1], FALSE);
-			gtk_widget_set_sensitive(buttons[2], FALSE);
-#endif
 			gtk_widget_set_sensitive(buttons[0], FALSE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			gtk_main();
@@ -511,11 +488,6 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_label_set_text(GTK_LABEL(l_lstat), "");
 			gtk_widget_set_sensitive(user, FALSE);
 			gtk_widget_set_sensitive(pass, TRUE);
-#ifndef NO_XSESSION
-			gtk_widget_set_sensitive(view, TRUE);
-			gtk_widget_set_sensitive(buttons[1], FALSE);
-			gtk_widget_set_sensitive(buttons[2], FALSE);
-#endif
 			gtk_widget_set_sensitive(buttons[0], FALSE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			gtk_main();
@@ -546,8 +518,6 @@ struct pam_conv xde_pam_conv = {
 	.conv = xde_conv,
 	.appdata_ptr = NULL,
 };
-
-#ifdef NO_XSESSION
 
 static void
 on_switch_session(GtkMenuItem *item, gpointer data)
@@ -753,194 +723,6 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 	gtk_main_quit();
 }
 
-#else
-
-static void
-on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer user_data)
-{
-	GtkTreeIter iter;
-
-	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(model), &iter, path)) {
-		GValue user_v = G_VALUE_INIT;
-		GValue orig_v = G_VALUE_INIT;
-		gboolean user;
-		gboolean orig;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_MANAGED, &user_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_ORIGINAL, &orig_v);
-		user = g_value_get_boolean(&user_v);
-		orig = g_value_get_boolean(&orig_v);
-		if (orig) {
-			user = user ? FALSE : TRUE;
-			g_value_set_boolean(&user_v, user);
-			gtk_list_store_set_value(GTK_LIST_STORE(model), &iter, COLUMN_MANAGED,
-						 &user_v);
-		}
-		g_value_unset(&user_v);
-		g_value_unset(&orig_v);
-	}
-}
-
-static void
-on_logout_clicked(GtkButton *button, gpointer user_data)
-{
-	GtkWidget **buttons = (typeof(buttons)) user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		const gchar *label;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
-		if ((label = g_value_get_string(&label_v)))
-			DPRINTF("Label selected %s\n", label);
-		g_value_unset(&label_v);
-	}
-	free(options.choice);
-	options.choice = strdup("logout");
-	free(options.session);
-	options.session = NULL;
-	options.managed = FALSE;
-	choose_result = CHOOSE_RESULT_LOGOUT;
-	gtk_main_quit();
-}
-
-static void
-on_default_clicked(GtkButton *button, gpointer user_data)
-{
-	GtkWidget **buttons = (typeof(buttons)) user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		const gchar *label;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
-		if ((label = g_value_get_string(&label_v))) {
-			DPRINTF("Label selected %s\n", label);
-			gtk_widget_set_sensitive(buttons[1], FALSE);
-			gtk_widget_set_sensitive(buttons[2], TRUE);
-			free(options.session);
-			options.session = strdup(label);
-		}
-		g_value_unset(&label_v);
-	}
-	switch (state) {
-	case LoginStateInit:
-		gtk_widget_grab_default(user);
-		gtk_widget_grab_focus(user);
-		break;
-	case LoginStateUsername:
-		gtk_widget_grab_default(pass);
-		gtk_widget_grab_focus(pass);
-		break;
-	default:
-		break;
-	}
-}
-
-static void
-on_select_clicked(GtkButton *button, gpointer user_data)
-{
-	GtkWidget **buttons = (typeof(buttons)) user_data;
-	GtkTreeSelection *selection;
-
-	free(options.choice);
-	options.choice = strdup("default");
-	free(options.session);
-	options.session = NULL;
-	options.managed = TRUE;
-
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	gtk_tree_selection_unselect_all(selection);
-	gtk_widget_set_sensitive(buttons[1], FALSE);
-	gtk_widget_set_sensitive(buttons[2], FALSE);
-	switch (state) {
-	case LoginStateInit:
-		gtk_widget_grab_default(user);
-		gtk_widget_grab_focus(user);
-		break;
-	case LoginStateUsername:
-		gtk_widget_grab_default(pass);
-		gtk_widget_grab_focus(pass);
-		break;
-	default:
-		break;
-	}
-}
-
-/** @brief launch the session
-  *
-  * unlike the xsession chooser, this is a login button
-  */
-static void
-on_launch_clicked(GtkButton *button, gpointer user_data)
-{
-	GtkWidget **buttons = (typeof(buttons)) user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	/* FIXME: not quit right here: this should start the login
-	   authentication. */
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		GValue manage_v = G_VALUE_INIT;
-		const gchar *label;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_MANAGED, &manage_v);
-		if ((label = g_value_get_string(&label_v))) {
-			DPRINTF("Label selected %s\n", label);
-			if (!options.choice || strcmp(label, options.choice)) {
-				free(options.choice);
-				options.choice = strdup(label);
-				free(options.session);
-				options.session = NULL;
-				gtk_widget_set_sensitive(buttons[1], TRUE);
-				gtk_widget_set_sensitive(buttons[2], TRUE);
-			}
-			options.managed = g_value_get_boolean(&manage_v);
-		}
-		g_value_unset(&label_v);
-		g_value_unset(&manage_v);
-	} else {
-		free(options.choice);
-		options.choice = strdup("default");
-		free(options.session);
-		options.session = NULL;
-		options.managed = TRUE;
-		gtk_widget_set_sensitive(buttons[1], FALSE);
-		gtk_widget_set_sensitive(buttons[2], FALSE);
-	}
-	switch (state) {
-	case LoginStateInit:
-		gtk_widget_grab_default(user);
-		gtk_widget_grab_focus(user);
-		gtk_widget_set_sensitive(buttons[3], FALSE);
-		break;
-	case LoginStateUsername:
-		gtk_widget_grab_default(pass);
-		gtk_widget_grab_focus(pass);
-		gtk_widget_set_sensitive(buttons[3], FALSE);
-		break;
-	case LoginStatePassword:
-	case LoginStateReady:
-		choose_result = CHOOSE_RESULT_LAUNCH;
-		gtk_widget_set_sensitive(buttons[3], FALSE);
-		gtk_main_quit();
-		break;
-	}
-}
-#endif
-
 static void
 on_user_activate(GtkEntry *user, gpointer data)
 {
@@ -1039,126 +821,6 @@ get_xsessions(void)
 	return (xsessions);
 }
 
-#ifndef NO_XSESSION
-static void
-on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
-{
-	GtkWidget **buttons = (typeof(buttons)) user_data;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		GValue manage_v = G_VALUE_INIT;
-		const gchar *label;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_MANAGED, &manage_v);
-		if ((label = g_value_get_string(&label_v))) {
-			DPRINTF("Label selected %s\n", label);
-			if (!options.choice || strcmp(label, options.choice)) {
-				free(options.choice);
-				options.choice = strdup(label);
-				free(options.session);
-				options.session = NULL;
-				gtk_widget_set_sensitive(buttons[1], TRUE);
-				gtk_widget_set_sensitive(buttons[2], TRUE);
-			}
-			options.managed = g_value_get_boolean(&manage_v);
-		}
-		g_value_unset(&label_v);
-		g_value_unset(&manage_v);
-	} else {
-		free(options.choice);
-		options.choice = strdup("default");
-		free(options.session);
-		options.session = NULL;
-		options.managed = TRUE;
-		gtk_widget_set_sensitive(buttons[1], FALSE);
-		gtk_widget_set_sensitive(buttons[2], FALSE);
-	}
-}
-
-static void
-on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data)
-{
-	GtkWidget **buttons = (typeof(buttons)) user_data;
-	GtkTreeSelection *selection;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		GValue manage_v = G_VALUE_INIT;
-		const gchar *label;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL, &label_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_MANAGED, &manage_v);
-		if ((label = g_value_get_string(&label_v))) {
-			DPRINTF("Label selected %s\n", label);
-			if (!options.choice || strcmp(label, options.choice)) {
-				free(options.choice);
-				options.choice = strdup(label);
-				free(options.session);
-				options.session = NULL;
-				gtk_widget_set_sensitive(buttons[1], TRUE);
-				gtk_widget_set_sensitive(buttons[2], TRUE);
-			}
-			options.managed = g_value_get_boolean(&manage_v);
-		}
-		g_value_unset(&label_v);
-		g_value_unset(&manage_v);
-	}
-	switch (state) {
-	case LoginStateInit:
-		gtk_widget_grab_default(user);
-		gtk_widget_grab_focus(user);
-		gtk_widget_set_sensitive(buttons[3], FALSE);
-		break;
-	case LoginStateUsername:
-		gtk_widget_grab_default(pass);
-		gtk_widget_grab_focus(pass);
-		gtk_widget_set_sensitive(buttons[3], FALSE);
-		break;
-	case LoginStatePassword:
-	case LoginStateReady:
-		choose_result = CHOOSE_RESULT_LAUNCH;
-		gtk_widget_set_sensitive(buttons[3], FALSE);
-		gtk_main_quit();
-		break;
-	}
-}
-
-static gboolean
-on_button_press(GtkWidget *view, GdkEvent *event, gpointer user_data)
-{
-	GtkTreeSelection *selection;
-	GtkTreePath *path;
-	GtkTreeViewColumn *col;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(view),
-					  event->button.x,
-					  event->button.y, &path, &col, NULL, NULL)) {
-		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-		gtk_tree_selection_select_path(selection, path);
-		if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-			GValue label_v = G_VALUE_INIT;
-			const gchar *label;
-
-			gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, COLUMN_LABEL,
-						 &label_v);
-			if ((label = g_value_get_string(&label_v)))
-				DPRINTF("Label clicked was: %s\n", label);
-			g_value_unset(&label_v);
-		}
-	}
-	return FALSE;		/* propagate event */
-}
-#endif
-
 void
 on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 		 GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
@@ -1229,100 +891,32 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	}
 }
 
-#ifndef NO_XSESSION
-static gboolean
-on_idle(gpointer data)
-{
-	static GHashTable *xsessions = NULL;
-	static GHashTableIter hiter;
-	const char *key;
-	const char *file;
-	GKeyFile *entry;
-	GtkTreeIter iter;
-
-	if (!xsessions) {
-		if (!(xsessions = get_xsessions())) {
-			EPRINTF("cannot build XSessions\n");
-			return G_SOURCE_REMOVE;
-		}
-		if (!g_hash_table_size(xsessions)) {
-			EPRINTF("cannot find any XSessions\n");
-			return G_SOURCE_REMOVE;
-		}
-		g_hash_table_iter_init(&hiter, xsessions);
-	}
-	if (!g_hash_table_iter_next(&hiter, (gpointer *)&key, (gpointer *)&file))
-		return G_SOURCE_REMOVE;
-
-	if (!(entry = get_xsession_entry(key, file)))
-		return G_SOURCE_CONTINUE;
-
-	if (bad_xsession(key, entry)) {
-		g_key_file_free(entry);
-		return G_SOURCE_CONTINUE;
-	}
-
-	gchar *i, *n, *c, *k, *l, *f;
-	gboolean m;
-
-	f = g_strdup(file);
-	l = g_strdup(key);
-	i = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-				  G_KEY_FILE_DESKTOP_KEY_ICON, NULL);
-	n = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-					 G_KEY_FILE_DESKTOP_KEY_NAME, NULL, NULL) ? : g_strdup("");
-	c = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-					 G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL,
-					 NULL) ? : g_strdup("");
-	k = g_strdup_printf("<b>%s</b>\n%s", n, c);
-	m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
-	gtk_list_store_append(model, &iter);
-	/* *INDENT-OFF* */
-	gtk_list_store_set(model, &iter,
-			COLUMN_PIXBUF,	 i,
-			COLUMN_NAME,	 n,
-			COLUMN_COMMENT,	 c,
-			COLUMN_MARKUP,	 k,
-			COLUMN_LABEL,	 l,
-			COLUMN_MANAGED,	 m,
-			COLUMN_ORIGINAL, m,
-			COLUMN_FILENAME, f,
-			COLUMN_KEYFILE,	 NULL,
-			-1);
-	/* *INDENT-ON* */
-	g_free(f);
-	g_free(l);
-	g_free(i);
-	g_free(n);
-	g_free(k);
-	g_key_file_free(entry);
-
-#if 0
-	if (!strcmp(options.choice, key) ||
-	    ((!strcmp(options.choice, "choose") || !strcmp(options.choice, "default")) &&
-	     !strcmp(options.session, key)
-	    )) {
-		gchar *string;
-
-		/* FIXME: don't do this if the user has made a selection in the
-		 * mean time. */
-		if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter))) {
-			GtkTreePath *path = gtk_tree_path_new_from_string(string);
-
-			g_free(string);
-			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view),
-					path, cursor, NULL, FALSE);
-			gtk_tree_path_free(path);
-		}
-	}
-#endif
-	return G_SOURCE_CONTINUE;
-}
-#endif
-
 static gboolean
 on_destroy(GtkWidget *widget, gpointer user_data)
 {
+	return FALSE;
+}
+
+gboolean
+on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	choose_result = CHOOSE_RESULT_LOGOUT;
+	gtk_main_quit();
+	return TRUE;		/* propagate */
+}
+
+gboolean
+on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	GdkPixbuf *p = GDK_PIXBUF(data);
+	GdkWindow *w = gtk_widget_get_window(GTK_WIDGET(widget));
+	cairo_t *cr = gdk_cairo_create(GDK_DRAWABLE(w));
+
+	gdk_cairo_set_source_pixbuf(cr, p, 0, 0);
+	cairo_paint(cr);
+	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
+	gdk_cairo_set_source_color(cr, &color);
+	cairo_paint_with_alpha(cr, 0.7);
 	return FALSE;
 }
 
@@ -1331,6 +925,10 @@ on_destroy(GtkWidget *widget, gpointer user_data)
   *
   * Trasform a window into a window that has a grab on the pointer on the window
   * and restricts pointer movement to the window boundary.
+  *
+  * Note that the window and pointer grabs should not fail: the reason is that
+  * we have mapped this window above all others and a fully obscured window
+  * cannot hold the pointer or keyboard focus in X.
   */
 void
 grabbed_window(GtkWindow *window, gpointer user_data)
@@ -1353,6 +951,12 @@ grabbed_window(GtkWindow *window, gpointer user_data)
 		EPRINTF("Could not grab pointer!\n");
 }
 
+/** @brief transform a window away from a grabbed window
+  *
+  * Transform the window back into a regular window, releasing the pointer and
+  * keyboard grab and motion restriction.  window is the GtkWindow that
+  * previously had the grabbed_window() method called on it.
+  */
 void
 ungrabbed_window(GtkWindow *window)
 {
@@ -1363,36 +967,112 @@ ungrabbed_window(GtkWindow *window)
 	gdk_window_hide(win);
 }
 
-GtkWindow *
-GetWindow()
+/** @brief get a pixbuf for the screen
+  *
+  * This pixbuf can either be the background image, if one is defined in
+  * _XROOTPMAP_ID or ESETROOT_PMAP_ID, or an copy of the root window otherwise.
+  */
+GdkPixbuf *
+get_pixbuf(GdkScreen * scrn)
 {
-	GtkWidget *win, *vbox;
-	GValue val = G_VALUE_INIT;
+	GdkDisplay *disp = gdk_screen_get_display(scrn);
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	gint width = gdk_screen_get_width(scrn);
+	gint height = gdk_screen_get_height(scrn);
+	GdkDrawable *draw = GDK_DRAWABLE(root);
+	GdkColormap *cmap = gdk_drawable_get_colormap(draw);
+	Atom prop = None;
+
+	if (!(prop = XInternAtom(dpy, "_XROOTPMAP_ID", True)))
+		prop = XInternAtom(dpy, "ESETROOT_PMAP_ID", True);
+
+	if (prop) {
+		Window w = GDK_WINDOW_XID(root);
+		Atom actual = None;
+		int format = 0;
+		unsigned long nitems = 0, after = 0;
+		long *data = NULL;
+
+		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data) {
+			Pixmap p;
+
+			if ((p = data[0])) {
+				GdkPixmap *pmap;
+				
+				pmap = gdk_pixmap_foreign_new_for_display(disp, p);
+				gdk_pixmap_get_size(pmap, &width, &height);
+				draw = GDK_DRAWABLE(pmap);
+			}
+		}
+		if (data)
+			XFree(data);
+	}
+	GdkPixbuf *pbuf = gdk_pixbuf_get_from_drawable(NULL, draw, cmap, 0, 0,
+			0, 0, width, height);
+	return (pbuf);
+}
+
+GtkWidget *wind; /* screen sized window */
+GtkWidget *ebox; /* event box window within the screen */
+
+void
+GetWindow(void)
+{
 	char hostname[64] = { 0, };
 
-	win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_wmclass(GTK_WINDOW(win), "xde-xlogin", "XDE-XLogin");
-	gtk_window_set_title(GTK_WINDOW(win), "XDMCP Greeter");
-	gtk_window_set_gravity(GTK_WINDOW(win), GDK_GRAVITY_CENTER);
-	gtk_window_set_position(GTK_WINDOW(win), GTK_WIN_POS_CENTER_ALWAYS);
-	// gtk_window_set_default_size(GTK_WINDOW(win), 800, 600);
-	gtk_window_set_type_hint(GTK_WINDOW(win), GDK_WINDOW_TYPE_HINT_DIALOG);
-	g_value_init(&val, G_TYPE_BOOLEAN);
-	g_value_set_boolean(&val, FALSE);
-	g_object_set_property(G_OBJECT(win), "allow-grow", &val);
-	g_object_set_property(G_OBJECT(win), "allow-shrink", &val);
-	gtk_window_set_resizable(GTK_WINDOW(win), FALSE);
-	gtk_window_set_decorated(GTK_WINDOW(win), FALSE);
-	gtk_window_set_skip_pager_hint(GTK_WINDOW(win), TRUE);
-	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(win), TRUE);
-	g_signal_connect(G_OBJECT(win), "destroy", G_CALLBACK(on_destroy), NULL);
-	gtk_container_set_border_width(GTK_CONTAINER(win), 5);
+	wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	g_signal_connect(G_OBJECT(wind), "delete-event", G_CALLBACK(on_delete_event), NULL);
+	gtk_window_set_wmclass(GTK_WINDOW(wind), "xde-xlogin", "XDE-XLogin");
+	gtk_window_set_title(GTK_WINDOW(wind), "XDMCP Greeter");
+	gtk_window_set_modal(GTK_WINDOW(wind), TRUE);
+	gtk_window_set_gravity(GTK_WINDOW(wind), GDK_GRAVITY_CENTER);
+	gtk_window_set_type_hint(GTK_WINDOW(wind), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
+	gtk_window_set_icon_name(GTK_WINDOW(wind), "xdm");
+	gtk_container_set_border_width(GTK_CONTAINER(wind), 15);
+	gtk_window_set_skip_pager_hint(GTK_WINDOW(wind), TRUE);
+	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(wind), TRUE);
+	gtk_window_set_position(GTK_WINDOW(wind), GTK_WIN_POS_CENTER_ALWAYS);
+	gtk_window_fullscreen(GTK_WINDOW(wind));
+	gtk_window_set_decorated(GTK_WINDOW(wind), FALSE);
+
+	GdkScreen *scrn = gdk_screen_get_default();
+	gint width = gdk_screen_get_width(scrn);
+	gint height = gdk_screen_get_height(scrn);
+
+	char *geom = g_strdup_printf("%dx%d+0+0", width, height);
+
+	gtk_window_parse_geometry(GTK_WINDOW(wind), geom);
+	g_free(geom);
+
+	gtk_window_set_default_size(GTK_WINDOW(wind), width, height);
+	gtk_widget_set_app_paintable(wind, TRUE);
+
+	GdkPixbuf *pixbuf = get_pixbuf(scrn);
+
+	g_signal_connect(G_OBJECT(wind), "destroy", G_CALLBACK(on_destroy), NULL);
+
+	/* Ultimately this has to be a GtkFixed instead of a GtkAlignment,
+	   because we need to place the window in the center of the active
+	   monitor. */
+	GtkWidget *a = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
+
+	gtk_container_add(GTK_CONTAINER(wind), GTK_WIDGET(a));
 
 	gethostname(hostname, sizeof(hostname));
 
-	vbox = gtk_vbox_new(FALSE, 0);
-	gtk_container_set_border_width(GTK_CONTAINER(vbox), 0);
-	gtk_container_add(GTK_CONTAINER(win), vbox);
+	ebox = gtk_event_box_new();
+
+	gtk_container_add(GTK_CONTAINER(a), ebox);
+	gtk_widget_set_size_request(ebox, -1, -1);
+	g_signal_connect(G_OBJECT(wind), "expose-event", G_CALLBACK(on_expose_event), pixbuf);
+
+	GtkWidget *v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 15);
+	gtk_container_add(GTK_CONTAINER(ebox), v);
 
 	GtkWidget *lab = gtk_label_new(NULL);
 	gchar *markup;
@@ -1403,26 +1083,20 @@ GetWindow()
 	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
 	g_free(markup);
-	gtk_box_pack_start(GTK_BOX(vbox), lab, FALSE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
 
-#ifdef NO_XSESSION
 	GtkWidget *tab = gtk_table_new(1, 2, TRUE);
-#else
-	GtkWidget *tab = gtk_table_new(1, 2, FALSE);
-#endif
 
 	gtk_table_set_col_spacings(GTK_TABLE(tab), 5);
-	gtk_box_pack_end(GTK_BOX(vbox), tab, TRUE, TRUE, 0);
-
-	GtkWidget *vbox2 = gtk_vbox_new(FALSE, 0);
-
-	gtk_table_attach_defaults(GTK_TABLE(tab), vbox2, 0, 1, 0, 1);
+	gtk_box_pack_end(GTK_BOX(v), tab, TRUE, TRUE, 0);
+	v = gtk_vbox_new(FALSE, 0);
+	gtk_table_attach_defaults(GTK_TABLE(tab), v, 0, 1, 0, 1);
 
 	GtkWidget *bin = gtk_frame_new(NULL);
 
 	gtk_frame_set_shadow_type(GTK_FRAME(bin), GTK_SHADOW_ETCHED_IN);
 	gtk_container_set_border_width(GTK_CONTAINER(bin), 0);
-	gtk_box_pack_start(GTK_BOX(vbox2), bin, TRUE, TRUE, 4);
+	gtk_box_pack_start(GTK_BOX(v), bin, TRUE, TRUE, 4);
 
 	GtkWidget *pan = gtk_frame_new(NULL);
 
@@ -1435,23 +1109,20 @@ GetWindow()
 	if (options.banner && (img = gtk_image_new_from_file(options.banner)))
 		gtk_container_add(GTK_CONTAINER(pan), img);
 
-	vbox2 = gtk_vbox_new(FALSE, 0);
+	v = gtk_vbox_new(FALSE, 0);
 
-	gtk_table_attach_defaults(GTK_TABLE(tab), vbox2, 1, 2, 0, 1);
+	gtk_table_attach_defaults(GTK_TABLE(tab), v, 1, 2, 0, 1);
 
 	GtkWidget *inp = gtk_frame_new(NULL);
 
 	gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
 	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
 
-#ifdef NO_XSESSION
-	gtk_box_pack_start(GTK_BOX(vbox2), inp, TRUE, TRUE, 4);
+	gtk_box_pack_start(GTK_BOX(v), inp, TRUE, TRUE, 4);
 
 	GtkWidget *align = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
+
 	gtk_container_add(GTK_CONTAINER(inp), align);
-#else
-	gtk_box_pack_start(GTK_BOX(vbox2), inp, FALSE, FALSE, 4);
-#endif
 
 	GtkWidget *login = gtk_table_new(2, 3, TRUE);
 
@@ -1459,14 +1130,11 @@ GetWindow()
 	gtk_table_set_col_spacings(GTK_TABLE(login), 5);
 	gtk_table_set_row_spacings(GTK_TABLE(login), 5);
 	gtk_table_set_col_spacing(GTK_TABLE(login), 0, 0);
-#ifdef NO_XSESSION
 	gtk_container_add(GTK_CONTAINER(align), login);
-#else
-	gtk_container_add(GTK_CONTAINER(inp), login);
-#endif
 
 	l_uname = gtk_label_new(NULL);
-	gtk_label_set_markup(GTK_LABEL(l_uname), "<span font=\"Liberation Sans 9\"><b>Username:</b></span>");
+	gtk_label_set_markup(GTK_LABEL(l_uname),
+			     "<span font=\"Liberation Sans 9\"><b>Username:</b></span>");
 	gtk_misc_set_alignment(GTK_MISC(l_uname), 1.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l_uname), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(login), l_uname, 0, 1, 0, 1);
@@ -1479,7 +1147,8 @@ GetWindow()
 	gtk_table_attach_defaults(GTK_TABLE(login), user, 1, 2, 0, 1);
 
 	l_pword = gtk_label_new(NULL);
-	gtk_label_set_markup(GTK_LABEL(l_pword), "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
+	gtk_label_set_markup(GTK_LABEL(l_pword),
+			     "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
 	gtk_misc_set_alignment(GTK_MISC(l_pword), 1.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l_pword), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(login), l_pword, 0, 1, 1, 2);
@@ -1494,11 +1163,11 @@ GetWindow()
 	g_signal_connect(G_OBJECT(user), "activate", G_CALLBACK(on_user_activate), pass);
 	g_signal_connect(G_OBJECT(pass), "activate", G_CALLBACK(on_pass_activate), user);
 
-#ifdef NO_XSESSION
 	GtkWidget *bb = gtk_hbutton_box_new();
+
 	gtk_box_set_spacing(GTK_BOX(bb), 5);
 	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_SPREAD);
-	gtk_box_pack_end(GTK_BOX(vbox2), bb, FALSE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(v), bb, FALSE, TRUE, 0);
 
 	GtkWidget *i;
 	GtkWidget *b;
@@ -1546,162 +1215,28 @@ GetWindow()
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_login_clicked), buttons);
 	gtk_widget_set_sensitive(b, FALSE);
 
-#else
-	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
-
-	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
-				       GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_container_set_border_width(GTK_CONTAINER(sw), 3);
-	gtk_box_pack_start(GTK_BOX(vbox2), sw, TRUE, TRUE, 0);
-
-	GtkWidget *bb = gtk_hbutton_box_new();
-
-	gtk_box_set_spacing(GTK_BOX(bb), 5);
-	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_END);
-	gtk_box_pack_end(GTK_BOX(vbox2), bb, FALSE, TRUE, 0);
-
-	/* *INDENT-OFF* */
-	model = gtk_list_store_new(9
-			,G_TYPE_STRING    /* pixbuf */
-			,G_TYPE_STRING    /* Name */
-			,G_TYPE_STRING    /* Comment */
-			,G_TYPE_STRING    /* Name and Comment Markup */
-			,G_TYPE_STRING    /* Label */
-			,G_TYPE_BOOLEAN	  /* SessionManaged? XDE-Managed?  */
-			,G_TYPE_BOOLEAN	  /* X-XDE-managed original setting */
-			,G_TYPE_STRING    /* the file name */
-			,G_TYPE_POINTER    /* the GKeyFile object */
-		);
-	/* *INDENT-ON* */
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
-			COLUMN_MARKUP, GTK_SORT_ASCENDING);
-	view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
-	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), COLUMN_NAME);
-	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), COLUMN_NAME);
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), FALSE);
-	gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(view), GTK_TREE_VIEW_GRID_LINES_BOTH);
-	gtk_container_add(GTK_CONTAINER(sw), view);
-
-	GtkCellRenderer *rend = gtk_cell_renderer_toggle_new();
-
-	gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), TRUE);
-	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), NULL);
-	GtkTreeViewColumn *col;
-
-	col = gtk_tree_view_column_new_with_attributes("Managed", rend, "active", COLUMN_MANAGED,
-						       NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(col));
-
-	rend = gtk_cell_renderer_pixbuf_new();
-	gtk_tree_view_insert_column_with_data_func(GTK_TREE_VIEW(view),
-						   -1, "Icon", rend, on_render_pixbuf, NULL, NULL);
-
-	rend = gtk_cell_renderer_text_new();
-	col = gtk_tree_view_column_new_with_attributes("Window Manager", rend, "markup",
-						       COLUMN_MARKUP, NULL);
-	gtk_tree_view_column_set_sort_column_id(GTK_TREE_VIEW_COLUMN(col), COLUMN_NAME);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(col));
-	cursor = col;
-
-	GtkWidget *i;
-	GtkWidget *b;
-
-	buttons[0] = b = gtk_button_new();
-	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
-	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
-	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
-	if ((getenv("DISPLAY") ? : "")[0] == ':') {
-		if ((i = gtk_image_new_from_stock("gtk-quit", GTK_ICON_SIZE_BUTTON)))
-			gtk_button_set_image(GTK_BUTTON(b), i);
-		gtk_button_set_label(GTK_BUTTON(b), "Logout");
-	} else {
-		if ((i = gtk_image_new_from_stock("gtk-disconnect", GTK_ICON_SIZE_BUTTON)))
-			gtk_button_set_image(GTK_BUTTON(b), i);
-		gtk_button_set_label(GTK_BUTTON(b), "Disconnect");
-	}
-	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
-	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_logout_clicked), buttons);
-	gtk_widget_set_sensitive(b, TRUE);
-
-	buttons[1] = b = gtk_button_new();
-	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
-	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
-	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
-	if ((i = gtk_image_new_from_stock("gtk-save", GTK_ICON_SIZE_BUTTON)))
-		gtk_button_set_image(GTK_BUTTON(b), i);
-	gtk_button_set_label(GTK_BUTTON(b), "Make Default");
-	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
-	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_default_clicked), buttons);
-	gtk_widget_set_sensitive(b, FALSE);
-
-	buttons[2] = b = gtk_button_new();
-	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
-	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
-	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
-	if ((i = gtk_image_new_from_stock("gtk-revert-to-saved", GTK_ICON_SIZE_BUTTON)))
-		gtk_button_set_image(GTK_BUTTON(b), i);
-	gtk_button_set_label(GTK_BUTTON(b), "Use Default");
-	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
-	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_select_clicked), buttons);
-	gtk_widget_set_sensitive(b, FALSE);
-
-	buttons[3] = b = gtk_button_new();
-	gtk_widget_set_can_default(b, TRUE);
-	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
-	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
-	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
-	if ((i = gtk_image_new_from_stock("gtk-ok", GTK_ICON_SIZE_BUTTON)))
-		gtk_button_set_image(GTK_BUTTON(b), i);
-	gtk_button_set_label(GTK_BUTTON(b), "Launch Session");
-	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
-	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_launch_clicked), buttons);
-	gtk_widget_set_sensitive(b, FALSE);
-
-	free(options.choice);
-	options.choice = strdup("default");
-	free(options.session);
-	options.session = NULL;
-	options.managed = TRUE;
-
-	/* FIXME */
-	// gtk_widget_grab_default(b);
-
-	GtkTreeSelection *selection;
-
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
-	g_signal_connect(G_OBJECT(selection), "changed", G_CALLBACK(on_selection_changed), buttons);
-
-	g_signal_connect(G_OBJECT(view), "row_activated", G_CALLBACK(on_row_activated), buttons);
-	g_signal_connect(G_OBJECT(view), "button_press_event", G_CALLBACK(on_button_press), buttons);
-
-	g_idle_add(on_idle, model);
-#endif
-
-	gtk_window_set_default_size(GTK_WINDOW(win), -1, 300);
+	// gtk_window_set_default_size(GTK_WINDOW(ebox), -1, 300);
 
 	/* most of this is just in case override-redirect fails */
-	gtk_window_set_focus_on_map(GTK_WINDOW(win), TRUE);
-	gtk_window_set_accept_focus(GTK_WINDOW(win), TRUE);
-	gtk_window_set_keep_above(GTK_WINDOW(win), TRUE);
-	gtk_window_set_modal(GTK_WINDOW(win), TRUE);
-	gtk_window_stick(GTK_WINDOW(win));
-	gtk_window_deiconify(GTK_WINDOW(win));
-	gtk_widget_show_all(win);
-	gtk_widget_show_now(win);
-	relax();
+	gtk_window_set_focus_on_map(GTK_WINDOW(wind), TRUE);
+	gtk_window_set_accept_focus(GTK_WINDOW(wind), TRUE);
+	gtk_window_set_keep_above(GTK_WINDOW(wind), TRUE);
+	gtk_window_set_modal(GTK_WINDOW(wind), TRUE);
+	gtk_window_stick(GTK_WINDOW(wind));
+	gtk_window_deiconify(GTK_WINDOW(wind));
+	gtk_widget_show_all(wind);
+
+	gtk_widget_realize(wind);
+	GdkWindow *win = gtk_widget_get_window(wind);
+
 	gtk_widget_grab_default(user);
 	gtk_widget_grab_focus(user);
-
-//	gtk_widget_realize(win);
-//	GdkWindow *w = gtk_widget_get_window(win);
-//	gdk_window_set_override_redirect(w, TRUE);
-//	grabbed_window(GTK_WINDOW(win), NULL);
+	gdk_window_set_override_redirect(win, TRUE);
+	grabbed_window(GTK_WINDOW(wind), NULL);
 
 #if 0
 	gtk_main();
-	gtk_widget_destroy(win);
+	gtk_widget_destroy(wind);
 
 	GKeyFile *entry = NULL;
 
@@ -1712,7 +1247,6 @@ GetWindow()
 		}
 	}
 #endif
-	return (GTK_WINDOW(win));
 }
 
 static void

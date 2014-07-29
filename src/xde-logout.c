@@ -48,6 +48,7 @@
 
 #include "xde-logout.h"
 
+#include <gdk/gdkx.h>
 #include <dbus/dbus-glib.h>
 #include <pwd.h>
 #include <systemd/sd-login.h>
@@ -804,6 +805,12 @@ areyousure(GtkWindow *window, char *message)
 	return ((result == GTK_RESPONSE_YES) ? TRUE : FALSE);
 }
 
+static gboolean
+on_destroy(GtkWidget *widget, gpointer user_data)
+{
+	return FALSE;
+}
+
 gboolean
 on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
@@ -1016,6 +1023,57 @@ on_switchuser(GtkButton *button, gpointer data)
 	return;
 }
 
+/** @brief get a pixbuf for the screen
+  *
+  * This pixbuf can either be the background image, if one is defined in
+  * _XROOTPMAP_ID or ESETROOT_PMAP_ID, or an copy of the root window otherwise.
+  */
+GdkPixbuf *
+get_pixbuf(GdkScreen * scrn)
+{
+	GdkDisplay *disp = gdk_screen_get_display(scrn);
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	gint width = gdk_screen_get_width(scrn);
+	gint height = gdk_screen_get_height(scrn);
+	GdkDrawable *draw = GDK_DRAWABLE(root);
+	GdkColormap *cmap = gdk_drawable_get_colormap(draw);
+	Atom prop = None;
+
+#if 0
+	if (!(prop = XInternAtom(dpy, "_XROOTPMAP_ID", True)))
+		prop = XInternAtom(dpy, "ESETROOT_PMAP_ID", True);
+#endif
+
+	if (prop) {
+		Window w = GDK_WINDOW_XID(root);
+		Atom actual = None;
+		int format = 0;
+		unsigned long nitems = 0, after = 0;
+		long *data = NULL;
+
+		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data) {
+			Pixmap p;
+
+			if ((p = data[0])) {
+				GdkPixmap *pmap;
+				
+				pmap = gdk_pixmap_foreign_new_for_display(disp, p);
+				gdk_pixmap_get_size(pmap, &width, &height);
+				draw = GDK_DRAWABLE(pmap);
+			}
+		}
+		if (data)
+			XFree(data);
+	}
+	GdkPixbuf *pbuf = gdk_pixbuf_get_from_drawable(NULL, draw, cmap, 0, 0,
+			0, 0, width, height);
+	return (pbuf);
+}
+
 LogoutActionResult
 make_logout_choice()
 {
@@ -1038,16 +1096,19 @@ make_logout_choice()
 	gtk_window_set_decorated(GTK_WINDOW(w), FALSE);
 
 	GdkScreen *scrn = gdk_screen_get_default();
-	GdkWindow *root = gdk_screen_get_root_window(scrn);
 	gint width = gdk_screen_get_width(scrn);
 	gint height = gdk_screen_get_height(scrn);
 
 	gtk_window_set_default_size(GTK_WINDOW(w), width, height);
 	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
 
-	GdkPixbuf *pixbuf = gdk_pixbuf_get_from_drawable(NULL, GDK_DRAWABLE(root),
-							 NULL, 0, 0, 0, 0, width, height);
+	GdkPixbuf *pixbuf = get_pixbuf(scrn);
 
+	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
+
+	/* Ultimately this has to be a GtkFixed instead of a GtkAlignment,
+	   because we need to place the window in the center of the active
+	   monitor. */
 	GtkWidget *a = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
 
 	gtk_container_add(GTK_CONTAINER(w), GTK_WIDGET(a));
@@ -1056,8 +1117,7 @@ make_logout_choice()
 
 	gtk_container_add(GTK_CONTAINER(a), GTK_WIDGET(e));
 	gtk_widget_set_size_request(GTK_WIDGET(e), -1, -1);
-	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event),
-			 (gpointer) pixbuf);
+	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), pixbuf);
 
 	GtkWidget *v = gtk_vbox_new(FALSE, 5);
 
