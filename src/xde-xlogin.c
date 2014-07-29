@@ -1016,62 +1016,127 @@ get_pixbuf(GdkScreen * scrn)
 	return (pbuf);
 }
 
-GtkWidget *wind; /* screen sized window */
+typedef struct {
+	int index;	    /* index */
+	GdkScreen *scrn;    /* screen */
+	GtkWidget *wind;    /* covering window for screen */
+	gint width;
+	gint height;
+} XdeScreen;
+
+XdeScreen *screens;
+
 GtkWidget *ebox; /* event box window within the screen */
+
+/** @brief get a covering window for a screen
+  */
+void
+GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
+{
+	GtkWidget *wind;
+	GtkWindow *w;
+
+	scr->index = s;
+	scr->scrn = scrn;
+	scr->wind = wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	scr->width = gdk_screen_get_width(scrn);
+	scr->height = gdk_screen_get_height(scrn);
+	w = GTK_WINDOW(wind);
+	gtk_window_set_screen(w, scrn);
+	gtk_window_set_wmclass(w, "xde-xlogin", "XDE-XLogin");
+	gtk_window_set_title(w, "XDMCP Greeter");
+	gtk_window_set_modal(w, TRUE);
+	gtk_window_set_gravity(w, GDK_GRAVITY_CENTER);
+	gtk_window_set_type_hint(w, GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
+	gtk_window_set_icon_name(w, "xdm");
+	gtk_window_set_skip_pager_hint(w, TRUE);
+	gtk_window_set_skip_taskbar_hint(w, TRUE);
+	gtk_window_set_position(w, GTK_WIN_POS_CENTER_ALWAYS);
+	gtk_window_fullscreen(w);
+	gtk_window_set_decorated(w, FALSE);
+	gtk_window_set_default_size(w, scr->width, scr->height);
+
+	char *geom = g_strdup_printf("%dx%d+0+0", scr->width, scr->height);
+	gtk_window_parse_geometry(w, geom);
+	g_free(geom);
+
+	gtk_widget_set_app_paintable(wind, TRUE);
+	GdkPixbuf *pixbuf = get_pixbuf(scrn);
+
+	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
+	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), NULL);
+	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), pixbuf);
+
+	gtk_window_set_focus_on_map(w, TRUE);
+	gtk_window_set_accept_focus(w, TRUE);
+	gtk_window_set_keep_above(w, TRUE);
+	gtk_window_set_modal(w, TRUE);
+	gtk_window_stick(w);
+	gtk_window_deiconify(w);
+	gtk_widget_show_all(wind);
+
+	gtk_widget_realize(wind);
+	GdkWindow *win = gtk_widget_get_window(wind);
+	gdk_window_set_override_redirect(win, TRUE);
+}
+
+/** @brief get a covering window for each screen
+  */
+void
+GetScreens(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	int s, nscr = gdk_display_get_n_screens(disp);
+	XdeScreen *scr;
+
+	screens = calloc(nscr, sizeof(*screens));
+
+	for (s = 0, scr = screens; s < nscr; s++, scr++)
+		GetScreen(scr, s, gdk_display_get_screen(disp, s));
+}
 
 void
 GetWindow(void)
 {
+	GtkWidget *wind;
 	char hostname[64] = { 0, };
+	GdkDisplay *disp = gdk_display_get_default();
+	GdkScreen *scrn = NULL;
+	GdkRectangle rect;
+	XdeScreen *scr;
+	int s, mon;
+	gint x = 0, y = 0;
+	float xrel, yrel;
 
-	wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	g_signal_connect(G_OBJECT(wind), "delete-event", G_CALLBACK(on_delete_event), NULL);
-	gtk_window_set_wmclass(GTK_WINDOW(wind), "xde-xlogin", "XDE-XLogin");
-	gtk_window_set_title(GTK_WINDOW(wind), "XDMCP Greeter");
-	gtk_window_set_modal(GTK_WINDOW(wind), TRUE);
-	gtk_window_set_gravity(GTK_WINDOW(wind), GDK_GRAVITY_CENTER);
-	gtk_window_set_type_hint(GTK_WINDOW(wind), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
-	gtk_window_set_icon_name(GTK_WINDOW(wind), "xdm");
-	gtk_container_set_border_width(GTK_CONTAINER(wind), 15);
-	gtk_window_set_skip_pager_hint(GTK_WINDOW(wind), TRUE);
-	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(wind), TRUE);
-	gtk_window_set_position(GTK_WINDOW(wind), GTK_WIN_POS_CENTER_ALWAYS);
-	gtk_window_fullscreen(GTK_WINDOW(wind));
-	gtk_window_set_decorated(GTK_WINDOW(wind), FALSE);
+	GetScreens();
 
-	GdkScreen *scrn = gdk_screen_get_default();
-	gint width = gdk_screen_get_width(scrn);
-	gint height = gdk_screen_get_height(scrn);
+	gdk_display_get_pointer(disp, &scrn, &x, &y, NULL);
+	if (!scrn)
+		scrn = gdk_display_get_default_screen(disp);
+	s = gdk_screen_get_number(scrn);
+	scr = screens + s;
+	wind = scr->wind;
 
-	char *geom = g_strdup_printf("%dx%d+0+0", width, height);
+	mon = gdk_screen_get_monitor_at_point(scrn, x, y);
+	gdk_screen_get_monitor_geometry(scrn, mon, &rect);
+	x = rect.x + rect.width/2;
+	y = rect.y + rect.height/2;
 
-	gtk_window_parse_geometry(GTK_WINDOW(wind), geom);
-	g_free(geom);
+	xrel = (float)x/(float)scr->width;
+	yrel = (float)y/(float)scr->height;
+	GtkWidget *a = gtk_alignment_new(xrel, yrel, 0.0, 0.0);
 
-	gtk_window_set_default_size(GTK_WINDOW(wind), width, height);
-	gtk_widget_set_app_paintable(wind, TRUE);
-
-	GdkPixbuf *pixbuf = get_pixbuf(scrn);
-
-	g_signal_connect(G_OBJECT(wind), "destroy", G_CALLBACK(on_destroy), NULL);
-
-	/* Ultimately this has to be a GtkFixed instead of a GtkAlignment,
-	   because we need to place the window in the center of the active
-	   monitor. */
-	GtkWidget *a = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
-
-	gtk_container_add(GTK_CONTAINER(wind), GTK_WIDGET(a));
+	gtk_container_add(GTK_CONTAINER(wind), a);
 
 	gethostname(hostname, sizeof(hostname));
 
 	ebox = gtk_event_box_new();
-
 	gtk_container_add(GTK_CONTAINER(a), ebox);
 	gtk_widget_set_size_request(ebox, -1, -1);
-	g_signal_connect(G_OBJECT(wind), "expose-event", G_CALLBACK(on_expose_event), pixbuf);
 
 	GtkWidget *v = gtk_vbox_new(FALSE, 5);
 	gtk_container_set_border_width(GTK_CONTAINER(v), 15);
+
 	gtk_container_add(GTK_CONTAINER(ebox), v);
 
 	GtkWidget *lab = gtk_label_new(NULL);
@@ -1215,38 +1280,11 @@ GetWindow(void)
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_login_clicked), buttons);
 	gtk_widget_set_sensitive(b, FALSE);
 
-	// gtk_window_set_default_size(GTK_WINDOW(ebox), -1, 300);
-
-	/* most of this is just in case override-redirect fails */
-	gtk_window_set_focus_on_map(GTK_WINDOW(wind), TRUE);
-	gtk_window_set_accept_focus(GTK_WINDOW(wind), TRUE);
-	gtk_window_set_keep_above(GTK_WINDOW(wind), TRUE);
-	gtk_window_set_modal(GTK_WINDOW(wind), TRUE);
-	gtk_window_stick(GTK_WINDOW(wind));
-	gtk_window_deiconify(GTK_WINDOW(wind));
 	gtk_widget_show_all(wind);
-
-	gtk_widget_realize(wind);
-	GdkWindow *win = gtk_widget_get_window(wind);
-
+	gtk_widget_show_now(wind);
 	gtk_widget_grab_default(user);
 	gtk_widget_grab_focus(user);
-	gdk_window_set_override_redirect(win, TRUE);
 	grabbed_window(GTK_WINDOW(wind), NULL);
-
-#if 0
-	gtk_main();
-	gtk_widget_destroy(wind);
-
-	GKeyFile *entry = NULL;
-
-	if (strcmp(options.current, "logout") && strcmp(options.current, "login")) {
-		if (!(entry = (typeof(entry)) g_hash_table_lookup(xsessions, options.current))) {
-			EPRINTF("What happenned to entry for %s?\n", options.current);
-			exit(REMANAGE_DISPLAY);
-		}
-	}
-#endif
 }
 
 static void
