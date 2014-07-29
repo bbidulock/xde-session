@@ -378,13 +378,49 @@ test_login_functions()
 	}
 }
 
-GtkMenu *
+static void
+on_switch_session(GtkMenuItem *item, gpointer data)
+{
+	gchar *session = data;
+	GError *error = NULL;
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
+		EPRINTF("cannot access system buss\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+			"org.freedesktop.login1",
+			"/org/freedesktop/login1",
+			"org.freedesktop.login1.Manager");
+	ok = dbus_g_proxy_call(proxy, "ActivateSession", &error, G_TYPE_STRING,
+			session, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok || error)
+		DPRINTF("ActivateSession: %s: call failed\n", session);
+	g_object_unref(G_OBJECT(proxy));
+
+	if (ok) {
+		action_result = LOGOUT_ACTION_SWITCHUSER;
+		gtk_main_quit();
+	}
+}
+
+static void
+free_string(gpointer data, GClosure *unused)
+{
+	free(data);
+}
+
+GtkWidget *
 get_user_menu(void)
 {
 	const char *seat;
 	char **sessions = NULL, **s;
-	GtkMenu *menu = NULL;
+	GtkWidget *menu = NULL;
 	int ret;
+	gboolean gotone = FALSE;
 
 	seat = getenv("XDG_SEAT") ? : "seat0";
 	ret = sd_seat_get_sessions(seat, &sessions, NULL, NULL);
@@ -393,17 +429,8 @@ get_user_menu(void)
 		free(sessions);
 		return (NULL);
 	}
-#if 0
-	if (ret < 2) {
-		DPRINTF("No available sessions to switch to\n");
-		if (sessions) {
-			free(*sessions);
-			free(sessions);
-		}
-		return (NULL);
-	}
-#endif
-	for (s = sessions; s && *s; s++) {
+	menu = gtk_menu_new();
+	for (s = sessions; s && *s; free(*s), s++) {
 		char *type = NULL;
 		char *klass = NULL;
 		char *display = NULL;
@@ -411,9 +438,9 @@ get_user_menu(void)
 		char *host = NULL;
 		char *user = NULL;
 		char *tty = NULL;
-		uid_t uid = 0;
+		uid_t uid = -1;
 		int active, remote;
-		unsigned int vt = -1U;
+		unsigned int vt = 0;
 
 		ret = sd_session_get_type(*s, &type);
 		if (ret < 0) {
@@ -434,7 +461,7 @@ get_user_menu(void)
 		ret = sd_session_get_uid(*s, &uid);
 		if (ret < 0) {
 			DPRINTF("%s: could not determine session uid\n", *s);
-			uid = 0;
+			uid = -1;
 		}
 		active = sd_session_is_active(*s);
 		if (active < 0) {
@@ -457,7 +484,7 @@ get_user_menu(void)
 		ret = sd_session_get_vt(*s, &vt);
 		if (ret < 0) {
 			DPRINTF("%s: could not determine session vt\n", *s);
-			vt = -1U;
+			vt = 0;
 		}
 		ret = sd_session_get_tty(*s, &tty);
 		if (ret < 0) {
@@ -469,22 +496,72 @@ get_user_menu(void)
 			fprintf(stderr, "\tclass: %s\n", klass);
 			fprintf(stderr, "\tdisplay: %s\n", display);
 			fprintf(stderr, "\tservice: %s\n", service);
-			fprintf(stderr, "\tuid: %d\n", (int) uid);
+			fprintf(stderr, "\tuid: %d\n", uid);
 			fprintf(stderr, "\tactive: %s\n", active ? "true" : "false");
 			fprintf(stderr, "\tremote: %s\n", remote ? "true" : "false");
 			fprintf(stderr, "\thost: %s\n", host);
 			fprintf(stderr, "\tuser: %s\n", user);
 			fprintf(stderr, "\ttty: %s\n", tty);
-			fprintf(stderr, "\tvt: %d\n", (int) vt);
+			fprintf(stderr, "\tvt: %u\n", vt);
 		}
-		free(*s);
+		if (active) {
+			DPRINTF("%s: cannot switch to active session\n", *s);
+			continue;
+		}
+		if (vt == 0) {
+			DPRINTF("%s: cannot switch to non-vt session\n", *s);
+			continue;
+		}
+
+		GtkWidget *imag;
+		GtkWidget *item;
+		char *iname = GTK_STOCK_JUMP_TO;
+		gchar *label;
+
+		if (type) {
+			if (!strcmp(type, "tty"))
+				iname = "utilities-terminal";
+			else if (!strcmp(type, "x11"))
+				iname = "preferences-system-windows";
+		}
+		if (klass) {
+			if (!strcmp(klass, "user")) {
+				struct passwd *pw;
+				if (user)
+					label = g_strdup_printf("%u: %s", vt, user);
+				else if (uid != -1 && (pw = getpwuid(uid)))
+					label = g_strdup_printf("%u: %s", vt, pw->pw_name);
+				else
+					label = g_strdup_printf("%u: session %s", vt, *s);
+			} else if (!strcmp(klass, "greeter")) 
+				label = g_strdup_printf("%u: login", vt);
+			else
+				label = g_strdup_printf("%u: session %s", vt, *s);
+		} else
+			label = g_strdup_printf("%u: session %s", vt, *s);
+
+		item = gtk_image_menu_item_new_with_label(label);
+		imag = gtk_image_new_from_icon_name(iname, GTK_ICON_SIZE_MENU);
+		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
+		g_free(label);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		g_signal_connect_data(G_OBJECT(item), "activate",
+				G_CALLBACK(on_switch_session),
+				strdup(*s), free_string, G_CONNECT_AFTER);
+		gtk_widget_show(item);
+		gotone = TRUE;
 	}
 	free(sessions);
+#if 0
 	/* for now */
 	action_result = LOGOUT_ACTION_CANCEL;
 	gtk_main_quit();
 	/* for now */
-	return (menu);
+#endif
+	if (gotone)
+		return (menu);
+	g_object_unref(G_OBJECT(menu));
+	return (NULL);
 }
 
 int
@@ -792,19 +869,19 @@ static const char *button_labels[LOGOUT_ACTION_COUNT] = {
 
 static const char *button_icons[LOGOUT_ACTION_COUNT][3] = {
 	/* *INDENT-OFF* */
-	[LOGOUT_ACTION_POWEROFF]	= { "gtk-stop",		    "system-shutdown",		    "gnome-session-halt"	},
-	[LOGOUT_ACTION_REBOOT]		= { "gtk-refresh",	    "system-reboot",		    "gnome-session-reboot"	},
-	[LOGOUT_ACTION_SUSPEND]		= { "gtk_save",		    "system-suspend",		    "gnome-session-suspend"	},
-	[LOGOUT_ACTION_HIBERNATE]	= { "gtk-save-as",	    "system-suspend-hybernate",	    "gnome-session-hybernate"	},
-	[LOGOUT_ACTION_HYBRIDSLEEP]	= { "gtk-revert-to-saved",  "system-suspend-hybernate",	    "gnome-session-hybernate"	},
-	[LOGOUT_ACTION_SWITCHUSER]	= { "gtk-quit",		    "system-switch-user",	    "gnome-session-switch"	},
-	[LOGOUT_ACTION_SWITCHDESK]	= { "gtk-quit",		    "system-switch-user",	    "gnome-session-switch"	},
-	[LOGOUT_ACTION_LOCKSCREEN]	= { "gtk-redo",		    "gtk-refresh",		    "gtk-refresh"		},
-	[LOGOUT_ACTION_CHECKPOINT]	= { "gtk-save",		    "gtk-save",			    "gtk-save"			},
-	[LOGOUT_ACTION_SHUTDOWN]	= { "gtk-stop",		    "gtk-stop",			    "gtk-stop"			},
-	[LOGOUT_ACTION_LOGOUT]		= { "gtk-missing-image",    "system-lock-screen",	    "gnome-lock-screen"		},
-	[LOGOUT_ACTION_RESTART]		= { "gtk-quit",		    "system-restart",		    "gnome-logout"		},
-	[LOGOUT_ACTION_CANCEL]		= { "gtk-cancel",	    "gtk-cancel",		    "gtk-cancel"		},
+	[LOGOUT_ACTION_POWEROFF]	= { GTK_STOCK_STOP,			"system-shutdown",		"gnome-session-halt"		},
+	[LOGOUT_ACTION_REBOOT]		= { GTK_STOCK_REFRESH,			"system-reboot",		"gnome-session-reboot"		},
+	[LOGOUT_ACTION_SUSPEND]		= { GTK_STOCK_SAVE,			"system-suspend",		"gnome-session-suspend"		},
+	[LOGOUT_ACTION_HIBERNATE]	= { GTK_STOCK_SAVE_AS,			"system-suspend-hibernate",	"gnome-session-hibernate"	},
+	[LOGOUT_ACTION_HYBRIDSLEEP]	= { GTK_STOCK_REVERT_TO_SAVED,		"system-sleep",			"gnome-session-sleep"		},
+	[LOGOUT_ACTION_SWITCHUSER]	= { GTK_STOCK_JUMP_TO,			"system-users",			"system-switch-user"		},
+	[LOGOUT_ACTION_SWITCHDESK]	= { GTK_STOCK_JUMP_TO,			"system-switch-user",		"gnome-session-switch"		},
+	[LOGOUT_ACTION_LOCKSCREEN]	= { GTK_STOCK_DIALOG_AUTHENTICATION,	"system-lock-screen",		"gnome-lock-screen"		},
+	[LOGOUT_ACTION_CHECKPOINT]	= { GTK_STOCK_SAVE,			"gtk-save",			"gtk-save"			},
+	[LOGOUT_ACTION_SHUTDOWN]	= { GTK_STOCK_DELETE,			"gtk-delete",			"gtk-delete"			},
+	[LOGOUT_ACTION_LOGOUT]		= { GTK_STOCK_QUIT,			"system-log-out",		"gnome-session-logout"		},
+	[LOGOUT_ACTION_RESTART]		= { GTK_STOCK_REDO,			"system-run",			"gtk-refresh"			},
+	[LOGOUT_ACTION_CANCEL]		= { GTK_STOCK_CANCEL,			"gtk-cancel",			"gtk-cancel"			},
 	/* *INDENT-ON* */
 };
 
@@ -925,7 +1002,7 @@ void
 on_switchuser(GtkButton *button, gpointer data)
 {
 	LogoutActionResult action = (typeof(action)) (long) data;
-	GtkMenu *menu;
+	GtkWidget *menu;
 
 	if (action_can[action] < AvailStatusChallenge) {
 		EPRINTF("Button %s is disabled!\n", button_labels[action]);
@@ -935,7 +1012,7 @@ on_switchuser(GtkButton *button, gpointer data)
 		DPRINTF("No users to switch to!\n");
 		return;
 	}
-	gtk_menu_popup(menu, NULL, NULL, at_pointer, NULL, 1, GDK_CURRENT_TIME);
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, at_pointer, NULL, 1, GDK_CURRENT_TIME);
 	return;
 }
 
@@ -1048,6 +1125,7 @@ make_logout_choice()
 
 	for (i = 0; i < LOGOUT_ACTION_COUNT; i++) {
 		if (i == LOGOUT_ACTION_SWITCHUSER) {
+#if 0
 			GtkListStore *sess;
 
 			/* *INDENT-OFF* */
@@ -1078,6 +1156,17 @@ make_logout_choice()
 			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), "text", 3);
 
 			fill_session_store(sess);
+#else
+			b = buttons[i] = gtk_button_new();
+			gtk_container_set_border_width(GTK_CONTAINER(b), BU_BORDER_WIDTH);
+			gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
+			gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
+			im = get_icon(GTK_ICON_SIZE_BUTTON, button_icons[i], 3);
+			gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(im));
+			gtk_button_set_label(GTK_BUTTON(b), button_labels[i]);
+			g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_switchuser),
+					 (gpointer) (long) i);
+#endif
 		} else {
 			b = buttons[i] = gtk_button_new();
 			gtk_container_set_border_width(GTK_CONTAINER(b), BU_BORDER_WIDTH);
@@ -1734,7 +1823,7 @@ action_HybridSleep(void)
 static void
 action_SwitchUser(void)
 {
-	/* not implemented yet */
+	/* do nothing: the switch has already been performed once we get here */
 	return;
 }
 

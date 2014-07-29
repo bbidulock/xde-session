@@ -696,15 +696,25 @@ create_action_menu(void)
 }
 
 static void
+at_pointer(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer user)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+
+	gdk_display_get_pointer(disp, NULL, x, y, NULL);
+	*push_in = TRUE;
+}
+
+static void
 on_action_clicked(GtkButton *button, gpointer user_data)
 {
-	static GtkMenu *menu = NULL;
+	GtkMenu *menu;
 
-	if (!menu)
-		menu = create_action_menu();
-	if (!menu)
+	if (!(menu = create_action_menu())) {
+		DPRINTF("No actions to perform\n");
 		return;
-	gtk_menu_popup(menu, NULL, NULL, NULL, NULL, 1, GDK_CURRENT_TIME);
+	}
+	gtk_menu_popup(menu, NULL, NULL, at_pointer, NULL, 1, GDK_CURRENT_TIME);
+	return;
 }
 
 static void
