@@ -1124,10 +1124,7 @@ GtkWidget *ebox; /* event box window within the screen */
 GtkWidget *
 GetBanner(void)
 {
-	GtkWidget *ban = NULL;
-	GtkWidget *bin;
-	GtkWidget *pan;
-	GtkWidget *img;
+	GtkWidget *ban = NULL, *bin, *pan, *img;
 
 	if (options.banner && (img = gtk_image_new_from_file(options.banner))) {
 		ban = gtk_vbox_new(FALSE, 0);
@@ -1147,48 +1144,16 @@ GetBanner(void)
 GtkWidget *
 GetPanel(void)
 {
-	char hostname[64] = { 0, };
+	GtkWidget *pan;
 
-	gethostname(hostname, sizeof(hostname));
-
-	ebox = gtk_event_box_new();
-
-	gtk_container_add(GTK_CONTAINER(cont), ebox);
-	gtk_widget_set_size_request(ebox, -1, -1);
-
-	GtkWidget *v = gtk_vbox_new(FALSE, 5);
-	gtk_container_set_border_width(GTK_CONTAINER(v), 15);
-
-	gtk_container_add(GTK_CONTAINER(ebox), v);
-
-	GtkWidget *lab = gtk_label_new(NULL);
-	gchar *markup;
-
-	markup = g_markup_printf_escaped
-	    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
-	gtk_label_set_markup(GTK_LABEL(lab), markup);
-	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
-	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
-	g_free(markup);
-	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
-
-	GtkWidget *tab = gtk_table_new(1, 2, TRUE);
-
-	gtk_table_set_col_spacings(GTK_TABLE(tab), 5);
-	gtk_box_pack_end(GTK_BOX(v), tab, TRUE, TRUE, 0);
-
-	if ((v = GetBanner()))
-		gtk_table_attach_defaults(GTK_TABLE(tab), v, 0, 1, 0, 1);
-
-	v = gtk_vbox_new(FALSE, 0);
-	gtk_table_attach_defaults(GTK_TABLE(tab), v, 1, 2, 0, 1);
+	pan = gtk_vbox_new(FALSE, 0);
 
 	GtkWidget *inp = gtk_frame_new(NULL);
 
 	gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
 	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
 
-	gtk_box_pack_start(GTK_BOX(v), inp, TRUE, TRUE, 4);
+	gtk_box_pack_start(GTK_BOX(pan), inp, TRUE, TRUE, 4);
 
 	GtkWidget *align = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
 
@@ -1210,7 +1175,7 @@ GetPanel(void)
 	gtk_table_attach_defaults(GTK_TABLE(login), l_uname, 0, 1, 0, 1);
 
 	user = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(user), 10);
+	gtk_entry_set_width_chars(GTK_ENTRY(user), 12);
 	gtk_entry_set_visibility(GTK_ENTRY(user), TRUE);
 	gtk_widget_set_can_default(user, TRUE);
 	gtk_widget_set_can_focus(user, TRUE);
@@ -1224,7 +1189,7 @@ GetPanel(void)
 	gtk_table_attach_defaults(GTK_TABLE(login), l_pword, 0, 1, 1, 2);
 
 	pass = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(pass), 10);
+	gtk_entry_set_width_chars(GTK_ENTRY(pass), 12);
 	gtk_entry_set_visibility(GTK_ENTRY(pass), FALSE);
 	gtk_widget_set_can_default(pass, TRUE);
 	gtk_widget_set_can_focus(pass, TRUE);
@@ -1237,7 +1202,7 @@ GetPanel(void)
 
 	gtk_box_set_spacing(GTK_BOX(bb), 5);
 	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_SPREAD);
-	gtk_box_pack_end(GTK_BOX(v), bb, FALSE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(pan), bb, FALSE, TRUE, 0);
 
 	GtkWidget *i;
 	GtkWidget *b;
@@ -1285,6 +1250,48 @@ GetPanel(void)
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_login_clicked), buttons);
 	gtk_widget_set_sensitive(b, FALSE);
 
+	return (pan);
+}
+
+GtkWidget *
+GetPane(void)
+{
+	char hostname[64] = { 0, };
+
+	gethostname(hostname, sizeof(hostname));
+
+	ebox = gtk_event_box_new();
+
+	gtk_container_add(GTK_CONTAINER(cont), ebox);
+	gtk_widget_set_size_request(ebox, -1, -1);
+
+	GtkWidget *v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 15);
+
+	gtk_container_add(GTK_CONTAINER(ebox), v);
+
+	GtkWidget *lab = gtk_label_new(NULL);
+	gchar *markup;
+
+	markup = g_markup_printf_escaped
+	    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
+	gtk_label_set_markup(GTK_LABEL(lab), markup);
+	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
+	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
+	g_free(markup);
+	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
+
+	GtkWidget *tab = gtk_table_new(1, 2, FALSE);
+
+	gtk_table_set_col_spacings(GTK_TABLE(tab), 5);
+	gtk_box_pack_end(GTK_BOX(v), tab, TRUE, TRUE, 0);
+
+	if ((v = GetBanner()))
+		gtk_table_attach_defaults(GTK_TABLE(tab), v, 0, 1, 0, 1);
+
+	v = GetPanel();
+	gtk_table_attach_defaults(GTK_TABLE(tab), v, 1, 2, 0, 1);
+
 	return (ebox);
 }
 
@@ -1310,7 +1317,7 @@ GetWindow(void)
 	mon = scr->mons + m;
 
 	cont = mon->align;
-	ebox = GetPanel();
+	ebox = GetPane();
 
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
