@@ -170,6 +170,8 @@ typedef struct {
 	char *choice;
 	char *username;
 	char *password;
+	Bool usexde;
+	Bool replace;
 } Options;
 
 Options options = {
@@ -188,6 +190,8 @@ Options options = {
 	.choice = NULL,
 	.username = NULL,
 	.password = NULL,
+	.usexde = False,
+	.replace = False,
 };
 
 typedef enum {
@@ -205,6 +209,11 @@ typedef enum {
 } LoginResult;
 
 LoginResult login_result;
+
+Atom _XA_XDE_THEME_NAME;
+Atom _XA_GTK_READ_RCFILES;
+Atom _XA_XROOTPMAP_ID;
+Atom _XA_ESETROOT_PMAP_ID;
 
 int xssEventBase;
 int xssErrorBase;
@@ -264,6 +273,8 @@ typedef struct {
 	gint nmon;			/* number of monitors */
 	XdeMonitor *mons;		/* monitors for this screen */
 	XScreenSaverInfo info;		/* screen saver info for this screen */
+	char selection[32];
+	Window selwin;
 } XdeScreen;
 
 XdeScreen *screens;
@@ -279,7 +290,7 @@ setup_screensaver(void)
 	Bool gotext = False;
 	Bool present;
 	Status status;
-	XdeScreen *scr;
+	XdeScreen *xscr;
 
 	if ((list = XListExtensions(dpy, &next)) && next)
 		for (n = 0, ext = list; n < next; n++, ext++)
@@ -297,7 +308,7 @@ setup_screensaver(void)
 		DPRINTF("cannot query MIT-SCREEN-SAVER version\n");
 		return;
 	}
-	for (s = 0, scr = screens; s < nscr; s++, scr++) {
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
 		GdkScreen *scrn = gdk_display_get_screen(disp, s);
 		XSetWindowAttributes xwa;
 		unsigned long mask = 0;
@@ -331,7 +342,7 @@ setup_screensaver(void)
 		mask |= CWCursor;
 		xwa.cursor = None;
 
-		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &scr->info);
+		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
 		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
 				ScreenSaverNotifyMask|ScreenSaverCycleMask);
 		XScreenSaverSetAttributes(dpy, RootWindow(dpy, s), 0, 0,
@@ -340,7 +351,7 @@ setup_screensaver(void)
 				0, DefaultDepth(dpy, s), InputOutput,
 				DefaultVisual(dpy, s),
 				mask, &xwa);
-		GdkWindow *win = gtk_widget_get_window(scr->wind);
+		GdkWindow *win = gtk_widget_get_window(xscr->wind);
 		Window w = GDK_WINDOW_XID(win);
 		XScreenSaverRegister(dpy, s, w, XA_WINDOW);
 
@@ -366,6 +377,148 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		fprintf(stderr, "<== XScreenSaverNotify:\n");
 	}
 	return G_SOURCE_CONTINUE;
+}
+
+static void reparse(Display *dpy, Window root);
+
+static GdkFilterReturn
+event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	DPRINT();
+	if (options.debug > 2) {
+		fprintf(stderr, "==> PropertyNotify:\n");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xproperty.window);
+		fprintf(stderr, "    --> atom = %s\n", XGetAtomName(dpy, xev->xproperty.atom));
+		fprintf(stderr, "    --> time = %ld\n", xev->xproperty.time);
+		fprintf(stderr, "    --> state = %s\n",
+			(xev->xproperty.state == PropertyNewValue) ? "NewValue" : "Delete");
+		fprintf(stderr, "<== PropertyNotify:\n");
+	}
+	if (xev->xproperty.atom == _XA_XDE_THEME_NAME
+	    && xev->xproperty.state == PropertyNewValue) {
+		DPRINT();
+		reparse(dpy, xev->xproperty.window);
+		return GDK_FILTER_REMOVE;	/* event handled */
+	}
+	return GDK_FILTER_CONTINUE;	/* event not handled */
+}
+
+static GdkFilterReturn
+event_handler_ClientMessage(Display *dpy, XEvent *xev)
+{
+	DPRINT();
+	if (options.debug > 1) {
+		fprintf(stderr, "==> ClientMessage:\n");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xclient.window);
+		fprintf(stderr, "    --> message_type = %s\n",
+			XGetAtomName(dpy, xev->xclient.message_type));
+		fprintf(stderr, "    --> format = %d\n", xev->xclient.format);
+		switch (xev->xclient.format) {
+			int i;
+
+		case 8:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 20; i++)
+				fprintf(stderr, " %02x", xev->xclient.data.b[i]);
+			fprintf(stderr, "\n");
+			break;
+		case 16:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 10; i++)
+				fprintf(stderr, " %04x", xev->xclient.data.s[i]);
+			fprintf(stderr, "\n");
+			break;
+		case 32:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 5; i++)
+				fprintf(stderr, " %08lx", xev->xclient.data.l[i]);
+			fprintf(stderr, "\n");
+			break;
+		}
+		fprintf(stderr, "<== ClientMessage:\n");
+	}
+	if (xev->xclient.message_type == _XA_GTK_READ_RCFILES) {
+		reparse(dpy, xev->xclient.window);
+		return GDK_FILTER_REMOVE;	/* event handled */
+	}
+	return GDK_FILTER_CONTINUE;	/* event not handled */
+}
+
+static GdkFilterReturn
+root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = data;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case PropertyNotify:
+		return event_handler_PropertyNotify(dpy, xev, xscr);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	DPRINT();
+	if (options.debug > 1) {
+		fprintf(stderr, "==> SelectionClear: %p\n", xscr);
+		fprintf(stderr, "    --> send_event = %s\n",
+			xev->xselectionclear.send_event ? "true" : "false");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xselectionclear.window);
+		fprintf(stderr, "    --> selection = %s\n",
+			XGetAtomName(dpy, xev->xselectionclear.selection));
+		fprintf(stderr, "    --> time = %lu\n", xev->xselectionclear.time);
+		fprintf(stderr, "<== SelectionClear: %p\n", xscr);
+	}
+	if (xscr && xev->xselectionclear.window == xscr->selwin) {
+		XDestroyWindow(dpy, xscr->selwin);
+		EPRINTF("selection cleared, exiting\n");
+		exit(EXIT_SUCCESS);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = (typeof(xscr)) data;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	DPRINT();
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case SelectionClear:
+		return event_handler_SelectionClear(dpy, xev, xscr);
+	}
+	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	Display *dpy = (typeof(dpy)) data;
+
+	DPRINT();
+	switch (xev->type) {
+	case ClientMessage:
+		return event_handler_ClientMessage(dpy, xev);
+	}
+	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;
 }
 
 void
@@ -853,21 +1006,66 @@ get_pixbuf(GdkScreen * scrn)
 	return (pbuf);
 }
 
+static Window
+get_selection(Window selwin, char *selection, int s)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	Atom atom;
+	Window owner;
+
+	snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
+	atom = XInternAtom(dpy, selection, False);
+	if (!(owner = XGetSelectionOwner(dpy, atom)))
+		DPRINTF("No owner for %s\n", selection);
+	if ((owner && options.replace) || (!owner && selwin)) {
+		DPRINTF("Setting owner of %s to 0x%lx from 0x%lx\n", selection,
+				selwin, owner);
+		XSetSelectionOwner(dpy, atom, selwin, CurrentTime);
+		XSync(dpy, False);
+	}
+	if (options.replace && selwin) {
+		XEvent ev;
+		Atom manager = XInternAtom(dpy, "MANAGER", False);
+		GdkScreen *scrn = gdk_display_get_screen(disp, s);
+		GdkWindow *root = gdk_screen_get_root_window(scrn);
+		Window r = GDK_WINDOW_XID(root);
+		Atom atom = XInternAtom(dpy, selection, False);
+
+		ev.xclient.type = ClientMessage;
+		ev.xclient.serial = 0;
+		ev.xclient.send_event = False;
+		ev.xclient.display = dpy;
+		ev.xclient.window = r;
+		ev.xclient.message_type = manager;
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = CurrentTime;
+		ev.xclient.data.l[1] = atom;
+		ev.xclient.data.l[2] = selwin;
+		ev.xclient.data.l[3] = 0;
+		ev.xclient.data.l[4] = 0;
+
+		XSendEvent(dpy, r, False, StructureNotifyMask, &ev);
+		XFlush(dpy);
+	}
+	return (owner);
+}
+
 /** @brief get a covering window for a screen
   */
 void
-GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
+GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 {
 	GtkWidget *wind;
 	GtkWindow *w;
 	int m;
 	XdeMonitor *mon;
 
-	scr->index = s;
-	scr->scrn = scrn;
-	scr->wind = wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	scr->width = gdk_screen_get_width(scrn);
-	scr->height = gdk_screen_get_height(scrn);
+	xscr->index = s;
+	xscr->scrn = scrn;
+	xscr->wind = wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	xscr->width = gdk_screen_get_width(scrn);
+	xscr->height = gdk_screen_get_height(scrn);
 	w = GTK_WINDOW(wind);
 	gtk_window_set_screen(w, scrn);
 	gtk_window_set_wmclass(w, "xde-xlogin", "XDE-XLogin");
@@ -881,9 +1079,9 @@ GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
 	gtk_window_set_position(w, GTK_WIN_POS_CENTER_ALWAYS);
 	gtk_window_fullscreen(w);
 	gtk_window_set_decorated(w, FALSE);
-	gtk_window_set_default_size(w, scr->width, scr->height);
+	gtk_window_set_default_size(w, xscr->width, xscr->height);
 
-	char *geom = g_strdup_printf("%dx%d+0+0", scr->width, scr->height);
+	char *geom = g_strdup_printf("%dx%d+0+0", xscr->width, xscr->height);
 	gtk_window_parse_geometry(w, geom);
 	g_free(geom);
 
@@ -901,16 +1099,16 @@ GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
 	gtk_window_stick(w);
 	gtk_window_deiconify(w);
 
-	scr->nmon = gdk_screen_get_n_monitors(scrn);
-	scr->mons = calloc(scr->nmon, sizeof(*scr->mons));
-	for (m = 0, mon = scr->mons; m < scr->nmon; m++, mon++) {
+	xscr->nmon = gdk_screen_get_n_monitors(scrn);
+	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
+	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
 		float xrel, yrel;
 
 		mon->index = m;
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
 
-		xrel = (float)(mon->geom.x + mon->geom.width/2)/(float) scr->width;
-		yrel = (float)(mon->geom.y + mon->geom.height/2)/(float) scr->height;
+		xrel = (float)(mon->geom.x + mon->geom.width/2)/(float) xscr->width;
+		yrel = (float)(mon->geom.y + mon->geom.height/2)/(float) xscr->height;
 
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -920,6 +1118,69 @@ GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
 	gtk_widget_realize(wind);
 	GdkWindow *win = gtk_widget_get_window(wind);
 	gdk_window_set_override_redirect(win, TRUE);
+
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	GdkEventMask mask = gdk_window_get_events(root);
+	gdk_window_add_filter(root, root_handler, xscr);
+	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK |
+		GDK_SUBSTRUCTURE_MASK;
+	gdk_window_set_events(root, mask);
+
+	Window owner = None;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	xscr->selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
+	if ((owner = get_selection(xscr->selwin, xscr->selection, s))) {
+		if (!options.replace) {
+			XDestroyWindow(dpy, xscr->selwin);
+			EPRINTF("%s: instance already running\n", NAME);
+			exit(EXIT_FAILURE);
+		}
+	}
+	GdkWindow *sel = gdk_x11_window_foreign_new_for_display(disp, xscr->selwin);
+	gdk_window_add_filter(sel, selwin_handler, xscr);
+	mask = gdk_window_get_events(sel);
+	mask |= GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK |
+		GDK_PROPERTY_CHANGE_MASK;
+	gdk_window_set_events(sel, mask);
+}
+
+static void
+reparse(Display *dpy, Window root)
+{
+	XTextProperty xtp = { NULL, };
+	char **list = NULL;
+	int strings = 0;
+
+	DPRINT();
+	gtk_rc_reparse_all();
+	if (!options.replace)
+		return;
+	if (XGetTextProperty(dpy, root, &xtp, _XA_XDE_THEME_NAME)) {
+		if (Xutf8TextPropertyToTextList(dpy, &xtp, &list, &strings) == Success) {
+			if (strings >= 1) {
+				static const char *prefix = "gtk-theme-name=\"";
+				static const char *suffix = "\"";
+				char *rc_string;
+				int len;
+
+				len = strlen(prefix) + strlen(list[0]) + strlen(suffix) + 1;
+				rc_string = calloc(len, sizeof(*rc_string));
+				strncpy(rc_string, prefix, len);
+				strncat(rc_string, list[0], len);
+				strncat(rc_string, suffix, len);
+				gtk_rc_parse_string(rc_string);
+				free(rc_string);
+			}
+			if (list)
+				XFreeStringList(list);
+		} else
+			DPRINTF("could not get text list for property\n");
+		if (xtp.value)
+			XFree(xtp.value);
+	} else
+		DPRINTF("could not get _XDE_THEME_NAME for root 0x%lx\n", root);
 }
 
 /** @brief get a covering window for each screen
@@ -928,13 +1189,18 @@ void
 GetScreens(void)
 {
 	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 	int s, nscr = gdk_display_get_n_screens(disp);
-	XdeScreen *scr;
+	XdeScreen *xscr;
 
 	screens = calloc(nscr, sizeof(*screens));
 
-	for (s = 0, scr = screens; s < nscr; s++, scr++)
-		GetScreen(scr, s, gdk_display_get_screen(disp, s));
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
+		GetScreen(xscr, s, gdk_display_get_screen(disp, s));
+
+	GdkScreen *scrn = gdk_display_get_default_screen(disp);
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	reparse(dpy, GDK_WINDOW_XID(root));
 }
 
 GtkWidget *cont; /* container of event box */
@@ -1119,7 +1385,7 @@ GetWindow(void)
 {
 	GdkDisplay *disp = gdk_display_get_default();
 	GdkScreen *scrn = NULL;
-	XdeScreen *scr;
+	XdeScreen *xscr;
 	XdeMonitor *mon;
 	int s, m;
 	gint x = 0, y = 0;
@@ -1130,10 +1396,10 @@ GetWindow(void)
 	if (!scrn)
 		scrn = gdk_display_get_default_screen(disp);
 	s = gdk_screen_get_number(scrn);
-	scr = screens + s;
+	xscr = screens + s;
 
 	m = gdk_screen_get_monitor_at_point(scrn, x, y);
-	mon = scr->mons + m;
+	mon = xscr->mons + m;
 
 	cont = mon->align;
 	ebox = GetPane();
@@ -1142,36 +1408,67 @@ GetWindow(void)
 	gtk_widget_show_now(cont);
 	gtk_widget_grab_default(user);
 	gtk_widget_grab_focus(user);
-	grabbed_window(scr->wind, NULL);
+	grabbed_window(xscr->wind, NULL);
 }
 
 static void
-run_locker(int argc, char *argv[])
+startup(int argc, char *argv[])
 {
-	gtk_init(NULL, NULL);
+	if (options.usexde) {
+		static const char *suffix = "/.gtkrc-2.0.xde";
+		const char *home = getenv("HOME") ? : ".";
+		int len = strlen(home) + strlen(suffix) + 1;
+		char *file = calloc(len, sizeof(*file));
+
+		strncpy(file, home, len);
+		strncat(file, suffix, len);
+		gtk_rc_add_default_file(file);
+		free(file);
+	}
+
+	gtk_init(&argc, &argv);
+
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	GdkAtom atom;
+
+	atom = gdk_atom_intern_static_string("_XDE_THEME_NAME");
+	_XA_XDE_THEME_NAME = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	atom = gdk_atom_intern_static_string("_GTK_READ_RCFILES");
+	_XA_GTK_READ_RCFILES = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+	atom = gdk_atom_intern_static_string("_XROOTPMAP_ID");
+	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
+	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+}
+
+
+static void
+do_run(int argc, char *argv[], Bool replace)
+{
 	GetWindow();
 	gtk_main();
 	exit(EXIT_SUCCESS);
 }
 
-/** @brief replace the running background locker
-  */
-static void
-run_replace(int argc, char *argv[])
-{
-}
-
 /** @brief quit the running background locker
   */
 static void
-run_quit(int argc, char *argv[])
+do_quit(int argc, char *argv[])
 {
+	GdkDisplay *disp = gdk_display_get_default();
+	int s, nscr = gdk_display_get_n_screens(disp);
+	char selection[32];
+
+	for (s = 0; s < nscr; s++)
+		get_selection(None, selection, s);
 }
 
 /** @brief ask running background locker to lock (or just lock the display)
   */
 static void
-run_lock(int argc, char *argv[])
+do_lock(int argc, char *argv[])
 {
 }
 
@@ -1428,6 +1725,7 @@ main(int argc, char *argv[])
 			if (command == CommandDefault)
 				command = CommandLocker;
 			options.command = CommandLocker;
+			options.replace = False;
 			break;
 		case 'r':	/* -r, --replace */
 			if (options.command != CommandDefault)
@@ -1435,6 +1733,7 @@ main(int argc, char *argv[])
 			if (command == CommandDefault)
 				command = CommandReplace;
 			options.command = CommandReplace;
+			options.replace = True;
 			break;
 		case 'q':	/* -q, --quit */
 			if (options.command != CommandDefault)
@@ -1442,6 +1741,7 @@ main(int argc, char *argv[])
 			if (command == CommandDefault)
 				command = CommandQuit;
 			options.command = CommandQuit;
+			options.replace = True;
 			break;
 		case 'l':	/* -l, --lock */
 			if (options.command != CommandDefault)
@@ -1533,23 +1833,24 @@ main(int argc, char *argv[])
 		goto bad_nonopt;
 	}
 
+	startup(argc, argv);
 	switch (command) {
 	case CommandDefault:
 	case CommandLocker:
 		DPRINTF("%s: running locker\n", argv[0]);
-		run_locker(argc, argv);
+		do_run(argc, argv, False);
 		break;
 	case CommandReplace:
 		DPRINTF("%s: running replace\n", argv[0]);
-		run_replace(argc, argv);
+		do_run(argc, argv, True);
 		break;
 	case CommandQuit:
 		DPRINTF("%s: running quit\n", argv[0]);
-		run_quit(argc, argv);
+		do_quit(argc, argv);
 		break;
 	case CommandLock:
 		DPRINTF("%s: running lock\n", argv[0]);
-		run_lock(argc, argv);
+		do_lock(argc, argv);
 		break;
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);
