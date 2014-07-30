@@ -974,8 +974,8 @@ get_pixbuf(GdkScreen * scrn)
 	GdkColormap *cmap = gdk_drawable_get_colormap(draw);
 	Atom prop = None;
 
-	if (!(prop = XInternAtom(dpy, "_XROOTPMAP_ID", True)))
-		prop = XInternAtom(dpy, "ESETROOT_PMAP_ID", True);
+	if (!(prop = _XA_XROOTPMAP_ID))
+		prop = _XA_ESETROOT_PMAP_ID;
 
 	if (prop) {
 		Window w = GDK_WINDOW_XID(root);
@@ -1155,7 +1155,7 @@ reparse(Display *dpy, Window root)
 
 	DPRINT();
 	gtk_rc_reparse_all();
-	if (!options.replace)
+	if (!options.usexde)
 		return;
 	if (XGetTextProperty(dpy, root, &xtp, _XA_XDE_THEME_NAME)) {
 		if (Xutf8TextPropertyToTextList(dpy, &xtp, &list, &strings) == Success) {
@@ -1442,7 +1442,6 @@ startup(int argc, char *argv[])
 	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
 	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 }
-
 
 static void
 do_run(int argc, char *argv[], Bool replace)

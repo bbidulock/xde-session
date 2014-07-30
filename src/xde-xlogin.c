@@ -145,9 +145,9 @@ enum {
 typedef enum {
 	CommandDefault,
 	CommandXlogin,
-	CommandHelp,
-	CommandVersion,
-	CommandCopying,
+	CommandHelp,			/* command argument help */
+	CommandVersion,			/* command version information */
+	CommandCopying,			/* command copying information */
 } CommandType;
 
 typedef struct {
@@ -166,6 +166,8 @@ typedef struct {
 	char *choice;
 	char *username;
 	char *password;
+	Bool usexde;
+	Bool replace;
 } Options;
 
 Options options = {
@@ -184,6 +186,8 @@ Options options = {
 	.choice = NULL,
 	.username = NULL,
 	.password = NULL,
+	.usexde = False,
+	.replace = False,
 };
 
 typedef enum {
@@ -201,6 +205,128 @@ typedef enum {
 } LoginResult;
 
 LoginResult login_result;
+
+Atom _XA_XDE_THEME_NAME;
+Atom _XA_GTK_READ_RCFILES;
+Atom _XA_XROOTPMAP_ID;
+Atom _XA_ESETROOT_PMAP_ID;
+
+typedef struct {
+	int index;
+	GtkWidget *align;   /* alignment widget at center of monitor */
+	GdkRectangle geom;  /* monitor geometry */
+} XdeMonitor;
+
+typedef struct {
+	int index;	    /* index */
+	GdkScreen *scrn;    /* screen */
+	GtkWidget *wind;    /* covering window for screen */
+	gint width;	    /* width of screen */
+	gint height;	    /* height of screen */
+	gint nmon;	    /* number of monitors */
+	XdeMonitor *mons;   /* monitors for this screen */
+} XdeScreen;
+
+XdeScreen *screens;
+
+static void reparse(Display *dpy, Window root);
+
+static GdkFilterReturn
+event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	DPRINT();
+	if (options.debug > 2) {
+		fprintf(stderr, "==> PropertyNotify:\n");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xproperty.window);
+		fprintf(stderr, "    --> atom = %s\n", XGetAtomName(dpy, xev->xproperty.atom));
+		fprintf(stderr, "    --> time = %ld\n", xev->xproperty.time);
+		fprintf(stderr, "    --> state = %s\n",
+			(xev->xproperty.state == PropertyNewValue) ? "NewValue" : "Delete");
+		fprintf(stderr, "<== PropertyNotify:\n");
+	}
+	if (xev->xproperty.atom == _XA_XDE_THEME_NAME
+	    && xev->xproperty.state == PropertyNewValue) {
+		DPRINT();
+		reparse(dpy, xev->xproperty.window);
+		return GDK_FILTER_REMOVE;	/* event handled */
+	}
+	return GDK_FILTER_CONTINUE;	/* event not handled */
+}
+
+static GdkFilterReturn
+event_handler_ClientMessage(Display *dpy, XEvent *xev)
+{
+	DPRINT();
+	if (options.debug > 1) {
+		fprintf(stderr, "==> ClientMessage:\n");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xclient.window);
+		fprintf(stderr, "    --> message_type = %s\n",
+			XGetAtomName(dpy, xev->xclient.message_type));
+		fprintf(stderr, "    --> format = %d\n", xev->xclient.format);
+		switch (xev->xclient.format) {
+			int i;
+
+		case 8:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 20; i++)
+				fprintf(stderr, " %02x", xev->xclient.data.b[i]);
+			fprintf(stderr, "\n");
+			break;
+		case 16:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 10; i++)
+				fprintf(stderr, " %04x", xev->xclient.data.s[i]);
+			fprintf(stderr, "\n");
+			break;
+		case 32:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 5; i++)
+				fprintf(stderr, " %08lx", xev->xclient.data.l[i]);
+			fprintf(stderr, "\n");
+			break;
+		}
+		fprintf(stderr, "<== ClientMessage:\n");
+	}
+	if (xev->xclient.message_type == _XA_GTK_READ_RCFILES) {
+		reparse(dpy, xev->xclient.window);
+		return GDK_FILTER_REMOVE;	/* event handled */
+	}
+	return GDK_FILTER_CONTINUE;	/* event not handled */
+}
+
+static GdkFilterReturn
+root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = data;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case PropertyNotify:
+		return event_handler_PropertyNotify(dpy, xev, xscr);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	Display *dpy = (typeof(dpy)) data;
+
+	DPRINT();
+	switch (xev->type) {
+	case ClientMessage:
+		return event_handler_ClientMessage(dpy, xev);
+	}
+	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;
+}
 
 void
 relax()
@@ -655,8 +781,8 @@ get_pixbuf(GdkScreen * scrn)
 	GdkColormap *cmap = gdk_drawable_get_colormap(draw);
 	Atom prop = None;
 
-	if (!(prop = XInternAtom(dpy, "_XROOTPMAP_ID", True)))
-		prop = XInternAtom(dpy, "ESETROOT_PMAP_ID", True);
+	if (!(prop = _XA_XROOTPMAP_ID))
+		prop = _XA_ESETROOT_PMAP_ID;
 
 	if (prop) {
 		Window w = GDK_WINDOW_XID(root);
@@ -687,39 +813,21 @@ get_pixbuf(GdkScreen * scrn)
 	return (pbuf);
 }
 
-typedef struct {
-	int index;
-	GtkWidget *align;   /* alignment widget at center of monitor */
-	GdkRectangle geom;  /* monitor geometry */
-} XdeMonitor;
-
-typedef struct {
-	int index;	    /* index */
-	GdkScreen *scrn;    /* screen */
-	GtkWidget *wind;    /* covering window for screen */
-	gint width;	    /* width of screen */
-	gint height;	    /* height of screen */
-	gint nmon;	    /* number of monitors */
-	XdeMonitor *mons;   /* monitors for this screen */
-} XdeScreen;
-
-XdeScreen *screens;
-
 /** @brief get a covering window for a screen
   */
 void
-GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
+GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 {
 	GtkWidget *wind;
 	GtkWindow *w;
 	int m;
 	XdeMonitor *mon;
 
-	scr->index = s;
-	scr->scrn = scrn;
-	scr->wind = wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	scr->width = gdk_screen_get_width(scrn);
-	scr->height = gdk_screen_get_height(scrn);
+	xscr->index = s;
+	xscr->scrn = scrn;
+	xscr->wind = wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	xscr->width = gdk_screen_get_width(scrn);
+	xscr->height = gdk_screen_get_height(scrn);
 	w = GTK_WINDOW(wind);
 	gtk_window_set_screen(w, scrn);
 	gtk_window_set_wmclass(w, "xde-xlogin", "XDE-XLogin");
@@ -733,9 +841,9 @@ GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
 	gtk_window_set_position(w, GTK_WIN_POS_CENTER_ALWAYS);
 	gtk_window_fullscreen(w);
 	gtk_window_set_decorated(w, FALSE);
-	gtk_window_set_default_size(w, scr->width, scr->height);
+	gtk_window_set_default_size(w, xscr->width, xscr->height);
 
-	char *geom = g_strdup_printf("%dx%d+0+0", scr->width, scr->height);
+	char *geom = g_strdup_printf("%dx%d+0+0", xscr->width, xscr->height);
 	gtk_window_parse_geometry(w, geom);
 	g_free(geom);
 
@@ -753,16 +861,16 @@ GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
 	gtk_window_stick(w);
 	gtk_window_deiconify(w);
 
-	scr->nmon = gdk_screen_get_n_monitors(scrn);
-	scr->mons = calloc(scr->nmon, sizeof(*scr->mons));
-	for (m = 0, mon = scr->mons; m < scr->nmon; m++, mon++) {
+	xscr->nmon = gdk_screen_get_n_monitors(scrn);
+	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
+	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
 		float xrel, yrel;
 
 		mon->index = m;
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
 
-		xrel = (float)(mon->geom.x + mon->geom.width/2)/(float) scr->width;
-		yrel = (float)(mon->geom.y + mon->geom.height/2)/(float) scr->height;
+		xrel = (float)(mon->geom.x + mon->geom.width/2)/(float) xscr->width;
+		yrel = (float)(mon->geom.y + mon->geom.height/2)/(float) xscr->height;
 
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -772,6 +880,50 @@ GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
 	gtk_widget_realize(wind);
 	GdkWindow *win = gtk_widget_get_window(wind);
 	gdk_window_set_override_redirect(win, TRUE);
+
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	GdkEventMask mask = gdk_window_get_events(root);
+	gdk_window_add_filter(root, root_handler, xscr);
+	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK |
+		GDK_SUBSTRUCTURE_MASK;
+	gdk_window_set_events(root, mask);
+}
+
+static void
+reparse(Display *dpy, Window root)
+{
+	XTextProperty xtp = { NULL, };
+	char **list = NULL;
+	int strings = 0;
+
+	DPRINT();
+	gtk_rc_reparse_all();
+	if (!options.usexde)
+		return;
+	if (XGetTextProperty(dpy, root, &xtp, _XA_XDE_THEME_NAME)) {
+		if (Xutf8TextPropertyToTextList(dpy, &xtp, &list, &strings) == Success) {
+			if (strings >= 1) {
+				static const char *prefix = "gtk-theme-name=\"";
+				static const char *suffix = "\"";
+				char *rc_string;
+				int len;
+
+				len = strlen(prefix) + strlen(list[0]) + strlen(suffix) + 1;
+				rc_string = calloc(len, sizeof(*rc_string));
+				strncpy(rc_string, prefix, len);
+				strncat(rc_string, list[0], len);
+				strncat(rc_string, suffix, len);
+				gtk_rc_parse_string(rc_string);
+				free(rc_string);
+			}
+			if (list)
+				XFreeStringList(list);
+		} else
+			DPRINTF("could not get text list for property\n");
+		if (xtp.value)
+			XFree(xtp.value);
+	} else
+		DPRINTF("could not get _XDE_THEME_NAME for root 0x%lx\n", root);
 }
 
 /** @brief get a covering window for each screen
@@ -780,13 +932,18 @@ void
 GetScreens(void)
 {
 	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 	int s, nscr = gdk_display_get_n_screens(disp);
-	XdeScreen *scr;
+	XdeScreen *xscr;
 
 	screens = calloc(nscr, sizeof(*screens));
 
-	for (s = 0, scr = screens; s < nscr; s++, scr++)
-		GetScreen(scr, s, gdk_display_get_screen(disp, s));
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
+		GetScreen(xscr, s, gdk_display_get_screen(disp, s));
+
+	GdkScreen *scrn = gdk_display_get_default_screen(disp);
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	reparse(dpy, GDK_WINDOW_XID(root));
 }
 
 GtkWidget *cont; /* container of event box */
@@ -971,7 +1128,7 @@ GetWindow(void)
 {
 	GdkDisplay *disp = gdk_display_get_default();
 	GdkScreen *scrn = NULL;
-	XdeScreen *scr;
+	XdeScreen *xscr;
 	XdeMonitor *mon;
 	int s, m;
 	gint x = 0, y = 0;
@@ -982,10 +1139,10 @@ GetWindow(void)
 	if (!scrn)
 		scrn = gdk_display_get_default_screen(disp);
 	s = gdk_screen_get_number(scrn);
-	scr = screens + s;
+	xscr = screens + s;
 
 	m = gdk_screen_get_monitor_at_point(scrn, x, y);
-	mon = scr->mons + m;
+	mon = xscr->mons + m;
 
 	cont = mon->align;
 	ebox = GetPane();
@@ -994,13 +1151,44 @@ GetWindow(void)
 	gtk_widget_show_now(cont);
 	gtk_widget_grab_default(user);
 	gtk_widget_grab_focus(user);
-	grabbed_window(scr->wind, NULL);
+	grabbed_window(xscr->wind, NULL);
 }
 
 static void
-run_xlogin(int argc, char *argv[])
+startup(int argc, char *argv[])
 {
-	gtk_init(NULL, NULL);
+	if (options.usexde) {
+		static const char *suffix = "/.gtkrc-2.0.xde";
+		const char *home = getenv("HOME") ? : ".";
+		int len = strlen(home) + strlen(suffix) + 1;
+		char *file = calloc(len, sizeof(*file));
+
+		strncpy(file, home, len);
+		strncat(file, suffix, len);
+		gtk_rc_add_default_file(file);
+		free(file);
+	}
+
+	gtk_init(&argc, &argv);
+
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	GdkAtom atom;
+
+	atom = gdk_atom_intern_static_string("_XDE_THEME_NAME");
+	_XA_XDE_THEME_NAME = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	atom = gdk_atom_intern_static_string("_GTK_READ_RCFILES");
+	_XA_GTK_READ_RCFILES = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+	atom = gdk_atom_intern_static_string("_XROOTPMAP_ID");
+	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
+	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+}
+
+static void
+do_run(int argc, char *argv[])
+{
 	GetWindow();
 	gtk_main();
 	exit(REMANAGE_DISPLAY);
@@ -1378,11 +1566,12 @@ main(int argc, char *argv[])
 		goto bad_nonopt;
 	}
 
+	startup(argc, argv);
 	switch (command) {
 	case CommandDefault:
 	case CommandXlogin:
 		DPRINTF("%s: running xlogin\n", argv[0]);
-		run_xlogin(argc - optind, &argv[optind]);
+		do_run(argc - optind, &argv[optind]);
 		break;
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);
