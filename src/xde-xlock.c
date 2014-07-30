@@ -211,8 +211,6 @@ int xssErrorBase;
 int xssMajorVersion;
 int xssMinorVersion;
 
-XScreenSaverInfo xssInfo;
-
 const char *
 xssState(int state)
 {
@@ -251,32 +249,102 @@ showBool(Bool boolean)
 	return ("False");
 }
 
+typedef struct {
+	int index;
+	GtkWidget *align;   /* alignment widget at center of monitor */
+	GdkRectangle geom;  /* monitor geometry */
+} XdeMonitor;
+
+typedef struct {
+	int index;			/* index */
+	GdkScreen *scrn;		/* screen */
+	GtkWidget *wind;		/* covering window for screen */
+	gint width;			/* width of screen */
+	gint height;			/* height of screen */
+	gint nmon;			/* number of monitors */
+	XdeMonitor *mons;		/* monitors for this screen */
+	XScreenSaverInfo info;		/* screen saver info for this screen */
+} XdeScreen;
+
+XdeScreen *screens;
+
 void
-setup_screensaver(int screen)
+setup_screensaver(void)
 {
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
-	Status status;
+	int s, nscr = gdk_display_get_n_screens(disp);
+	char **list, **ext;
+	int n, next = 0;
+	Bool gotext = False;
 	Bool present;
+	Status status;
+	XdeScreen *scr;
 
-	present = XScreenSaverQueryExtension(dpy, &xssEventBase, &xssErrorBase);
-	if (!present) {
-		DPRINTF("no MIT-SCREEN-SAVER extension present\n");
+	if ((list = XListExtensions(dpy, &next)) && next)
+		for (n = 0, ext = list; n < next; n++, ext++)
+			if (!strcmp(*ext, "MIT-SCREEN-SAVER"))
+				gotext = True;
+	if (!gotext) {
+		DPRINTF("no MIT-SCREEN-SAVER extension\n");
 		return;
 	}
-	status = XScreenSaverQueryVersion(dpy, &xssMajorVersion, &xssMinorVersion);
-	if (!status) {
-		EPRINTF("cannot query MIT-SCREEN-SAVER version\n");
+	if (!(present = XScreenSaverQueryExtension(dpy, &xssEventBase, &xssErrorBase))) {
+		DPRINTF("MIT-SCREEN-SAVER extension not present\n");
 		return;
 	}
-	DPRINTF("MIT-SCREEN-SAVER Extension %d:%d\n", xssMajorVersion, xssMinorVersion);
-
-	status = XScreenSaverQueryInfo(dpy, RootWindow(dpy, screen), &xssInfo);
-	if (!status) {
-		EPRINTF("cannot query MIT-SCREEN-SAVER info\n");
+	if (!(status = XScreenSaverQueryVersion(dpy, &xssMajorVersion, &xssMinorVersion))) {
+		DPRINTF("cannot query MIT-SCREEN-SAVER version\n");
 		return;
 	}
+	for (s = 0, scr = screens; s < nscr; s++, scr++) {
+		GdkScreen *scrn = gdk_display_get_screen(disp, s);
+		XSetWindowAttributes xwa;
+		unsigned long mask = 0;
 
+		mask |= CWBackPixmap;
+		xwa.background_pixmap = None;
+		mask |= CWBackPixel;
+		xwa.background_pixel = BlackPixel(dpy, s);
+		mask |= CWBorderPixmap;
+		xwa.border_pixmap = None;
+		mask |= CWBorderPixel;
+		xwa.border_pixel = BlackPixel(dpy, s);
+		mask |= CWBitGravity;
+		xwa.bit_gravity = 0;
+		mask |= CWWinGravity;
+		xwa.win_gravity = NorthWestGravity;
+		mask |= CWBackingStore;
+		xwa.backing_store = NotUseful;
+		mask |= CWBackingPlanes;
+		xwa.backing_pixel = 0;
+		mask |= CWSaveUnder;
+		xwa.save_under = True;
+		mask |= CWEventMask;
+		xwa.event_mask = NoEventMask;
+		mask |= CWDontPropagate;
+		xwa.do_not_propagate_mask = NoEventMask;
+		mask |= CWOverrideRedirect;
+		xwa.override_redirect = True;
+		mask |= CWColormap;
+		xwa.colormap = DefaultColormap(dpy, s);
+		mask |= CWCursor;
+		xwa.cursor = None;
+
+		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &scr->info);
+		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
+				ScreenSaverNotifyMask|ScreenSaverCycleMask);
+		XScreenSaverSetAttributes(dpy, RootWindow(dpy, s), 0, 0,
+				gdk_screen_get_width(scrn),
+				gdk_screen_get_height(scrn),
+				0, DefaultDepth(dpy, s), InputOutput,
+				DefaultVisual(dpy, s),
+				mask, &xwa);
+		GdkWindow *win = gtk_widget_get_window(scr->wind);
+		Window w = GDK_WINDOW_XID(win);
+		XScreenSaverRegister(dpy, s, w, XA_WINDOW);
+
+	}
 }
 
 GdkFilterReturn
@@ -784,24 +852,6 @@ get_pixbuf(GdkScreen * scrn)
 			0, 0, width, height);
 	return (pbuf);
 }
-
-typedef struct {
-	int index;
-	GtkWidget *align;   /* alignment widget at center of monitor */
-	GdkRectangle geom;  /* monitor geometry */
-} XdeMonitor;
-
-typedef struct {
-	int index;	    /* index */
-	GdkScreen *scrn;    /* screen */
-	GtkWidget *wind;    /* covering window for screen */
-	gint width;	    /* width of screen */
-	gint height;	    /* height of screen */
-	gint nmon;	    /* number of monitors */
-	XdeMonitor *mons;   /* monitors for this screen */
-} XdeScreen;
-
-XdeScreen *screens;
 
 /** @brief get a covering window for a screen
   */
