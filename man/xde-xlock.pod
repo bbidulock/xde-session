@@ -1,0 +1,259 @@
+=pod
+
+=head1 NAME
+
+xde-xlock - screen locker for X Desktop Environment (XDE)
+
+=head1 SYNOPSIS
+
+B<xde-xlock> [I<OPTIONS>]
+
+=head1 DESCRIPTION
+
+B<xde-xlock> is a screen locker replacement that provides tight
+integration with the L<systemd(8)> multi-session enviroment.  It acts as
+a screen-saver locker, detects L<logind(8)> C<Lock> signals, and
+performs locking on VT switches.
+
+=head1 OPTIONS
+
+=head2 Command Options
+
+Command options affect the major operating mode of the program.  Only
+one command option may be specified (with the exception that B<--help>
+can be specified in conjunction with any other command option).  When no
+command option is specified, B<--locker> is assumed.  The command
+options recognized by the program are as follows:
+
+=over
+
+=item [B<-L>, B<--locker>]
+
+Run continuously as a screen locker instance.  This process will monitor
+for screen locking requests, screen saver activation and virtual
+terminal changes and will invoke screen locking as appropriate.
+
+=item B<-r>, B<--replace>
+
+Replace a currently running screen locker instance with the current
+process.
+
+=item B<-l>, B<--lock>
+
+Ask a running instance to lock the screen now.
+
+=item B<-q>, B<--quit>
+
+Ask a running instance to exit.
+
+=item B<-h>, B<--help>
+
+Print usage information and the default settings for various options on
+standard output and exit.
+
+=item B<-V>, B<--version>
+
+Print version information on standard output and exit.
+
+=item B<-C>, B<--copying>
+
+Print copying permissions on standard output and exit.
+
+=back
+
+=head2 General Options
+
+General options can be specified in conjunction with any command option.
+The general options recognized by the program are as follows:
+
+=over
+
+=item B<-p>, B<--prompt> I<PROMPT>
+
+Specifies the pango markup text that is to be displayed in the title
+area of the unlock panel.  The default is C<Welcome to %s!>, where
+C<%s> is the fully qualified domain name of the current host.
+
+=item B<-b>, B<--banner> I<BANNER>
+
+Specifies the banner graphic to display in the left pane of the unlock
+panel.  The default is obtained by looking for the file
+F<${XDG_MENU_PREFIX}banner.png> in the F<images> subdirectory of
+standard XDG data directories, F<$XDG_DATA_DIRS>.  See L</ENVIRONMENT>.
+
+=item B<-s>, B<--side> {B<left>|B<top>|B<right>|B<bottom>}
+
+Specifies the side of the window on which the banner logo will be
+placed.  The default is B<left>.  Although this option may be specified,
+the program ignores any setting other than B<left>.
+
+=item B<-S>, B<--splash> I<SPLASH>
+
+Specifies the background image, I<SPLASH>, to display on the lock
+screen.  The default is to use the background image currently installed
+on the screen, and if no background image is installed on the screen, to
+search for the background image file in the file named
+F<${XDG_MENU_PREFIX}splash.png> in the F<images> subdirectory of
+standard XDG data directories, F<$XDG_DATA_DIRS>.  See L</ENVIRONMENT>.
+
+=item B<-n>, B<--dry-run>
+
+Don't do anything, just print what would be done on standard error.
+
+=item B<-D>, B<--debug> [I<LEVEL>]
+
+Increase, or set to I<LEVEL>, the debugging verbosity.  The default
+debugging verbosity level is zero (0), which means to output no
+debugging information.  When non-zero, debugging information will be
+printed to standard error.
+
+=item B<-v>, B<--verbose> [I<LEVEL>]
+
+Increase, or set to I<LEVEL>, the output verbosity.  THe default output
+verbosity level is one (1), which means to output normal information to
+standard output.  When set to zero (0), no output will be printed to
+standard output. 
+
+=back
+
+=head1 USAGE
+
+The B<--locker> command option (the default), or the B<--replace>
+option, can be used to run the program as a background screen locker.
+In this mode the program installs itself as follows:
+
+=over
+
+=item 1.
+
+If possible, takes ownership of the B<_XDE_XLOCK_S>C<%d> manager
+selections for each screen on the display.  If one of these manager
+selections is already owned, the program exits with a diagnostic unless
+B<--replace> was specified as a command option.
+
+=item 2.
+
+Installs itself as a screen saver using the C<MIT-SCREEN-SAVER>
+extension on the X server (if present).
+
+=item 3.
+
+Installs itself as a monitoring program on the controlling terminal for
+virtual terminal switches (when the X server is running on a local
+virtual terminal).
+
+=item 4.
+
+Listens for a C<Lock> signal from the L<systemd(8)> L<logind(8)>
+D-BUS service.
+
+=item 5.
+
+Monitors for changes.
+
+=back
+
+When monitoring for changes, the screen locker responds as follows:
+
+=over
+
+=item 1.
+
+When it receives a lock request from another instance of the program, it
+locks the screen immediately.
+
+=item 2.
+
+When the screen saver is activated, it waits for a number of seconds
+after the activation and locks the screen.
+
+=item 3.
+
+When a C<Lock> signal is received from L<logind(8)>, over the D-BUS, it
+locks the screen.
+
+When an C<Unlock> signal is received from L<logind(8)>, over the D-BUS,
+it unlocks the screen.
+
+=item 4.
+
+When a virtual teriminal change is made to the VT on which the X server
+is running, it locks the screen before permitting the switch.
+
+=back
+
+The B<--quit> option can be used to ask a running instance of the screen
+locker to quit (uninstall itself and exit).
+
+The B<--lock> option can be used to ask a running instance of the screen
+locker to lock the screen.
+
+=head1 FILES
+
+The following files are used by the program:
+
+=over
+
+=item F<$XDG_DATA_DIRS/images/${XDG_MENU_PREFIX}banner.png>
+
+The default location of the banner logo to display on the left of the
+unlock panel.
+
+=item F<$XDG_DATA_DIRS/images/${XDG_MENU_PREFIX}splash.png>
+
+The default location of the background splash to display on the lock
+screen when no other background is available.
+
+=back
+
+=head1 ENVIRONMENT
+
+The following environment variables are considered by the program:
+
+=over
+
+=item B<XDG_VENDOR_ID>
+
+When specified in the environment, the program will use the value of
+this environment variable to form the default names of the B<--banner>
+and B<--splash> files by prefixing it and a dash (C<->) to the default
+banner or splash name.  This environment variable will be used in
+preference to B<XDG_MENU_PREFIX> but can be overridden with the
+B<--vendor> option.
+
+=item B<XDG_MENU_PREFIX>
+
+When specified in the environment, and neither the B<XDG_VENDOR_ID>
+environment variable nor the B<--vendor> option are specified, the
+program will use the value of this environment variable to form the
+default names of the B<--banner> and B<--splash> files by prefixing it
+to the default banner or splash name.  This environment variable will be
+overridden by either of the B<XDG_VENDOR_ID> environment variable or
+B<--vendor> option.
+
+=item B<XDG_DATA_DIRS>
+
+When specified, specifies the path of XDG data directories that will be
+searched for banner or splash files.  When unspecified, defaults to
+F</usr/local/share:/usr/share> in accordance with XDG specifications.
+
+=back
+
+=head1 HISTORY
+
+I wrote B<xde-xlock> because there were no stand-alone screen lockers
+that worked well with the L<systemd(8)> multi-session environment.
+
+=head1 SEE ALSO
+
+L<xdm(1)>,
+L<xde-xlogin(1)>,
+L<xde-session(1)>.
+
+=head1 AUTHOR
+
+Brian Bidulock L<mailto:bidulock@openss7.org>
+
+=cut
+
+# vim: set tw=72 nocin:

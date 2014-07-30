@@ -9,7 +9,8 @@ xde_man_files = \
 	xde-xchooser.man \
 	xde-xlogin.man \
 	xde-wmproxy.man \
-	xde-xsession.man
+	xde-xsession.man \
+	xde-xlock.man
 
 nodist_man1_MANS = $(xde_man_files)
 CLEANFILES = $(xde_man_files)
@@ -24,37 +25,8 @@ EXTRA_DIST = \
 	xde-xchooser.pod \
 	xde-xlogin.pod \
 	xde-wmproxy.pod \
-	xde-xsession.pod
-
-xde-autostart.man: MANNAME = XDE-AUTOSTART
-xde-autostart.man: xde-autostart.pod
-
-xde-chooser.man: MANNAME = XDE-CHOOSER
-xde-chooser.man: xde-chooser.pod
-
-xde-input.man: MANNAME = XDE-INPUT
-xde-input.man: xde-input.pod
-
-xde-logout.man: MANNAME = XDE-LOGOUT
-xde-logout.man: xde-logout.pod
-
-xde-session.man: MANNAME = XDE-SESSION
-xde-session.man: xde-session.pod
-
-xde-smproxy.man: MANNAME = XDE-SMPROXY
-xde-smproxy.man: xde-smproxy.pod
-
-xde-xchooser.man: MANNAME = XDE-XCHOOSER
-xde-xchooser.man: xde-xchooser.pod
-
-xde-xlogin.man: MANNAME = XDE-XLOGIN
-xde-xlogin.man: xde-xlogin.pod
-
-xde-wmproxy.man: MANNAME = XDE-WMPROXY
-xde-wmproxy.man: xde-wmproxy.pod
-
-xde-xsession.man: MANNAME = XDE-XSESSION
-xde-xsession.man: xde-xsession.pod
+	xde-xsession.pod \
+	xde-xlock.pod
 
 SUFFIXES = .man .pod
 
@@ -66,7 +38,6 @@ SUFFIXES = .man .pod
 		--fixedbold="CB" \
 		--fixeditalic="CI" \
 		--fixedbolditalic="CX" \
-		--name="$(MANNAME)" \
 		--nourls \
 		--release="$(PACKAGE) $(VERSION)" \
 		--section="1" \

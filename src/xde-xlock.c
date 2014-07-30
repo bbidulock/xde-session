@@ -1198,8 +1198,11 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [options]\n\
-    %1$s {-h|--help}\n\
+    %1$s [options] [{-L|--locker}]\n\
+    %1$s [options] {-r|--replace}\n\
+    %1$s [options] {-l|--lock}\n\
+    %1$s [options] {-q|--quit}\n\
+    %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 ", argv[0]);
@@ -1212,14 +1215,22 @@ help(int argc, char *argv[])
 		return;
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [options] ADDRESS [...]\n\
+    %1$s [options] [{-L|--locker}]\n\
+    %1$s [options] {-r|--replace}\n\
+    %1$s [options] {-l|--lock}\n\
+    %1$s [options] {-q|--quit}\n\
     %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
-Arguments:\n\
-    ADDRESS [...]\n\
-        host names of display managers or \"BROADCAST\"\n\
 Command options:\n\
+   [-L, --locker]\n\
+        run continuously as a screen locker instance\n\
+    -r, --replace\n\
+        replace a running instance with the current one\n\
+    -l, --lock\n\
+        ask a running instance to lock the screen now\n\
+    -q, --quit\n\
+        ask a running instance to quit\n\
     -h, --help, -?, --?\n\
         print this usage information and exit\n\
     -V, --version\n\
@@ -1229,10 +1240,10 @@ Command options:\n\
 General options:\n\
     -b, --banner PNGFILE\n\
         banner graphic to display\n\
-	(%2$s)\n\
+        (%2$s)\n\
     -p, --prompt TEXT\n\
         text to prompt for password\n\
-	(%3$s)\n\
+        (%3$s)\n\
     -n, --dry-run\n\
         do not act: only print intentions (%4$s)\n\
     -D, --debug [LEVEL]\n\
@@ -1337,11 +1348,6 @@ main(int argc, char *argv[])
 
 			{"banner",	required_argument,	NULL, 'b'},
 			{"prompt",	required_argument,	NULL, 'p'},
-
-			{"locker",	no_argument,		NULL, 'L'},
-			{"replace",	no_argument,		NULL, 'r'},
-			{"lock",	no_argument,		NULL, 'l'},
-			{"quit",	no_argument,		NULL, 'q'},
 
 			{"dry-run",	no_argument,		NULL, 'n'},
 			{"debug",	optional_argument,	NULL, 'D'},
