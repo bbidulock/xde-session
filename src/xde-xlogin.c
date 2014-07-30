@@ -931,9 +931,9 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
   * cannot hold the pointer or keyboard focus in X.
   */
 void
-grabbed_window(GtkWindow *window, gpointer user_data)
+grabbed_window(GtkWidget *window, gpointer user_data)
 {
-	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(window));
+	GdkWindow *win = gtk_widget_get_window(window);
 	GdkEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
 
 	gdk_window_set_override_redirect(win, TRUE);
@@ -958,9 +958,9 @@ grabbed_window(GtkWindow *window, gpointer user_data)
   * previously had the grabbed_window() method called on it.
   */
 void
-ungrabbed_window(GtkWindow *window)
+ungrabbed_window(GtkWidget *window)
 {
-	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(window));
+	GdkWindow *win = gtk_widget_get_window(window);
 
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
@@ -1017,16 +1017,22 @@ get_pixbuf(GdkScreen * scrn)
 }
 
 typedef struct {
+	int index;
+	GtkWidget *align;   /* alignment widget at center of monitor */
+	GdkRectangle geom;  /* monitor geometry */
+} XdeMonitor;
+
+typedef struct {
 	int index;	    /* index */
 	GdkScreen *scrn;    /* screen */
 	GtkWidget *wind;    /* covering window for screen */
-	gint width;
-	gint height;
+	gint width;	    /* width of screen */
+	gint height;	    /* height of screen */
+	gint nmon;	    /* number of monitors */
+	XdeMonitor *mons;   /* monitors for this screen */
 } XdeScreen;
 
 XdeScreen *screens;
-
-GtkWidget *ebox; /* event box window within the screen */
 
 /** @brief get a covering window for a screen
   */
@@ -1035,6 +1041,8 @@ GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
 {
 	GtkWidget *wind;
 	GtkWindow *w;
+	int m;
+	XdeMonitor *mon;
 
 	scr->index = s;
 	scr->scrn = scrn;
@@ -1073,6 +1081,21 @@ GetScreen(XdeScreen *scr, int s, GdkScreen *scrn)
 	gtk_window_set_modal(w, TRUE);
 	gtk_window_stick(w);
 	gtk_window_deiconify(w);
+
+	scr->nmon = gdk_screen_get_n_monitors(scrn);
+	scr->mons = calloc(scr->nmon, sizeof(*scr->mons));
+	for (m = 0, mon = scr->mons; m < scr->nmon; m++, mon++) {
+		float xrel, yrel;
+
+		mon->index = m;
+		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
+
+		xrel = (float)(mon->geom.x + mon->geom.width/2)/(float) scr->width;
+		yrel = (float)(mon->geom.y + mon->geom.height/2)/(float) scr->height;
+
+		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
+		gtk_container_add(GTK_CONTAINER(w), mon->align);
+	}
 	gtk_widget_show_all(wind);
 
 	gtk_widget_realize(wind);
@@ -1095,43 +1118,42 @@ GetScreens(void)
 		GetScreen(scr, s, gdk_display_get_screen(disp, s));
 }
 
-void
-GetWindow(void)
+GtkWidget *cont; /* container of event box */
+GtkWidget *ebox; /* event box window within the screen */
+
+GtkWidget *
+GetBanner(void)
 {
-	GtkWidget *wind;
+	GtkWidget *ban = NULL;
+	GtkWidget *bin;
+	GtkWidget *pan;
+	GtkWidget *img;
+
+	if (options.banner && (img = gtk_image_new_from_file(options.banner))) {
+		ban = gtk_vbox_new(FALSE, 0);
+		bin = gtk_frame_new(NULL);
+		gtk_frame_set_shadow_type(GTK_FRAME(bin), GTK_SHADOW_ETCHED_IN);
+		gtk_container_set_border_width(GTK_CONTAINER(bin), 0);
+		gtk_box_pack_start(GTK_BOX(ban), bin, TRUE, TRUE, 4);
+		pan = gtk_frame_new(NULL);
+		gtk_frame_set_shadow_type(GTK_FRAME(pan), GTK_SHADOW_NONE);
+		gtk_container_set_border_width(GTK_CONTAINER(pan), 15);
+		gtk_container_add(GTK_CONTAINER(bin), pan);
+		gtk_container_add(GTK_CONTAINER(pan), img);
+	}
+	return (ban);
+}
+
+GtkWidget *
+GetPanel(void)
+{
 	char hostname[64] = { 0, };
-	GdkDisplay *disp = gdk_display_get_default();
-	GdkScreen *scrn = NULL;
-	GdkRectangle rect;
-	XdeScreen *scr;
-	int s, mon;
-	gint x = 0, y = 0;
-	float xrel, yrel;
-
-	GetScreens();
-
-	gdk_display_get_pointer(disp, &scrn, &x, &y, NULL);
-	if (!scrn)
-		scrn = gdk_display_get_default_screen(disp);
-	s = gdk_screen_get_number(scrn);
-	scr = screens + s;
-	wind = scr->wind;
-
-	mon = gdk_screen_get_monitor_at_point(scrn, x, y);
-	gdk_screen_get_monitor_geometry(scrn, mon, &rect);
-	x = rect.x + rect.width/2;
-	y = rect.y + rect.height/2;
-
-	xrel = (float)x/(float)scr->width;
-	yrel = (float)y/(float)scr->height;
-	GtkWidget *a = gtk_alignment_new(xrel, yrel, 0.0, 0.0);
-
-	gtk_container_add(GTK_CONTAINER(wind), a);
 
 	gethostname(hostname, sizeof(hostname));
 
 	ebox = gtk_event_box_new();
-	gtk_container_add(GTK_CONTAINER(a), ebox);
+
+	gtk_container_add(GTK_CONTAINER(cont), ebox);
 	gtk_widget_set_size_request(ebox, -1, -1);
 
 	GtkWidget *v = gtk_vbox_new(FALSE, 5);
@@ -1154,28 +1176,11 @@ GetWindow(void)
 
 	gtk_table_set_col_spacings(GTK_TABLE(tab), 5);
 	gtk_box_pack_end(GTK_BOX(v), tab, TRUE, TRUE, 0);
-	v = gtk_vbox_new(FALSE, 0);
-	gtk_table_attach_defaults(GTK_TABLE(tab), v, 0, 1, 0, 1);
 
-	GtkWidget *bin = gtk_frame_new(NULL);
-
-	gtk_frame_set_shadow_type(GTK_FRAME(bin), GTK_SHADOW_ETCHED_IN);
-	gtk_container_set_border_width(GTK_CONTAINER(bin), 0);
-	gtk_box_pack_start(GTK_BOX(v), bin, TRUE, TRUE, 4);
-
-	GtkWidget *pan = gtk_frame_new(NULL);
-
-	gtk_frame_set_shadow_type(GTK_FRAME(pan), GTK_SHADOW_NONE);
-	gtk_container_set_border_width(GTK_CONTAINER(pan), 15);
-	gtk_container_add(GTK_CONTAINER(bin), pan);
-
-	GtkWidget *img;
-
-	if (options.banner && (img = gtk_image_new_from_file(options.banner)))
-		gtk_container_add(GTK_CONTAINER(pan), img);
+	if ((v = GetBanner()))
+		gtk_table_attach_defaults(GTK_TABLE(tab), v, 0, 1, 0, 1);
 
 	v = gtk_vbox_new(FALSE, 0);
-
 	gtk_table_attach_defaults(GTK_TABLE(tab), v, 1, 2, 0, 1);
 
 	GtkWidget *inp = gtk_frame_new(NULL);
@@ -1280,11 +1285,38 @@ GetWindow(void)
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_login_clicked), buttons);
 	gtk_widget_set_sensitive(b, FALSE);
 
-	gtk_widget_show_all(wind);
-	gtk_widget_show_now(wind);
+	return (ebox);
+}
+
+void
+GetWindow(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	GdkScreen *scrn = NULL;
+	XdeScreen *scr;
+	XdeMonitor *mon;
+	int s, m;
+	gint x = 0, y = 0;
+
+	GetScreens();
+
+	gdk_display_get_pointer(disp, &scrn, &x, &y, NULL);
+	if (!scrn)
+		scrn = gdk_display_get_default_screen(disp);
+	s = gdk_screen_get_number(scrn);
+	scr = screens + s;
+
+	m = gdk_screen_get_monitor_at_point(scrn, x, y);
+	mon = scr->mons + m;
+
+	cont = mon->align;
+	ebox = GetPanel();
+
+	gtk_widget_show_all(cont);
+	gtk_widget_show_now(cont);
 	gtk_widget_grab_default(user);
 	gtk_widget_grab_focus(user);
-	grabbed_window(GTK_WINDOW(wind), NULL);
+	grabbed_window(scr->wind, NULL);
 }
 
 static void
