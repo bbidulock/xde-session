@@ -24,6 +24,17 @@
 -ss
 -hnl
 -nbc
+-TGdkScreen
+-TXdeScreen
+-TGdkXEvent
+-TGtkMenuItem
+-TGClosure
+-TGtkMenu
+-Tgint
+-Tgboolean
+-Tgchar
+-TGtkEntry
+-TGdkScreen
 -TSmClient
 -TSmsCallbacks
 -TXErrorEvent
