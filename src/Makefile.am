@@ -50,13 +50,13 @@ xde_wmproxy_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
 
 xde_xchooser_CPPFLAGS = -DNAME=\"xde-xchooser\"
 xde_xchooser_SOURCES = xde-xchooser.c xde-xchooser.h
-xde_xchooser_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS)
-xde_xchooser_LDFLAGS = $(XDMCP_LIBS) $(AM_LDFLAGS)
+xde_xchooser_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_xchooser_LDFLAGS = $(XDMCP_LIBS) $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_xlogin_CPPFLAGS = -DNAME=\"xde-xlogin\"
 xde_xlogin_SOURCES = xde-xlogin.c xde-xlogin.h
-xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_xlogin_LDFLAGS = $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_xlogin_LDFLAGS = $(XDMCP_LIBS) $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_xlock_CPPFLAGS = -DNAME=\"xde-xlock\"
 xde_xlock_SOURCES = xde-xlock.c

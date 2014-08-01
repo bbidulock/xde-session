@@ -111,6 +111,9 @@
 #include <getopt.h>
 #endif
 
+#include <langinfo.h>
+#include <locale.h>
+
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
 	fprintf(stderr, "I: "); \
@@ -145,13 +148,13 @@ enum {
 
 typedef enum {
 	CommandDefault,
+	CommandHelp,			/* command argument help */
+	CommandVersion,			/* command version information */
+	CommandCopying,			/* command copying information */
 	CommandLocker,			/* run as a background locker */
 	CommandReplace,			/* replace any running instance */
 	CommandLock,			/* ask running instance to lock */
 	CommandQuit,			/* ask running instance to quit */
-	CommandHelp,			/* command argument help */
-	CommandVersion,			/* command version information */
-	CommandCopying,			/* command copying information */
 } CommandType;
 
 typedef struct {
@@ -164,6 +167,11 @@ typedef struct {
 	char *banner;
 	char *welcome;
 	CommandType command;
+	char *charset;
+	char *language;
+	char *icon_theme;
+	char *gtk2_theme;
+	LogoSide side;
 	char *current;
 	Bool managed;
 	char *session;
@@ -184,6 +192,11 @@ Options options = {
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
 	.command = CommandDefault,
+	.charset = NULL,
+	.language = NULL,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.side = LOGO_SIDE_LEFT,
 	.current = NULL,
 	.managed = True,
 	.session = NULL,
@@ -527,6 +540,8 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	EPRINTF("wrong message type for handler %d\n", xev->type);
 	return GDK_FILTER_CONTINUE;
 }
+
+GtkWidget *top;
 
 void
 relax()
@@ -1532,9 +1547,7 @@ GetBanner(void)
 GtkWidget *
 GetPanel(void)
 {
-	GtkWidget *pan;
-
-	pan = gtk_vbox_new(FALSE, 0);
+	GtkWidget *pan = gtk_vbox_new(FALSE, 0);
 
 	GtkWidget *inp = gtk_frame_new(NULL);
 
@@ -1590,31 +1603,28 @@ GetPanel(void)
 
 	gtk_box_set_spacing(GTK_BOX(bb), 5);
 	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_SPREAD);
-	gtk_box_pack_end(GTK_BOX(pan), bb, FALSE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(pan), bb, FALSE, FALSE, 0);
 
 	GtkWidget *i;
 	GtkWidget *b;
 
-	buttons[0] = b = gtk_button_new();
+	if ((getenv("DISPLAY") ? : "")[0] == ':') {
+		b = gtk_button_new_from_stock(GTK_STOCK_QUIT);
+	} else {
+		b = gtk_button_new_from_stock(GTK_STOCK_DISCONNECT);
+	}
 	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
 	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
 	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
-	if ((getenv("DISPLAY") ? : "")[0] == ':') {
-		if ((i = gtk_image_new_from_stock("gtk-quit", GTK_ICON_SIZE_BUTTON)))
-			gtk_button_set_image(GTK_BUTTON(b), i);
-		gtk_button_set_label(GTK_BUTTON(b), "Logout");
-	} else {
-		if ((i = gtk_image_new_from_stock("gtk-disconnect", GTK_ICON_SIZE_BUTTON)))
-			gtk_button_set_image(GTK_BUTTON(b), i);
-		gtk_button_set_label(GTK_BUTTON(b), "Disconnect");
-	}
 	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_logout_clicked), buttons);
 	gtk_widget_set_sensitive(b, TRUE);
+	buttons[0] = b;
 
 	buttons[4] = b = gtk_button_new();
 	gtk_widget_set_can_default(b, FALSE);
 	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
+	gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
 	gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
 	if ((i = gtk_image_new_from_stock("gtk-execute", GTK_ICON_SIZE_BUTTON)))
 		gtk_button_set_image(GTK_BUTTON(b), i);
@@ -1642,7 +1652,7 @@ GetPanel(void)
 }
 
 GtkWidget *
-GetPane(void)
+GetPane(GtkWidget *cont)
 {
 	char hostname[64] = { 0, };
 
@@ -1655,7 +1665,7 @@ GetPane(void)
 
 	GtkWidget *v = gtk_vbox_new(FALSE, 5);
 
-	gtk_container_set_border_width(GTK_CONTAINER(v), 15);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 10);
 
 	gtk_container_add(GTK_CONTAINER(ebox), v);
 
@@ -1670,21 +1680,20 @@ GetPane(void)
 	g_free(markup);
 	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
 
-	GtkWidget *tab = gtk_table_new(1, 2, FALSE);
+	GtkWidget *h = gtk_hbox_new(FALSE, 5);
 
-	gtk_table_set_col_spacings(GTK_TABLE(tab), 5);
-	gtk_box_pack_end(GTK_BOX(v), tab, TRUE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(v), h, TRUE, TRUE, 0);
 
 	if ((v = GetBanner()))
-		gtk_table_attach_defaults(GTK_TABLE(tab), v, 0, 1, 0, 1);
+		gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
 
 	v = GetPanel();
-	gtk_table_attach_defaults(GTK_TABLE(tab), v, 1, 2, 0, 1);
+	gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
 
 	return (ebox);
 }
 
-void
+GtkWidget *
 GetWindow(void)
 {
 	GdkDisplay *disp = gdk_display_get_default();
@@ -1706,13 +1715,14 @@ GetWindow(void)
 	mon = xscr->mons + m;
 
 	cont = mon->align;
-	ebox = GetPane();
+	ebox = GetPane(cont);
 
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
 	gtk_widget_grab_default(user);
 	gtk_widget_grab_focus(user);
 	grabbed_window(xscr->wind, NULL);
+	return xscr->wind;
 }
 
 static void
@@ -1748,11 +1758,11 @@ startup(int argc, char *argv[])
 }
 
 static void
-do_run(int argc, char *argv[], Bool replace)
+do_run(int argc, char *argv[])
 {
-	GetWindow();
+	startup(argc, argv);
+	top = GetWindow();
 	gtk_main();
-	exit(EXIT_SUCCESS);
 }
 
 /** @brief quit the running background locker
@@ -1760,10 +1770,13 @@ do_run(int argc, char *argv[], Bool replace)
 static void
 do_quit(int argc, char *argv[])
 {
-	GdkDisplay *disp = gdk_display_get_default();
-	int s, nscr = gdk_display_get_n_screens(disp);
+	GdkDisplay *disp;
+	int s, nscr;
 	char selection[32];
 
+	startup(argc, argv);
+	disp = gdk_display_get_default();
+	nscr = gdk_display_get_n_screens(disp);
 	for (s = 0; s < nscr; s++)
 		get_selection(None, selection, s);
 }
@@ -1773,6 +1786,7 @@ do_quit(int argc, char *argv[])
 static void
 do_lock(int argc, char *argv[])
 {
+	startup(argc, argv);
 }
 
 static void
@@ -1949,7 +1963,7 @@ set_default_banner(void)
 }
 
 void
-set_default_prompt(void)
+set_default_welcome(void)
 {
 	char hostname[64] = { 0, };
 	char *buf;
@@ -1966,8 +1980,17 @@ set_default_prompt(void)
 void
 set_defaults(void)
 {
+	char *p, *a;
+
 	set_default_banner();
-	set_default_prompt();
+	set_default_welcome();
+	if ((options.language = setlocale(LC_ALL, ""))) {
+		options.language = strdup(options.language);
+		a = strchrnul(options.language, '@');
+		if ((p = strchr(options.language, '.')))
+			strcpy(p, a);
+	}
+	options.charset = strdup(nl_langinfo(CODESET));
 }
 
 void
@@ -1999,6 +2022,10 @@ main(int argc, char *argv[])
 			{"banner",	required_argument,	NULL, 'b'},
 			{"prompt",	required_argument,	NULL, 'p'},
 			{"xde-theme",	no_argument,		NULL, 'u'},
+			{"charset",	required_argument,	NULL, '1'},
+			{"language",	required_argument,	NULL, '2'},
+			{"icons",	required_argument,	NULL, 'i'},
+			{"theme",	required_argument,	NULL, 'T'},
 
 			{"dry-run",	no_argument,		NULL, 'n'},
 			{"debug",	optional_argument,	NULL, 'D'},
@@ -2065,6 +2092,22 @@ main(int argc, char *argv[])
 			break;
 		case 'u':	/* -u, --xde-theme */
 			options.usexde = True;
+			break;
+		case '1':	/* -c --charset CHARSET */
+			free(options.charset);
+			options.charset = strdup(optarg);
+			break;
+		case '2':	/* -l, --language LANG */
+			free(options.language);
+			options.language = strdup(optarg);
+			break;
+		case 'i':	/* -i, --icons THEME */
+			free(options.icon_theme);
+			options.icon_theme = strdup(optarg);
+			break;
+		case 'T':	/* -t, --theme THEME */
+			free(options.gtk2_theme);
+			options.gtk2_theme = strdup(optarg);
 			break;
 
 		case 'n':	/* -n, --dry-run */
@@ -2139,17 +2182,16 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
 	}
-
-	startup(argc, argv);
+	get_defaults();
 	switch (command) {
 	case CommandDefault:
 	case CommandLocker:
 		DPRINTF("%s: running locker\n", argv[0]);
-		do_run(argc, argv, False);
+		do_run(argc, argv);
 		break;
 	case CommandReplace:
 		DPRINTF("%s: running replace\n", argv[0]);
-		do_run(argc, argv, True);
+		do_run(argc, argv);
 		break;
 	case CommandQuit:
 		DPRINTF("%s: running quit\n", argv[0]);
