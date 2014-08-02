@@ -188,7 +188,7 @@ Options options = {
 	.dryrun = False,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
-	.connectionType = FamilyInternet,
+	.connectionType = FamilyInternet6,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
 	.command = CommandDefault,
@@ -674,30 +674,6 @@ struct pam_conv xde_pam_conv = {
 };
 
 static void
-on_switch_session(GtkMenuItem *item, gpointer data)
-{
-	gchar *session = data;
-	GError *error = NULL;
-	DBusGConnection *bus;
-	DBusGProxy *proxy;
-	gboolean ok;
-
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
-		EPRINTF("cannot access system buss\n");
-		return;
-	}
-	proxy = dbus_g_proxy_new_for_name(bus,
-					  "org.freedesktop.login1",
-					  "/org/freedesktop/login1",
-					  "org.freedesktop.login1.Manager");
-	ok = dbus_g_proxy_call(proxy, "ActivateSession", &error, G_TYPE_STRING,
-			       session, G_TYPE_INVALID, G_TYPE_INVALID);
-	if (!ok || error)
-		DPRINTF("ActivateSession: %s: call failed\n", session);
-	g_object_unref(G_OBJECT(proxy));
-}
-
-static void
 on_poweroff(GtkMenuItem *item, gpointer data)
 {
 	gchar *status = data;
@@ -792,12 +768,6 @@ free_value(gpointer data, GClosure *unused)
 {
 	if (data)
 		g_free(data);
-}
-
-static void
-free_string(gpointer data, GClosure *unused)
-{
-	free(data);
 }
 
 /** @brief add a power actions submenu to the actions menu
@@ -975,6 +945,36 @@ append_session_tasks(GtkMenu *menu)
 
 	if (!(env = getenv("SESSION_MANAGER")))
 		return;
+}
+
+static void
+on_switch_session(GtkMenuItem *item, gpointer data)
+{
+	gchar *session = data;
+	GError *error = NULL;
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
+		EPRINTF("cannot access system buss\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+					  "org.freedesktop.login1",
+					  "/org/freedesktop/login1",
+					  "org.freedesktop.login1.Manager");
+	ok = dbus_g_proxy_call(proxy, "ActivateSession", &error, G_TYPE_STRING,
+			       session, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok || error)
+		DPRINTF("ActivateSession: %s: call failed\n", session);
+	g_object_unref(G_OBJECT(proxy));
+}
+
+static void
+free_string(gpointer data, GClosure *unused)
+{
+	free(data);
 }
 
 /** @brief add a switch users submenu to the actions menu
@@ -1872,6 +1872,30 @@ Usage:\n\
 ", argv[0]);
 }
 
+const char *
+show_side(LogoSide side)
+{
+	switch (side) {
+	case LOGO_SIDE_LEFT:
+		return ("left");
+	case LOGO_SIDE_TOP:
+		return ("top");
+	case LOGO_SIDE_RIGHT:
+		return ("right");
+	case LOGO_SIDE_BOTTOM:
+		return ("bottom");
+	}
+	return ("unknown");
+}
+
+const char *
+show_bool(Bool val)
+{
+	if (val)
+		return ("true");
+	return ("false");
+}
+
 static void
 help(int argc, char *argv[])
 {
@@ -2173,7 +2197,7 @@ main(int argc, char *argv[])
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(REMANAGE_DISPLAY);
+			exit(2);
 		}
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);

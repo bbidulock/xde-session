@@ -1837,14 +1837,14 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [OPTIONS] [--] [SESSION]\n\
-    %1$s {-h|--help}\n\
+    %1$s [options] [--] [SESSION]\n\
+    %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 ", argv[0]);
 }
 
-static const char *
+const char *
 show_side(LogoSide side)
 {
 	switch (side) {
@@ -1860,7 +1860,7 @@ show_side(LogoSide side)
 	return ("unknown");
 }
 
-static const char *
+const char *
 show_bool(Bool val)
 {
 	if (val)

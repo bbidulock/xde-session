@@ -42,13 +42,64 @@
 
  *****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
+#endif
+
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
 
-#include "xde-logout.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/timerfd.h>
+#include <sys/ioctl.h>
+#include <sys/wait.h>
+#include <sys/poll.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <time.h>
+#include <signal.h>
+#include <syslog.h>
+#include <sys/utsname.h>
 
+#include <assert.h>
+#include <locale.h>
+#include <stdarg.h>
+#include <strings.h>
+#include <regex.h>
+
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xproto.h>
+#include <X11/Xutil.h>
+#include <X11/Xresource.h>
+#ifdef XRANDR
+#include <X11/extensions/Xrandr.h>
+#include <X11/extensions/randr.h>
+#endif
+#ifdef XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+#ifdef STARTUP_NOTIFICATION
+#define SN_API_NOT_YET_FROZEN
+#include <libsn/sn.h>
+#endif
+#include <X11/SM/SMlib.h>
 #include <gdk/gdkx.h>
+#include <gtk/gtk.h>
+#include <cairo.h>
+
 #include <dbus/dbus-glib.h>
 #include <pwd.h>
 #include <systemd/sd-login.h>
@@ -56,6 +107,26 @@
 #ifdef _GNU_SOURCE
 #include <getopt.h>
 #endif
+
+#include <langinfo.h>
+#include <locale.h>
+
+#define XPRINTF(args...) do { } while (0)
+#define OPRINTF(args...) do { if (options.output > 1) { \
+	fprintf(stderr, "I: "); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define DPRINTF(args...) do { if (options.debug) { \
+	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define EPRINTF(args...) do { \
+	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr);   } while (0)
+#define DPRINT() do { if (options.debug) { \
+	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fflush(stderr); } } while (0)
 
 static int saveArgc;
 static char **saveArgv;
@@ -69,11 +140,11 @@ typedef enum _LogoSide {
 
 typedef enum {
 	CommandDefault,
+	CommandHelp,			/* command argument help */
+	CommandVersion,			/* command version information */
+	CommandCopying,			/* command copying information */
 	CommandLogout,
-	CommandHelp,
-	CommandVersion,
-	CommandCopying,
-} Command;
+} CommandType;
 
 typedef struct {
 	int output;
@@ -81,16 +152,18 @@ typedef struct {
 	Bool dryrun;
 	char *lockscreen;
 	char *banner;
-	char *prompt;
-	LogoSide side;
-	Bool noask;
+	char *welcome;
+	CommandType command;
+	char *charset;
+	char *language;
 	char *icon_theme;
 	char *gtk2_theme;
+	LogoSide side;
 	Bool usexde;
+	Bool noask;
 	unsigned int timeout;
 	char *clientId;
 	char *saveFile;
-	Command command;
 } Options;
 
 Options options = {
@@ -99,16 +172,18 @@ Options options = {
 	.dryrun = False,
 	.lockscreen = NULL,
 	.banner = NULL,
-	.prompt = NULL,
-	.side = LOGO_SIDE_LEFT,
-	.noask = False,
+	.welcome = NULL,
+	.command = CommandDefault,
+	.charset = NULL,
+	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.side = LOGO_SIDE_LEFT,
 	.usexde = False,
+	.noask = False,
 	.timeout = 15,
 	.clientId = NULL,
 	.saveFile = NULL,
-	.command = CommandDefault,
 };
 
 typedef enum {
@@ -130,6 +205,31 @@ typedef enum {
 
 LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
+
+Atom _XA_XDE_THEME_NAME;
+Atom _XA_GTK_READ_RCFILES;
+Atom _XA_XROOTPMAP_ID;
+Atom _XA_ESETROOT_PMAP_ID;
+
+typedef struct {
+	int index;
+	GtkWidget *align;		/* alignment widget at center of
+					   monitor */
+	GdkRectangle geom;		/* monitor geometry */
+} XdeMonitor;
+
+typedef struct {
+	int index;			/* index */
+	GdkScreen *scrn;		/* screen */
+	GtkWidget *wind;		/* covering window for screen */
+	gint width;			/* width of screen */
+	gint height;			/* height of screen */
+	gint nmon;			/* number of monitors */
+	XdeMonitor *mons;		/* monitors for this screen */
+	GdkPixmap *pixmap;		/* pixmap for background image */
+} XdeScreen;
+
+XdeScreen *screens;
 
 typedef enum {
 	AvailStatusUndef,		/* undefined */
@@ -157,6 +257,95 @@ status_of_string(const char *string)
 	return AvailStatusUnknown;
 }
 
+static void reparse(Display *dpy, Window root);
+void get_source(XdeScreen *xscr);
+
+static GdkFilterReturn
+event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	DPRINT();
+	if (options.debug > 2) {
+		fprintf(stderr, "==> PropertyNotify:\n");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xproperty.window);
+		fprintf(stderr, "    --> atom = %s\n", XGetAtomName(dpy, xev->xproperty.atom));
+		fprintf(stderr, "    --> time = %ld\n", xev->xproperty.time);
+		fprintf(stderr, "    --> state = %s\n",
+			(xev->xproperty.state == PropertyNewValue) ? "NewValue" : "Delete");
+		fprintf(stderr, "<== PropertyNotify:\n");
+	}
+	if (xev->xproperty.atom == _XA_XDE_THEME_NAME && xev->xproperty.state == PropertyNewValue) {
+		DPRINT();
+		reparse(dpy, xev->xproperty.window);
+		return GDK_FILTER_REMOVE;	/* event handled */
+	}
+	if (xev->xproperty.atom == _XA_XROOTPMAP_ID && xev->xproperty.state == PropertyNewValue) {
+		DPRINT();
+		get_source(xscr);
+		return GDK_FILTER_REMOVE;	/* event handled */
+	}
+	return GDK_FILTER_CONTINUE;	/* event not handled */
+}
+
+static GdkFilterReturn
+event_handler_ClientMessage(Display *dpy, XEvent *xev)
+{
+	DPRINT();
+	if (options.debug > 1) {
+		fprintf(stderr, "==> ClientMessage:\n");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xclient.window);
+		fprintf(stderr, "    --> message_type = %s\n",
+			XGetAtomName(dpy, xev->xclient.message_type));
+		fprintf(stderr, "    --> format = %d\n", xev->xclient.format);
+		switch (xev->xclient.format) {
+			int i;
+
+		case 8:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 20; i++)
+				fprintf(stderr, " %02x", xev->xclient.data.b[i]);
+			fprintf(stderr, "\n");
+			break;
+		case 16:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 10; i++)
+				fprintf(stderr, " %04x", xev->xclient.data.s[i]);
+			fprintf(stderr, "\n");
+			break;
+		case 32:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 5; i++)
+				fprintf(stderr, " %08lx", xev->xclient.data.l[i]);
+			fprintf(stderr, "\n");
+			break;
+		}
+		fprintf(stderr, "<== ClientMessage:\n");
+	}
+	if (xev->xclient.message_type == _XA_GTK_READ_RCFILES) {
+		reparse(dpy, xev->xclient.window);
+		return GDK_FILTER_REMOVE;	/* event handled */
+	}
+	return GDK_FILTER_CONTINUE;	/* event not handled */
+}
+
+static GdkFilterReturn
+root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = data;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case PropertyNotify:
+		return event_handler_PropertyNotify(dpy, xev, xscr);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
 static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
 	/* *INDENT-OFF* */
 	[LOGOUT_ACTION_POWEROFF]	= AvailStatusUndef,
@@ -174,6 +363,29 @@ static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_CANCEL]		= AvailStatusUndef,
 	/* *INDENT-ON* */
 };
+static GdkFilterReturn
+client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	Display *dpy = (typeof(dpy)) data;
+
+	DPRINT();
+	switch (xev->type) {
+	case ClientMessage:
+		return event_handler_ClientMessage(dpy, xev);
+	}
+	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;
+}
+
+GtkWidget *top;
+
+void
+relax()
+{
+	while (gtk_events_pending())
+		gtk_main_iteration();
+}
 
 char **
 get_data_dirs(int *np)
@@ -417,102 +629,51 @@ free_string(gpointer data, GClosure *unused)
 GtkWidget *
 get_user_menu(void)
 {
-	const char *seat;
+	const char *seat, *sess;
 	char **sessions = NULL, **s;
 	GtkWidget *menu = NULL;
-	int ret;
 	gboolean gotone = FALSE;
 
 	seat = getenv("XDG_SEAT") ? : "seat0";
-	ret = sd_seat_get_sessions(seat, &sessions, NULL, NULL);
-	if (ret < 0) {
-		EPRINTF("Cannot determine available sessions\n");
-		free(sessions);
+	sess = getenv("XDG_SESSION_ID");
+	if (sd_seat_can_multi_session(NULL) <= 0) {
+		DPRINTF("%s: cannot multi-session\n", seat);
+		return (NULL);
+	}
+	if (sd_seat_get_sessions(seat, &sessions, NULL, NULL) < 0) {
+		EPRINTF("%s: cannot get sessions\n", seat);
 		return (NULL);
 	}
 	menu = gtk_menu_new();
 	for (s = sessions; s && *s; free(*s), s++) {
-		char *type = NULL;
-		char *klass = NULL;
-		char *display = NULL;
-		char *service = NULL;
-		char *host = NULL;
-		char *user = NULL;
-		char *tty = NULL;
+		char *type = NULL, *klass = NULL, *user = NULL, *host = NULL,
+			*tty = NULL, *disp = NULL;
+		unsigned int vtnr = 0;
 		uid_t uid = -1;
-		int active, remote;
-		unsigned int vt = 0;
 
-		ret = sd_session_get_type(*s, &type);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session type\n", *s);
-		}
-		ret = sd_session_get_class(*s, &klass);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session class\n", *s);
-		}
-		ret = sd_session_get_display(*s, &display);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session display\n", *s);
-		}
-		ret = sd_session_get_service(*s, &service);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session service\n", *s);
-		}
-		ret = sd_session_get_uid(*s, &uid);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session uid\n", *s);
-			uid = -1;
-		}
-		active = sd_session_is_active(*s);
-		if (active < 0) {
-			DPRINTF("%s: could not determine session activity\n", *s);
-			active = 0;
-		}
-		remote = sd_session_is_remote(*s);
-		if (remote < 0) {
-			DPRINTF("%s: could not determine session remoteness\n", *s);
-			remote = 0;
-		}
-		ret = sd_session_get_remote_host(*s, &host);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session remote host\n", *s);
-		}
-		ret = sd_session_get_remote_user(*s, &user);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session remote user\n", *s);
-		}
-		ret = sd_session_get_vt(*s, &vt);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session vt\n", *s);
-			vt = 0;
-		}
-		ret = sd_session_get_tty(*s, &tty);
-		if (ret < 0) {
-			DPRINTF("%s: could not determine session tty\n", *s);
-		}
-		if (options.debug) {
-			fprintf(stderr, "Session: %s\n", *s);
-			fprintf(stderr, "\ttype: %s\n", type);
-			fprintf(stderr, "\tclass: %s\n", klass);
-			fprintf(stderr, "\tdisplay: %s\n", display);
-			fprintf(stderr, "\tservice: %s\n", service);
-			fprintf(stderr, "\tuid: %d\n", uid);
-			fprintf(stderr, "\tactive: %s\n", active ? "true" : "false");
-			fprintf(stderr, "\tremote: %s\n", remote ? "true" : "false");
-			fprintf(stderr, "\thost: %s\n", host);
-			fprintf(stderr, "\tuser: %s\n", user);
-			fprintf(stderr, "\ttty: %s\n", tty);
-			fprintf(stderr, "\tvt: %u\n", vt);
-		}
-		if (active) {
-			DPRINTF("%s: cannot switch to active session\n", *s);
+		DPRINTF("%s(%s): considering session\n", seat, *s);
+		if (sess && !strcmp(*s, sess)) {
+			DPRINTF("%s(%s): cannot switch to own session\n", seat, *s);
 			continue;
 		}
-		if (vt == 0) {
-			DPRINTF("%s: cannot switch to non-vt session\n", *s);
+		if (sd_session_is_active(*s)) {
+			DPRINTF("%s(%s): cannot switch to active session\n", seat, *s);
 			continue;
 		}
+		sd_session_get_vt(*s, &vtnr);
+		if (vtnr == 0) {
+			DPRINTF("%s(%s): cannot switch to non-vt session\n", seat, *s);
+			continue;
+		}
+		sd_session_get_type(*s, &type);
+		sd_session_get_class(*s, &klass);
+		sd_session_get_uid(*s, &uid);
+		if (sd_session_is_remote(*s) > 0) {
+			sd_session_get_remote_user(*s, &user);
+			sd_session_get_remote_host(*s, &host);
+		}
+		sd_session_get_tty(*s, &tty);
+		sd_session_get_display(*s, &disp);
 
 		GtkWidget *imag;
 		GtkWidget *item;
@@ -528,22 +689,24 @@ get_user_menu(void)
 		if (klass) {
 			if (!strcmp(klass, "user")) {
 				struct passwd *pw;
+
 				if (user)
-					label = g_strdup_printf("%u: %s", vt, user);
+					label = g_strdup_printf("%u: %s", vtnr, user);
 				else if (uid != -1 && (pw = getpwuid(uid)))
-					label = g_strdup_printf("%u: %s", vt, pw->pw_name);
+					label = g_strdup_printf("%u: %s", vtnr, pw->pw_name);
 				else
-					label = g_strdup_printf("%u: session %s", vt, *s);
+					label = g_strdup_printf("%u: %s", vtnr, "(unknown)");
 			} else if (!strcmp(klass, "greeter")) 
-				label = g_strdup_printf("%u: login", vt);
+				label = g_strdup_printf("%u: login", vtnr);
 			else
-				label = g_strdup_printf("%u: session %s", vt, *s);
+				label = g_strdup_printf("%u: session %s", vtnr, *s);
 		} else
-			label = g_strdup_printf("%u: session %s", vt, *s);
+			label = g_strdup_printf("%u: session %s", vtnr, *s);
 
 		item = gtk_image_menu_item_new_with_label(label);
 		imag = gtk_image_new_from_icon_name(iname, GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
+		DPRINTF("%s(%s): adding item to menu: %s\n", seat, *s, label);
 		g_free(label);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
@@ -553,31 +716,10 @@ get_user_menu(void)
 		gotone = TRUE;
 	}
 	free(sessions);
-#if 0
-	/* for now */
-	action_result = LOGOUT_ACTION_CANCEL;
-	gtk_main_quit();
-	/* for now */
-#endif
 	if (gotone)
 		return (menu);
 	g_object_unref(G_OBJECT(menu));
 	return (NULL);
-}
-
-int
-fill_session_store(GtkListStore *sess)
-{
-	const char *seat;
-	char **sessions = NULL, **s;
-	int ret;
-
-	seat = getenv("XDG_SEAT") ? : "seat0";
-	ret = sd_seat_get_sessions(seat, &sessions, NULL, NULL);
-	(void) ret;
-	(void) s;
-
-	return (0);
 }
 
 void
@@ -727,47 +869,8 @@ test_session_functions()
 	}
 }
 
-/** @brief transform a window into a grabbed window
-  *
-  * Transform the a window into a window that has a grab on the pointer on a
-  * GtkWindow and restricts pointer movement to the window boundary.
-  */
-void
-grabbed_window(GtkWindow *window)
-{
-	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(window));
-	GdkEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
-
-	gdk_window_set_override_redirect(win, TRUE);
-	gdk_window_set_focus_on_map(win, TRUE);
-	gdk_window_set_accept_focus(win, TRUE);
-	gdk_window_set_keep_above(win, TRUE);
-	gdk_window_set_modal_hint(win, TRUE);
-	gdk_window_stick(win);
-	gdk_window_deiconify(win);
-	gdk_window_show(win);
-	gdk_window_focus(win, GDK_CURRENT_TIME);
-	if (gdk_keyboard_grab(win, TRUE, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
-		EPRINTF("Could not grab keyboard!\n");
-	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
-		EPRINTF("Could not grab pointer!\n");
-}
-
-/** @brief transform a window away from a grabbed window
-  *
-  * Transform the window back into a regular window, releasing the pointer and
-  * keyboard grab and motion restriction.  window is the GtkWindow that
-  * previously had the grabbed_window() method called on it.
-  */
-void
-ungrabbed_window(GtkWindow *window)
-{
-	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(window));
-
-	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
-	gdk_pointer_ungrab(GDK_CURRENT_TIME);
-	gdk_window_hide(win);
-}
+void grabbed_window(GtkWidget *window, gpointer user_data);
+void ungrabbed_window(GtkWidget *window);
 
 /** @brief ask the user if they are sure
   * @param window - grabbed window
@@ -784,7 +887,7 @@ areyousure(GtkWindow *window, char *message)
 	GtkWidget *d;
 	gint result;
 
-	ungrabbed_window(window);
+	ungrabbed_window(GTK_WIDGET(window));
 	d = gtk_message_dialog_new(window, GTK_DIALOG_MODAL,
 				   GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO, "%s", message);
 	gtk_window_set_title(GTK_WINDOW(d), "Are you sure?");
@@ -796,42 +899,13 @@ areyousure(GtkWindow *window, char *message)
 	gtk_window_set_position(GTK_WINDOW(d), GTK_WIN_POS_CENTER_ALWAYS);
 	gtk_widget_show_all(GTK_WIDGET(d));
 	gtk_widget_show_now(GTK_WIDGET(d));
-	grabbed_window(GTK_WINDOW(d));
+	grabbed_window(d, NULL);
 	result = gtk_dialog_run(GTK_DIALOG(d));
-	ungrabbed_window(GTK_WINDOW(d));
+	ungrabbed_window(d);
 	gtk_widget_destroy(GTK_WIDGET(d));
 	if (result == GTK_RESPONSE_YES)
-		grabbed_window(window);
+		grabbed_window(GTK_WIDGET(window), NULL);
 	return ((result == GTK_RESPONSE_YES) ? TRUE : FALSE);
-}
-
-static gboolean
-on_destroy(GtkWidget *widget, gpointer user_data)
-{
-	return FALSE;
-}
-
-gboolean
-on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
-{
-	logout_result = LOGOUT_ACTION_CANCEL;
-	gtk_main_quit();
-	return TRUE;		/* propagate */
-}
-
-gboolean
-on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
-{
-	GdkPixbuf *p = GDK_PIXBUF(data);
-	GdkWindow *w = gtk_widget_get_window(GTK_WIDGET(widget));
-	cairo_t *cr = gdk_cairo_create(GDK_DRAWABLE(w));
-
-	gdk_cairo_set_source_pixbuf(cr, p, 0, 0);
-	cairo_paint(cr);
-	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
-	gdk_cairo_set_source_color(cr, &color);
-	cairo_paint_with_alpha(cr, 0.7);
-	return FALSE;
 }
 
 GtkWidget *buttons[LOGOUT_ACTION_COUNT] = { NULL, };
@@ -1023,27 +1097,108 @@ on_switchuser(GtkButton *button, gpointer data)
 	return;
 }
 
-/** @brief get a pixbuf for the screen
-  *
-  * This pixbuf can either be the background image, if one is defined in
-  * _XROOTPMAP_ID or ESETROOT_PMAP_ID, or an copy of the root window otherwise.
-  */
-GdkPixbuf *
-get_pixbuf(GdkScreen * scrn)
+static gboolean
+on_destroy(GtkWidget *widget, gpointer user_data)
 {
-	GdkDisplay *disp = gdk_screen_get_display(scrn);
-	GdkWindow *root = gdk_screen_get_root_window(scrn);
-	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
-	gint width = gdk_screen_get_width(scrn);
-	gint height = gdk_screen_get_height(scrn);
-	GdkDrawable *draw = GDK_DRAWABLE(root);
-	GdkColormap *cmap = gdk_drawable_get_colormap(draw);
-	Atom prop = None;
+	return FALSE;
+}
 
-#if 0
-	if (!(prop = XInternAtom(dpy, "_XROOTPMAP_ID", True)))
-		prop = XInternAtom(dpy, "ESETROOT_PMAP_ID", True);
-#endif
+gboolean
+on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	logout_result = LOGOUT_ACTION_CANCEL;
+	gtk_main_quit();
+	return TRUE;		/* propagate */
+}
+
+gboolean
+on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+	XdeScreen *xscr = data;
+	GdkWindow *w = gtk_widget_get_window(xscr->wind);
+	GdkWindow *r = gdk_screen_get_root_window(xscr->scrn);
+	cairo_t *cr;
+	GdkEventExpose *ev = (typeof(ev)) event;
+
+	cr = gdk_cairo_create(GDK_DRAWABLE(w));
+	// gdk_cairo_reset_clip(cr, GDK_DRAWABLE(w));
+	if (ev->region)
+		gdk_cairo_region(cr, ev->region);
+	else
+		gdk_cairo_rectangle(cr, &ev->area);
+	if (xscr->pixmap) {
+		gdk_cairo_set_source_pixmap(cr, xscr->pixmap, 0, 0);
+		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+	} else
+		gdk_cairo_set_source_window(cr, r, 0, 0);
+	cairo_paint(cr);
+	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
+	gdk_cairo_set_source_color(cr, &color);
+	cairo_paint_with_alpha(cr, 0.7);
+	cairo_destroy(cr);
+	return FALSE;
+}
+
+/** @brief transform window into pointer-grabbed window
+  * @param window - window to transform
+  *
+  * Transform a window into a window that has a grab on the pointer on the
+  * window and restricts pointer movement to the window boundary.
+  *
+  * Note that the window and pointer grabs should not fail: the reason is that
+  * we have mapped this window above all others and a fully obscured window
+  * cannot hold the pointer or keyboard focus in X.
+  */
+void
+grabbed_window(GtkWidget *window, gpointer user_data)
+{
+	GdkWindow *win = gtk_widget_get_window(window);
+	GdkEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
+
+	gdk_window_set_override_redirect(win, TRUE);
+	gdk_window_set_focus_on_map(win, TRUE);
+	gdk_window_set_accept_focus(win, TRUE);
+	gdk_window_set_keep_above(win, TRUE);
+	gdk_window_set_modal_hint(win, TRUE);
+	gdk_window_stick(win);
+	gdk_window_deiconify(win);
+	gdk_window_show(win);
+	gdk_window_focus(win, GDK_CURRENT_TIME);
+	if (gdk_keyboard_grab(win, TRUE, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
+		EPRINTF("Could not grab keyboard!\n");
+	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
+		EPRINTF("Could not grab pointer!\n");
+}
+
+/** @brief transform a window away from a grabbed window
+  *
+  * Transform the window back into a regular window, releasing the pointer and
+  * keyboard grab and motion restriction.  window is the GtkWindow that
+  * previously had the grabbed_window() method called on it.
+  */
+void
+ungrabbed_window(GtkWidget *window)
+{
+	GdkWindow *win = gtk_widget_get_window(window);
+
+	gdk_pointer_ungrab(GDK_CURRENT_TIME);
+	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
+	gdk_window_hide(win);
+}
+
+void
+get_source(XdeScreen *xscr)
+{
+	GdkDisplay *disp = gdk_screen_get_display(xscr->scrn);
+	GdkWindow *root = gdk_screen_get_root_window(xscr->scrn);
+	GdkColormap *cmap = gdk_drawable_get_colormap(GDK_DRAWABLE(root));
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	Atom prop;
+
+	xscr->pixmap = NULL;
+
+	if (!(prop = _XA_XROOTPMAP_ID))
+		prop = _XA_ESETROOT_PMAP_ID;
 
 	if (prop) {
 		Window w = GDK_WINDOW_XID(root);
@@ -1053,120 +1208,179 @@ get_pixbuf(GdkScreen * scrn)
 		long *data = NULL;
 
 		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
-				       &actual, &format, &nitems, &after,
-				       (unsigned char **) &data) == Success &&
-		    format == 32 && actual && nitems >= 1 && data) {
+					&actual, &format, &nitems, &after,
+					(unsigned char **) &data) == Success &&
+				format == 32 && actual && nitems >= 1 && data) {
 			Pixmap p;
 
 			if ((p = data[0])) {
-				GdkPixmap *pmap;
-				
-				pmap = gdk_pixmap_foreign_new_for_display(disp, p);
-				gdk_pixmap_get_size(pmap, &width, &height);
-				draw = GDK_DRAWABLE(pmap);
+				xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
+				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
 			}
 		}
 		if (data)
 			XFree(data);
 	}
-	GdkPixbuf *pbuf = gdk_pixbuf_get_from_drawable(NULL, draw, cmap, 0, 0,
-			0, 0, width, height);
-	return (pbuf);
 }
 
-LogoutActionResult
-make_logout_choice()
+/** @brief get a covering window for a screen
+  */
+void
+GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 {
-	gtk_init(NULL, NULL);
+	GtkWidget *wind;
+	GtkWindow *w;
+	int m;
+	XdeMonitor *mon;
 
-	GtkWidget *w = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	xscr->index = s;
+	xscr->scrn = scrn;
+	xscr->wind = wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	xscr->width = gdk_screen_get_width(scrn);
+	xscr->height = gdk_screen_get_height(scrn);
+	w = GTK_WINDOW(wind);
+	gtk_window_set_screen(w, scrn);
+	gtk_window_set_wmclass(w, "xde-xlogin", "XDE-XLogin");
+	gtk_window_set_title(w, "XDMCP Greeter");
+	gtk_window_set_modal(w, TRUE);
+	gtk_window_set_gravity(w, GDK_GRAVITY_CENTER);
+	gtk_window_set_type_hint(w, GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
+	gtk_window_set_icon_name(w, "xdm");
+	gtk_window_set_skip_pager_hint(w, TRUE);
+	gtk_window_set_skip_taskbar_hint(w, TRUE);
+	gtk_window_set_position(w, GTK_WIN_POS_CENTER_ALWAYS);
+	gtk_window_fullscreen(w);
+	gtk_window_set_decorated(w, FALSE);
+	gtk_window_set_default_size(w, xscr->width, xscr->height);
 
-	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), (gpointer) NULL);
-	gtk_window_set_wmclass(GTK_WINDOW(w), "xde-logout", "XDE-Logout");
-	gtk_window_set_title(GTK_WINDOW(w), "XDE Session Logout");
-	gtk_window_set_modal(GTK_WINDOW(w), TRUE);
-	gtk_window_set_gravity(GTK_WINDOW(w), GDK_GRAVITY_CENTER);
-	gtk_window_set_type_hint(GTK_WINDOW(w), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
-	gtk_window_set_icon_name(GTK_WINDOW(w), "xdm");
-	gtk_container_set_border_width(GTK_CONTAINER(w), 15);
-	gtk_window_set_skip_pager_hint(GTK_WINDOW(w), TRUE);
-	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(w), TRUE);
-	gtk_window_set_position(GTK_WINDOW(w), GTK_WIN_POS_CENTER_ALWAYS);
-	gtk_window_fullscreen(GTK_WINDOW(w));
-	gtk_window_set_decorated(GTK_WINDOW(w), FALSE);
+	char *geom = g_strdup_printf("%dx%d+0+0", xscr->width, xscr->height);
 
-	GdkScreen *scrn = gdk_screen_get_default();
-	gint width = gdk_screen_get_width(scrn);
-	gint height = gdk_screen_get_height(scrn);
+	gtk_window_parse_geometry(w, geom);
+	g_free(geom);
 
-	gtk_window_set_default_size(GTK_WINDOW(w), width, height);
-	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
-
-	GdkPixbuf *pixbuf = get_pixbuf(scrn);
+	gtk_widget_set_app_paintable(wind, TRUE);
+	get_source(xscr);
 
 	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
+	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), NULL);
+	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), xscr);
 
-	/* Ultimately this has to be a GtkFixed instead of a GtkAlignment,
-	   because we need to place the window in the center of the active
-	   monitor. */
-	GtkWidget *a = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
+	gtk_window_set_focus_on_map(w, TRUE);
+	gtk_window_set_accept_focus(w, TRUE);
+	gtk_window_set_keep_above(w, TRUE);
+	gtk_window_set_modal(w, TRUE);
+	gtk_window_stick(w);
+	gtk_window_deiconify(w);
 
-	gtk_container_add(GTK_CONTAINER(w), GTK_WIDGET(a));
+	xscr->nmon = gdk_screen_get_n_monitors(scrn);
+	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
+	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
+		float xrel, yrel;
 
-	GtkWidget *e = gtk_event_box_new();
+		mon->index = m;
+		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
 
-	gtk_container_add(GTK_CONTAINER(a), GTK_WIDGET(e));
-	gtk_widget_set_size_request(GTK_WIDGET(e), -1, -1);
-	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), pixbuf);
+		xrel = (float) (mon->geom.x + mon->geom.width / 2) / (float) xscr->width;
+		yrel = (float) (mon->geom.y + mon->geom.height / 2) / (float) xscr->height;
 
-	GtkWidget *v = gtk_vbox_new(FALSE, 5);
-
-	gtk_container_set_border_width(GTK_CONTAINER(v), 15);
-	gtk_container_add(GTK_CONTAINER(e), GTK_WIDGET(v));
-
-	GtkWidget *h = gtk_hbox_new(FALSE, 5);
-
-	gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(h));
-
-	if (options.banner) {
-		GtkWidget *f = gtk_frame_new(NULL);
-
-		gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
-		gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), FALSE, FALSE, 0);
-
-		GtkWidget *v = gtk_vbox_new(FALSE, 5);
-
-		gtk_container_set_border_width(GTK_CONTAINER(v), 10);
-		gtk_container_add(GTK_CONTAINER(f), GTK_WIDGET(v));
-
-		GtkWidget *s = gtk_image_new_from_file(options.banner);
-
-		if (s)
-			gtk_container_add(GTK_CONTAINER(v), GTK_WIDGET(s));
-		else
-			gtk_widget_destroy(GTK_WIDGET(f));
+		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
+		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
+	gtk_widget_show_all(wind);
 
-	GtkWidget *f = gtk_frame_new(NULL);
+	gtk_widget_realize(wind);
+	GdkWindow *win = gtk_widget_get_window(wind);
 
-	gtk_frame_set_shadow_type(GTK_FRAME(f), GTK_SHADOW_ETCHED_IN);
-	gtk_box_pack_start(GTK_BOX(h), GTK_WIDGET(f), TRUE, TRUE, 0);
-	v = gtk_vbox_new(FALSE, 5);
-	gtk_container_set_border_width(GTK_CONTAINER(v), 10);
-	gtk_container_add(GTK_CONTAINER(f), GTK_WIDGET(v));
+	gdk_window_set_override_redirect(win, TRUE);
 
-	GtkWidget *l = gtk_label_new(NULL);
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+	GdkEventMask mask = gdk_window_get_events(root);
 
-	gtk_label_set_markup(GTK_LABEL(l), options.prompt);
-	gtk_box_pack_start(GTK_BOX(v), GTK_WIDGET(l), FALSE, TRUE, 0);
+	gdk_window_add_filter(root, root_handler, xscr);
+	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK;
+	gdk_window_set_events(root, mask);
+}
 
-	GtkWidget *bb = gtk_vbutton_box_new();
+static void
+reparse(Display *dpy, Window root)
+{
+	XTextProperty xtp = { NULL, };
+	char **list = NULL;
+	int strings = 0;
 
-// #define BB_INT_PADDING  ?
-// #define BB_BOX_SPACING  5
-// #define BB_BORDER_WIDTH 5
-// #define BU_BORDER_WIDTH 2
-// #define BB_PACK_PADDING 5
+	DPRINT();
+	gtk_rc_reparse_all();
+	if (!options.usexde)
+		return;
+	if (XGetTextProperty(dpy, root, &xtp, _XA_XDE_THEME_NAME)) {
+		if (Xutf8TextPropertyToTextList(dpy, &xtp, &list, &strings) == Success) {
+			if (strings >= 1) {
+				static const char *prefix = "gtk-theme-name=\"";
+				static const char *suffix = "\"";
+				char *rc_string;
+				int len;
+
+				len = strlen(prefix) + strlen(list[0]) + strlen(suffix) + 1;
+				rc_string = calloc(len, sizeof(*rc_string));
+				strncpy(rc_string, prefix, len);
+				strncat(rc_string, list[0], len);
+				strncat(rc_string, suffix, len);
+				gtk_rc_parse_string(rc_string);
+				free(rc_string);
+			}
+			if (list)
+				XFreeStringList(list);
+		} else
+			DPRINTF("could not get text list for property\n");
+		if (xtp.value)
+			XFree(xtp.value);
+	} else
+		DPRINTF("could not get _XDE_THEME_NAME for root 0x%lx\n", root);
+}
+
+/** @brief get a covering window for each screen
+  */
+void
+GetScreens(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	int s, nscr = gdk_display_get_n_screens(disp);
+	XdeScreen *xscr;
+
+	screens = calloc(nscr, sizeof(*screens));
+
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
+		GetScreen(xscr, s, gdk_display_get_screen(disp, s));
+
+	GdkScreen *scrn = gdk_display_get_default_screen(disp);
+	GdkWindow *root = gdk_screen_get_root_window(scrn);
+
+	reparse(dpy, GDK_WINDOW_XID(root));
+}
+
+GtkWidget *cont;			/* container of event box */
+GtkWidget *ebox;			/* event box window within the screen */
+
+GtkWidget *
+GetBanner(void)
+{
+	GtkWidget *ban = NULL, *bin, *pan, *img;
+
+	if (options.banner && (img = gtk_image_new_from_file(options.banner))) {
+		ban = gtk_vbox_new(FALSE, 0);
+		bin = gtk_frame_new(NULL);
+		gtk_frame_set_shadow_type(GTK_FRAME(bin), GTK_SHADOW_ETCHED_IN);
+		gtk_container_set_border_width(GTK_CONTAINER(bin), 0);
+		gtk_box_pack_start(GTK_BOX(ban), bin, TRUE, TRUE, 4);
+		pan = gtk_frame_new(NULL);
+		gtk_frame_set_shadow_type(GTK_FRAME(pan), GTK_SHADOW_NONE);
+		gtk_container_set_border_width(GTK_CONTAINER(pan), 15);
+		gtk_container_add(GTK_CONTAINER(bin), pan);
+		gtk_container_add(GTK_CONTAINER(pan), img);
+	}
+	return (ban);
+}
 
 #define BB_INT_PADDING  0
 #define BB_BOX_SPACING  2
@@ -1174,99 +1388,175 @@ make_logout_choice()
 #define BU_BORDER_WIDTH 0
 #define BB_PACK_PADDING 0
 
+GtkWidget *
+GetPanel(void)
+{
+	GtkWidget *pan = gtk_vbox_new(FALSE, 0);
+
+	GtkWidget *inp = gtk_frame_new(NULL);
+
+	gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
+	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
+
+	gtk_box_pack_start(GTK_BOX(pan), inp, TRUE, TRUE, 4);
+
+	GtkWidget *bb = gtk_vbutton_box_new();
+
 	gtk_container_set_border_width(GTK_CONTAINER(bb), BB_BORDER_WIDTH);
 	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_SPREAD);
 	gtk_button_box_set_child_ipadding(GTK_BUTTON_BOX(bb), BB_INT_PADDING, BB_INT_PADDING);
 	gtk_box_set_spacing(GTK_BOX(bb), BB_BOX_SPACING);
-	gtk_box_pack_end(GTK_BOX(v), GTK_WIDGET(bb), FALSE, TRUE, 0);
+	gtk_container_add(GTK_CONTAINER(inp), bb);
 
 	GtkWidget *b, *im;
 	int i;
 
 	for (i = 0; i < LOGOUT_ACTION_COUNT; i++) {
 		if (i == LOGOUT_ACTION_SWITCHUSER) {
-#if 0
-			GtkListStore *sess;
-
-			/* *INDENT-OFF* */
-			sess = gtk_list_store_new(4
-					,G_TYPE_STRING /* icon-name */
-					,G_TYPE_INT    /* vt number */
-					,G_TYPE_STRING /* session name */
-					,G_TYPE_STRING /* user */
-					);
-			/* *INDENT-ON* */
-			b = buttons[i] = gtk_combo_box_new_with_model(GTK_TREE_MODEL(sess));
-
-			GtkCellRenderer *rend;
-
-			rend = gtk_cell_renderer_pixbuf_new();
-			gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 0, 0);
-			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), FALSE);
-			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), "icon-name", 0);
-
-			rend = gtk_cell_renderer_text_new();
-			gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 5, 0);
-			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), FALSE);
-			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), "text", 1);
-
-			rend = gtk_cell_renderer_text_new();
-			gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 0, 0);
-			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), FALSE);
-			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(b), GTK_CELL_RENDERER(rend), "text", 3);
-
-			fill_session_store(sess);
-#else
 			b = buttons[i] = gtk_button_new();
 			gtk_container_set_border_width(GTK_CONTAINER(b), BU_BORDER_WIDTH);
 			gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
 			gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
 			im = get_icon(GTK_ICON_SIZE_BUTTON, button_icons[i], 3);
-			gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(im));
+			gtk_button_set_image(GTK_BUTTON(b), im);
 			gtk_button_set_label(GTK_BUTTON(b), button_labels[i]);
+			gtk_widget_set_can_default(b, TRUE);
 			g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_switchuser),
 					 (gpointer) (long) i);
-#endif
 		} else {
 			b = buttons[i] = gtk_button_new();
 			gtk_container_set_border_width(GTK_CONTAINER(b), BU_BORDER_WIDTH);
 			gtk_button_set_image_position(GTK_BUTTON(b), GTK_POS_LEFT);
 			gtk_button_set_alignment(GTK_BUTTON(b), 0.0, 0.5);
 			im = get_icon(GTK_ICON_SIZE_BUTTON, button_icons[i], 3);
-			gtk_button_set_image(GTK_BUTTON(b), GTK_WIDGET(im));
+			gtk_button_set_image(GTK_BUTTON(b), im);
 			gtk_button_set_label(GTK_BUTTON(b), button_labels[i]);
+			gtk_widget_set_can_default(b, TRUE);
 			g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_clicked),
 					 (gpointer) (long) i);
 		}
-		gtk_widget_set_sensitive(GTK_WIDGET(b), (action_can[i] >= AvailStatusChallenge));
-		gtk_widget_set_tooltip_text(GTK_WIDGET(b), button_tips[i]);
-		gtk_box_pack_start(GTK_BOX(bb), GTK_WIDGET(b), TRUE, TRUE, BB_PACK_PADDING);
+		gtk_widget_set_sensitive(b, (action_can[i] >= AvailStatusChallenge));
+		gtk_widget_set_tooltip_text(b, button_tips[i]);
+		gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, BB_PACK_PADDING);
 	}
-	// gtk_window_set_default_size(GTK_WINDOW(w), -1, 350);
 
-	/* most of this is just in case override-redirect fails */
-	gtk_window_set_focus_on_map(GTK_WINDOW(w), TRUE);
-	gtk_window_set_accept_focus(GTK_WINDOW(w), TRUE);
-	gtk_window_set_keep_above(GTK_WINDOW(w), TRUE);
-	gtk_window_set_modal(GTK_WINDOW(w), TRUE);
-	gtk_window_stick(GTK_WINDOW(w));
-	gtk_window_deiconify(GTK_WINDOW(w));
-	gtk_widget_show_all(GTK_WIDGET(w));
-
-	gtk_widget_realize(GTK_WIDGET(w));
-	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(w));
-
-	gtk_widget_grab_focus(GTK_WIDGET(buttons[LOGOUT_ACTION_LOGOUT]));
-	gdk_window_set_override_redirect(win, TRUE);
-	grabbed_window(GTK_WINDOW(w));
-
-	/* TODO: we should really set a timeout and if no user interaction has
-	   occured before the timeout, we should continue if we have a viable
-	   default or choice (such as logout or lockscreen). */
-	gtk_main();
-	gtk_widget_destroy(GTK_WIDGET(w));
-	return action_result;
+	return (pan);
 }
+
+GtkWidget *
+GetPane(GtkWidget *cont)
+{
+	char hostname[64] = { 0, };
+
+	gethostname(hostname, sizeof(hostname));
+
+	ebox = gtk_event_box_new();
+
+	gtk_container_add(GTK_CONTAINER(cont), ebox);
+	gtk_widget_set_size_request(ebox, -1, -1);
+
+	GtkWidget *v = gtk_vbox_new(FALSE, 5);
+
+	gtk_container_set_border_width(GTK_CONTAINER(v), 10);
+
+	gtk_container_add(GTK_CONTAINER(ebox), v);
+
+	GtkWidget *lab = gtk_label_new(NULL);
+	gchar *markup;
+
+	markup = g_markup_printf_escaped
+	    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
+	gtk_label_set_markup(GTK_LABEL(lab), markup);
+	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
+	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
+	g_free(markup);
+	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
+
+	GtkWidget *h = gtk_hbox_new(FALSE, 5);
+
+	gtk_box_pack_end(GTK_BOX(v), h, TRUE, TRUE, 0);
+
+	if ((v = GetBanner()))
+		gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
+
+	v = GetPanel();
+	gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
+
+	return (ebox);
+}
+
+GtkWidget *
+GetWindow(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	GdkScreen *scrn = NULL;
+	XdeScreen *xscr;
+	XdeMonitor *mon;
+	int s, m;
+	gint x = 0, y = 0;
+
+	GetScreens();
+
+	gdk_display_get_pointer(disp, &scrn, &x, &y, NULL);
+	if (!scrn)
+		scrn = gdk_display_get_default_screen(disp);
+	s = gdk_screen_get_number(scrn);
+	xscr = screens + s;
+
+	m = gdk_screen_get_monitor_at_point(scrn, x, y);
+	mon = xscr->mons + m;
+
+	cont = mon->align;
+	ebox = GetPane(cont);
+
+	gtk_widget_show_all(cont);
+	gtk_widget_show_now(cont);
+	gtk_widget_grab_default(buttons[LOGOUT_ACTION_LOGOUT]);
+	gtk_widget_grab_focus(buttons[LOGOUT_ACTION_LOGOUT]);
+	grabbed_window(xscr->wind, NULL);
+	return xscr->wind;
+}
+
+static void
+startup(int argc, char *argv[])
+{
+	if (options.usexde) {
+		static const char *suffix = "/.gtkrc-2.0.xde";
+		const char *home = getenv("HOME") ? : ".";
+		int len = strlen(home) + strlen(suffix) + 1;
+		char *file = calloc(len, sizeof(*file));
+
+		strncpy(file, home, len);
+		strncat(file, suffix, len);
+		gtk_rc_add_default_file(file);
+		free(file);
+	}
+
+	gtk_init(&argc, &argv);
+
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	GdkAtom atom;
+
+	atom = gdk_atom_intern_static_string("_XDE_THEME_NAME");
+	_XA_XDE_THEME_NAME = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	atom = gdk_atom_intern_static_string("_GTK_READ_RCFILES");
+	_XA_GTK_READ_RCFILES = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+	atom = gdk_atom_intern_static_string("_XROOTPMAP_ID");
+	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
+	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+}
+
+static void
+do_run(int argc, char *argv[])
+{
+	startup(argc, argv);
+	top = GetWindow();
+	gtk_main();
+}
+
 
 static void
 logoutSetProperties(SmcConn smcConn, SmPointer data)
@@ -1678,7 +1968,6 @@ init_smclient(void)
 void
 run_logout(int argc, char *argv[])
 {
-	LogoutActionResult result;
 	int i;
 
 	/* initialize session managerment functions */
@@ -1726,11 +2015,11 @@ run_logout(int argc, char *argv[])
 			}
 		}
 	}
-	result = make_logout_choice(argc, argv);
-	if (logout_actions[result])
-		(*logout_actions[result]) ();
+	do_run(argc, argv);
+	if (logout_actions[action_result])
+		(*logout_actions[action_result]) ();
 	else {
-		EPRINTF("No action for choice %d\n", result);
+		EPRINTF("No action for choice %d\n", action_result);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -2174,7 +2463,7 @@ Usage:\n\
 ", argv[0]);
 }
 
-static const char *
+const char *
 show_side(LogoSide side)
 {
 	switch (side) {
@@ -2190,7 +2479,7 @@ show_side(LogoSide side)
 	return ("unknown");
 }
 
-static const char *
+const char *
 show_bool(Bool val)
 {
 	if (val)
@@ -2206,7 +2495,7 @@ help(int argc, char *argv[])
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [options]\n\
-    %1$s {-h|--help}\n\
+    %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Command options:\n\
@@ -2241,39 +2530,7 @@ General options:\n\
     -v, --verbose [LEVEL]      (%12$d)\n\
         increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
-", argv[0], options.prompt, options.banner, show_side(options.side), show_bool(options.noask), options.usexde ? "xde" : (options.icon_theme ? : "auto"), options.usexde ? "xde" : (options.gtk2_theme ? : "auto"), show_bool(options.usexde), options.timeout, show_bool(options.dryrun), options.debug, options.output);
-}
-
-void
-set_default_prompt(void)
-{
-	char *session = NULL, *prompt, *p;
-	const char *s;
-	int i, len;
-
-	prompt = calloc(PATH_MAX, sizeof(*prompt));
-
-	if ((s = getenv("XDG_CURRENT_DESKTOP")) && *s) {
-		session = strdup(s);
-		while ((p = strchr(session, ';')))
-			*p = ':';
-	} else if ((s = getenv("XDG_VENDOR_ID")) && *s) {
-		session = strdup(s);
-	} else if ((s = getenv("XDG_MENU_PREFIX")) && *s) {
-		session = strdup(s);
-		p = session + strlen(session) - 1;
-		if (*p == '-')
-			*p = '\0';
-	} else {
-		session = strdup("XDE");
-	}
-	len = strlen(session);
-	for (i = 0, p = session; i < len; i++, p++)
-		*p = toupper(*p);
-	snprintf(prompt, PATH_MAX - 1, "Logout of <b>%s</b> session?", session);
-	options.prompt = strdup(prompt);
-	free(session);
-	free(prompt);
+", argv[0], options.welcome, options.banner, show_side(options.side), show_bool(options.noask), options.usexde ? "xde" : (options.icon_theme ? : "auto"), options.usexde ? "xde" : (options.gtk2_theme ? : "auto"), show_bool(options.usexde), options.timeout, show_bool(options.dryrun), options.debug, options.output);
 }
 
 void
@@ -2321,10 +2578,51 @@ set_default_banner(void)
 }
 
 void
+set_default_welcome(void)
+{
+	char *session = NULL, *welcome, *p;
+	const char *s;
+	int i, len;
+
+	welcome = calloc(PATH_MAX, sizeof(*welcome));
+
+	if ((s = getenv("XDG_CURRENT_DESKTOP")) && *s) {
+		session = strdup(s);
+		while ((p = strchr(session, ';')))
+			*p = ':';
+	} else if ((s = getenv("XDG_VENDOR_ID")) && *s) {
+		session = strdup(s);
+	} else if ((s = getenv("XDG_MENU_PREFIX")) && *s) {
+		session = strdup(s);
+		p = session + strlen(session) - 1;
+		if (*p == '-')
+			*p = '\0';
+	} else {
+		session = strdup("XDE");
+	}
+	len = strlen(session);
+	for (i = 0, p = session; i < len; i++, p++)
+		*p = toupper(*p);
+	snprintf(welcome, PATH_MAX - 1, "Logout of <b>%s</b> session?", session);
+	options.welcome = strdup(welcome);
+	free(session);
+	free(welcome);
+}
+
+void
 set_defaults(void)
 {
-	set_default_prompt();
+	char *p, *a;
+
 	set_default_banner();
+	set_default_welcome();
+	if ((options.language = setlocale(LC_ALL, ""))) {
+		options.language = strdup(options.language);
+		a = strchrnul(options.language, '@');
+		if ((p = strchr(options.language, '.')))
+			strcpy(p, a);
+	}
+	options.charset = strdup(nl_langinfo(CODESET));
 }
 
 void
@@ -2337,7 +2635,7 @@ get_defaults(void)
 int
 main(int argc, char *argv[])
 {
-	Command command = CommandDefault;
+	CommandType command = CommandDefault;
 
 	set_defaults();
 
@@ -2385,8 +2683,8 @@ main(int argc, char *argv[])
 			goto bad_usage;
 
 		case 'p':	/* -p, --prompt PROPMT */
-			free(options.prompt);
-			options.prompt = strdup(optarg);
+			free(options.welcome);
+			options.welcome = strdup(optarg);
 			break;
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
@@ -2432,8 +2730,7 @@ main(int argc, char *argv[])
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
+			DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
@@ -2443,8 +2740,7 @@ main(int argc, char *argv[])
 			}
 			break;
 		case 'v':	/* -v, --verbose [level] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
+			DPRINTF("%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.output++;
 				break;
@@ -2480,8 +2776,10 @@ main(int argc, char *argv[])
 			if (options.output || options.debug) {
 				if (optind < argc) {
 					fprintf(stderr, "%s: syntax error near '", argv[0]);
-					while (optind < argc)
-						fprintf(stderr, "%s ", argv[optind++]);
+					while (optind < argc) {
+						fprintf(stderr, "%s", argv[optind++]);
+						fprintf(stderr, "%s", (optind < argc) ? " " : "");
+					}
 					fprintf(stderr, "'\n");
 				} else {
 					fprintf(stderr, "%s: missing option or argument", argv[0]);
@@ -2494,38 +2792,33 @@ main(int argc, char *argv[])
 			exit(2);
 		}
 	}
-	if (options.debug) {
-		fprintf(stderr, "%s: option index = %d\n", argv[0], optind);
-		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
-	}
+	DPRINTF("%s: option index = %d\n", argv[0], optind);
+	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	if (optind < argc) {
+		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
 	}
 	get_defaults();
 	switch (command) {
 	case CommandDefault:
 	case CommandLogout:
-		if (options.debug)
-			fprintf(stderr, "%s: running logout\n", argv[0]);
+		DPRINTF("%s: running logout\n", argv[0]);
 		run_logout(argc, argv);
 		break;
 	case CommandHelp:
-		if (options.debug)
-			fprintf(stderr, "%s: printing help message\n", argv[0]);
+		DPRINTF("%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
-		if (options.debug)
-			fprintf(stderr, "%s: printing version message\n", argv[0]);
+		DPRINTF("%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
-		if (options.debug)
-			fprintf(stderr, "%s: printing copying message\n", argv[0]);
+		DPRINTF("%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 // vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:

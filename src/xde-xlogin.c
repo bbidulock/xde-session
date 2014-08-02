@@ -189,6 +189,7 @@ typedef struct {
 	char *username;
 	char *password;
 	Bool usexde;
+	Bool replace;
 } Options;
 
 Options options = {
@@ -213,6 +214,7 @@ Options options = {
 	.username = NULL,
 	.password = NULL,
 	.usexde = False,
+	.replace = False,
 };
 
 typedef enum {
@@ -2950,6 +2952,30 @@ Usage:\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 ", argv[0]);
+}
+
+const char *
+show_side(LogoSide side)
+{
+	switch (side) {
+	case LOGO_SIDE_LEFT:
+		return ("left");
+	case LOGO_SIDE_TOP:
+		return ("top");
+	case LOGO_SIDE_RIGHT:
+		return ("right");
+	case LOGO_SIDE_BOTTOM:
+		return ("bottom");
+	}
+	return ("unknown");
+}
+
+const char *
+show_bool(Bool val)
+{
+	if (val)
+		return ("true");
+	return ("false");
 }
 
 static void
