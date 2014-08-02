@@ -2080,7 +2080,7 @@ set_default_welcome(void)
 }
 
 void
-set_defaults(void)
+set_defaults(int argc, char *argv[])
 {
 	char *p, *a;
 
@@ -2109,7 +2109,7 @@ main(int argc, char *argv[])
 {
 	CommandType command = CommandDefault;
 
-	set_defaults();
+	set_defaults(argc, argv);
 
 	while (1) {
 		int c, val;

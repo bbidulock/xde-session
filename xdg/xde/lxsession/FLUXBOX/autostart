@@ -1,0 +1,11 @@
+# lxsession will start these programs
+# the @ means to restart on failure
+@lxpanel --profile FLUXBOX
+@pcmanfm --desktop --profile FLUXBOX
+@xscreensaver -no-splash
+#
+# careful, the above entries should go in the
+# /etc/xdg/lxsession/FLUXBOX/autostart file only
+# because everything is run, here and there.
+#
+# vim: ft=config

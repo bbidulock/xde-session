@@ -1,0 +1,47 @@
+<opt version="0.9.1.33">
+  <appletconf name="ActionMenu" label="Actions" relief="true" />
+  <appletconf name="BBMenu" apps_in_submenu="false" label="Menu" relief="true" show_control_items="true" submenu_label="Applications" />
+  <appletconf name="BatteryMonitor" interval="1000" />
+  <appletconf name="CPUTemp" interval="10000" units="fahrenheit" />
+  <appletconf name="Clock" date_format="%c" format="%H:%M">
+    <events></events>
+  </appletconf>
+  <appletconf name="LoadMonitor" update_interval="5" width="32" />
+  <appletconf name="Lock" args="-lock" program="" />
+  <appletconf name="NetLoadMonitor" displayed_interface="eth0" update_interval="8" width="32" />
+  <appletconf name="OpenBoxMenu" apps_in_submenu="true" label="Applications" show_control_items="true" warning_seen="true" />
+  <appletconf name="Places" label="Places" relief="true" />
+  <appletconf name="Sensors" interval="10000" units="celsius" />
+  <appletconf name="Volume" channel="vol" />
+  <appletconf name="XDGMenu" apps_in_submenu="false" label="Applications" relief="true" show_control_items="true" submenu_label="Applications" />
+  <appletconf name="null" />
+  <applets>ActionMenu</applets>
+  <applets>XDGMenu</applets>
+  <applets>Places</applets>
+  <applets>RecentFiles</applets>
+  <applets>Launcher::pcmanfm</applets>
+  <applets>Launcher::firefox</applets>
+  <applets>Launcher::roxterm</applets>
+  <applets>Launcher::gvim</applets>
+  <applets>Launcher::slock</applets>
+  <applets>Launcher::logout</applets>
+  <applets>ScreenShot</applets>
+  <applets>Pager::52b77d59d379910a4002a1c1b70fb4b7</applets>
+  <applets>Tasklist::dfb5b046e284f62e167cfdd1cb7c77f0</applets>
+  <applets>Clock</applets>
+  <applets>Commander</applets>
+  <applets>DriveManager::43faa67a80b94c67eafdac9a0e78dc9f</applets>
+  <applets>LoadMonitor</applets>
+  <applets>Sensors</applets>
+  <applets>Lock</applets>
+  <applets>NetLoadMonitor</applets>
+  <applets>NotificationArea</applets>
+  <applets>ShowDesktop</applets>
+  <applets>Volume</applets>
+  <applets>WindowMenu</applets>
+  <multi name="DriveManager::43faa67a80b94c67eafdac9a0e78dc9f" point="/mnt/non-existent-mountpoint" type="drive" />
+  <multi name="Pager::52b77d59d379910a4002a1c1b70fb4b7" rows="2" />
+  <multi name="Tasklist::dfb5b046e284f62e167cfdd1cb7c77f0" button_relief="none" grouping="auto-group" grouping_limit="800" include_all_workspaces="1" minimum_width="150" switch_workspace_on_unminimize="1" />
+  <multi name="null" />
+  <panel autohide="false" expand="true" has_border="true" icon_theme="Mist" menu_icon_size="tiny" position="top" show_quit_button="true" size="12" spacing="0" use_struts="true" />
+</opt>
