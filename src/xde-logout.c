@@ -1383,8 +1383,8 @@ GetBanner(void)
 }
 
 #define BB_INT_PADDING  0
-#define BB_BOX_SPACING  2
-#define BB_BORDER_WIDTH 0
+#define BB_BOX_SPACING  5
+#define BB_BORDER_WIDTH 5
 #define BU_BORDER_WIDTH 0
 #define BB_PACK_PADDING 0
 
@@ -1403,7 +1403,7 @@ GetPanel(void)
 	GtkWidget *bb = gtk_vbutton_box_new();
 
 	gtk_container_set_border_width(GTK_CONTAINER(bb), BB_BORDER_WIDTH);
-	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_SPREAD);
+	gtk_button_box_set_layout(GTK_BUTTON_BOX(bb), GTK_BUTTONBOX_EDGE);
 	gtk_button_box_set_child_ipadding(GTK_BUTTON_BOX(bb), BB_INT_PADDING, BB_INT_PADDING);
 	gtk_box_set_spacing(GTK_BOX(bb), BB_BOX_SPACING);
 	gtk_container_add(GTK_CONTAINER(inp), bb);
@@ -1412,6 +1412,8 @@ GetPanel(void)
 	int i;
 
 	for (i = 0; i < LOGOUT_ACTION_COUNT; i++) {
+		if (action_can[i] < AvailStatusChallenge)
+			continue;
 		if (i == LOGOUT_ACTION_SWITCHUSER) {
 			b = buttons[i] = gtk_button_new();
 			gtk_container_set_border_width(GTK_CONTAINER(b), BU_BORDER_WIDTH);
@@ -1464,8 +1466,8 @@ GetPane(GtkWidget *cont)
 	GtkWidget *lab = gtk_label_new(NULL);
 	gchar *markup;
 
-	markup = g_markup_printf_escaped
-	    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
+	markup = g_strdup_printf
+	    ("<span font=\"Liberation Sans 10\">%s</span>", options.welcome);
 	gtk_label_set_markup(GTK_LABEL(lab), markup);
 	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
