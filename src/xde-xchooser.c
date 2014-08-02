@@ -91,6 +91,7 @@
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#include <X11/extensions/scrnsaver.h>
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
@@ -141,7 +142,8 @@
 #include <netinet/ip.h>
 
 #define DO_XCHOOSER 1
-#define DO_XSESSION 1
+#undef DO_XSESSION
+#undef DO_XLOCKING
 
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
@@ -158,6 +160,13 @@ enum {
 	OPENFAILED_DISPLAY,		/* XOpenDisplay failed, retry */
 };
 
+#undef EXIT_SUCCESS
+#define EXIT_SUCCESS	OBEYSESS_DISPLAY
+#undef EXIT_FAILURE
+#define EXIT_FAILURE	REMANAGE_DISPLAY
+#undef EXIT_SYNTAXERR
+#define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
+
 typedef enum {
 	CommandDefault,
 	CommandHelp,			/* command argument help */
@@ -165,6 +174,10 @@ typedef enum {
 	CommandCopying,			/* command copying information */
 	CommandXlogin,
 	CommandXchoose,
+	CommandLocker,			/* run as a background locker */
+	CommandReplace,			/* replace any running instance */
+	CommandLock,			/* ask running instance to lock */
+	CommandQuit,			/* ask running instance to quit */
 } CommandType;
 
 typedef struct {
@@ -238,6 +251,51 @@ Atom _XA_GTK_READ_RCFILES;
 Atom _XA_XROOTPMAP_ID;
 Atom _XA_ESETROOT_PMAP_ID;
 
+#ifdef DO_XLOCKING
+int xssEventBase;
+int xssErrorBase;
+int xssMajorVersion;
+int xssMinorVersion;
+
+const char *
+xssState(int state)
+{
+	switch (state) {
+	case ScreenSaverOff:
+		return ("Off");
+	case ScreenSaverOn:
+		return ("On");
+	case ScreenSaverCycle:
+		return ("Cycle");
+	case ScreenSaverDisabled:
+		return ("Disabled");
+	}
+	return ("(unknown)");
+}
+
+const char *
+xssKind(int kind)
+{
+	switch (kind) {
+	case ScreenSaverBlanked:
+		return ("Blanked");
+	case ScreenSaverInternal:
+		return ("Internal");
+	case ScreenSaverExternal:
+		return ("External");
+	}
+	return ("(unknown)");
+}
+#endif
+
+const char *
+showBool(Bool boolean)
+{
+	if (boolean)
+		return ("True");
+	return ("False");
+}
+
 typedef struct {
 	int index;
 	GtkWidget *align;		/* alignment widget at center of
@@ -254,10 +312,118 @@ typedef struct {
 	gint nmon;			/* number of monitors */
 	XdeMonitor *mons;		/* monitors for this screen */
 	GdkPixmap *pixmap;		/* pixmap for background image */
+#ifdef DO_XLOCKING
+	XScreenSaverInfo info;		/* screen saver info for this screen */
+	char selection[32];
+	Window selwin;
+#endif
 } XdeScreen;
 
 XdeScreen *screens;
 
+#ifdef DO_XLOCKING
+void
+setup_screensaver(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	int s, nscr = gdk_display_get_n_screens(disp);
+	char **list, **ext;
+	int n, next = 0;
+	Bool gotext = False;
+	Bool present;
+	Status status;
+	XdeScreen *xscr;
+
+	if ((list = XListExtensions(dpy, &next)) && next)
+		for (n = 0, ext = list; n < next; n++, ext++)
+			if (!strcmp(*ext, "MIT-SCREEN-SAVER"))
+				gotext = True;
+	if (!gotext) {
+		DPRINTF("no MIT-SCREEN-SAVER extension\n");
+		return;
+	}
+	if (!(present = XScreenSaverQueryExtension(dpy, &xssEventBase, &xssErrorBase))) {
+		DPRINTF("MIT-SCREEN-SAVER extension not present\n");
+		return;
+	}
+	if (!(status = XScreenSaverQueryVersion(dpy, &xssMajorVersion, &xssMinorVersion))) {
+		DPRINTF("cannot query MIT-SCREEN-SAVER version\n");
+		return;
+	}
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
+		GdkScreen *scrn = gdk_display_get_screen(disp, s);
+		XSetWindowAttributes xwa;
+		unsigned long mask = 0;
+
+		mask |= CWBackPixmap;
+		xwa.background_pixmap = None;
+		mask |= CWBackPixel;
+		xwa.background_pixel = BlackPixel(dpy, s);
+		mask |= CWBorderPixmap;
+		xwa.border_pixmap = None;
+		mask |= CWBorderPixel;
+		xwa.border_pixel = BlackPixel(dpy, s);
+		mask |= CWBitGravity;
+		xwa.bit_gravity = 0;
+		mask |= CWWinGravity;
+		xwa.win_gravity = NorthWestGravity;
+		mask |= CWBackingStore;
+		xwa.backing_store = NotUseful;
+		mask |= CWBackingPlanes;
+		xwa.backing_pixel = 0;
+		mask |= CWSaveUnder;
+		xwa.save_under = True;
+		mask |= CWEventMask;
+		xwa.event_mask = NoEventMask;
+		mask |= CWDontPropagate;
+		xwa.do_not_propagate_mask = NoEventMask;
+		mask |= CWOverrideRedirect;
+		xwa.override_redirect = True;
+		mask |= CWColormap;
+		xwa.colormap = DefaultColormap(dpy, s);
+		mask |= CWCursor;
+		xwa.cursor = None;
+
+		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
+		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
+					ScreenSaverNotifyMask | ScreenSaverCycleMask);
+		XScreenSaverSetAttributes(dpy, RootWindow(dpy, s), 0, 0,
+					  gdk_screen_get_width(scrn),
+					  gdk_screen_get_height(scrn),
+					  0, DefaultDepth(dpy, s), InputOutput,
+					  DefaultVisual(dpy, s), mask, &xwa);
+		GdkWindow *win = gtk_widget_get_window(xscr->wind);
+		Window w = GDK_WINDOW_XID(win);
+
+		XScreenSaverRegister(dpy, s, w, XA_WINDOW);
+
+	}
+}
+
+GdkFilterReturn
+handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
+{
+	XScreenSaverNotifyEvent *ev = (typeof(ev)) xev;
+
+	DPRINT();
+
+	if (options.debug > 1) {
+		fprintf(stderr, "==> XScreenSaverNotify:\n");
+		fprintf(stderr, "    --> send_event = %s\n", showBool(ev->send_event));
+		fprintf(stderr, "    --> window = 0x%lx\n", ev->window);
+		fprintf(stderr, "    --> root = 0x%lx\n", ev->root);
+		fprintf(stderr, "    --> state = %s\n", xssState(ev->state));
+		fprintf(stderr, "    --> kind = %s\n", xssKind(ev->kind));
+		fprintf(stderr, "    --> forced = %s\n", showBool(ev->forced));
+		fprintf(stderr, "    --> time = %lu\n", ev->time);
+		fprintf(stderr, "<== XScreenSaverNotify:\n");
+	}
+	return G_SOURCE_CONTINUE;
+}
+#endif				/* DO_XLOCKING */
+
+#ifdef DO_XCHOOSER
 #define PING_TRIES	3
 #define PING_INTERVAL	2	/* 2 seconds */
 
@@ -276,7 +442,9 @@ enum {
 	XDM_COL_MARKUP,			/* the combined markup description */
 	XDM_COL_TOOLTIP,		/* the tooltip information */
 };
+#endif				/* DO_XCHOOSER */
 
+#ifdef DO_XSESSION
 enum {
 	XSESS_COL_PIXBUF,		/* the icon name for the pixbuf */
 	XSESS_COL_NAME,			/* the Name= of the XSession */
@@ -287,6 +455,7 @@ enum {
 	XSESS_COL_ORIGINAL,		/* XDE-Managed? original setting */
 	XSESS_COL_FILENAME,		/* the full file name */
 };
+#endif				/* DO_XSESSION */
 
 static void reparse(Display *dpy, Window root);
 void get_source(XdeScreen *xscr);
@@ -377,6 +546,51 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	return GDK_FILTER_CONTINUE;
 }
 
+#ifdef DO_XLOCKING
+static GdkFilterReturn
+event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	DPRINT();
+	if (options.debug > 1) {
+		fprintf(stderr, "==> SelectionClear: %p\n", xscr);
+		fprintf(stderr, "    --> send_event = %s\n",
+			xev->xselectionclear.send_event ? "true" : "false");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xselectionclear.window);
+		fprintf(stderr, "    --> selection = %s\n",
+			XGetAtomName(dpy, xev->xselectionclear.selection));
+		fprintf(stderr, "    --> time = %lu\n", xev->xselectionclear.time);
+		fprintf(stderr, "<== SelectionClear: %p\n", xscr);
+	}
+	if (xscr && xev->xselectionclear.window == xscr->selwin) {
+		XDestroyWindow(dpy, xscr->selwin);
+		EPRINTF("selection cleared, exiting\n");
+		exit(EXIT_SUCCESS);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = (typeof(xscr)) data;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	DPRINT();
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case SelectionClear:
+		return event_handler_SelectionClear(dpy, xev, xscr);
+	}
+	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;
+}
+#endif
+
 static GdkFilterReturn
 client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 {
@@ -392,34 +606,9 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	return GDK_FILTER_CONTINUE;
 }
 
+#ifdef DO_XSESSION
 GtkListStore *store;			/* list store for XSessions */
 GtkWidget *sess;
-
-void
-on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer user_data)
-{
-	GtkTreeIter iter;
-
-	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter, path)) {
-		GValue user_v = G_VALUE_INIT;
-		GValue orig_v = G_VALUE_INIT;
-		gboolean user;
-		gboolean orig;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter, XSESS_COL_MANAGED, &user_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter, XSESS_COL_ORIGINAL, &orig_v);
-		user = g_value_get_boolean(&user_v);
-		orig = g_value_get_boolean(&orig_v);
-		if (orig) {
-			user = user ? FALSE : TRUE;
-			g_value_set_boolean(&user_v, user);
-			gtk_list_store_set_value(GTK_LIST_STORE(store), &iter, XSESS_COL_MANAGED,
-						 &user_v);
-		}
-		g_value_unset(&user_v);
-		g_value_unset(&orig_v);
-	}
-}
 
 void
 on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell, GtkTreeModel
@@ -803,9 +992,13 @@ on_idle(gpointer data)
 #endif
 	return G_SOURCE_CONTINUE;
 }
+#endif				/* DO_XSESSION */
 
+#ifdef DO_XCHOOSER
 GtkListStore *model;
 GtkWidget *view;
+#endif				/* DO_XCHOOSER */
+
 GtkWidget *top;
 
 void
@@ -824,15 +1017,25 @@ relax()
 char **
 get_data_dirs(int *np)
 {
-	char *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
+	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
 	int len, n;
 
+	home = getenv("HOME") ? : ".";
+#ifdef DO_XLOCKING
+	xhome = getenv("XDG_DATA_HOME");
+#else
 	xhome = "/usr/lib/X11/xdm";
+#endif
 	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
-	len = strlen(xhome) + 1 + strlen(xdata) + 1;
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
 	dirs = calloc(len, sizeof(*dirs));
-	strcpy(dirs, xhome);
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
 	strcat(dirs, ":");
 	strcat(dirs, xdata);
 	end = dirs + strlen(dirs);
@@ -848,7 +1051,8 @@ get_data_dirs(int *np)
 }
 
 static GtkWidget *buttons[5];
-static GtkWidget *l_uname, *l_pword, *l_lstat;
+static GtkWidget *l_uname;
+static GtkWidget *l_pword, *l_lstat;
 static GtkWidget *user, *pass;
 
 #ifdef DO_XSESSION
@@ -1617,7 +1821,7 @@ on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column
 		 user_data)
 {
 }
-#endif /* DO_XCHOOSER */
+#endif				/* DO_XCHOOSER */
 
 static int
 xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp, void *appdata_ptr)
@@ -1705,30 +1909,6 @@ struct pam_conv xde_pam_conv = {
 	.conv = xde_conv,
 	.appdata_ptr = NULL,
 };
-
-static void
-on_switch_session(GtkMenuItem *item, gpointer data)
-{
-	gchar *session = data;
-	GError *error = NULL;
-	DBusGConnection *bus;
-	DBusGProxy *proxy;
-	gboolean ok;
-
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
-		EPRINTF("cannot access system buss\n");
-		return;
-	}
-	proxy = dbus_g_proxy_new_for_name(bus,
-					  "org.freedesktop.login1",
-					  "/org/freedesktop/login1",
-					  "org.freedesktop.login1.Manager");
-	ok = dbus_g_proxy_call(proxy, "ActivateSession", &error, G_TYPE_STRING,
-			       session, G_TYPE_INVALID, G_TYPE_INVALID);
-	if (!ok || error)
-		DPRINTF("ActivateSession: %s: call failed\n", session);
-	g_object_unref(G_OBJECT(proxy));
-}
 
 static void
 on_poweroff(GtkMenuItem *item, gpointer data)
@@ -1827,12 +2007,6 @@ free_value(gpointer data, GClosure *unused)
 		g_free(data);
 }
 
-static void
-free_string(gpointer data, GClosure *unused)
-{
-	free(data);
-}
-
 /** @brief add a power actions submenu to the actions menu
   *
   * We can provide power management actions to the user on the following
@@ -1880,8 +2054,7 @@ append_power_actions(GtkMenu *menu)
 	submenu = gtk_menu_new();
 
 	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanPowerOff status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Power Off");
@@ -1889,8 +2062,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_poweroff),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_poweroff), value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -1902,8 +2074,7 @@ append_power_actions(GtkMenu *menu)
 		g_clear_error(&error);
 
 	ok = dbus_g_proxy_call(proxy, "CanReboot",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Reboot");
@@ -1911,8 +2082,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_reboot),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_reboot), value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -1924,8 +2094,7 @@ append_power_actions(GtkMenu *menu)
 		g_clear_error(&error);
 
 	ok = dbus_g_proxy_call(proxy, "CanSuspend",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Suspend");
@@ -1933,8 +2102,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_suspend),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_suspend), value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -1946,8 +2114,7 @@ append_power_actions(GtkMenu *menu)
 		g_clear_error(&error);
 
 	ok = dbus_g_proxy_call(proxy, "CanHibernate",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hibernate");
@@ -1955,8 +2122,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_hibernate),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_hibernate), value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -1968,8 +2134,7 @@ append_power_actions(GtkMenu *menu)
 		g_clear_error(&error);
 
 	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hybrid Sleep");
@@ -1977,8 +2142,8 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_hybridsleep),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_hybridsleep),
+				      value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -2008,6 +2173,36 @@ append_session_tasks(GtkMenu *menu)
 
 	if (!(env = getenv("SESSION_MANAGER")))
 		return;
+}
+
+static void
+on_switch_session(GtkMenuItem *item, gpointer data)
+{
+	gchar *session = data;
+	GError *error = NULL;
+	DBusGConnection *bus;
+	DBusGProxy *proxy;
+	gboolean ok;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
+		EPRINTF("cannot access system buss\n");
+		return;
+	}
+	proxy = dbus_g_proxy_new_for_name(bus,
+					  "org.freedesktop.login1",
+					  "/org/freedesktop/login1",
+					  "org.freedesktop.login1.Manager");
+	ok = dbus_g_proxy_call(proxy, "ActivateSession", &error, G_TYPE_STRING,
+			       session, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok || error)
+		DPRINTF("ActivateSession: %s: call failed\n", session);
+	g_object_unref(G_OBJECT(proxy));
+}
+
+static void
+free_string(gpointer data, GClosure *unused)
+{
+	free(data);
 }
 
 /** @brief add a switch users submenu to the actions menu
@@ -2186,37 +2381,36 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 
 	login_result = LoginResultLogout;
 	gtk_main_quit();
+#ifndef DO_XLOCKING
 	exit(OBEYSESS_DISPLAY);
+#endif
 }
 
 static void
 on_user_activate(GtkEntry *user, gpointer data)
 {
-	GtkEntry *pass = data;
 	const gchar *username;
 
 	free(options.username);
 	options.username = NULL;
 	free(options.password);
 	options.password = NULL;
-	gtk_entry_set_text(pass, "");
+	gtk_entry_set_text(GTK_ENTRY(pass), "");
 
 	if ((username = gtk_entry_get_text(user)) && username[0]) {
 		options.username = strdup(username);
 		gtk_widget_set_sensitive(buttons[3], FALSE);
 		state = LoginStateUsername;
-		gtk_widget_grab_default(GTK_WIDGET(pass));
-		gtk_widget_grab_focus(GTK_WIDGET(pass));
+		gtk_widget_grab_default(pass);
+		gtk_widget_grab_focus(pass);
 	}
 }
 
 static void
 on_pass_activate(GtkEntry *pass, gpointer data)
 {
-	GtkEntry *user = data;
 	const gchar *password;
 
-	(void) user;
 	free(options.password);
 	options.password = NULL;
 
@@ -2341,9 +2535,9 @@ get_source(XdeScreen *xscr)
 		long *data = NULL;
 
 		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
-					&actual, &format, &nitems, &after,
-					(unsigned char **) &data) == Success &&
-				format == 32 && actual && nitems >= 1 && data) {
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data) {
 			Pixmap p;
 
 			if ((p = data[0])) {
@@ -2355,6 +2549,52 @@ get_source(XdeScreen *xscr)
 			XFree(data);
 	}
 }
+
+#ifdef DO_XLOCKING
+static Window
+get_selection(Window selwin, char *selection, int s)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	Atom atom;
+	Window owner;
+
+	snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
+	atom = XInternAtom(dpy, selection, False);
+	if (!(owner = XGetSelectionOwner(dpy, atom)))
+		DPRINTF("No owner for %s\n", selection);
+	if ((owner && options.replace) || (!owner && selwin)) {
+		DPRINTF("Setting owner of %s to 0x%lx from 0x%lx\n", selection, selwin, owner);
+		XSetSelectionOwner(dpy, atom, selwin, CurrentTime);
+		XSync(dpy, False);
+	}
+	if (options.replace && selwin) {
+		XEvent ev;
+		Atom manager = XInternAtom(dpy, "MANAGER", False);
+		GdkScreen *scrn = gdk_display_get_screen(disp, s);
+		GdkWindow *root = gdk_screen_get_root_window(scrn);
+		Window r = GDK_WINDOW_XID(root);
+		Atom atom = XInternAtom(dpy, selection, False);
+
+		ev.xclient.type = ClientMessage;
+		ev.xclient.serial = 0;
+		ev.xclient.send_event = False;
+		ev.xclient.display = dpy;
+		ev.xclient.window = r;
+		ev.xclient.message_type = manager;
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = CurrentTime;
+		ev.xclient.data.l[1] = atom;
+		ev.xclient.data.l[2] = selwin;
+		ev.xclient.data.l[3] = 0;
+		ev.xclient.data.l[4] = 0;
+
+		XSendEvent(dpy, r, False, StructureNotifyMask, &ev);
+		XFlush(dpy);
+	}
+	return (owner);
+}
+#endif				/* DO_XLOCKING */
 
 /** @brief get a covering window for a screen
   */
@@ -2432,6 +2672,27 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	gdk_window_add_filter(root, root_handler, xscr);
 	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK;
 	gdk_window_set_events(root, mask);
+
+#ifdef DO_XLOCKING
+	Window owner = None;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	xscr->selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
+	if ((owner = get_selection(xscr->selwin, xscr->selection, s))) {
+		if (!options.replace) {
+			XDestroyWindow(dpy, xscr->selwin);
+			EPRINTF("%s: instance already running\n", NAME);
+			exit(EXIT_FAILURE);
+		}
+	}
+	GdkWindow *sel = gdk_x11_window_foreign_new_for_display(disp, xscr->selwin);
+
+	gdk_window_add_filter(sel, selwin_handler, xscr);
+	mask = gdk_window_get_events(sel);
+	mask |= GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK | GDK_PROPERTY_CHANGE_MASK;
+	gdk_window_set_events(sel, mask);
+#endif				/* DO_XLOCKING */
 }
 
 static void
@@ -2535,7 +2796,7 @@ GetPanel(void)
 
 	gtk_container_add(GTK_CONTAINER(inp), align);
 
-#ifdef DO_XCHOOSER
+#ifdef DO_XSESSION
 	GtkWidget *login = gtk_table_new(3, 3, TRUE);
 #else
 	GtkWidget *login = gtk_table_new(2, 3, TRUE);
@@ -2699,7 +2960,9 @@ GetPanel(void)
 	g_idle_add(on_idle, store);
 
 	gtk_table_attach_defaults(GTK_TABLE(login), sess, 1, 2, 2, 3);
+#endif				/* DO_XSESSION */
 
+#ifdef DO_XCHOOSER
 	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
 
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
@@ -2752,7 +3015,7 @@ GetPanel(void)
 	g_signal_connect(G_OBJECT(view), "row_activated",
 			 G_CALLBACK(on_row_activated), (gpointer) NULL);
 
-#endif /* DO_XSESSION */
+#endif				/* DO_XCHOOSER */
 
 	return (pan);
 }
@@ -2874,6 +3137,32 @@ do_run(int argc, char *argv[])
 	gtk_main();
 }
 
+#ifdef DO_XLOCKING
+/** @brief quit the running background locker
+  */
+static void
+do_quit(int argc, char *argv[])
+{
+	GdkDisplay *disp;
+	int s, nscr;
+	char selection[32];
+
+	startup(argc, argv);
+	disp = gdk_display_get_default();
+	nscr = gdk_display_get_n_screens(disp);
+	for (s = 0; s < nscr; s++)
+		get_selection(None, selection, s);
+}
+
+/** @brief ask running background locker to lock (or just lock the display)
+  */
+static void
+do_lock(int argc, char *argv[])
+{
+	startup(argc, argv);
+}
+#endif				/* DO_XLOCKING */
+
 static void
 copying(int argc, char *argv[])
 {
@@ -2947,7 +3236,10 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [options]\n\
+    %1$s [options] ADDRESS [...]\n\
+    %1$s [options] {-r|--replace}\n\
+    %1$s [options] {-l|--lock}\n\
+    %1$s [options] {-q|--quit}\n\
     %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
@@ -2986,6 +3278,9 @@ help(int argc, char *argv[])
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [options] ADDRESS [...]\n\
+    %1$s [options] {-r|--replace}\n\
+    %1$s [options] {-l|--lock}\n\
+    %1$s [options] {-q|--quit}\n\
     %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
@@ -2993,6 +3288,12 @@ Arguments:\n\
     ADDRESS [...]\n\
         host names of display managers or \"BROADCAST\"\n\
 Command options:\n\
+    -r, --replace\n\
+        replace a running instance with the current one\n\
+    -l, --lock\n\
+        ask a running instance to lock the screen now\n\
+    -q, --quit\n\
+        ask a running instance to quit\n\
     -h, --help, -?, --?\n\
         print this usage information and exit\n\
     -V, --version\n\
@@ -3144,14 +3445,24 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+#ifdef DO_XCHOOSER
 			{"xdmAddress",	    required_argument,	NULL, 'x'},
 			{"clientAddress",   required_argument,	NULL, 'c'},
 			{"connectionType",  required_argument,	NULL, 't'},
-			{"banner",	    required_argument,	NULL, 'b'},
 			{"welcome",	    required_argument,	NULL, 'w'},
+#else					/* DO_XCHOOSER */
+			{"prompt",	required_argument,	NULL, 'p'},
+#endif					/* DO_XCHOOSER */
+#ifdef DO_XLOCKING
+			{"replace",	no_argument,		NULL, 'r'},
+			{"lock",	no_argument,		NULL, 'l'},
+			{"quit",	no_argument,		NULL, 'q'},
+#endif					/* DO_XLOCKING */
+
+			{"banner",	    required_argument,	NULL, 'b'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
 			{"charset",	    required_argument,	NULL, '1'},
-			{"language",	    required_argument,	NULL, 'l'},
+			{"language",	    required_argument,	NULL, '2'},
 			{"icons",	    required_argument,	NULL, 'i'},
 			{"theme",	    required_argument,	NULL, 'T'},
 
@@ -3179,6 +3490,7 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
+#ifdef DO_XCHOOSER
 		case 'x':	/* -xdmAddress HEXBYTES */
 			if (options.xdmAddress.length)
 				goto bad_option;
@@ -3200,14 +3512,46 @@ main(int argc, char *argv[])
 			else
 				goto bad_option;
 			break;
+		case 'w':	/* -w, --welcome WELCOME */
+			free(options.welcome);
+			options.welcome = strndup(optarg, 256);
+			break;
+#else				/* DO_XCHOOSER */
+		case 'p':	/* -p, --prompt PROMPT */
+			free(options.welcome);
+			options.welcome = strndup(optarg, 256);
+			break;
+#endif				/* DO_XCHOOSER */
+
+#ifdef DO_XLOCKING
+		case 'r':	/* -r, --replace */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandReplace;
+			options.command = CommandReplace;
+			options.replace = True;
+			break;
+		case 'q':	/* -q, --quit */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandQuit;
+			options.command = CommandQuit;
+			options.replace = True;
+			break;
+		case 'l':	/* -l, --lock */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandLock;
+			options.command = CommandLock;
+			break;
+#endif				/* DO_XLOCKING */
 
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
 			options.banner = strndup(optarg, 256);
-			break;
-		case 'w':	/* -w, --welcome WELCOME */
-			free(options.welcome);
-			options.welcome = strndup(optarg, 256);
 			break;
 		case 'u':	/* -u, --xde-theme */
 			options.usexde = True;
@@ -3216,7 +3560,7 @@ main(int argc, char *argv[])
 			free(options.charset);
 			options.charset = strdup(optarg);
 			break;
-		case 'l':	/* -l, --language LANG */
+		case '2':	/* -l, --language LANG */
 			free(options.language);
 			options.language = strdup(optarg);
 			break;
@@ -3292,25 +3636,43 @@ main(int argc, char *argv[])
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(REMANAGE_DISPLAY);
+			exit(EXIT_SYNTAXERR);
 		}
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	if (command == CommandDefault && optind >= argc) {
-		EPRINTF("%s: missing non-option argument\n", argv[0]);
-		usage(argc, argv);
-		exit(REMANAGE_DISPLAY);
+	if (optind >= argc) {
+#ifdef DO_XCHOOSER
+		fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+		goto bad_nonopt;
+#else
+	} else {
+		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
+		goto bad_nonopt;
+#endif
 	}
 	get_defaults();
 	switch (command) {
+	default:
 	case CommandDefault:
-	case CommandXlogin:
-	case CommandXchoose:
 		DPRINTF("%s: running xchooser\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
-		exit(REMANAGE_DISPLAY);
+		exit(EXIT_FAILURE);
 		break;
+#ifdef DO_XLOCKING
+	case CommandReplace:
+		DPRINTF("%s: running replace\n", argv[0]);
+		do_run(argc, argv);
+		break;
+	case CommandQuit:
+		DPRINTF("%s: running quit\n", argv[0]);
+		do_quit(argc, argv);
+		break;
+	case CommandLock:
+		DPRINTF("%s: running lock\n", argv[0]);
+		do_lock(argc, argv);
+		break;
+#endif				/* DO_XLOCKING */
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);
 		help(argc, argv);
@@ -3324,7 +3686,7 @@ main(int argc, char *argv[])
 		copying(argc, argv);
 		break;
 	}
-	exit(OBEYSESS_DISPLAY);
+	exit(EXIT_SUCCESS);
 }
 
 // vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:

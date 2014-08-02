@@ -97,6 +97,7 @@
 #include <libsn/sn.h>
 #endif
 #include <X11/Xdmcp.h>
+#include <X11/Xauth.h>
 #include <X11/SM/SMlib.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
@@ -131,6 +132,19 @@
 	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
+#include <ctype.h>
+#include <sys/socket.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+
+#undef DO_XCHOOSER
+#undef DO_XSESSION
+#define DO_XLOCKING 1
+
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
 	LOGO_SIDE_TOP,
@@ -146,11 +160,20 @@ enum {
 	OPENFAILED_DISPLAY,		/* XOpenDisplay failed, retry */
 };
 
+#undef EXIT_SUCCESS
+#define EXIT_SUCCESS	OBEYSESS_DISPLAY
+#undef EXIT_FAILURE
+#define EXIT_FAILURE	REMANAGE_DISPLAY
+#undef EXIT_SYNTAXERR
+#define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
+
 typedef enum {
 	CommandDefault,
 	CommandHelp,			/* command argument help */
 	CommandVersion,			/* command version information */
 	CommandCopying,			/* command copying information */
+	CommandXlogin,
+	CommandXchoose,
 	CommandLocker,			/* run as a background locker */
 	CommandReplace,			/* replace any running instance */
 	CommandLock,			/* ask running instance to lock */
@@ -228,6 +251,7 @@ Atom _XA_GTK_READ_RCFILES;
 Atom _XA_XROOTPMAP_ID;
 Atom _XA_ESETROOT_PMAP_ID;
 
+#ifdef DO_XLOCKING
 int xssEventBase;
 int xssErrorBase;
 int xssMajorVersion;
@@ -262,6 +286,7 @@ xssKind(int kind)
 	}
 	return ("(unknown)");
 }
+#endif
 
 const char *
 showBool(Bool boolean)
@@ -287,13 +312,16 @@ typedef struct {
 	gint nmon;			/* number of monitors */
 	XdeMonitor *mons;		/* monitors for this screen */
 	GdkPixmap *pixmap;		/* pixmap for background image */
+#ifdef DO_XLOCKING
 	XScreenSaverInfo info;		/* screen saver info for this screen */
 	char selection[32];
 	Window selwin;
+#endif
 } XdeScreen;
 
 XdeScreen *screens;
 
+#ifdef DO_XLOCKING
 void
 setup_screensaver(void)
 {
@@ -393,6 +421,41 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 	}
 	return G_SOURCE_CONTINUE;
 }
+#endif				/* DO_XLOCKING */
+
+#ifdef DO_XCHOOSER
+#define PING_TRIES	3
+#define PING_INTERVAL	2	/* 2 seconds */
+
+XdmcpBuffer directBuffer;
+XdmcpBuffer broadcastBuffer;
+
+enum {
+	XDM_COL_HOSTNAME,		/* the manager hostname */
+	XDM_COL_REMOTENAME,		/* the manager remote name */
+	XDM_COL_WILLING,		/* the willing status */
+	XDM_COL_STATUS,			/* the status */
+	XDM_COL_IPADDR,			/* the ip address */
+	XDM_COL_CTYPE,			/* the connection type */
+	XDM_COL_SERVICE,		/* the service */
+	XDM_COL_PORT,			/* the port number */
+	XDM_COL_MARKUP,			/* the combined markup description */
+	XDM_COL_TOOLTIP,		/* the tooltip information */
+};
+#endif				/* DO_XCHOOSER */
+
+#ifdef DO_XSESSION
+enum {
+	XSESS_COL_PIXBUF,		/* the icon name for the pixbuf */
+	XSESS_COL_NAME,			/* the Name= of the XSession */
+	XSESS_COL_COMMENT,		/* the Comment= of the XSession */
+	XSESS_COL_MARKUP,		/* Combined Name/Comment markup */
+	XSESS_COL_LABEL,		/* the label (appid) of the XSession */
+	XSESS_COL_MANAGED,		/* XDE-Managed? editable setting */
+	XSESS_COL_ORIGINAL,		/* XDE-Managed? original setting */
+	XSESS_COL_FILENAME,		/* the full file name */
+};
+#endif				/* DO_XSESSION */
 
 static void reparse(Display *dpy, Window root);
 void get_source(XdeScreen *xscr);
@@ -483,6 +546,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	return GDK_FILTER_CONTINUE;
 }
 
+#ifdef DO_XLOCKING
 static GdkFilterReturn
 event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
 {
@@ -525,6 +589,7 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	EPRINTF("wrong message type for handler %d\n", xev->type);
 	return GDK_FILTER_CONTINUE;
 }
+#endif
 
 static GdkFilterReturn
 client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
@@ -541,6 +606,399 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	return GDK_FILTER_CONTINUE;
 }
 
+#ifdef DO_XSESSION
+GtkListStore *store;			/* list store for XSessions */
+GtkWidget *sess;
+
+void
+on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell, GtkTreeModel
+		 *store, GtkTreeIter *iter, gpointer data)
+{
+	GValue iname_v = G_VALUE_INIT;
+	const gchar *iname;
+	gchar *name = NULL, *p;
+	gboolean has;
+	GValue pixbuf_v = G_VALUE_INIT;
+
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), iter, XSESS_COL_PIXBUF, &iname_v);
+	if ((iname = g_value_get_string(&iname_v))) {
+		name = g_strdup(iname);
+		/* should we really do this? */
+		if ((p = strstr(name, ".xpm")) && !p[4])
+			*p = '\0';
+		else if ((p = strstr(name, ".svg")) && !p[4])
+			*p = '\0';
+		else if ((p = strstr(name, ".png")) && !p[4])
+			*p = '\0';
+	} else
+		name = g_strdup("preferences-system-windows");
+	g_value_unset(&iname_v);
+	XPRINTF("will try to render icon name = \"%s\"\n", name);
+
+	GtkIconTheme *theme = gtk_icon_theme_get_default();
+	GdkPixbuf *pixbuf = NULL;
+
+	XPRINTF("checking icon \"%s\"\n", name);
+	has = gtk_icon_theme_has_icon(theme, name);
+	if (has) {
+		XPRINTF("trying to load icon \"%s\"\n", name);
+		pixbuf = gtk_icon_theme_load_icon(theme, name, 16,
+						  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
+						  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+	}
+	if (!has || !pixbuf) {
+		g_free(name);
+		name = g_strdup("preferences-system-windows");
+		XPRINTF("checking icon \"%s\"\n", name);
+		has = gtk_icon_theme_has_icon(theme, name);
+		if (has) {
+			XPRINTF("tyring to load icon \"%s\"\n", name);
+			pixbuf = gtk_icon_theme_load_icon(theme, name, 16,
+							  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
+							  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
+		}
+		if (!has || !pixbuf) {
+			GtkWidget *image;
+
+			XPRINTF("tyring to load image \"%s\"\n", "gtk-missing-image");
+			if ((image = gtk_image_new_from_stock("gtk-missing-image",
+							      GTK_ICON_SIZE_MENU))) {
+				XPRINTF("tyring to load icon \"%s\"\n", "gtk-missing-image");
+				pixbuf = gtk_widget_render_icon(GTK_WIDGET(image),
+								"gtk-missing-image",
+								GTK_ICON_SIZE_MENU, NULL);
+				g_object_unref(G_OBJECT(image));
+			}
+		}
+	}
+	if (pixbuf) {
+		XPRINTF("setting pixbuf for cell renderrer\n");
+		g_value_init(&pixbuf_v, G_TYPE_OBJECT);
+		g_value_take_object(&pixbuf_v, pixbuf);
+		g_object_set_property(G_OBJECT(cell), "pixbuf", &pixbuf_v);
+		g_value_unset(&pixbuf_v);
+	}
+}
+
+char **
+get_xsession_dirs(int *np)
+{
+	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end; n++,
+	     *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1) {
+		len = strlen(pos) + strlen("/xsessions") + 1;
+		xdg_dirs[n] = calloc(len, sizeof(*xdg_dirs[n]));
+		strcpy(xdg_dirs[n], pos);
+		strcat(xdg_dirs[n], "/xsessions");
+	}
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
+GKeyFile *
+get_xsession_entry(const char *key, const char *file)
+{
+	GKeyFile *entry;
+
+	if (!(entry = g_key_file_new())) {
+		EPRINTF("%s: could not allocate key file\n", file);
+		return (NULL);
+	}
+	if (!g_key_file_load_from_file(entry, file, G_KEY_FILE_NONE, NULL)) {
+		EPRINTF("%s: could not load keyfile\n", file);
+		g_key_file_unref(entry);
+		return (NULL);
+	}
+	if (!g_key_file_has_group(entry, G_KEY_FILE_DESKTOP_GROUP)) {
+		EPRINTF("%s: has no [%s] section\n", file, G_KEY_FILE_DESKTOP_GROUP);
+		g_key_file_free(entry);
+		return (NULL);
+	}
+	if (!g_key_file_has_key(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_TYPE, NULL)) {
+		EPRINTF("%s: has no %s= entry\n", file, G_KEY_FILE_DESKTOP_KEY_TYPE);
+		g_key_file_free(entry);
+		return (NULL);
+	}
+	DPRINTF("got xsession file: %s (%s)\n", key, file);
+	return (entry);
+}
+
+/** @brief wean out entries that should not be used
+  */
+gboolean
+bad_xsession(const char *appid, GKeyFile *entry)
+{
+	gchar *name, *exec, *tryexec, *binary;
+
+	if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					   G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
+		DPRINTF("%s: no Name\n", appid);
+		return TRUE;
+	}
+	g_free(name);
+	if (!(exec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					   G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
+		DPRINTF("%s: no Exec\n", appid);
+		return TRUE;
+	}
+	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
+				   G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
+		DPRINTF("%s: is Hidden\n", appid);
+		return TRUE;
+	}
+#if 0
+	/* NoDisplay is often used to hide XSession desktop entries from the
+	   application menu and does not indicate that it should not be
+	   displayed as an XSession entry. */
+
+	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
+				   G_KEY_FILE_DESKTOP_KEY_NO_DISPLAY, NULL)) {
+		DPRINTF("%s: is NoDisplay\n", appid);
+		return TRUE;
+	}
+#endif
+	if ((tryexec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					     G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, NULL))) {
+		binary = g_strdup(tryexec);
+		g_free(tryexec);
+	} else {
+		char *p;
+
+		/* parse the first word of the exec statement and see whether
+		   it is executable or can be found in PATH */
+		binary = g_strdup(exec);
+		if ((p = strpbrk(binary, " \t")))
+			*p = '\0';
+
+	}
+	g_free(exec);
+	if (binary[0] == '/') {
+		if (access(binary, X_OK)) {
+			DPRINTF("%s: %s: %s\n", appid, binary, strerror(errno));
+			g_free(binary);
+			return TRUE;
+		}
+	} else {
+		char *dir, *end;
+		char *path = strdup(getenv("PATH") ? : "");
+		int blen = strlen(binary) + 2;
+		gboolean execok = FALSE;
+
+		for (dir = path, end = dir + strlen(dir); dir < end;
+		     *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
+		for (dir = path; dir < end; dir += strlen(dir) + 1) {
+			int len = strlen(dir) + blen;
+			char *file = calloc(len, sizeof(*file));
+
+			strcpy(file, dir);
+			strcat(file, "/");
+			strcat(file, binary);
+			if (!access(file, X_OK)) {
+				execok = TRUE;
+				free(file);
+				break;
+			}
+			// to much noise
+			// DPRINTF("%s: %s: %s\n", appid, file,
+			// strerror(errno));
+		}
+		free(path);
+		if (!execok) {
+			DPRINTF("%s: %s: not executable\n", appid, binary);
+			g_free(binary);
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static void
+xsession_key_free(gpointer data)
+{
+	free(data);
+}
+
+static void
+xsession_value_free(gpointer filename)
+{
+	free(filename);
+}
+
+/** @brief just gets the filenames of the xsession files
+  *
+  * This just gest the filenames of the xsession files to avoid performing a lot
+  * of time consuming startup during the login.  We process the actual xession
+  * files and add them to the list out of an idle loop.
+  */
+GHashTable *
+get_xsessions(void)
+{
+	char **xdg_dirs, **dirs;
+	int i, n = 0;
+	static const char *suffix = ".desktop";
+	static const int suflen = 8;
+	GHashTable *xsessions = NULL;
+
+	if (!(xdg_dirs = get_xsession_dirs(&n)) || !n)
+		return (xsessions);
+
+	xsessions = g_hash_table_new_full(g_str_hash, g_str_equal,
+					  xsession_key_free, xsession_value_free);
+
+	/* go through them backward */
+	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+		char *file, *p;
+		DIR *dir;
+		struct dirent *d;
+		int len;
+		char *key;
+
+		if (!(dir = opendir(*dirs))) {
+			DPRINTF("%s: %s\n", *dirs, strerror(errno));
+			continue;
+		}
+		while ((d = readdir(dir))) {
+			if (d->d_name[0] == '.')
+				continue;
+			if (!(p = strstr(d->d_name, suffix)) || p[suflen]) {
+				DPRINTF("%s: no %s suffix\n", d->d_name, suffix);
+				continue;
+			}
+			len = strlen(*dirs) + strlen(d->d_name) + 2;
+			file = calloc(len, sizeof(*file));
+			strcpy(file, *dirs);
+			strcat(file, "/");
+			strcat(file, d->d_name);
+			key = strdup(d->d_name);
+			*strstr(key, suffix) = '\0';
+			g_hash_table_replace(xsessions, key, file);
+		}
+		closedir(dir);
+	}
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+	return (xsessions);
+}
+
+gboolean
+on_idle(gpointer data)
+{
+	static GHashTable *xsessions = NULL;
+	static GHashTableIter hiter;
+	const char *key;
+	const char *file;
+	GKeyFile *entry;
+	GtkTreeIter iter;
+
+	if (!xsessions) {
+		if (!(xsessions = get_xsessions())) {
+			EPRINTF("cannot build XSessions\n");
+			return G_SOURCE_REMOVE;
+		}
+		if (!g_hash_table_size(xsessions)) {
+			EPRINTF("cannot find any XSessions\n");
+			return G_SOURCE_REMOVE;
+		}
+		g_hash_table_iter_init(&hiter, xsessions);
+	}
+	if (!g_hash_table_iter_next(&hiter, (gpointer *) & key, (gpointer *) & file))
+		return G_SOURCE_REMOVE;
+
+	if (!(entry = get_xsession_entry(key, file)))
+		return G_SOURCE_CONTINUE;
+
+	if (bad_xsession(key, entry)) {
+		g_key_file_free(entry);
+		return G_SOURCE_CONTINUE;
+	}
+
+	gchar *i, *n, *c, *k, *l, *f;
+	gboolean m;
+
+	f = g_strdup(file);
+	l = g_strdup(key);
+	i = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+				  G_KEY_FILE_DESKTOP_KEY_ICON, NULL);
+	n = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					 G_KEY_FILE_DESKTOP_KEY_NAME, NULL, NULL) ? : g_strdup("");
+	c = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+					 G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL,
+					 NULL) ? : g_strdup("");
+	k = g_strdup_printf("<b>%s</b>\n%s", n, c);
+	m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
+	gtk_list_store_append(store, &iter);
+	/* *INDENT-OFF* */
+	gtk_list_store_set(store, &iter,
+			XSESS_COL_PIXBUF,	i,
+			XSESS_COL_NAME,		n,
+			XSESS_COL_COMMENT,	c,
+			XSESS_COL_MARKUP,	k,
+			XSESS_COL_LABEL,	l,
+			XSESS_COL_MANAGED,	m,
+			XSESS_COL_ORIGINAL,	m,
+			XSESS_COL_FILENAME,	f,
+			-1);
+	/* *INDENT-ON* */
+	g_free(f);
+	g_free(l);
+	g_free(i);
+	g_free(n);
+	g_free(k);
+	g_key_file_free(entry);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
+					     GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
+					     GTK_SORT_ASCENDING);
+
+#if 0
+	if (!strcmp(options.choice, key) ||
+	    ((!strcmp(options.choice, "choose") || !strcmp(options.choice, "default")) &&
+	     !strcmp(options.session, key)
+	    )) {
+		gchar *string;
+
+		/* FIXME: don't do this if the user has made a selection in the
+		   mean time. */
+		if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
+			GtkTreePath *path = gtk_tree_path_new_from_string(string);
+
+			g_free(string);
+			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view),
+							 path, cursor, NULL, FALSE);
+			gtk_tree_path_free(path);
+		}
+	}
+#endif
+	return G_SOURCE_CONTINUE;
+}
+#endif				/* DO_XSESSION */
+
+#ifdef DO_XCHOOSER
+GtkListStore *model;
+GtkWidget *view;
+#endif				/* DO_XCHOOSER */
+
 GtkWidget *top;
 
 void
@@ -550,6 +1008,12 @@ relax()
 		gtk_main_iteration();
 }
 
+/** @brief get system data directories
+  *
+  * Note that, unlike some other tools, there is no home directory at this point
+  * so just search the system XDG data directories for things, but treat the XDM
+  * home as /usr/lib/X11/xdm.
+  */
 char **
 get_data_dirs(int *np)
 {
@@ -557,7 +1021,11 @@ get_data_dirs(int *np)
 	int len, n;
 
 	home = getenv("HOME") ? : ".";
+#ifdef DO_XLOCKING
 	xhome = getenv("XDG_DATA_HOME");
+#else
+	xhome = "/usr/lib/X11/xdm";
+#endif
 	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
@@ -583,8 +1051,777 @@ get_data_dirs(int *np)
 }
 
 static GtkWidget *buttons[5];
-static GtkWidget *l_uname, *l_pword, *l_lstat;
+static GtkWidget *l_uname;
+static GtkWidget *l_pword, *l_lstat;
 static GtkWidget *user, *pass;
+
+#ifdef DO_XSESSION
+gint
+xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, gpointer data)
+{
+	GValue a_v = G_VALUE_INIT;
+	GValue b_v = G_VALUE_INIT;
+	const gchar *astr;
+	const gchar *bstr;
+	gint ret;
+
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), a, XSESS_COL_NAME, &a_v);
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), b, XSESS_COL_NAME, &b_v);
+	astr = g_value_get_string(&a_v);
+	bstr = g_value_get_string(&b_v);
+	ret = g_ascii_strcasecmp(astr, bstr);
+	g_value_unset(&a_v);
+	g_value_unset(&b_v);
+	return (ret);
+}
+#endif
+
+#ifdef DO_XCHOOSER
+Bool
+AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname_a,
+	ARRAY8 *status_a)
+{
+	int ctype;
+	sa_family_t family;
+	short port;
+	char remotename[NI_MAXHOST + 1] = { 0, };
+	char service[NI_MAXSERV + 1] = { 0, };
+	char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
+	char hostname[NI_MAXHOST + 1] = { 0, };
+	char markup[BUFSIZ + 1] = { 0, };
+	char tooltip[BUFSIZ + 1] = { 0, };
+	char status[256] = { 0, };
+	socklen_t len;
+
+	DPRINT();
+	len = hostname_a->length;
+	if (len > NI_MAXHOST)
+		len = NI_MAXHOST;
+	strncpy(hostname, (char *) hostname_a->data, len);
+	DPRINTF("hostname is %s\n", hostname);
+
+	len = status_a->length;
+	if (len > sizeof(status) - 1)
+		len = sizeof(status) - 1;
+	strncpy(status, (char *) status_a->data, len);
+	DPRINTF("status is %s\n", status);
+
+	switch ((family = sa->sa_family)) {
+	case AF_INET:
+	{
+		struct sockaddr_in *sin = (typeof(sin)) sa;
+
+		DPRINTF("family is AF_INET\n");
+		ctype = FamilyInternet;
+		port = ntohs(sin->sin_port);
+		inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
+		DPRINTF("address is %s\n", ipaddr);
+		break;
+	}
+	case AF_INET6:
+	{
+		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
+
+		DPRINTF("family is AF_INET6\n");
+		ctype = FamilyInternet6;
+		port = ntohs(sin6->sin6_port);
+		inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
+		DPRINTF("address is %s\n", ipaddr);
+		break;
+	}
+	case AF_UNIX:
+	{
+		struct sockaddr_un *sun = (typeof(sun)) sa;
+
+		DPRINTF("family is AF_UNIX\n");
+		ctype = FamilyLocal;
+		port = 0;
+		/* FIXME: display address in debug mode */
+		break;
+	}
+	default:
+		return False;
+	}
+	if (options.connectionType != FamilyInternet6 && options.connectionType != ctype) {
+		DPRINTF("wrong connection type\n");
+		return False;
+	}
+	if (getnameinfo(sa, len, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
+		DPRINTF("getnameinfo: %s\n", strerror(errno));
+		return False;
+	}
+
+	GtkTreeIter iter;
+	gboolean valid;
+
+	for (valid = gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(model), &iter, NULL, 0); valid;
+	     valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)) {
+		GValue addr_v = G_VALUE_INIT;
+		GValue name_v = G_VALUE_INIT;
+		const gchar *addr;
+		const gchar *name;
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XDM_COL_IPADDR, &addr_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XDM_COL_HOSTNAME, &name_v);
+		addr = g_value_get_string(&addr_v);
+		name = g_value_get_string(&name_v);
+		if (!strcmp(addr, ipaddr) && !strcmp(name, hostname)) {
+			g_value_unset(&addr_v);
+			g_value_unset(&name_v);
+			break;
+		}
+		g_value_unset(&addr_v);
+		g_value_unset(&name_v);
+	}
+	if (!valid)
+		gtk_list_store_append(model, &iter);
+	gtk_list_store_set(model, &iter,
+			   XDM_COL_HOSTNAME, hostname,
+			   XDM_COL_REMOTENAME, remotename,
+			   XDM_COL_WILLING, opc,
+			   XDM_COL_STATUS, status,
+			   XDM_COL_IPADDR, ipaddr,
+			   XDM_COL_CTYPE, ctype, XDM_COL_SERVICE, service, XDM_COL_PORT, port, -1);
+
+	const char *conntype;
+
+	strncpy(markup, "", sizeof(markup));
+	strncpy(tooltip, "", sizeof(tooltip));
+
+	switch (ctype) {
+	case FamilyLocal:
+		conntype = "UNIX Domain";
+		break;
+	case FamilyInternet:
+		conntype = "TCP (IP Version 4)";
+		break;
+	case FamilyInternet6:
+		conntype = "TCP (IP Version 6)";
+		break;
+	default:
+		conntype = "";
+		break;
+	}
+
+	strncat(tooltip, "<small><b>Hostname:</b>\t", BUFSIZ);
+	strncat(tooltip, hostname, BUFSIZ);
+	strncat(tooltip, "</small>\n", BUFSIZ);
+
+	strncat(tooltip, "<small><b>Alias:</b>\t\t", BUFSIZ);
+	strncat(tooltip, remotename, BUFSIZ);
+	strncat(tooltip, "</small>\n", BUFSIZ);
+
+	if (opc == WILLING) {
+		strncat(markup, "<span foreground=\"black\"><b>", BUFSIZ);
+		strncat(markup, hostname, BUFSIZ);
+		strncat(markup, "</b></span>\n", BUFSIZ);
+
+		strncat(markup, "<small><span foreground=\"black\">(", BUFSIZ);
+		strncat(markup, remotename, BUFSIZ);
+		strncat(markup, ")</span></small>\n", BUFSIZ);
+
+		strncat(markup, "<small><span foreground=\"black\"><i>", BUFSIZ);
+		strncat(markup, status, BUFSIZ);
+		strncat(markup, "</i></span></small>", BUFSIZ);
+
+		strncat(tooltip, "<small><b>Willing:</b>\t\t", BUFSIZ);
+		len = strlen(tooltip);
+		snprintf(tooltip + len, BUFSIZ - len, "Willing(%d)", (int) opc);
+		strncat(tooltip, "</small>\n", BUFSIZ);
+
+		strncat(tooltip, "<small><b>Status:</b>\t\t", BUFSIZ);
+		strncat(tooltip, status, BUFSIZ);
+		strncat(tooltip, "</small>\n", BUFSIZ);
+	} else {
+		strncat(markup, "<span foreground=\"grey\"><b>", BUFSIZ);
+		strncat(markup, hostname, BUFSIZ);
+		strncat(markup, "</b></span>\n", BUFSIZ);
+
+		strncat(markup, "<small><span foreground=\"grey\">(", BUFSIZ);
+		strncat(markup, remotename, BUFSIZ);
+		strncat(markup, "</span></small>\n", BUFSIZ);
+
+		strncat(markup, "<small><span foreground=\"grey\"><i>", BUFSIZ);
+		strncat(markup, "Unwilling(6)", BUFSIZ);
+		strncat(markup, "</i></span></small>", BUFSIZ);
+
+		strncat(tooltip, "<small><b>Willing:</b>\t\t", BUFSIZ);
+		len = strlen(tooltip);
+		snprintf(tooltip + len, BUFSIZ - len, "Unwilling(%d)", (int) opc);
+		strncat(tooltip, "</small>\n", BUFSIZ);
+	}
+
+	strncat(tooltip, "<small><b>IP Address:</b>\t", BUFSIZ);
+	strncat(tooltip, ipaddr, BUFSIZ);
+	strncat(tooltip, "</small>\n", BUFSIZ);
+
+	strncat(tooltip, "<small><b>ConnType:</b>\t", BUFSIZ);
+	strncat(tooltip, conntype, BUFSIZ);
+	strncat(tooltip, "</small>\n", BUFSIZ);
+
+	strncat(tooltip, "<small><b>Service:</b>\t\t", BUFSIZ);
+	strncat(tooltip, service, BUFSIZ);
+	strncat(tooltip, "</small>\n", BUFSIZ);
+
+	strncat(tooltip, "<small><b>Port:</b>\t\t", BUFSIZ);
+	len = strlen(tooltip);
+	snprintf(tooltip + len, BUFSIZ - len, "%d", (int) port);
+	strncat(tooltip, "</small>", BUFSIZ);
+
+	DPRINTF("markup is:\n%s\n", markup);
+	DPRINTF("tooltip is:\n%s\n", tooltip);
+
+	gtk_list_store_set(model, &iter, XDM_COL_MARKUP, markup, XDM_COL_TOOLTIP, tooltip, -1);
+
+	relax();
+	return True;
+
+}
+
+gboolean
+ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
+{
+	XdmcpBuffer *buffer = (XdmcpBuffer *) data;
+	XdmcpHeader header;
+	ARRAY8 authenticationName = { 0, NULL };
+	ARRAY8 hostname = { 0, NULL };
+	ARRAY8 status = { 0, NULL };
+	struct sockaddr_storage addr;
+	int addrlen, sfd;
+
+	DPRINT();
+	sfd = g_io_channel_unix_get_fd(source);
+	addrlen = sizeof(addr);
+	if (!XdmcpFill(sfd, buffer, (XdmcpNetaddr) & addr, &addrlen)) {
+		EPRINTF("could not fill buffer!\n");
+		return G_SOURCE_CONTINUE;
+	}
+	if (!XdmcpReadHeader(buffer, &header)) {
+		EPRINTF("could not read header!\n");
+		return G_SOURCE_CONTINUE;
+	}
+	if (header.version != XDM_PROTOCOL_VERSION) {
+		EPRINTF("wrong header version!\n");
+		return G_SOURCE_CONTINUE;
+	}
+	switch (header.opcode) {
+	case WILLING:
+		DPRINTF("host is WILLING\n");
+		if (XdmcpReadARRAY8(buffer, &authenticationName)
+		    && XdmcpReadARRAY8(buffer, &hostname)
+		    && XdmcpReadARRAY8(buffer, &status)) {
+			if (header.length == 6 + authenticationName.length +
+			    hostname.length + status.length)
+				AddHost((struct sockaddr *) &addr, header.opcode,
+					&authenticationName, &hostname, &status);
+			else
+				EPRINTF("message is the wrong length\n");
+		} else
+			EPRINTF("could not parse message\n");
+		break;
+	case UNWILLING:
+		DPRINTF("host is UNWILLING\n");
+		if (XdmcpReadARRAY8(buffer, &hostname) && XdmcpReadARRAY8(buffer, &status)) {
+			if (header.length == 4 + hostname.length + status.length)
+				AddHost((struct sockaddr *) &addr, header.opcode,
+					&authenticationName, &hostname, &status);
+			else
+				EPRINTF("message is the wrong length\n");
+		} else
+			EPRINTF("could not parse message\n");
+		break;
+	default:
+		break;
+	}
+	XdmcpDisposeARRAY8(&authenticationName);
+	XdmcpDisposeARRAY8(&hostname);
+	XdmcpDisposeARRAY8(&status);
+	return G_SOURCE_CONTINUE;
+}
+
+typedef struct _hostAddr {
+	struct _hostAddr *next;
+	struct sockaddr_storage addr;
+	int addrlen;
+	int sfd;
+	xdmOpCode type;
+} HostAddr;
+
+HostAddr *hostAddrdb;
+int pingTry = 0;
+gint pingid = 0;
+
+gboolean
+PingHosts(gpointer data)
+{
+	HostAddr *ha;
+
+	DPRINT();
+	for (ha = hostAddrdb; ha; ha = ha->next) {
+		int sfd;
+		struct sockaddr *addr;
+		sa_family_t family;
+		char buf[INET6_ADDRSTRLEN];
+
+		(void) buf;
+		if (!(sfd = ha->sfd))
+			continue;
+		addr = (typeof(addr)) & ha->addr;
+		family = addr->sa_family;
+		switch (family) {
+		case AF_INET:
+			DPRINTF("ping address is AF_INET\n");
+			break;
+		case AF_INET6:
+			DPRINTF("ping address is AF_INET6\n");
+			break;
+		}
+		if (options.debug) {
+			char *p;
+			int i;
+
+			DPRINTF("message is:");
+			for (i = 0, p = (char *) &ha->addr; i < ha->addrlen; i++, p++)
+				fprintf(stderr, " %02X", (unsigned int) *p);
+
+		}
+		if (ha->type == QUERY) {
+			DPRINTF("ping type is QUERY\n");
+			XdmcpFlush(ha->sfd, &directBuffer, (XdmcpNetaddr) & ha->addr, ha->addrlen);
+		} else {
+			DPRINTF("ping type is BROADCAST_QUERY\n");
+			XdmcpFlush(ha->sfd, &broadcastBuffer,
+				   (XdmcpNetaddr) & ha->addr, ha->addrlen);
+		}
+	}
+	if (++pingTry < PING_TRIES)
+		pingid = g_timeout_add_seconds(PING_INTERVAL, PingHosts, (gpointer) NULL);
+	return TRUE;
+}
+
+gint srce4, srce6;
+
+static ARRAYofARRAY8 AuthenticationNames;
+
+Bool
+InitXDMCP(char *argv[], int argc)
+{
+	int sock4, sock6, value;
+	GIOChannel *chan4, *chan6;
+	XdmcpBuffer *buffer4, *buffer6;
+	XdmcpHeader header;
+	int i;
+	char **arg;
+
+	DPRINT();
+
+	header.version = XDM_PROTOCOL_VERSION;
+	header.opcode = (CARD16) BROADCAST_QUERY;
+	header.length = 1;
+	for (i = 0; i < (int) AuthenticationNames.length; i++)
+		header.length += 2 + AuthenticationNames.data[i].length;
+	XdmcpWriteHeader(&broadcastBuffer, &header);
+	XdmcpWriteARRAYofARRAY8(&broadcastBuffer, &AuthenticationNames);
+
+	header.version = XDM_PROTOCOL_VERSION;
+	header.opcode = (CARD16) QUERY;
+	header.length = 1;
+	for (i = 0; i < (int) AuthenticationNames.length; i++)
+		header.length += 2 + AuthenticationNames.data[i].length;
+	XdmcpWriteHeader(&directBuffer, &header);
+	XdmcpWriteARRAYofARRAY8(&directBuffer, &AuthenticationNames);
+
+	if ((sock4 = socket(PF_INET, SOCK_DGRAM, 0)) == -1) {
+		EPRINTF("socket: Could not create IPv4 socket: %s\n", strerror(errno));
+		return False;
+	}
+	value = 1;
+	if (setsockopt(sock4, SOL_SOCKET, SO_BROADCAST, &value, sizeof(value)) == -1) {
+		EPRINTF("setsockopt: Could not set IPv4 broadcast: %s\n", strerror(errno));
+	}
+	if ((sock6 = socket(PF_INET6, SOCK_DGRAM, 0)) == -1) {
+		EPRINTF("socket: Could not create IPv6 socket: %s\n", strerror(errno));
+	}
+	if (setsockopt(sock6, SOL_SOCKET, SO_BROADCAST, &value, sizeof(value)) == -1) {
+		EPRINTF("setsockopt: Could not set IPv6 broadcast: %s\n", strerror(errno));
+	}
+	chan4 = g_io_channel_unix_new(sock4);
+	chan6 = g_io_channel_unix_new(sock6);
+
+	buffer4 = calloc(1, sizeof(*buffer4));
+	buffer6 = calloc(1, sizeof(*buffer6));
+
+	srce4 = g_io_add_watch(chan4, G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI,
+			       ReceivePacket, (gpointer) buffer4);
+	srce6 = g_io_add_watch(chan6, G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI,
+			       ReceivePacket, (gpointer) buffer6);
+
+	for (i = 0, arg = argv; i < argc; i++, arg++) {
+		if (!strcmp(*arg, "BROADCAST")) {
+			struct ifaddrs *ifa, *ifas = NULL;
+			HostAddr *ha;
+
+			if (getifaddrs(&ifas) == 0) {
+				for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
+					sa_family_t family;
+					socklen_t addrlen;
+					struct sockaddr *ifa_addr;
+					struct sockaddr_in *sin;
+
+					(void) index;
+					if (ifa->ifa_flags & IFF_LOOPBACK) {
+						DPRINTF("interface %s is a loopback interface\n",
+							ifa->ifa_name);
+						continue;
+					}
+					if (!(ifa_addr = ifa->ifa_addr)) {
+						EPRINTF("interface %s has no address\n",
+							ifa->ifa_name);
+						continue;
+					} else {
+						if (ifa_addr->sa_family == AF_INET)
+							DPRINTF("interface %s is AF_INET\n",
+								ifa->ifa_name);
+						else if (ifa_addr->sa_family == AF_INET6)
+							DPRINTF("interface %s is AF_INET6\n",
+								ifa->ifa_name);
+						else if (ifa_addr->sa_family == AF_PACKET)
+							DPRINTF("interface %s is AF_PACKET\n",
+								ifa->ifa_name);
+					}
+					if (!(ifa->ifa_flags & IFF_BROADCAST)) {
+						DPRINTF("interface %s has no broadcast\n",
+							ifa->ifa_name);
+						continue;
+					}
+					family = ifa_addr->sa_family;
+					if (family == AF_INET)
+						addrlen = sizeof(struct sockaddr_in);
+					else {
+						DPRINTF("interface %s has wrong family %d\n",
+							ifa->ifa_name, (int) family);
+						continue;
+					}
+					if (!(ifa_addr = ifa->ifa_broadaddr)) {
+						EPRINTF("interface %s has missing broadcast\n",
+							ifa->ifa_name);
+						continue;
+					}
+					DPRINTF("interace %s is ok\n", ifa->ifa_name);
+					ha = calloc(1, sizeof(*ha));
+					memcpy(&ha->addr, ifa_addr, addrlen);
+					sin = (typeof(sin)) & ha->addr;
+					sin->sin_port = htons(XDM_UDP_PORT);
+					ha->addrlen = addrlen;
+					ha->sfd = sock4;
+					ha->type = BROADCAST_QUERY;
+					ha->next = hostAddrdb;
+					hostAddrdb = ha;
+				}
+				freeifaddrs(ifas);
+			}
+		} else if (strspn(*arg, "0123456789abcdefABCDEF") == strlen(*arg)
+			   && strlen(*arg) == 8) {
+			char addr[4];
+			char *p, *o, c, b;
+			Bool ok = True;
+
+			for (p = *arg, o = addr; *p; p += 2, o++) {
+				c = tolower(p[0]);
+				if (!isxdigit(c)) {
+					ok = False;
+					break;
+				}
+				b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+				b <<= 4;
+				c = tolower(p[1]);
+				if (!isxdigit(c)) {
+					ok = False;
+					break;
+				}
+				b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+				*o = b;
+			}
+			if (ok) {
+				HostAddr *ha;
+				struct sockaddr_in *sin;
+
+				ha = calloc(1, sizeof(*ha));
+				sin = (typeof(sin)) & ha->addr;
+				sin->sin_family = AF_INET;
+				sin->sin_port = XDM_UDP_PORT;
+				memcpy(&sin->sin_addr, addr, 4);
+				ha->addrlen = sizeof(*sin);
+				ha->sfd = sock4;
+				ha->type = QUERY;
+				ha->next = hostAddrdb;
+				hostAddrdb = ha;
+			}
+		} else {
+			struct addrinfo hints, *result, *ai;
+
+			hints.ai_flags = AI_ADDRCONFIG;
+			hints.ai_family = AF_UNSPEC;
+			hints.ai_socktype = SOCK_DGRAM;
+			hints.ai_protocol = IPPROTO_UDP;
+			hints.ai_addrlen = 0;
+			hints.ai_addr = NULL;
+			hints.ai_canonname = NULL;
+			hints.ai_next = NULL;
+
+			if (getaddrinfo(*arg, "xdmcp", &hints, &result) == 0) {
+				HostAddr *ha;
+
+				for (ai = result; ai; ai = ai->ai_next) {
+					if (ai->ai_family == AF_INET) {
+						struct sockaddr_in *sin = (typeof(sin)) ai->ai_addr;
+
+						ha = calloc(1, sizeof(*ha));
+						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
+						ha->addrlen = ai->ai_addrlen;
+						ha->sfd = sock4;
+						ha->type = IN_MULTICAST(sin->sin_addr.s_addr) ?
+						    BROADCAST_QUERY : QUERY;
+						ha->next = hostAddrdb;
+						hostAddrdb = ha;
+					} else if (ai->ai_family == AF_INET6) {
+						struct sockaddr_in6 *sin6 =
+						    (typeof(sin6)) ai->ai_addr;
+
+						ha = calloc(1, sizeof(*ha));
+						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
+						ha->addrlen = ai->ai_addrlen;
+						ha->sfd = sock6;
+						ha->type = IN6_IS_ADDR_MULTICAST(&sin6->sin6_addr) ?
+						    BROADCAST_QUERY : QUERY;
+						ha->next = hostAddrdb;
+						hostAddrdb = ha;
+					}
+				}
+				freeaddrinfo(result);
+			}
+		}
+	}
+	pingTry = 0;
+	PingHosts((gpointer) NULL);
+	return True;
+}
+
+gboolean
+on_msg_timeout(gpointer data)
+{
+	gtk_dialog_response(GTK_DIALOG(data), GTK_RESPONSE_NONE);
+	return FALSE;
+}
+
+void
+Choose(short type, char *name)
+{
+	CARD16 connectionType = htons(type);
+	int status;
+
+	ARRAY8 hostAddress = {
+		htons((short) strlen(name)),
+		(CARD8 *) name
+	};
+
+	if (options.xdmAddress.data) {
+		struct sockaddr_in in_addr;
+		struct sockaddr_in6 in6_addr;
+		struct sockaddr *addr = NULL;
+		int family, len = 0, fd;
+		char buf[1024];
+		XdmcpBuffer buffer;
+		char *xdm;
+
+		/* 
+		 * Connect to XDM and output result
+		 */
+		xdm = (char *) options.xdmAddress.data;
+		family = ((int) xdm[0] << 8) + xdm[1];
+		switch (family) {
+		case AF_INET:
+			in_addr.sin_family = family;
+			memmove(&in_addr.sin_port, xdm + 2, 2);
+			memmove(&in_addr.sin_addr, xdm + 4, 4);
+			addr = (struct sockaddr *) &in_addr;
+			len = sizeof(in_addr);
+			break;
+		case AF_INET6:
+			memset(&in6_addr, 0, sizeof(in6_addr));
+			in6_addr.sin6_family = family;
+			memmove(&in6_addr.sin6_port, xdm + 2, 2);
+			memmove(&in6_addr.sin6_port, xdm + 4, 16);
+			addr = (struct sockaddr *) &in6_addr;
+			len = sizeof(in6_addr);
+			break;
+		case AF_UNIX:
+			/* FIXME: why not AF_UNIX? If the Display happens to be
+			   on the local host, why not offer a AF_UNIX
+			   connection? */
+		default:
+		{
+			/* should not happen: we should not be displaying
+			   incompatible address families */
+			GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
+									    GTK_DIALOG_DESTROY_WITH_PARENT,
+									    GTK_MESSAGE_ERROR,
+									    GTK_BUTTONS_OK,
+									    "<b>%s</b>\nNumber: %d\n",
+									    "Bad address family!",
+									    family);
+			gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+
+			gtk_dialog_run(GTK_DIALOG(msg));
+			g_source_remove(id);
+			return;
+		}
+		}
+		if ((fd = socket(family, SOCK_STREAM, 0)) == -1) {
+			EPRINTF("Cannot create reponse socket: %s\n", strerror(errno));
+			exit(REMANAGE_DISPLAY);
+		}
+		if (connect(fd, addr, len) == -1) {
+			EPRINTF("Cannot connect to xdm: %s\n", strerror(errno));
+			exit(REMANAGE_DISPLAY);
+		}
+		buffer.data = (BYTE *) buf;
+		buffer.size = sizeof(buf);
+		buffer.pointer = 0;
+		buffer.count = 0;
+		XdmcpWriteARRAY8(&buffer, &options.clientAddress);
+		XdmcpWriteCARD16(&buffer, connectionType);
+		XdmcpWriteARRAY8(&buffer, &hostAddress);
+		status = write(fd, (char *) buffer.data, buffer.pointer);
+		(void) status;
+		close(fd);
+	} else {
+		int len, i;
+
+#if 0
+		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
+								    GTK_DIALOG_DESTROY_WITH_PARENT,
+								    GTK_MESSAGE_INFO,
+								    GTK_BUTTONS_OK,
+								    "<b>%s</b>: %s\n",
+								    "Would have connected to",
+								    ipAddress);
+		gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+
+		gtk_dialog_run(GTK_DIALOG(msg));
+		g_source_remove(id);
+#endif
+
+		fprintf(stdout, "%u\n", (unsigned int) type);
+		len = strlen(name);
+		for (i = 0; i < len; i++)
+			fprintf(stdout, "%u%s", (unsigned int) name[i], i == len - 1 ? "\n" : " ");
+	}
+	exit(OBEYSESS_DISPLAY);
+}
+
+void
+DoAccept(GtkButton *button, gpointer data)
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	GValue ctype = G_VALUE_INIT;
+	GValue ipaddr = G_VALUE_INIT;
+	GValue willing = G_VALUE_INIT;
+	gint willingness, connectionType;
+	gchar *ipAddress;
+
+	if (!view)
+		return;
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	if (!gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
+								    GTK_DIALOG_DESTROY_WITH_PARENT,
+								    GTK_MESSAGE_ERROR,
+								    GTK_BUTTONS_OK,
+								    "<b>%s</b>\n%s\n",
+								    "No selection!",
+								    "Click on a list entry to make a selection.");
+		gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+
+		gtk_dialog_run(GTK_DIALOG(msg));
+		g_source_remove(id);
+		return;
+	}
+
+	gtk_tree_model_get_value(model, &iter, XDM_COL_WILLING, &willing);
+	willingness = g_value_get_int(&willing);
+	g_value_unset(&willing);
+
+	if (willingness != WILLING) {
+		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
+								    GTK_DIALOG_DESTROY_WITH_PARENT,
+								    GTK_MESSAGE_ERROR,
+								    GTK_BUTTONS_OK,
+								    "<b>%s</b>\n%d != %d\n%s\n",
+								    "Host is not willing!",
+								    willingness,
+								    (int) WILLING,
+								    "Please select another host.");
+		gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+
+		gtk_dialog_run(GTK_DIALOG(msg));
+		g_source_remove(id);
+		return;
+	}
+
+	gtk_tree_model_get_value(model, &iter, XDM_COL_CTYPE, &ctype);
+	connectionType = g_value_get_int(&ctype);
+	g_value_unset(&ctype);
+	if (options.connectionType != FamilyInternet6 && connectionType != options.connectionType) {
+		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
+								    GTK_DIALOG_DESTROY_WITH_PARENT,
+								    GTK_MESSAGE_ERROR,
+								    GTK_BUTTONS_OK,
+								    "<b>%s</b>\n%s\n",
+								    "Host has wrong connection type!",
+								    "Please select another host.");
+		gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+
+		gtk_dialog_run(GTK_DIALOG(msg));
+		g_source_remove(id);
+		return;
+	}
+
+	gtk_tree_model_get_value(model, &iter, XDM_COL_IPADDR, &ipaddr);
+	ipAddress = g_value_dup_string(&ipaddr);
+	g_value_unset(&ipaddr);
+
+	Choose(connectionType, ipAddress);
+}
+
+typedef struct {
+	int willing;
+} PingHost;
+
+Bool
+DoCheckWilling(PingHost *host)
+{
+	return (host->willing == WILLING);
+}
+
+void
+DoPing(GtkButton *button, gpointer data)
+{
+	if (pingTry == PING_TRIES) {
+		pingTry = 0;
+		PingHosts(data);
+	}
+}
+
+static void
+on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer
+		 user_data)
+{
+}
+#endif				/* DO_XCHOOSER */
 
 static int
 xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp, void *appdata_ptr)
@@ -817,8 +2054,7 @@ append_power_actions(GtkMenu *menu)
 	submenu = gtk_menu_new();
 
 	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanPowerOff status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Power Off");
@@ -826,8 +2062,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_poweroff),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_poweroff), value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -839,8 +2074,7 @@ append_power_actions(GtkMenu *menu)
 		g_clear_error(&error);
 
 	ok = dbus_g_proxy_call(proxy, "CanReboot",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Reboot");
@@ -848,8 +2082,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_reboot),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_reboot), value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -861,8 +2094,7 @@ append_power_actions(GtkMenu *menu)
 		g_clear_error(&error);
 
 	ok = dbus_g_proxy_call(proxy, "CanSuspend",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Suspend");
@@ -870,8 +2102,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_suspend),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_suspend), value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -883,8 +2114,7 @@ append_power_actions(GtkMenu *menu)
 		g_clear_error(&error);
 
 	ok = dbus_g_proxy_call(proxy, "CanHibernate",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hibernate");
@@ -892,8 +2122,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_hibernate),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_hibernate), value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -905,8 +2134,7 @@ append_power_actions(GtkMenu *menu)
 		g_clear_error(&error);
 
 	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
-			&error, G_TYPE_INVALID, G_TYPE_STRING, &value,
-			G_TYPE_INVALID);
+			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !error) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hybrid Sleep");
@@ -914,8 +2142,8 @@ append_power_actions(GtkMenu *menu)
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_hybridsleep),
-				value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_hybridsleep),
+				      value, free_value, G_CONNECT_AFTER);
 		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -1153,36 +2381,36 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 
 	login_result = LoginResultLogout;
 	gtk_main_quit();
+#ifndef DO_XLOCKING
+	exit(OBEYSESS_DISPLAY);
+#endif
 }
 
 static void
 on_user_activate(GtkEntry *user, gpointer data)
 {
-	GtkEntry *pass = data;
 	const gchar *username;
 
 	free(options.username);
 	options.username = NULL;
 	free(options.password);
 	options.password = NULL;
-	gtk_entry_set_text(pass, "");
+	gtk_entry_set_text(GTK_ENTRY(pass), "");
 
 	if ((username = gtk_entry_get_text(user)) && username[0]) {
 		options.username = strdup(username);
 		gtk_widget_set_sensitive(buttons[3], FALSE);
 		state = LoginStateUsername;
-		gtk_widget_grab_default(GTK_WIDGET(pass));
-		gtk_widget_grab_focus(GTK_WIDGET(pass));
+		gtk_widget_grab_default(pass);
+		gtk_widget_grab_focus(pass);
 	}
 }
 
 static void
 on_pass_activate(GtkEntry *pass, gpointer data)
 {
-	GtkEntry *user = data;
 	const gchar *password;
 
-	(void) user;
 	free(options.password);
 	options.password = NULL;
 
@@ -1307,9 +2535,9 @@ get_source(XdeScreen *xscr)
 		long *data = NULL;
 
 		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
-					&actual, &format, &nitems, &after,
-					(unsigned char **) &data) == Success &&
-				format == 32 && actual && nitems >= 1 && data) {
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data) {
 			Pixmap p;
 
 			if ((p = data[0])) {
@@ -1322,6 +2550,7 @@ get_source(XdeScreen *xscr)
 	}
 }
 
+#ifdef DO_XLOCKING
 static Window
 get_selection(Window selwin, char *selection, int s)
 {
@@ -1365,6 +2594,7 @@ get_selection(Window selwin, char *selection, int s)
 	}
 	return (owner);
 }
+#endif				/* DO_XLOCKING */
 
 /** @brief get a covering window for a screen
   */
@@ -1443,6 +2673,7 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK;
 	gdk_window_set_events(root, mask);
 
+#ifdef DO_XLOCKING
 	Window owner = None;
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
@@ -1461,6 +2692,7 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	mask = gdk_window_get_events(sel);
 	mask |= GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK | GDK_PROPERTY_CHANGE_MASK;
 	gdk_window_set_events(sel, mask);
+#endif				/* DO_XLOCKING */
 }
 
 static void
@@ -1554,13 +2786,21 @@ GetPanel(void)
 	gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
 	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
 
+#ifdef DO_XCHOOSER
+	gtk_box_pack_start(GTK_BOX(pan), inp, FALSE, FALSE, 4);
+#else
 	gtk_box_pack_start(GTK_BOX(pan), inp, TRUE, TRUE, 4);
+#endif
 
 	GtkWidget *align = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
 
 	gtk_container_add(GTK_CONTAINER(inp), align);
 
+#ifdef DO_XSESSION
+	GtkWidget *login = gtk_table_new(3, 3, TRUE);
+#else
 	GtkWidget *login = gtk_table_new(2, 3, TRUE);
+#endif
 
 	gtk_container_set_border_width(GTK_CONTAINER(login), 5);
 	gtk_table_set_col_spacings(GTK_TABLE(login), 5);
@@ -1608,6 +2848,12 @@ GetPanel(void)
 	GtkWidget *i;
 	GtkWidget *b;
 
+#ifdef DO_XCHOOSER
+	buttons[1] = b = gtk_button_new_from_stock(GTK_STOCK_REFRESH);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(DoPing), NULL);
+	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
+#endif
+
 	if ((getenv("DISPLAY") ? : "")[0] == ':') {
 		b = gtk_button_new_from_stock(GTK_STOCK_QUIT);
 	} else {
@@ -1636,6 +2882,13 @@ GetPanel(void)
 	else
 		gtk_widget_set_sensitive(b, FALSE);
 
+#ifdef DO_XCHOOSER
+	buttons[2] = b = gtk_button_new_from_stock(GTK_STOCK_CONNECT);
+	gtk_widget_set_can_default(b, TRUE);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(DoAccept), NULL);
+	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
+#endif
+
 	buttons[3] = b = gtk_button_new();
 	gtk_widget_set_can_default(b, TRUE);
 	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
@@ -1647,6 +2900,122 @@ GetPanel(void)
 	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_login_clicked), buttons);
 	gtk_widget_set_sensitive(b, FALSE);
+
+#ifdef DO_XSESSION
+	GtkWidget *xsess = gtk_label_new(NULL);
+
+	gtk_label_set_markup(GTK_LABEL(xsess),
+			     "<span font=\"Liberation Sans 9\"><b>XSession:</b></span>");
+	gtk_misc_set_alignment(GTK_MISC(xsess), 1.0, 0.5);
+	gtk_misc_set_padding(GTK_MISC(xsess), 5, 2);
+
+	gtk_table_attach_defaults(GTK_TABLE(login), xsess, 0, 1, 2, 3);
+
+	/* *INDENT-OFF* */
+	store = gtk_list_store_new(8
+			,G_TYPE_STRING	/* icon */
+			,G_TYPE_STRING	/* Name */
+			,G_TYPE_STRING	/* Comment */
+			,G_TYPE_STRING	/* Name and Comment Markup */
+			,G_TYPE_STRING  /* Label */
+			,G_TYPE_BOOLEAN	/* SessionManaged?  XDE-Managed?  */
+			,G_TYPE_BOOLEAN /* X-XDE-managed original setting */
+			,G_TYPE_STRING	/* the file name */
+		);
+	/* *INDENT-ON* */
+
+	gtk_tree_sortable_set_default_sort_func(GTK_TREE_SORTABLE(store),
+						xsession_compare_function, NULL, NULL);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
+					     GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
+					     GTK_SORT_ASCENDING);
+	GtkTreeIter iter;
+
+	gtk_list_store_append(store, &iter);
+	gtk_list_store_set(store, &iter,
+			   XSESS_COL_PIXBUF, "",
+			   XSESS_COL_NAME, "(Default)",
+			   XSESS_COL_COMMENT, "",
+			   XSESS_COL_MARKUP, "",
+			   XSESS_COL_LABEL, "default",
+			   XSESS_COL_MANAGED, FALSE,
+			   XSESS_COL_ORIGINAL, FALSE, XSESS_COL_FILENAME, "", -1);
+
+	sess = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+
+	GtkCellRenderer *rend;
+
+	rend = gtk_cell_renderer_pixbuf_new();
+	gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 0, 0);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
+	gtk_cell_layout_set_cell_data_func(GTK_CELL_LAYOUT(sess),
+					   GTK_CELL_RENDERER(rend), on_render_pixbuf, NULL, NULL);
+
+	rend = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_padding(GTK_CELL_RENDERER(rend), 5, 0);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), FALSE);
+	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "text",
+				      XSESS_COL_NAME);
+
+	g_idle_add(on_idle, store);
+
+	gtk_table_attach_defaults(GTK_TABLE(login), sess, 1, 2, 2, 3);
+#endif				/* DO_XSESSION */
+
+#ifdef DO_XCHOOSER
+	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
+
+	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
+				       GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+	gtk_box_pack_start(GTK_BOX(pan), sw, TRUE, TRUE, 4);
+
+	/* *INDENT-OFF* */
+	model = gtk_list_store_new(10
+			,GTK_TYPE_STRING	/* hostname */
+			,GTK_TYPE_STRING	/* remotename */
+			,GTK_TYPE_INT		/* willing */
+			,GTK_TYPE_STRING	/* status */
+			,GTK_TYPE_STRING	/* IP Address */
+			,GTK_TYPE_INT		/* connection type */
+			,GTK_TYPE_STRING	/* service */
+			,GTK_TYPE_INT		/* port */
+			,GTK_TYPE_STRING	/* markup */
+			,GTK_TYPE_STRING	/* tooltip */
+	    );
+	/* *INDENT-ON* */
+
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
+					     XDM_COL_MARKUP, GTK_SORT_ASCENDING);
+	view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
+	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
+	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), XDM_COL_HOSTNAME);
+	gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(view), XDM_COL_TOOLTIP);
+
+	gtk_container_add(GTK_CONTAINER(sw), view);
+
+	char hostname[64] = { 0, };
+
+	gethostname(hostname, sizeof(hostname));
+
+	int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
+	char *title = calloc(len, sizeof(*title));
+
+	strncpy(title, "XDCMP Host Menu from ", len);
+	strncat(title, hostname, len);
+
+	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(title, renderer,
+									     "markup",
+									     XDM_COL_MARKUP, NULL);
+
+	free(title);
+	gtk_tree_view_column_set_sort_column_id(column, XDM_COL_HOSTNAME);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(column));
+	g_signal_connect(G_OBJECT(view), "row_activated",
+			 G_CALLBACK(on_row_activated), (gpointer) NULL);
+
+#endif				/* DO_XCHOOSER */
 
 	return (pan);
 }
@@ -1762,9 +3131,13 @@ do_run(int argc, char *argv[])
 {
 	startup(argc, argv);
 	top = GetWindow();
+#ifdef DO_XCHOOSER
+	InitXDMCP(argv, argc);
+#endif
 	gtk_main();
 }
 
+#ifdef DO_XLOCKING
 /** @brief quit the running background locker
   */
 static void
@@ -1788,6 +3161,7 @@ do_lock(int argc, char *argv[])
 {
 	startup(argc, argv);
 }
+#endif				/* DO_XLOCKING */
 
 static void
 copying(int argc, char *argv[])
@@ -1862,7 +3236,7 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [options] [{-L|--locker}]\n\
+    %1$s [options] ADDRESS [...]\n\
     %1$s [options] {-r|--replace}\n\
     %1$s [options] {-l|--lock}\n\
     %1$s [options] {-q|--quit}\n\
@@ -1903,16 +3277,17 @@ help(int argc, char *argv[])
 		return;
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [options] [{-L|--locker}]\n\
+    %1$s [options] ADDRESS [...]\n\
     %1$s [options] {-r|--replace}\n\
     %1$s [options] {-l|--lock}\n\
     %1$s [options] {-q|--quit}\n\
     %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
+Arguments:\n\
+    ADDRESS [...]\n\
+        host names of display managers or \"BROADCAST\"\n\
 Command options:\n\
-   [-L, --locker]\n\
-        run continuously as a screen locker instance\n\
     -r, --replace\n\
         replace a running instance with the current one\n\
     -l, --lock\n\
@@ -1932,6 +3307,12 @@ General options:\n\
     -p, --prompt TEXT\n\
         text to prompt for password\n\
         (%3$s)\n\
+    -x, --xdmAddress ADDRESS\n\
+        address of xdm socket\n\
+    -c, --clientAddress IPADDR\n\
+        client address that initiated the request\n\
+    -t, --connectionType TYPE\n\
+        connection type supported by the client\n\
     -n, --dry-run\n\
         do not act: only print intentions (%4$s)\n\
     -D, --debug [LEVEL]\n\
@@ -2020,8 +3401,34 @@ set_defaults(void)
 void
 get_defaults(void)
 {
-	if (options.command == CommandDefault)
-		options.command = CommandLocker;
+}
+
+Bool
+HexToARRAY8(ARRAY8 *array, char *hex)
+{
+	short len;
+	CARD8 *o, b;
+	char *p, c;
+
+	len = strlen(hex);
+	if (len & 0x01)
+		return False;
+	len >>= 1;
+	array->length = len;
+	array->data = calloc(len, sizeof(CARD8));
+	for (p = hex, o = array->data; *p; p += 2, o++) {
+		c = tolower(p[0]);
+		if (!isxdigit(c))
+			return False;
+		b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+		b <<= 4;
+		c = tolower(p[1]);
+		if (!isxdigit(c))
+			return False;
+		b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+		*o = b;
+	}
+	return True;
 }
 
 int
@@ -2038,13 +3445,21 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-			{"locker",	no_argument,		NULL, 'L'},
+#ifdef DO_XCHOOSER
+			{"xdmAddress",	    required_argument,	NULL, 'x'},
+			{"clientAddress",   required_argument,	NULL, 'c'},
+			{"connectionType",  required_argument,	NULL, 't'},
+			{"welcome",	    required_argument,	NULL, 'w'},
+#else					/* DO_XCHOOSER */
+			{"prompt",	required_argument,	NULL, 'p'},
+#endif					/* DO_XCHOOSER */
+#ifdef DO_XLOCKING
 			{"replace",	no_argument,		NULL, 'r'},
 			{"lock",	no_argument,		NULL, 'l'},
 			{"quit",	no_argument,		NULL, 'q'},
+#endif					/* DO_XLOCKING */
 
 			{"banner",	required_argument,	NULL, 'b'},
-			{"prompt",	required_argument,	NULL, 'p'},
 			{"xde-theme",	no_argument,		NULL, 'u'},
 			{"charset",	required_argument,	NULL, '1'},
 			{"language",	required_argument,	NULL, '2'},
@@ -2074,14 +3489,40 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case 'L':	/* -L, --locker */
-			if (options.command != CommandDefault)
+#ifdef DO_XCHOOSER
+		case 'x':	/* -xdmAddress HEXBYTES */
+			if (options.xdmAddress.length)
 				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandLocker;
-			options.command = CommandLocker;
-			options.replace = False;
+			if (!HexToARRAY8(&options.xdmAddress, optarg))
+				goto bad_option;
 			break;
+		case 'c':	/* -clientAddress HEXBYTES */
+			if (options.clientAddress.length)
+				goto bad_option;
+			if (!HexToARRAY8(&options.clientAddress, optarg))
+				goto bad_option;
+			break;
+		case 't':	/* -connectionType TYPE */
+			if (!strcmp(optarg, "FamilyInternet") || atoi(optarg) == FamilyInternet)
+				options.connectionType = FamilyInternet;
+			else if (!strcmp(optarg, "FamilyInternet6")
+				 || atoi(optarg) == FamilyInternet6)
+				options.connectionType = FamilyInternet6;
+			else
+				goto bad_option;
+			break;
+		case 'w':	/* -w, --welcome WELCOME */
+			free(options.welcome);
+			options.welcome = strndup(optarg, 256);
+			break;
+#else				/* DO_XCHOOSER */
+		case 'p':	/* -p, --prompt PROMPT */
+			free(options.welcome);
+			options.welcome = strndup(optarg, 256);
+			break;
+#endif				/* DO_XCHOOSER */
+
+#ifdef DO_XLOCKING
 		case 'r':	/* -r, --replace */
 			if (options.command != CommandDefault)
 				goto bad_option;
@@ -2105,14 +3546,11 @@ main(int argc, char *argv[])
 				command = CommandLock;
 			options.command = CommandLock;
 			break;
+#endif				/* DO_XLOCKING */
 
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
-			options.banner = strdup(optarg);
-			break;
-		case 'p':	/* -p, --prompt PROMPT */
-			free(options.welcome);
-			options.welcome = strndup(optarg, 256);
+			options.banner = strndup(optarg, 256);
 			break;
 		case 'u':	/* -u, --xde-theme */
 			options.usexde = True;
@@ -2197,22 +3635,30 @@ main(int argc, char *argv[])
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(2);
+			exit(EXIT_SYNTAXERR);
 		}
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	if (optind < argc) {
+	if (optind >= argc) {
+#ifdef DO_XCHOOSER
+		fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+		goto bad_nonopt;
+#else
+	} else {
 		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
+#endif
 	}
 	get_defaults();
 	switch (command) {
+	default:
 	case CommandDefault:
-	case CommandLocker:
-		DPRINTF("%s: running locker\n", argv[0]);
-		do_run(argc, argv);
+		DPRINTF("%s: running xlocker\n", argv[0]);
+		do_run(argc - optind, &argv[optind]);
+		exit(EXIT_FAILURE);
 		break;
+#ifdef DO_XLOCKING
 	case CommandReplace:
 		DPRINTF("%s: running replace\n", argv[0]);
 		do_run(argc, argv);
@@ -2225,6 +3671,7 @@ main(int argc, char *argv[])
 		DPRINTF("%s: running lock\n", argv[0]);
 		do_lock(argc, argv);
 		break;
+#endif				/* DO_XLOCKING */
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);
 		help(argc, argv);
