@@ -203,6 +203,8 @@ typedef struct {
 	char *password;
 	Bool usexde;
 	Bool replace;
+	char *vendor;
+	char *prefix;
 } Options;
 
 Options options = {
@@ -228,6 +230,35 @@ Options options = {
 	.password = NULL,
 	.usexde = False,
 	.replace = False,
+	.vendor = NULL,
+	.prefix = NULL,
+};
+
+Options defaults = {
+	.output = 1,
+	.debug = 0,
+	.dryrun = False,
+	.xdmAddress = {0, NULL},
+	.clientAddress = {0, NULL},
+	.connectionType = FamilyInternet6,
+	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
+	.welcome = NULL,
+	.command = CommandDefault,
+	.charset = NULL,
+	.language = NULL,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.side = LOGO_SIDE_LEFT,
+	.current = NULL,
+	.managed = True,
+	.session = NULL,
+	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
+	.usexde = False,
+	.replace = False,
+	.vendor = NULL,
+	.prefix = NULL,
 };
 
 typedef enum {
@@ -3324,21 +3355,121 @@ General options:\n\
 }
 
 void
+set_default_vendor(void)
+{
+	char *p, *vendor, *prefix;
+	int len;
+
+	if ((vendor = getenv("XDG_VENDOR_ID"))) {
+		free(defaults.vendor);
+		defaults.vendor = strdup(vendor);
+	}
+	if ((prefix = getenv("XDG_MENU_PREFIX"))) {
+		free(defaults.prefix);
+		defaults.prefix = strdup(prefix);
+		if (!vendor) {
+			free(defaults.vendor);
+			vendor = defaults.vendor = strdup(prefix);
+			if ((p = strrchr(vendor, '-')) && !*(p + 1))
+				*p = '\0';
+		}
+	} else if (vendor && *vendor) {
+		free(defaults.prefix);
+		len = strlen(vendor) + 1;
+		prefix = defaults.prefix = calloc(len + 1, sizeof(*prefix));
+		strncpy(prefix, vendor, len);
+		strncat(prefix, "-", len);
+	}
+	if (!defaults.vendor)
+		defaults.vendor = strdup("");
+	if (!defaults.prefix)
+		defaults.prefix = strdup("");
+}
+
+void
+set_default_xdgdirs(int argc, char *argv[])
+{
+	static const char *confdir = "/etc/xdg/xde:/etc/xdg";
+	static const char *datadir = "/usr/share/xde:/usr/local/share:/usr/share";
+	char *here, *p, *q;
+	char *conf, *data;
+	int len;
+
+	here = strdup(argv[0]);
+	if (here[0] != '/') {
+		char *cwd = calloc(PATH_MAX + 1, sizeof(*cwd));
+
+		if (!getcwd(cwd, PATH_MAX)) {
+			EPRINTF("%s: %s\n", "getcwd", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		strncat(cwd, "/", PATH_MAX);
+		strncat(cwd, here, PATH_MAX);
+		free(here);
+		here = strdup(cwd);
+		free(cwd);
+	}
+	while ((p = strstr(here, "/./")))
+		memmove(p, p + 2, strlen(p + 2) + 1);
+	while ((p = strstr(here, "/../"))) {
+		for (q = p - 1; q > here && *q != '/'; q--) ;
+		if (q > here || *q != '/')
+			break;
+		memmove(q, p + 3, strlen(p + 3) + 1);
+	}
+	if ((p = strrchr(here, '/')))
+		*p = '\0';
+	if ((p = strstr(here, "/src")) && !*(p+4))
+		*p = '\0';
+	/* executed in place */
+	if (strcmp(here, "/usr/bin")) {
+		len = strlen(here) + strlen("/xdg/xde:")
+		    + strlen(here) + strlen("/xdg:") + strlen(confdir);
+		conf = calloc(len + 1, sizeof(*conf));
+		strncpy(conf, here, len);
+		strncat(conf, "/xdg/xde:", len);
+		strncat(conf, here, len);
+		strncat(conf, "/xdg:", len);
+		strncat(conf, confdir, len);
+
+		len = strlen(here) + strlen("/share/xde:")
+		    + strlen(here) + strlen("/share:") + strlen(datadir);
+		data = calloc(len + 1, sizeof(*data));
+		strncpy(data, here, len);
+		strncat(data, "/share/xde:", len);
+		strncat(data, here, len);
+		strncat(data, "/share:", len);
+		strncat(data, datadir, len);
+	} else {
+		conf = strdup(confdir);
+		data = strdup(datadir);
+	}
+	setenv("XDG_CONFIG_DIRS", conf, 1);
+	setenv("XDG_DATA_DIRS", data, 1);
+	DPRINTF("setting XDG_CONFIG_DIRS to '%s'\n", conf);
+	DPRINTF("setting XDG_DATA_DIRS   to '%s'\n", data);
+	free(conf);
+	free(data);
+}
+
+void
 set_default_banner(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
 	int i, j, n = 0;
 
-	if (!(xdg_dirs = get_data_dirs(&n)) || !n)
-		return;
+	free(defaults.banner);
+	defaults.banner = NULL;
 
-	free(options.banner);
-	options.banner = NULL;
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		defaults.banner = NULL;
+		return;
+	}
 
 	file = calloc(PATH_MAX + 1, sizeof(*file));
 
-	for (pfx = getenv("XDG_MENU_PREFIX") ? : ""; pfx; pfx = *pfx ? "" : NULL) {
+	if ((pfx = defaults.prefix)) {
 		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
 			strncpy(file, *dirs, PATH_MAX);
 			strncat(file, "/images/", PATH_MAX);
@@ -3349,15 +3480,13 @@ set_default_banner(void)
 			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
 				strcpy(suffix, exts[j]);
 				if (!access(file, R_OK)) {
-					options.banner = strdup(file);
+					defaults.banner = strdup(file);
 					break;
 				}
 			}
-			if (options.banner)
+			if (defaults.banner)
 				break;
 		}
-		if (options.banner)
-			break;
 	}
 
 	free(file);
@@ -3375,32 +3504,154 @@ set_default_welcome(void)
 	int len;
 	static char *format = "Welcome to %s!";
 
-	free(options.welcome);
+	free(defaults.welcome);
 	gethostname(hostname, sizeof(hostname));
 	len = strlen(format) + strnlen(hostname, sizeof(hostname)) + 1;
-	buf = options.welcome = calloc(len, sizeof(*buf));
+	buf = defaults.welcome = calloc(len, sizeof(*buf));
 	snprintf(buf, len, format, hostname);
 }
 
 void
-set_defaults(void)
+set_default_language(void)
 {
 	char *p, *a;
 
-	set_default_banner();
-	set_default_welcome();
-	if ((options.language = setlocale(LC_ALL, ""))) {
-		options.language = strdup(options.language);
-		a = strchrnul(options.language, '@');
-		if ((p = strchr(options.language, '.')))
+	if ((defaults.language = setlocale(LC_ALL, ""))) {
+		defaults.language = strdup(defaults.language);
+		a = strchrnul(defaults.language, '@');
+		if ((p = strchr(defaults.language, '.')))
 			strcpy(p, a);
 	}
-	options.charset = strdup(nl_langinfo(CODESET));
+	defaults.charset = strdup(nl_langinfo(CODESET));
 }
 
 void
-get_defaults(void)
+set_defaults(int argc, char *argv[])
 {
+	char *p;
+
+	if ((p = getenv("XDE_DEBUG")))
+		options.debug = atoi(p);
+
+	set_default_vendor();
+	set_default_xdgdirs(argc, argv);
+	set_default_banner();
+	set_default_welcome();
+	set_default_language();
+}
+
+void
+get_default_vendor(void)
+{
+	if (!options.vendor) {
+		options.vendor = defaults.vendor;
+		options.prefix = defaults.prefix;
+	} else if (*options.vendor) {
+		int len = strlen(options.vendor) + 1;
+
+		free(options.prefix);
+		options.prefix = calloc(len + 1, sizeof(*options.prefix));
+		strncpy(options.prefix, options.vendor, len);
+		strncat(options.prefix, "-", len);
+	} else {
+		free(options.prefix);
+		options.prefix = strdup("");
+	}
+	if (options.vendor && *options.vendor)
+		setenv("XDG_VENDOR_ID", options.vendor, 1);
+	else
+		unsetenv("XDG_VENDOR_ID");
+	if (options.prefix && *options.prefix)
+		setenv("XDG_MENU_PREFIX", options.prefix, 1);
+	else
+		unsetenv("XDG_MENU_PREFIX");
+}
+
+void
+get_default_banner(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	if (options.banner)
+		return;
+
+	free(options.banner);
+	options.banner = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		options.banner = defaults.banner;
+		return;
+	}
+
+	options.banner = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = options.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					options.banner = strdup(file);
+					break;
+				}
+			}
+			if (options.banner)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+
+	if (!options.banner)
+		options.banner = defaults.banner;
+}
+
+void
+get_default_welcome(void)
+{
+	if (!options.welcome) {
+		free(options.welcome);
+		options.welcome = defaults.welcome;
+	}
+}
+
+void
+get_default_language(void)
+{
+	if (!options.charset) {
+		free(options.charset);
+		options.charset = defaults.charset;
+	}
+	if (!options.language) {
+		free(options.language);
+		options.language = defaults.language;
+	}
+	if (strcmp(options.charset, defaults.charset) ||
+	    strcmp(options.language, defaults.language)) {
+		/* FIXME: actually set the language and charset */
+	}
+}
+
+void
+get_defaults(int argc, char *argv[])
+{
+	get_default_vendor();
+	get_default_banner();
+	get_default_welcome();
+	get_default_language();
 }
 
 Bool
@@ -3436,7 +3687,7 @@ main(int argc, char *argv[])
 {
 	CommandType command = CommandDefault;
 
-	set_defaults();
+	set_defaults(argc, argv);
 
 	while (1) {
 		int c, val;
@@ -3641,7 +3892,7 @@ main(int argc, char *argv[])
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	get_defaults();
+	get_defaults(argc, argv);
 	switch (command) {
 	default:
 	case CommandDefault:
