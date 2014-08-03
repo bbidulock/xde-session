@@ -165,6 +165,7 @@ typedef struct {
 	char *saveFile;
 	char *vendor;
 	char *prefix;
+	char *splash;
 } Options;
 
 Options options = {
@@ -187,6 +188,7 @@ Options options = {
 	.saveFile = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
+	.splash = NULL,
 };
 
 Options defaults = {
@@ -209,6 +211,7 @@ Options defaults = {
 	.saveFile = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
+	.splash = NULL,
 };
 
 typedef enum {
@@ -2703,6 +2706,50 @@ set_default_banner(void)
 }
 
 void
+set_default_splash(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	free(defaults.splash);
+	defaults.splash = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		defaults.splash = NULL;
+		return;
+	}
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = defaults.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "splash", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					defaults.splash = strdup(file);
+					break;
+				}
+			}
+			if (defaults.splash)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+
+void
 set_default_welcome(void)
 {
 	char *session = NULL, *welcome, *p;
@@ -2759,6 +2806,7 @@ set_defaults(int argc, char *argv[])
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
+	set_default_splash();
 	set_default_welcome();
 	set_default_language();
 }
@@ -2843,6 +2891,58 @@ get_default_banner(void)
 }
 
 void
+get_default_splash(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	if (options.splash)
+		return;
+
+	free(options.splash);
+	options.splash = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		options.splash = defaults.splash;
+		return;
+	}
+
+	options.splash = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = options.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "splash", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					options.splash = strdup(file);
+					break;
+				}
+			}
+			if (options.splash)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+
+	if (!options.splash)
+		options.splash = defaults.splash;
+}
+
+void
 get_default_welcome(void)
 {
 	if (!options.welcome) {
@@ -2873,6 +2973,7 @@ get_defaults(int argc, char *argv[])
 {
 	get_default_vendor();
 	get_default_banner();
+	get_default_splash();
 	get_default_welcome();
 	get_default_language();
 }
@@ -2896,6 +2997,7 @@ main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"prompt",	required_argument,	NULL, 'p'},
 			{"banner",	required_argument,	NULL, 'b'},
+			{"splash",	required_argument,	NULL, 'S'},
 			{"side",	required_argument,	NULL, 's'},
 			{"noask",	no_argument,		NULL, 'n'},
 			{"icons",	required_argument,	NULL, 'i'},
@@ -2914,9 +3016,9 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "p:b:s:nD::v::hVCH?", long_options, &option_index);
+		c = getopt_long_only(argc, argv, "p:b:S:s:nD::v::hVCH?", long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "p:b:s:nDvhVC?");
+		c = getopt(argc, argv, "p:b:S:s:nDvhVC?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			if (options.debug)
@@ -2934,6 +3036,10 @@ main(int argc, char *argv[])
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
 			options.banner = strdup(optarg);
+			break;
+		case 'S':	/* -S, --splash SPLASH */
+			free(options.splash);
+			options.splash = strdup(optarg);
 			break;
 		case 's':	/* -s, --side {top|bottom|left|right} */
 			if (!strncasecmp(optarg, "left", strlen(optarg))) {
