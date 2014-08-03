@@ -742,8 +742,7 @@ main(int argc, char *argv[])
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
+			DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
@@ -753,8 +752,7 @@ main(int argc, char *argv[])
 			}
 			break;
 		case 'v':	/* -v, --verbose [level] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
+			DPRINTF("%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.output++;
 				break;
@@ -790,8 +788,10 @@ main(int argc, char *argv[])
 			if (options.output || options.debug) {
 				if (optind < argc) {
 					fprintf(stderr, "%s: syntax error near '", argv[0]);
-					while (optind < argc)
-						fprintf(stderr, "%s ", argv[optind++]);
+					while (optind < argc) {
+						fprintf(stderr, "%s", argv[optind++]);
+						fprintf(stderr, "%s", (optind < argc) ? " " : "");
+					}
 					fprintf(stderr, "'\n");
 				} else {
 					fprintf(stderr, "%s: missing option or argument", argv[0]);
@@ -804,37 +804,36 @@ main(int argc, char *argv[])
 			exit(2);
 		}
 	}
-	if (options.debug) {
-		fprintf(stderr, "%s: option index = %d\n", argv[0], optind);
-		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
-	}
+	DPRINTF("%s: option index = %d\n", argv[0], optind);
+	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	options.cmd_argc = argc - optind;
 	options.cmd_argv = argv + optind;
-	if (command != CommandHelp && options.cmd_argc == 0)
-		goto bad_nonopt;
 	get_defaults();
 	switch (command) {
+	default:
 	case CommandDefault:
 	case CommandLogin:
-		if (options.debug)
-			fprintf(stderr, "%s: running login\n", argv[0]);
+		if (optind >= argc) {
+			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+			goto bad_nonopt;
+		}
+		DPRINTF("%s: running login\n", argv[0]);
 		run_login(argc - optind, argv + optind);
 		break;
 	case CommandHelp:
-		if (options.debug)
-			fprintf(stderr, "%s: printing help message\n", argv[0]);
+		DPRINTF("%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
-		if (options.debug)
-			fprintf(stderr, "%s: printing version message\n", argv[0]);
+		DPRINTF("%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
-		if (options.debug)
-			fprintf(stderr, "%s: printing copying message\n", argv[0]);
+		DPRINTF("%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
+
+// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:

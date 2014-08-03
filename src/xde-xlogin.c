@@ -3641,20 +3641,20 @@ main(int argc, char *argv[])
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	if (optind >= argc) {
-#ifdef DO_XCHOOSER
-		fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
-		goto bad_nonopt;
-#else
-	} else {
-		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
-		goto bad_nonopt;
-#endif
-	}
 	get_defaults();
 	switch (command) {
 	default:
 	case CommandDefault:
+		if (optind >= argc) {
+#ifdef DO_XCHOOSER
+			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+			goto bad_nonopt;
+#else
+		} else {
+			fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
+			goto bad_nonopt;
+#endif
+		}
 		DPRINTF("%s: running xlogin\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
 		exit(EXIT_FAILURE);
