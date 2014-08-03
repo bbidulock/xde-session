@@ -100,6 +100,7 @@
 #include <X11/Xauth.h>
 #include <X11/SM/SMlib.h>
 #include <gdk/gdkx.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
 
@@ -346,6 +347,7 @@ typedef struct {
 	gint nmon;			/* number of monitors */
 	XdeMonitor *mons;		/* monitors for this screen */
 	GdkPixmap *pixmap;		/* pixmap for background image */
+	GdkPixbuf *pixbuf;		/* pixbuf for background image */
 #ifdef DO_XLOCKING
 	XScreenSaverInfo info;		/* screen saver info for this screen */
 	char selection[32];
@@ -514,7 +516,8 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 	}
 	if (xev->xproperty.atom == _XA_XROOTPMAP_ID && xev->xproperty.state == PropertyNewValue) {
 		DPRINT();
-		get_source(xscr);
+		if (!xscr->pixbuf)
+			get_source(xscr);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
 	return GDK_FILTER_CONTINUE;	/* event not handled */
@@ -2547,6 +2550,69 @@ ungrabbed_window(GtkWidget *window)
 	gdk_window_hide(win);
 }
 
+/** @brief render a pixbuf into a pixmap for a monitor
+  */
+void
+render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, XdeMonitor *xmon)
+{
+	double wm = xmon->geom.width;
+	double hm = xmon->geom.height;
+	GdkPixbuf *scaled = NULL;
+
+	DPRINT();
+	gdk_cairo_rectangle(cr, &xmon->geom);
+	if (wp >= 0.8 * wm && hp >= 0.8 * hm) {
+		/* good size for filling or scaling */
+		/* TODO: check aspect ratio before scaling */
+		DPRINTF("scaling pixbuf from %dx%d to %dx%d\n",
+				(int) wp, (int) hp,
+				xmon->geom.width, xmon->geom.height);
+		scaled = gdk_pixbuf_scale_simple(pixbuf,
+						 xmon->geom.width,
+						 xmon->geom.height, GDK_INTERP_BILINEAR);
+		gdk_cairo_set_source_pixbuf(cr, scaled, xmon->geom.x, xmon->geom.y);
+	} else if (wp <= 0.5 * wm && hp <= 0.5 * hm) {
+		/* good size for tiling */
+		DPRINTF("tiling pixbuf at %dx%d into %dx%d\n",
+				(int) wp, (int) hp,
+				xmon->geom.width, xmon->geom.height);
+		gdk_cairo_set_source_pixbuf(cr, pixbuf, xmon->geom.x, xmon->geom.y);
+		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+	} else {
+		/* somewhere in between: scale down for integer tile */
+		DPRINTF("scaling and tiling pixbuf at %dx%d into %dx%d\n",
+				(int) wp, (int) hp,
+				xmon->geom.width, xmon->geom.height);
+		scaled = gdk_pixbuf_scale_simple(pixbuf,
+						 xmon->geom.width / 2,
+						 xmon->geom.height / 2, GDK_INTERP_BILINEAR);
+		gdk_cairo_set_source_pixbuf(cr, scaled, xmon->geom.x, xmon->geom.y);
+		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+	}
+	cairo_paint(cr);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	if (scaled)
+		g_object_unref(G_OBJECT(scaled));
+}
+
+void
+render_pixbuf_for_scr(GdkPixbuf *pixbuf, GdkPixmap *pixmap, XdeScreen *xscr)
+{
+	double w = gdk_pixbuf_get_width(pixbuf);
+	double h = gdk_pixbuf_get_height(pixbuf);
+	cairo_t *cr;
+	int m;
+
+	DPRINT();
+	cr = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+	for (m = 0; m < xscr->nmon; m++) {
+		XdeMonitor *xmon = xscr->mons + m;
+
+		render_pixbuf_for_mon(cr, pixbuf, w, h, xmon);
+	}
+	cairo_destroy(cr);
+}
+
 void
 get_source(XdeScreen *xscr)
 {
@@ -2556,7 +2622,25 @@ get_source(XdeScreen *xscr)
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 	Atom prop;
 
-	xscr->pixmap = NULL;
+	if (!xscr->pixbuf && options.splash) {
+		if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
+			/* cannot use it again */
+			free(options.splash);
+			options.splash = NULL;
+		}
+	}
+	if (xscr->pixbuf) {
+		if (!xscr->pixmap) {
+			xscr->pixmap = gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
+			gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+			render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
+		}
+		return;
+	}
+	if (xscr->pixmap) {
+		g_object_unref(G_OBJECT(xscr->pixmap));
+		xscr->pixmap = NULL;
+	}
 
 	if (!(prop = _XA_XROOTPMAP_ID))
 		prop = _XA_ESETROOT_PMAP_ID;
@@ -2666,7 +2750,6 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	g_free(geom);
 
 	gtk_widget_set_app_paintable(wind, TRUE);
-	get_source(xscr);
 
 	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
 	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), NULL);
@@ -2693,6 +2776,7 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
+	get_source(xscr);
 	gtk_widget_show_all(wind);
 
 	gtk_widget_realize(wind);

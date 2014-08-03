@@ -24,8 +24,11 @@
 -ss
 -hnl
 -nbc
+-TGdkPixbuf
+-TGdkPixmap
 -TGdkScreen
 -TXdeScreen
+-TXdeMonitor
 -TGdkXEvent
 -TGtkMenuItem
 -TGClosure
