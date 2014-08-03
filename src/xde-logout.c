@@ -3089,6 +3089,9 @@ main(int argc, char *argv[])
 			{"xde-theme",	no_argument,		NULL, 'x'},
 			{"timeout",	required_argument,	NULL, 'T'},
 
+			{"clientId",	required_argument,	NULL, '8'},
+			{"restore",	required_argument,	NULL, '9'},
+
 			{"dry-run",	no_argument,		NULL, 'N'},
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},
@@ -3159,6 +3162,15 @@ main(int argc, char *argv[])
 			break;
 		case 'T':
 			options.timeout = strtoul(optarg, NULL, 0);
+			break;
+
+		case '8': /* -clientId CLIENTID */
+			free(options.clientId);
+			options.clientId = strdup(optarg);
+			break;
+		case '9': /* -restore SAVEFILE */
+			free(options.saveFile);
+			options.saveFile = strdup(optarg);
 			break;
 
 		case 'N':	/* -n, --dry-run */

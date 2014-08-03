@@ -1,0 +1,21 @@
+#!/bin/sh
+
+if [ -x /usr/bin/xde-xchooser ]; then
+	echo "Executing /usr/bin/xde-chooser $@ ..." >&2
+	exec /usr/bin/xde-xchooser $@
+fi
+
+## the root window will not have a cursor otherwise
+xsetroot -cursor_name left_ptr
+
+if [ -x /usr/bin/hsetroot ]; then
+	/usr/bin/hsetroot -fill /etc/X11/xdm/xde/background.jpg
+fi
+
+if [ -x /usr/lib/X11/xdm/gchooser ]; then
+	echo "Executing /usr/lib/X11/xdm/gchooser $@ ..." >&2
+	exec /usr/lib/X11/xdm/gchooser $@
+fi
+
+echo "Executing /usr/lib/X11/xdm/chooser $@ ..." >&2
+exec /usr/lib/X11/xdm/chooser $@

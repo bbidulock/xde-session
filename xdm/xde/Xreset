@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "Executing /etc/X11/xdm/Xreset $@ ..." >&2
+exec /etc/X11/xdm/Xreset

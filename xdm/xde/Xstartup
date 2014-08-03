@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo "Executing $0 $@" >&2
+
+# Get rid of all clients started by Xsetup
+xwininfo -root -children | grep '  0x' | awk '{print$1}' | while read id; do
+	echo "killing: xkill -id $id" >&2
+	xkill -id $id
+done
+
+echo "Executing /etc/X11/xdm/Xstartup ..." >&2
+exec /etc/X11/xdm/Xstartup

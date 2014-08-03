@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ -x /usr/bin/xde-xlogin ]; then
+	echo "Executing /usr/bin/xde-xlogin $@ ..." >&2
+	exec /usr/bin/xde-xlogin $@
+fi
+
+echo "Executing /usr/bin/slim -nodaemon..." >&2
+exec /usr/bin/slim -nodaemon
+
+# OBEYSESS_DISPLAY 0
+# REMANAGE_DISPLAY 1
+# UNMANAGE_DISPLAY 2
+# RESERVER_DISPLAY 3
+# OPENFAILED_DISPLAY 4

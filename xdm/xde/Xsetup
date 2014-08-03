@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# /etc/X11/xdm/xde/Xsetup
+#
+# Xsetup -- set up the root window before XDM login
+#
+
+echo "Executing $0 $@" >&2
+
+## the root window should have this color
+xsetroot -solid "#223377" -cursor_name left_ptr
+
+if which hsetroot >> /dev/null 2>&1; then
+	hsetroot -fill /etc/X11/xdm/xde/background.jpg
+fi
+
+/etc/X11/xdm/xde/buttons &
+
+xclock &
+
+#xconsole -daemon -geometry 640x200-0+0

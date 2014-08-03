@@ -121,6 +121,9 @@ eval "xdgdatadir=\"$xdgdatadir\""
 eval "xdgdatadir=\"$xdgdatadir\""
 AC_SUBST([xdgdatadir])
 
+xdmconfdir='$(sysconfdir)/X11'
+AC_SUBST([xdmconfdir])
+
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 man/Makefile

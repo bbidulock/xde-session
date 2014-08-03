@@ -427,4 +427,28 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/images/unexicon-banner.png \
 	share/xde/images/unexicon-splash.jpg
 
+nobase_dist_xdmconf_DATA = \
+	xdm/xde/background.jpg \
+	xdm/xde/logo.xpm \
+	xdm/xde/Xaccess \
+	xdm/xde/xdm-config \
+	xdm/xde/Xresources \
+	xdm/xde/Xservers
 
+nobase_dist_xdmconf_SCRIPTS = \
+	xdm/xde/chooser \
+	xdm/xde/greeter \
+	xdm/xde/xlogin \
+	xdm/xde/Xreset \
+	xdm/xde/Xsession \
+	xdm/xde/Xsetup \
+	xdm/xde/Xstartup
+
+AM_INSTALLCHECK_STD_OPTIONS_EXEMPT += \
+	xdm/xde/chooser \
+	xdm/xde/greeter \
+	xdm/xde/xlogin \
+	xdm/xde/Xreset \
+	xdm/xde/Xsession \
+	xdm/xde/Xsetup \
+	xdm/xde/Xstartup

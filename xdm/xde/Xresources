@@ -1,0 +1,269 @@
+! We want the input panel at 37% x and 28% y
+#if ( WIDTH >= 3840 )
+# define LOGIN_POS_X 1140
+#elif ( WIDTH >= 2560 )
+# define LOGIN_POS_X 667
+#elif ( WIDTH >= 2048 )
+# define LOGIN_POS_X 477
+#elif ( WIDTH >= 1920 )
+# define LOGIN_POS_X 430
+#elif ( WIDTH >= 1680 )
+# define LOGIN_POS_X 341
+#elif ( WIDTH >= 1600 )
+# define LOGIN_POS_X 312
+#elif ( WIDTH >= 1440 )
+# define LOGIN_POS_X 252
+#elif ( WIDTH >= 1366 )
+# define LOGIN_POS_X 225
+#elif ( WIDTH >= 1280 )
+# define LOGIN_POS_X 193
+#elif ( WIDTH >= 1152 )
+# define LOGIN_POS_X 146
+#elif ( WIDTH >= 1024 )
+# define LOGIN_POS_X 98
+#elif ( WIDTH >= 800 )
+# define LOGIN_POS_X 16
+#else
+# define LOGIN_POS_X 0
+#endif
+
+#if ( HEIGHT >= 2400 )
+# define LOGIN_POS_Y 542
+#elif ( HEIGHT >= 2160 )
+# define LOGIN_POS_Y 474
+#elif ( HEIGHT >= 1600 )
+# define LOGIN_POS_Y 318
+#elif ( HEIGHT >= 1440 )
+# define LOGIN_POS_Y 273
+#elif ( HEIGHT >= 1200 )
+# define LOGIN_POS_Y 206
+#elif ( HEIGHT >= 1152 )
+# define LOGIN_POS_Y 192
+#elif ( HEIGHT >= 1080 )
+# define LOGIN_POS_Y 172
+#elif ( HEIGHT >= 1024 )
+# define LOGIN_POS_Y 156
+#elif ( HEIGHT >= 900 )
+# define LOGIN_POS_Y 122
+#elif ( HEIGHT >= 800 )
+# define LOGIN_POS_Y 94
+#elif ( HEIGHT >= 768 )
+# define LOGIN_POS_Y 85
+#elif ( HEIGHT >= 600 )
+# define LOGIN_POS_Y 38
+#elif ( HEIGHT >= 480 )
+# define LOGIN_POS_Y 4
+#else
+# define LOGIN_POS_Y 0
+#endif
+
+! pick one
+!Xcursor.theme:				whiteglass
+Xcursor.theme:				XcursorHuman
+
+!xlogin.Login.width:			! automatic
+!xlogin.Login.height:			! automatic
+!xlogin.Login.x:			! automatic
+!xlogin.Login.y:			! automatic
+
+!xlogin.Login.foreground:		
+!xlogin.Login.background:		
+!xlogin.Login.face:			Serif-18
+!xlogin.Login.font:			
+!xlogin.Login.greeting:			X Window System
+!xlogin.Login.unsecureGreeting:		This is an unsecure session
+!xlogin.Login.greetFace:		Serif-24:italic
+!xlogin.Login.greetFont:		
+!xlogin.Login.greetColor:		
+!xlogin.Login.namePrompt:		Login:  
+!xlogin.Login.passwdPrompt:		Password:  
+!xlogin.Login.promptFace:		Serif-18:bold
+!xlogin.Login.promptFont:		
+!xlogin.Login.promptColor:		
+!xlogin.Login.changePasswdMessage:	Password Change Required
+!xlogin.Login.fail:			Login incorrect
+!xlogin.Login.failFace:			Serif-18:bold
+!xlogin.Login.failFont:			
+!xlogin.Login.failColor:		
+!xlogin.Login.failTimeout:		10
+!xlogin.Login.logoFileName:		
+!xlogin.Login.logoPadding:		5
+!xlogin.Login.useShape:			true
+!xlogin.Login.hiColor:			
+!xlogin.Login.shdColor:			
+!xlogin.Login.frameWidth:		
+!xlogin.Login.innerFramesWidth:		
+!xlogin.Login.sepWidth:			
+!xlogin.Login.allowRootLogin:		true
+!xlogin.Login.allowNullPasswd:		false
+!xlogin.Login.echoPasswd:		false
+!xlogin.Login.echoPasswdChar:		*
+
+!Xlogin*login.translations:#override \
+!	CtrlR:abort-display()\n\
+!	F1:set-session-argument(failsafe) finish-field()\n\
+!	Return:set-session-argument() finish-field()
+!	CtrlReturn:set-session-argument(failsafe) finish-field()\n\
+!
+xlogin*login.translations: #override \
+	Ctrl<Key>R: abort-display()\n\
+	<Key>F1: set-session-argument(failsafe) finish-field()\n\
+	<Key>Delete: delete-character()\n\
+	<Key>Left: move-backward-character()\n\
+	<Key>Right: move-forward-character()\n\
+	<Key>Home: move-to-begining()\n\
+	<Key>End: move-to-end()\n\
+	Ctrl<Key>KP_Enter: set-session-argument(failsafe) finish-field()\n\
+	<Key>KP_Enter: set-session-argument() finish-field()\n\
+	Ctrl<Key>Return: set-session-argument(failsafe) finish-field()\n\
+	<Key>Return: set-session-argument() finish-field()
+
+
+!xlogin.Login.width:			400
+!xlogin.Login.height:			170
+xlogin.Login.x:				LOGIN_POS_X
+xlogin.Login.y:				LOGIN_POS_Y
+
+!xlogin.Login.foreground:		#FFFFFF
+!xlogin.Login.foreground:		grey80
+!xlogin.Login.foreground:		darkgreen
+xlogin.Login.foreground:		grey20
+
+!xlogin.Login.background:		black
+!xlogin.Login.background:		#223377
+!xlogin.Login.background:		#2D2D2D
+!xlogin.Login.background:		grey
+xlogin.Login.background:		LightSteelBlue3
+!xlogin.Login.background:		SkyBlue3
+
+xlogin.Login.borderWidth:		3
+
+xlogin.Login.face:			Sans-12:bold
+!xlogin.Login.face:			Terminus-18:style=Bold
+
+!xlogin.Login.font:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
+
+xlogin.Login.greeting:			Welcome to CLIENTHOST
+
+xlogin.Login.greetFace:			Sans-12:bold
+!xlogin.Login.greetFace:		Terminus-8:style=Bold
+!xlogin.Login.greetFace:		Comic Sans MS-36
+!xlogin.Login.greetFace:		Serif-24:bold:italic
+!xlogin.Login.greetFace:		Serif-18:bold:italic
+
+!xlogin.Login.greetFont:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1 
+
+!xlogin.Login.greetColor:		#6060FF
+!xlogin.Login.greetColor:		yellow
+!xlogin.Login.greetColor:		#D8D8D8
+!xlogin.Login.greetColor:		Blue3
+!xlogin.Login.greetColor:		white
+xlogin.Login.greetColor:		grey20
+
+xlogin.Login.namePrompt:		Username:  
+
+xlogin.Login.passwdPrompt:		Password:  
+
+xlogin.Login.promptFace:		Sans-12:bold
+!xlogin.Login.promptFace:		Terminus-18:style=Bold
+
+!xlogin.Login.promptFont:		-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
+
+!xlogin.Login.promptColor:		#00C000
+!xlogin.Login.promptColor:		grey80
+!xlogin.Login.promptColor:		#D8D8D8
+!xlogin.Login.promptColor:		white
+xlogin.Login.promptColor:		grey20
+
+xlogin.Login.fail:			Login incorrect!
+
+xlogin.Login.failFace:			Sans-12:bold
+!xlogin.Login.failFace:			Terminus-16:style=Bold
+
+!xlogin.Login.failFont:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
+
+xlogin.Login.failColor:			red
+
+xlogin.Login.logoFileName:		/etc/X11/xdm/xde/logo.xpm
+
+xlogin.Login.logoPadding:		8
+
+xlogin.Login.useShape:			true
+
+!xlogin.Login.hiColor:			#223377
+!xlogin.Login.hiColor:			#2D2D2D
+xlogin.Login.hiColor:			grey80
+!xlogin.Login.hiColor:			black
+
+!xlogin.Login.shdColor:			#223377
+!xlogin.Login.shdColor:			#2D2D2D
+xlogin.Login.shdColor:			grey20
+!xlogin.Login.shdColor:			black
+
+xlogin.Login.frameWidth:		2
+
+xlogin.Login.innerFramesWidth:		2
+xlogin.Login.sepWidth:			2
+
+xlogin.Login.echoPasswd:		true
+
+!*borderWidth:				0
+!*foreground:				grey80
+!*background:				#223377
+
+!*borderWidth:				0
+!*foreground:				grey80
+!*background:				#2D2D2D
+
+.XClock.geometry:			280x25+0+0
+.XClock.Clock.analog:			false
+.XClock.Clock.strftime:			(%A) %F %T
+.XClock.Clock.update:			1
+.XClock.Clock.render:			false
+!.XClock.Clock.font:			-xos4-terminus-medium-r-normal--32-320-72-72-c-160-iso10646-1
+.XClock.Clock.font:			-misc-fixed-*-*-*-*-15-*-*-*-*-*-*-*
+!.XClock.Clock.font:			-misc-fixed-*-*-*-*-15-*-*-*-*-*-*-*
+.XClock.Clock.background:		black
+!.XClock.Clock.foreground:		#4d4d4d
+.XClock.Clock.foreground:		#3F3FFF
+.XClock.width:				640
+
+.Xmessage.geometry:			280x25-0+0
+.Xmessage.form.message.scrollVertical:	never
+.Xmessage.form.message.scrollHorizontal:never
+.Xmessage.form.message.background:	black
+.Xmessage.form.background:		black
+!.Xmessage.form.Command.font:		-misc-fixed-*-*-*-*-20-*-*-*-*-*-*-*
+!Xmessage*Command.font:			-xos4-terminus-medium-r-normal--32-320-72-72-c-160-iso10646-1
+!Xmessage*Command.font:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
+.Xmessage.form.Command.font:		-misc-fixed-*-*-*-*-15-*-*-*-*-*-*-*
+.Xmessage.form.Command.foreground:	#BF0000
+!.Xmessage.form.Command.foreground:	#4d4d4d
+.Xmessage.form.Command.background:	black
+.Xmessage.form.Command.shapeStyle:	rectangle
+.Xmessage*Command.highlightThickness:	2
+.Xmessage*Command.internalWidth:	0
+.Xmessage*Command.internalHeight:	0
+!Xmessage*font:				-xos4-terminus-medium-r-normal--32-320-72-72-c-160-iso10646-1
+!Xmessage*font:				-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
+
+XConsole*verbose:			true
+XConsole*exitOnFail:			true
+XConsole.text.geometry:			480x130
+XConsole*iconic:			true
+XConsole*font:				fixed
+
+Chooser*geometry:			700x500
+!Chooser*geometry:			700x500+300+200
+Chooser*allowShellResize:		false
+Chooser*viewport.forceBars:		true
+!Chooser*label.font:			-*-terminus-*-*-*-*-*-*-*-*-*-*-*
+!Chooser*label.font:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
+Chooser*label.font:			*-new century schoolbook-bold-i-normal-*-240-*
+Chooser*label.label:			XDMCP Host Menu from CLIENTHOST
+!Chooser*list.font:			-*-terminus-*-*-*-*-*-*-*-*-*-*-*
+!Chooser*list.font:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
+Chooser*list.font:			-*-*-medium-r-normal-*-*-230-*-*-c-*-iso8859-1
+!Chooser*Command.font:			-*-terminus-*-*-*-*-*-*-*-*-*-*-*
+!Chooser*Command.font:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
+Chooser*Command.font:			*-new century schoolbook-bold-r-normal-*-180-*
