@@ -421,6 +421,10 @@ nobase_dist_xdgdata_DATA += \
 
 nobase_dist_xdgdata_DATA += \
 	share/xde/images/arch-banner.png \
+	share/xde/images/arch-splash.jpg \
 	share/xde/images/banner.png \
-	share/xde/images/unexicon-banner.png
+	share/xde/images/splash.jpg \
+	share/xde/images/unexicon-banner.png \
+	share/xde/images/unexicon-splash.jpg
+
 
