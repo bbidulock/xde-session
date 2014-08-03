@@ -1684,8 +1684,6 @@ GetPanel(void)
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_launch_clicked), buttons);
 	gtk_widget_set_sensitive(b, TRUE);
 
-	gtk_widget_grab_default(b);
-
 	FillView();
 
 	return (pan);
