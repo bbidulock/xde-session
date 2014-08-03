@@ -35,7 +35,7 @@ TODO: TODO.in
 
 dist_noinst_SCRIPTS = autogen.sh
 
-nobase_dist_sysconf_DATA = \
+nobase_dist_xdgconf_DATA = \
 	xdg/pcmanfm/BLACKBOX/pcmanfm.conf \
 	xdg/pcmanfm/FLUXBOX/pcmanfm.conf \
 	xdg/pcmanfm/FVWM/pcmanfm.conf \
@@ -43,7 +43,7 @@ nobase_dist_sysconf_DATA = \
 	xdg/pcmanfm/OPENBOX/pcmanfm.conf \
 	xdg/pcmanfm/WMAKER/pcmanfm.conf
 
-nobase_dist_sysconf_DATA += \
+nobase_dist_xdgconf_DATA += \
 	xdg/xde/autostart/bbrun.desktop \
 	xdg/xde/autostart/cbatticon.desktop \
 	xdg/xde/autostart/compton.desktop \
@@ -80,7 +80,7 @@ nobase_dist_sysconf_DATA += \
 	xdg/xde/autostart/xde-panel.desktop \
 	xdg/xde/autostart/xde-setbg.desktop
 
-nobase_dist_sysconf_DATA += \
+nobase_dist_xdgconf_DATA += \
 	xdg/xde/compton/compton.conf \
 	xdg/xde/compton/default/compton.conf \
 	xdg/xde/compton/FLUXBOX/compton.conf \
@@ -144,7 +144,7 @@ nobase_dist_sysconf_DATA += \
 	xdg/xde/xde-session/OPENBOX/desktop.conf \
 	xdg/xde/xde-session/WMAKER/desktop.conf
 
-nobase_dist_sysconf_DATA += \
+nobase_dist_xdgconf_DATA += \
 	xdg/xde/adwm/adwmrc \
 	xdg/xde/adwm/keysrc \
 	xdg/xde/adwm/stylerc \
@@ -152,25 +152,15 @@ nobase_dist_sysconf_DATA += \
 	xdg/xde/blackbox/keys \
 	xdg/xde/blackbox/menu \
 	xdg/xde/blackbox/rc \
-	xdg/xde/blackbox/setup.pl \
-	xdg/xde/blackbox/setup.sh \
-	xdg/xde/blackbox/start.sh \
 	xdg/xde/blackbox/version \
 	xdg/xde/blackbox/xde-rc \
 	xdg/xde/ctwm/apps \
 	xdg/xde/ctwm/buttons \
-	xdg/xde/ctwm/config \
 	xdg/xde/ctwm/defaults \
-	xdg/xde/ctwm/getstyles \
 	xdg/xde/ctwm/keys \
 	xdg/xde/ctwm/menu \
 	xdg/xde/ctwm/rc \
 	xdg/xde/ctwm/rc.m4 \
-	xdg/xde/ctwm/setstyle \
-	xdg/xde/ctwm/setup \
-	xdg/xde/ctwm/setup.sh \
-	xdg/xde/ctwm/start \
-	xdg/xde/ctwm/start.sh \
 	xdg/xde/ctwm/stylemenu \
 	xdg/xde/ctwm/version \
 	xdg/xde/ctwm/winmenu \
@@ -184,9 +174,7 @@ nobase_dist_sysconf_DATA += \
 	xdg/xde/fluxbox/menu \
 	xdg/xde/fluxbox/menuconfig \
 	xdg/xde/fluxbox/overlay \
-	xdg/xde/fluxbox/setup.sh \
 	xdg/xde/fluxbox/slitlist \
-	xdg/xde/fluxbox/start.sh \
 	xdg/xde/fluxbox/startup \
 	xdg/xde/fluxbox/unexicon-menu \
 	xdg/xde/fluxbox/usermenu \
@@ -202,25 +190,18 @@ nobase_dist_sysconf_DATA += \
 	xdg/xde/icewm/prefoverride \
 	xdg/xde/icewm/programs \
 	xdg/xde/icewm/recent.menu \
-	xdg/xde/icewm/setup.sh \
-	xdg/xde/icewm/start.sh \
 	xdg/xde/icewm/theme \
 	xdg/xde/icewm/toolbar \
 	xdg/xde/icewm/version \
 	xdg/xde/icewm/winoptions \
-	xdg/xde/jwm/config \
 	xdg/xde/jwm/defaults \
 	xdg/xde/jwm/desktop \
-	xdg/xde/jwm/getstyles \
 	xdg/xde/jwm/groups \
 	xdg/xde/jwm/keys \
 	xdg/xde/jwm/menu \
 	xdg/xde/jwm/paths \
 	xdg/xde/jwm/rc \
 	xdg/xde/jwm/root \
-	xdg/xde/jwm/setstyle \
-	xdg/xde/jwm/setup.sh \
-	xdg/xde/jwm/start.sh \
 	xdg/xde/jwm/style \
 	xdg/xde/jwm/tray \
 	xdg/xde/jwm/version \
@@ -252,17 +233,11 @@ nobase_dist_sysconf_DATA += \
 	xdg/xde/pekwm/window \
 	xdg/xde/twm/apps \
 	xdg/xde/twm/buttons \
-	xdg/xde/twm/config \
 	xdg/xde/twm/defaults \
-	xdg/xde/twm/getstyles \
 	xdg/xde/twm/keys \
 	xdg/xde/twm/menu \
 	xdg/xde/twm/rc \
 	xdg/xde/twm/rc.m4 \
-	xdg/xde/twm/setstyle \
-	xdg/xde/twm/setup.sh \
-	xdg/xde/twm/start \
-	xdg/xde/twm/start.sh \
 	xdg/xde/twm/stylemenu \
 	xdg/xde/twm/version \
 	xdg/xde/twm/winmenu \
@@ -270,38 +245,105 @@ nobase_dist_sysconf_DATA += \
 	xdg/xde/uwm/keys \
 	xdg/xde/uwm/menu \
 	xdg/xde/uwm/panel \
-	xdg/xde/uwm/setup \
-	xdg/xde/uwm/start \
 	xdg/xde/uwm/uwmrc \
 	xdg/xde/uwm/version \
 	xdg/xde/uwm/winmenu \
 	xdg/xde/vtwm/apps \
 	xdg/xde/vtwm/buttons \
-	xdg/xde/vtwm/config \
 	xdg/xde/vtwm/defaults \
-	xdg/xde/vtwm/getstyles \
 	xdg/xde/vtwm/keys \
 	xdg/xde/vtwm/menu \
 	xdg/xde/vtwm/rc \
 	xdg/xde/vtwm/rc.m4 \
-	xdg/xde/vtwm/setstyle \
-	xdg/xde/vtwm/setup.sh \
-	xdg/xde/vtwm/start \
-	xdg/xde/vtwm/start.sh \
 	xdg/xde/vtwm/stylemenu \
 	xdg/xde/vtwm/version \
 	xdg/xde/vtwm/winmenu \
 	xdg/xde/waimea/actionrc \
 	xdg/xde/waimea/config \
 	xdg/xde/waimea/menu \
-	xdg/xde/waimea/setup \
-	xdg/xde/waimea/setup.sh \
-	xdg/xde/waimea/start \
-	xdg/xde/waimea/start.sh \
 	xdg/xde/waimea/version \
 	xdg/xde/wmaker/version
 
-nobase_dist_share_DATA = \
+nobase_dist_xdgconf_SCRIPTS = \
+	xdg/xde/blackbox/setup.pl \
+	xdg/xde/blackbox/setup.sh \
+	xdg/xde/blackbox/start.sh \
+	xdg/xde/ctwm/config \
+	xdg/xde/ctwm/getstyles \
+	xdg/xde/ctwm/setstyle \
+	xdg/xde/ctwm/setup \
+	xdg/xde/ctwm/setup.sh \
+	xdg/xde/ctwm/start \
+	xdg/xde/ctwm/start.sh \
+	xdg/xde/fluxbox/setup.sh \
+	xdg/xde/fluxbox/start.sh \
+	xdg/xde/icewm/setup.sh \
+	xdg/xde/icewm/start.sh \
+	xdg/xde/jwm/config \
+	xdg/xde/jwm/getstyles \
+	xdg/xde/jwm/setstyle \
+	xdg/xde/jwm/setup.sh \
+	xdg/xde/jwm/start.sh \
+	xdg/xde/twm/config \
+	xdg/xde/twm/getstyles \
+	xdg/xde/twm/setstyle \
+	xdg/xde/twm/setup.sh \
+	xdg/xde/twm/start \
+	xdg/xde/twm/start.sh \
+	xdg/xde/uwm/setup \
+	xdg/xde/uwm/start \
+	xdg/xde/vtwm/config \
+	xdg/xde/vtwm/getstyles \
+	xdg/xde/vtwm/setstyle \
+	xdg/xde/vtwm/setup.sh \
+	xdg/xde/vtwm/start \
+	xdg/xde/vtwm/start.sh \
+	xdg/xde/waimea/setup \
+	xdg/xde/waimea/setup.sh \
+	xdg/xde/waimea/start \
+	xdg/xde/waimea/start.sh
+
+AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = \
+	xdg/xde/blackbox/setup.pl \
+	xdg/xde/blackbox/setup.sh \
+	xdg/xde/blackbox/start.sh \
+	xdg/xde/ctwm/config \
+	xdg/xde/ctwm/getstyles \
+	xdg/xde/ctwm/setstyle \
+	xdg/xde/ctwm/setup \
+	xdg/xde/ctwm/setup.sh \
+	xdg/xde/ctwm/start \
+	xdg/xde/ctwm/start.sh \
+	xdg/xde/fluxbox/setup.sh \
+	xdg/xde/fluxbox/start.sh \
+	xdg/xde/icewm/setup.sh \
+	xdg/xde/icewm/start.sh \
+	xdg/xde/jwm/config \
+	xdg/xde/jwm/getstyles \
+	xdg/xde/jwm/setstyle \
+	xdg/xde/jwm/setup.sh \
+	xdg/xde/jwm/start.sh \
+	xdg/xde/twm/config \
+	xdg/xde/twm/getstyles \
+	xdg/xde/twm/setstyle \
+	xdg/xde/twm/setup.sh \
+	xdg/xde/twm/start \
+	xdg/xde/twm/start.sh \
+	xdg/xde/uwm/setup \
+	xdg/xde/uwm/start \
+	xdg/xde/vtwm/config \
+	xdg/xde/vtwm/getstyles \
+	xdg/xde/vtwm/setstyle \
+	xdg/xde/vtwm/setup.sh \
+	xdg/xde/vtwm/start \
+	xdg/xde/vtwm/start.sh \
+	xdg/xde/waimea/setup \
+	xdg/xde/waimea/setup.sh \
+	xdg/xde/waimea/start \
+	xdg/xde/waimea/start.sh
+
+
+nobase_dist_xdgdata_DATA = \
 	share/xde/xsessions/2bwm.desktop \
 	share/xde/xsessions/adwm.desktop \
 	share/xde/xsessions/aewm.desktop \
@@ -363,7 +405,7 @@ nobase_dist_share_DATA = \
 	share/xde/xsessions/xfce.desktop \
 	share/xde/xsessions/yeahwm.desktop
 
-nobase_dist_share_DATA += \
+nobase_dist_xdgdata_DATA += \
 	share/lxpanel/profile/BLACKBOX/config \
 	share/lxpanel/profile/BLACKBOX/panels/panel \
 	share/lxpanel/profile/FLUXBOX/config \
@@ -377,7 +419,7 @@ nobase_dist_share_DATA += \
 	share/lxpanel/profile/WMAKER/config \
 	share/lxpanel/profile/WMAKER/panels/panel
 
-nobase_dist_share_DATA += \
+nobase_dist_xdgdata_DATA += \
 	share/xde/images/arch-banner.png \
 	share/xde/images/banner.png \
 	share/xde/images/unexicon-banner.png

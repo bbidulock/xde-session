@@ -109,13 +109,13 @@ eval "sharedir=\"$sharedir\""
 eval "sharedir=\"$sharedir\""
 AC_SUBST([sharedir])
 
-xdgconfdir="$sysconfdir/xdg"
+xdgconfdir="$sysconfdir"
 eval "xdgconfdir=\"$xdgconfdir\""
 eval "xdgconfdir=\"$xdgconfdir\""
 eval "xdgconfdir=\"$xdgconfdir\""
 AC_SUBST([xdgconfdir])
 
-xdgdatadir="$sharedir"
+xdgdatadir="$prefix"
 eval "xdgdatadir=\"$xdgdatadir\""
 eval "xdgdatadir=\"$xdgdatadir\""
 eval "xdgdatadir=\"$xdgdatadir\""
