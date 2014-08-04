@@ -1204,6 +1204,19 @@ render_pixbuf_for_scr(GdkPixbuf *pixbuf, GdkPixmap *pixmap, XdeScreen *xscr)
 }
 
 void
+clr_source(XdeScreen *xscr)
+{
+	GdkWindow *w;
+
+	if (xscr->wind && (w = gtk_widget_get_window(xscr->wind))) {
+		gint x = 0, y = 0, width = 0, height = 0, depth = 0;
+
+		gdk_window_get_geometry(w, &x, &y, &width, &height, &depth);
+		gdk_window_clear_area_e(w, x, y, width, height);
+	}
+}
+
+void
 get_source(XdeScreen *xscr)
 {
 	GdkDisplay *disp = gdk_screen_get_display(xscr->scrn);
@@ -1224,6 +1237,7 @@ get_source(XdeScreen *xscr)
 			xscr->pixmap = gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
 			gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
 			render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
+			clr_source(xscr);
 		}
 		return;
 	}
@@ -1251,11 +1265,26 @@ get_source(XdeScreen *xscr)
 			if ((p = data[0])) {
 				xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
 				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+				clr_source(xscr);
 			}
 		}
 		if (data)
 			XFree(data);
 	}
+}
+
+static void
+redo_source(XdeScreen *xscr)
+{
+	if (xscr->pixmap) {
+		g_object_unref(G_OBJECT(xscr->pixmap));
+		xscr->pixmap = NULL;
+	}
+	if (xscr->pixbuf) {
+		g_object_unref(G_OBJECT(xscr->pixbuf));
+		xscr->pixbuf = NULL;
+	}
+	get_source(xscr);
 }
 
 /** @brief create the selected session
@@ -1328,6 +1357,134 @@ create_session(const char *label, GKeyFile *session)
 	free(cdir);
 }
 
+GtkWidget *cont;			/* container of event box */
+GtkWidget *ebox;			/* event box window within the screen */
+
+static void
+RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
+{
+	XdeMonitor *mon;
+	GtkWindow *w = GTK_WINDOW(xscr->wind);
+	char *geom;
+	int m, nmon, width, height, index;
+
+	index = gdk_screen_get_number(scrn);
+	if (xscr->index != index) {
+		EPRINTF("Arrrghhhh! screen index changed from %d to %d\n", xscr->index, index);
+		xscr->index = index;
+	}
+
+	if (xscr->scrn != scrn) {
+		DPRINTF("Arrrghhh! screen pointer changed from %p to %p\n", xscr->scrn, scrn);
+		xscr->scrn = scrn;
+	}
+	width = gdk_screen_get_width(scrn);
+	height = gdk_screen_get_height(scrn);
+	if (xscr->width != width || xscr->height != height) {
+		DPRINTF("Screen %d dimensions changed %dx%d -> %dx%d\n", index,
+				xscr->width, xscr->height, width, height);
+		gtk_window_set_default_size(w, width, height);
+		geom = g_strdup_printf("%dx%d+0+0", width, height);
+		gtk_window_parse_geometry(w, geom);
+		g_free(geom);
+		xscr->width = width;
+		xscr->height = height;
+	}
+	nmon = gdk_screen_get_n_monitors(scrn);
+	if (nmon > xscr->nmon) {
+		DPRINTF("Screen %d number of monitors increased from %d to %d\n",
+				index, xscr->nmon, nmon);
+		xscr->mons = realloc(xscr->mons, nmon * sizeof(*xscr->mons));
+		for (m = xscr->nmon; m <= nmon; m++) {
+			mon = xscr->mons + m;
+			memset(mon, 0, sizeof(*mon));
+		}
+	} else if (nmon < xscr->nmon) {
+		DPRINTF("Screen %d number of monitors decreased from %d to %d\n",
+				index, xscr->nmon, nmon);
+		for (m = xscr->nmon; m > nmon; m--) {
+			mon = xscr->mons + m - 1;
+			if (ebox && cont && mon->align == cont) {
+				gtk_container_remove(GTK_CONTAINER(cont), ebox);
+				cont = NULL;
+			}
+			if (mon->align) {
+				gtk_widget_destroy(mon->align);
+				mon->align = NULL;
+			}
+		}
+		xscr->mons = realloc(xscr->mons, nmon * sizeof(*xscr->mons));
+	}
+	if (nmon != xscr->nmon)
+		xscr->nmon = nmon;
+	/* always realign center alignment widgets */
+	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
+		float xrel, yrel;
+
+		DPRINTF("Realigning screen %d monitor %d\n", index, m);
+		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
+		xrel = (float) (mon->geom.x + mon->geom.width / 2) / (float) xscr->width;
+		yrel = (float) (mon->geom.y + mon->geom.height / 2) / (float) xscr->height;
+		if (!mon->align) {
+			mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
+			gtk_container_add(GTK_CONTAINER(w), mon->align);
+		} else
+			gtk_alignment_set(GTK_ALIGNMENT(mon->align), xrel, yrel, 0, 0);
+	}
+	/* always reassign the event box if its containing monitor was removed */
+	if (ebox && !cont) {
+		GdkDisplay *disp = gdk_screen_get_display(scrn);
+		GdkScreen *screen = NULL;
+		gint x = 0, y = 0;
+
+		DPRINTF("Reassigning event box to new container\n");
+		gdk_display_get_pointer(disp, &screen, &x, &y, NULL);
+		if (!screen)
+			screen = scrn;
+		m = gdk_screen_get_monitor_at_point(screen, x, y);
+		mon = xscr->mons + m;
+		cont = mon->align;
+		gtk_container_add(GTK_CONTAINER(cont), ebox);
+#if 0
+		/* FIXME: only if it should be currently displayed */
+		gtk_widget_show_all(cont);
+		gtk_widget_show_now(cont);
+		gtk_widget_grab_default(user);
+		gtk_widget_grab_focus(user);
+#endif
+	}
+	/* redo background images */
+	redo_source(xscr);
+}
+
+/** @brief monitors changed
+  *
+  * The number and/or size of monitors belonging to a screen have changed.  This
+  * may be as a result of RANDR or XINERAMA changes.  Walk through the monitors
+  * and adjust the necessary parameters.
+  */
+static void
+on_monitors_changed(GdkScreen *scrn, gpointer data)
+{
+	XdeScreen *xscr = data;
+
+	RefreshScreen(xscr, scrn);
+}
+
+/** @brief screen size changed
+  *
+  * The size of the screen changed.  This may be as a result of RANDR or
+  * XINERAMA changes.  Walk through the screen and the monitors on the screen
+  * and adjust the necessary parameters.
+  */
+static void
+on_size_changed(GdkScreen *scrn, gpointer data)
+{
+	XdeScreen *xscr = data;
+
+	RefreshScreen(xscr, scrn);
+}
+
 /** @brief get a covering window for a screen
   */
 void
@@ -1343,6 +1500,10 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	xscr->wind = wind = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	xscr->width = gdk_screen_get_width(scrn);
 	xscr->height = gdk_screen_get_height(scrn);
+
+	g_signal_connect(G_OBJECT(scrn), "monitors-changed", G_CALLBACK(on_monitors_changed), xscr);
+	g_signal_connect(G_OBJECT(scrn), "size-changed", G_CALLBACK(on_size_changed), xscr);
+
 	w = GTK_WINDOW(wind);
 	gtk_window_set_screen(w, scrn);
 	gtk_window_set_wmclass(w, "xde-chooser", "XDE-Chooser");
@@ -1463,9 +1624,6 @@ GetScreens(void)
 
 	reparse(dpy, GDK_WINDOW_XID(root));
 }
-
-GtkWidget *cont;			/* container of event box */
-GtkWidget *ebox;			/* event box window within the screen */
 
 GtkWidget *
 GetBanner(void)
