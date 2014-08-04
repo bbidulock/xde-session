@@ -124,9 +124,16 @@ AC_SUBST([xdgdatadir])
 xdmconfdir='$(sysconfdir)/X11'
 AC_SUBST([xdmconfdir])
 
+pamconfdir='$(sysconfdir)/pam.d'
+AC_SUBST([pamconfdir])
+
+systemddir='$(libdir)/systemd/system'
+AC_SUBST([systemddir])
+
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 man/Makefile
+		 data/Makefile
 		 ])
 AC_OUTPUT
 

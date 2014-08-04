@@ -3510,22 +3510,22 @@ set_default_xdgdirs(int argc, char *argv[])
 		*p = '\0';
 	/* executed in place */
 	if (strcmp(here, "/usr/bin")) {
-		len = strlen(here) + strlen("/xdg/xde:")
-		    + strlen(here) + strlen("/xdg:") + strlen(confdir);
+		len = strlen(here) + strlen("/data/xdg/xde:")
+		    + strlen(here) + strlen("/data/xdg:") + strlen(confdir);
 		conf = calloc(len + 1, sizeof(*conf));
 		strncpy(conf, here, len);
-		strncat(conf, "/xdg/xde:", len);
+		strncat(conf, "/data/xdg/xde:", len);
 		strncat(conf, here, len);
-		strncat(conf, "/xdg:", len);
+		strncat(conf, "/data/xdg:", len);
 		strncat(conf, confdir, len);
 
-		len = strlen(here) + strlen("/share/xde:")
-		    + strlen(here) + strlen("/share:") + strlen(datadir);
+		len = strlen(here) + strlen("/data/share/xde:")
+		    + strlen(here) + strlen("/data/share:") + strlen(datadir);
 		data = calloc(len + 1, sizeof(*data));
 		strncpy(data, here, len);
-		strncat(data, "/share/xde:", len);
+		strncat(data, "/data/share/xde:", len);
 		strncat(data, here, len);
-		strncat(data, "/share:", len);
+		strncat(data, "/data/share:", len);
 		strncat(data, datadir, len);
 	} else {
 		conf = strdup(confdir);
