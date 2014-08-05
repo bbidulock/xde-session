@@ -896,7 +896,10 @@ get_xsessions(void)
 	int i, n = 0;
 	static const char *suffix = ".desktop";
 	static const int suflen = 8;
-	GHashTable *xsessions = NULL;
+	static GHashTable *xsessions = NULL;
+
+	if (xsessions)
+		return (xsessions);
 
 	if (!(xdg_dirs = get_xsession_dirs(&n)) || !n)
 		return (xsessions);
@@ -940,12 +943,11 @@ get_xsessions(void)
 	return (xsessions);
 }
 
-GHashTable *xsessions;
-GHashTableIter xiter;
-
 gboolean
 on_idle(gpointer data)
 {
+	static GHashTable *xsessions = NULL;
+	static GHashTableIter xiter;
 	const char *key;
 	const char *file;
 	GKeyFile *entry;
@@ -1033,14 +1035,20 @@ on_idle(gpointer data)
 		/* FIXME: don't do this if the user has made a selection in the
 		   mean time. */
 		gtk_tree_selection_select_iter(selection, &iter);
+
+#if 0
+		gchar *string;
 		if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
 			GtkTreePath *path = gtk_tree_path_new_from_string(string);
 
 			g_free(string);
 			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor,
 							 NULL, FALSE);
+			gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(view), path,
+					NULL, TRUE, 0.5, 0.5);
 			gtk_tree_path_free(path);
 		}
+#endif
 	}
 #endif
 	return G_SOURCE_CONTINUE;
@@ -2991,6 +2999,12 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 
 	gdk_window_set_override_redirect(win, TRUE);
 
+	GdkDisplay *disp = gdk_screen_get_display(scrn);
+	GdkCursor *curs = gdk_cursor_new_for_display(disp, GDK_LEFT_PTR);
+
+	gdk_window_set_cursor(win, curs);
+	gdk_cursor_unref(curs);
+
 	GdkWindow *root = gdk_screen_get_root_window(scrn);
 	GdkEventMask mask = gdk_window_get_events(root);
 
@@ -3000,7 +3014,6 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 
 #ifdef DO_XLOCKING
 	Window owner = None;
-	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
 	xscr->selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
@@ -3416,8 +3429,29 @@ GetWindow(void)
 
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
+#if 1
 	gtk_widget_grab_default(user);
 	gtk_widget_grab_focus(user);
+#else
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	GtkTreeModel *model = NULL;
+	GtkTreeIter iter;
+	gchar *string;
+	GtkTreePath *path;
+
+	if (gtk_tree_selection_get_selected(selection, &model, &iter) &&
+	    (string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter))) {
+		path = gtk_tree_path_new_from_string(string);
+		g_free(string);
+		gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor, NULL, FALSE);
+		gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(view), path, NULL, TRUE, 0.5, 0.0);
+		gtk_tree_path_free(path);
+	} else {
+		EPRINTF("Nothing selected!\n");
+	}
+	gtk_widget_grab_default(view);
+	gtk_widget_grab_focus(view);
+#endif
 	grabbed_window(xscr->wind, NULL);
 	return xscr->wind;
 }

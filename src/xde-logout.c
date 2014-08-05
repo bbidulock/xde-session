@@ -1566,6 +1566,12 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 
 	gdk_window_set_override_redirect(win, TRUE);
 
+	GdkDisplay *disp = gdk_screen_get_display(scrn);
+	GdkCursor *curs = gdk_cursor_new_for_display(disp, GDK_LEFT_PTR);
+
+	gdk_window_set_cursor(win, curs);
+	gdk_cursor_unref(curs);
+
 	GdkWindow *root = gdk_screen_get_root_window(scrn);
 	GdkEventMask mask = gdk_window_get_events(root);
 
