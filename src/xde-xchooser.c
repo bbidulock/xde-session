@@ -1119,7 +1119,7 @@ get_data_dirs(int *np)
 
 static GtkWidget *buttons[5];
 static GtkWidget *l_uname;
-static GtkWidget *l_pword; //, *l_lstat;
+static GtkWidget *l_pword;		// , *l_lstat;
 static GtkWidget *user, *pass;
 
 #ifdef DO_XSESSION
@@ -1242,13 +1242,18 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	}
 	if (!valid)
 		gtk_list_store_append(model, &iter);
+	/* *INDENT-OFF* */
 	gtk_list_store_set(model, &iter,
 			   XDM_COL_HOSTNAME, hostname,
 			   XDM_COL_REMOTENAME, remotename,
 			   XDM_COL_WILLING, opc,
 			   XDM_COL_STATUS, status,
 			   XDM_COL_IPADDR, ipaddr,
-			   XDM_COL_CTYPE, ctype, XDM_COL_SERVICE, service, XDM_COL_PORT, port, -1);
+			   XDM_COL_CTYPE, ctype,
+			   XDM_COL_SERVICE, service,
+			   XDM_COL_PORT, port,
+			   -1);
+	/* *INDENT-ON* */
 
 	const char *conntype;
 
@@ -1682,15 +1687,28 @@ on_msg_timeout(gpointer data)
 }
 
 void
-Choose(short type, char *name)
+Choose(short connectionType, char *name)
 {
-	CARD16 connectionType = htons(type);
-	int status;
+	CARD8 rawaddr[16] = { 0, };
+	ARRAY8 hostAddress = { 0, NULL };
 
-	ARRAY8 hostAddress = {
-		htons((short) strlen(name)),
-		(CARD8 *) name
-	};
+	switch (connectionType) {
+	case FamilyInternet:
+		inet_pton(AF_INET, name, rawaddr);
+		hostAddress.data = rawaddr;
+		hostAddress.length = 4;
+		break;
+	case FamilyInternet6:
+		inet_pton(AF_INET6, name, rawaddr);
+		hostAddress.data = rawaddr;
+		hostAddress.length = 16;
+		break;
+	default:
+	case FamilyLocal:
+		hostAddress.data = rawaddr;
+		hostAddress.length = 0;
+		break;
+	}
 
 	if (options.xdmAddress.data) {
 		char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
@@ -1714,7 +1732,8 @@ Choose(short type, char *name)
 			memmove(&in_addr.sin_port, xdm + 2, 2);
 			memmove(&in_addr.sin_addr, xdm + 4, 4);
 			inet_ntop(AF_INET, &in_addr.sin_addr, ipaddr, INET_ADDRSTRLEN);
-			DPRINTF("AF_INET: %s:%hd\n", ipaddr, ntohs(in_addr.sin_port));
+			DPRINTF("AF_INET: %s:%hu\n", ipaddr,
+				(unsigned short) ntohs(in_addr.sin_port));
 			addr = (struct sockaddr *) &in_addr;
 			len = sizeof(in_addr);
 			break;
@@ -1724,7 +1743,8 @@ Choose(short type, char *name)
 			memmove(&in6_addr.sin6_port, xdm + 2, 2);
 			memmove(&in6_addr.sin6_addr, xdm + 4, 16);
 			inet_ntop(AF_INET6, &in6_addr.sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-			DPRINTF("AF_INET6: %s:%hd\n", ipaddr, ntohs(in6_addr.sin6_port));
+			DPRINTF("AF_INET6: %s:%hu\n", ipaddr,
+				(unsigned short) ntohs(in6_addr.sin6_port));
 			addr = (struct sockaddr *) &in6_addr;
 			len = sizeof(in6_addr);
 			break;
@@ -1765,8 +1785,7 @@ Choose(short type, char *name)
 		XdmcpWriteARRAY8(&buffer, &options.clientAddress);
 		XdmcpWriteCARD16(&buffer, connectionType);
 		XdmcpWriteARRAY8(&buffer, &hostAddress);
-		status = write(fd, (char *) buffer.data, buffer.pointer);
-		(void) status;
+		if (write(fd, (char *) buffer.data, buffer.pointer)) ;
 		close(fd);
 	} else {
 		int len, i;
@@ -1785,10 +1804,11 @@ Choose(short type, char *name)
 		g_source_remove(id);
 #endif
 
-		fprintf(stdout, "%u\n", (unsigned int) type);
-		len = strlen(name);
+		fprintf(stdout, "%u\n", (unsigned int) connectionType);
+		len = hostAddress.length;
 		for (i = 0; i < len; i++)
-			fprintf(stdout, "%u%s", (unsigned int) name[i], i == len - 1 ? "\n" : " ");
+			fprintf(stdout, "%u%s", (unsigned int) rawaddr[i],
+				i == len - 1 ? "\n" : " ");
 	}
 	exit(OBEYSESS_DISPLAY);
 }
@@ -2512,7 +2532,7 @@ on_pass_activate(GtkEntry *pass, gpointer data)
 	options.password = NULL;
 
 	if ((password = gtk_entry_get_text(pass))) {
-		DPRINTF("Got password %d chars\n", (int)strlen(password));
+		DPRINTF("Got password %d chars\n", (int) strlen(password));
 		options.password = strdup(password);
 		state = LoginStatePassword;
 		login_result = LoginResultLaunch;
@@ -2631,8 +2651,7 @@ render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, Xde
 		/* good size for filling or scaling */
 		/* TODO: check aspect ratio before scaling */
 		DPRINTF("scaling pixbuf from %dx%d to %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width,
 						 xmon->geom.height, GDK_INTERP_BILINEAR);
@@ -2640,15 +2659,13 @@ render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, Xde
 	} else if (wp <= 0.5 * wm && hp <= 0.5 * hm) {
 		/* good size for tiling */
 		DPRINTF("tiling pixbuf at %dx%d into %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		gdk_cairo_set_source_pixbuf(cr, pixbuf, xmon->geom.x, xmon->geom.y);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
 	} else {
 		/* somewhere in between: scale down for integer tile */
 		DPRINTF("scaling and tiling pixbuf at %dx%d into %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width / 2,
 						 xmon->geom.height / 2, GDK_INTERP_BILINEAR);
@@ -2710,7 +2727,8 @@ get_source(XdeScreen *xscr)
 	}
 	if (xscr->pixbuf) {
 		if (!xscr->pixmap) {
-			xscr->pixmap = gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
+			xscr->pixmap =
+			    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
 			gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
 			render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
 			clr_source(xscr);
@@ -2834,7 +2852,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	height = gdk_screen_get_height(scrn);
 	if (xscr->width != width || xscr->height != height) {
 		DPRINTF("Screen %d dimensions changed %dx%d -> %dx%d\n", index,
-				xscr->width, xscr->height, width, height);
+			xscr->width, xscr->height, width, height);
 		gtk_window_set_default_size(w, width, height);
 		geom = g_strdup_printf("%dx%d+0+0", width, height);
 		gtk_window_parse_geometry(w, geom);
@@ -2845,7 +2863,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	nmon = gdk_screen_get_n_monitors(scrn);
 	if (nmon > xscr->nmon) {
 		DPRINTF("Screen %d number of monitors increased from %d to %d\n",
-				index, xscr->nmon, nmon);
+			index, xscr->nmon, nmon);
 		xscr->mons = realloc(xscr->mons, nmon * sizeof(*xscr->mons));
 		for (m = xscr->nmon; m <= nmon; m++) {
 			mon = xscr->mons + m;
@@ -2853,7 +2871,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		}
 	} else if (nmon < xscr->nmon) {
 		DPRINTF("Screen %d number of monitors decreased from %d to %d\n",
-				index, xscr->nmon, nmon);
+			index, xscr->nmon, nmon);
 		for (m = xscr->nmon; m > nmon; m--) {
 			mon = xscr->mons + m - 1;
 			if (ebox && cont && mon->align == cont) {
@@ -3817,7 +3835,7 @@ set_default_xdgdirs(int argc, char *argv[])
 	}
 	if ((p = strrchr(here, '/')))
 		*p = '\0';
-	if ((p = strstr(here, "/src")) && !*(p+4))
+	if ((p = strstr(here, "/src")) && !*(p + 4))
 		*p = '\0';
 	/* executed in place */
 	if (strcmp(here, "/usr/bin")) {
