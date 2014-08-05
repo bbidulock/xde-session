@@ -3411,6 +3411,7 @@ main(int argc, char *argv[])
 	}
 	get_defaults(argc, argv);
 	switch (command) {
+	default:
 	case CommandDefault:
 		DPRINTF("%s: running logout\n", argv[0]);
 		run_logout(argc, argv);

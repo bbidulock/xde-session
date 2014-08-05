@@ -145,6 +145,7 @@
 #define DO_XCHOOSER 1
 #undef DO_XSESSION
 #undef DO_XLOCKING
+#undef DO_ONIDLE
 
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
@@ -948,6 +949,7 @@ on_idle(gpointer data)
 {
 	static GHashTable *xsessions = NULL;
 	static GHashTableIter xiter;
+	GtkListStore *store = data;
 	const char *key;
 	const char *file;
 	GKeyFile *entry;
@@ -991,10 +993,15 @@ on_idle(gpointer data)
 	e = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
 				  G_KEY_FILE_DESKTOP_KEY_EXEC, NULL) ? : g_strdup("");
 	m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
-	t = g_markup_printf_escaped("<b>Name:</b> %s" "\n"
-				    "<b>Comment:</b> %s" "\n"
-				    "<b>Exec:</b> %s" "\n"
-				    "<b>Icon:</b> %s" "\n" "<b>file:</b> %s", n, c, e, i, f);
+	if (options.debug) {
+		t = g_markup_printf_escaped("<b>Name:</b> %s" "\n"
+					    "<b>Comment:</b> %s" "\n"
+					    "<b>Exec:</b> %s" "\n"
+					    "<b>Icon:</b> %s" "\n" "<b>file:</b> %s", n, c, e, i,
+					    f);
+	} else {
+		t = g_markup_printf_escaped("<b>%s</b>: %s", n, c);
+	}
 
 	gtk_list_store_append(store, &iter);
 	/* *INDENT-OFF* */
@@ -1025,31 +1032,30 @@ on_idle(gpointer data)
 #endif
 
 #if 0
-	if (!strcmp(options.choice, key) ||
-	    ((!strcmp(options.choice, "choose") || !strcmp(options.choice, "default")) &&
-	     !strcmp(options.session, key)
-	    )) {
-		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-		gchar *string;
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 
-		/* FIXME: don't do this if the user has made a selection in the
-		   mean time. */
-		gtk_tree_selection_select_iter(selection, &iter);
+	if (gtk_tree_selection_get_selected(selection, NULL, NULL))
+		return G_SOURCE_CONTINUE;
+	if (strcmp(options.choice, key) && strcmp(options.session, key))
+		return G_SOURCE_CONTINUE;
+	if (strcmp(options.choice, key) && strcmp(options.choice, "choose")
+	    && strcmp(options.choice, "default"))
+		return G_SOURCE_CONTINUE;
+	gtk_tree_selection_select_iter(selection, &iter);
+#ifdef DO_ONIDLE
+	gchar *string;
 
-#if 0
-		gchar *string;
-		if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
-			GtkTreePath *path = gtk_tree_path_new_from_string(string);
+	if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
+		GtkTreeView *tree = GTK_TREE_VIEW(sess);
+		GtkTreePath *path = gtk_tree_path_new_from_string(string);
+		GtkTreeViewColumn *cursor = gtk_tree_view_get_column(tree, 1);
 
-			g_free(string);
-			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor,
-							 NULL, FALSE);
-			gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(view), path,
-					NULL, TRUE, 0.5, 0.5);
-			gtk_tree_path_free(path);
-		}
-#endif
+		g_free(string);
+		gtk_tree_view_set_cursor_on_cell(tree, path, cursor, NULL, FALSE);
+		gtk_tree_view_scroll_to_cell(tree, path, cursor, TRUE, 0.5, 0.5);
+		gtk_tree_path_free(path);
 	}
+#endif
 #endif
 	return G_SOURCE_CONTINUE;
 }
@@ -3298,8 +3304,6 @@ GetPanel(void)
 	gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(sess), GTK_CELL_RENDERER(rend), "text",
 				      XSESS_COL_NAME);
 
-	g_idle_add(on_idle, store);
-
 	gtk_table_attach_defaults(GTK_TABLE(login), sess, 1, 2, 2, 3);
 #endif				/* DO_XSESSION */
 
@@ -3357,6 +3361,14 @@ GetPanel(void)
 			 G_CALLBACK(on_row_activated), (gpointer) NULL);
 
 #endif				/* DO_XCHOOSER */
+
+#ifdef DO_XSESSION
+#ifdef DO_ONIDLE
+	g_idle_add(on_idle, store);
+#else
+	while (on_idle(store) != G_SOURCE_REMOVE) ;
+#endif
+#endif				/* DO_XSESSION */
 
 	return (pan);
 }
@@ -3433,24 +3445,24 @@ GetWindow(void)
 	gtk_widget_grab_default(user);
 	gtk_widget_grab_focus(user);
 #else
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	GtkTreeModel *model = NULL;
 	GtkTreeIter iter;
 	gchar *string;
-	GtkTreePath *path;
 
 	if (gtk_tree_selection_get_selected(selection, &model, &iter) &&
-	    (string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter))) {
-		path = gtk_tree_path_new_from_string(string);
+	    (string = gtk_tree_model_get_string_from_iter(model, &iter))) {
+		GtkTreeView *tree = GTK_TREE_VIEW(sess);
+		GtkTreePath *path = gtk_tree_path_new_from_string(string);
+		GtkTreeViewColumn *cursor = gtk_tree_view_get_column(tree, 1);
+
 		g_free(string);
-		gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor, NULL, FALSE);
-		gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(view), path, NULL, TRUE, 0.5, 0.0);
+		gtk_tree_view_set_cursor_on_cell(tree, path, cursor, NULL, FALSE);
+		gtk_tree_view_scroll_to_cell(tree, path, cursor, TRUE, 0.5, 0.5);
 		gtk_tree_path_free(path);
-	} else {
-		EPRINTF("Nothing selected!\n");
 	}
-	gtk_widget_grab_default(view);
-	gtk_widget_grab_focus(view);
+	gtk_widget_grab_default(sess);
+	gtk_widget_grab_focus(sess);
 #endif
 	grabbed_window(xscr->wind, NULL);
 	return xscr->wind;

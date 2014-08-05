@@ -133,6 +133,7 @@
 #undef DO_XCHOOSER
 #define DO_XSESSION 1
 #undef DO_XLOCKING
+#undef DO_ONIDLE
 
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
@@ -465,13 +466,13 @@ get_config_dirs(int *np)
 	return (xdg_dirs);
 }
 
-GtkListStore *model;
-GtkWidget *view;
-GtkTreeViewColumn *cursor;
+#ifdef DO_XSESSION
+GtkListStore *store;			/* list store for XSessions */
+GtkWidget *sess;
 
 void
 on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
-		 GtkTreeModel *model, GtkTreeIter *iter, gpointer data)
+		 GtkTreeModel *store, GtkTreeIter *iter, gpointer data)
 {
 	GValue iname_v = G_VALUE_INIT;
 	const gchar *iname;
@@ -479,7 +480,7 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	gboolean has;
 	GValue pixbuf_v = G_VALUE_INIT;
 
-	gtk_tree_model_get_value(GTK_TREE_MODEL(model), iter, XSESS_COL_PIXBUF, &iname_v);
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), iter, XSESS_COL_PIXBUF, &iname_v);
 	if ((iname = g_value_get_string(&iname_v))) {
 		name = g_strdup(iname);
 		/* should we really do this? */
@@ -769,6 +770,7 @@ on_idle(gpointer data)
 {
 	static GHashTable *xsessions = NULL;
 	static GHashTableIter xiter;
+	GtkListStore *store = data;
 	const char *key;
 	const char *file;
 	GKeyFile *entry;
@@ -812,14 +814,19 @@ on_idle(gpointer data)
 	e = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
 				  G_KEY_FILE_DESKTOP_KEY_EXEC, NULL) ? : g_strdup("");
 	m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
-	t = g_markup_printf_escaped("<b>Name:</b> %s" "\n"
-				    "<b>Comment:</b> %s" "\n"
-				    "<b>Exec:</b> %s" "\n"
-				    "<b>Icon:</b> %s" "\n" "<b>file:</b> %s", n, c, e, i, f);
+	if (options.debug) {
+		t = g_markup_printf_escaped("<b>Name:</b> %s" "\n"
+					    "<b>Comment:</b> %s" "\n"
+					    "<b>Exec:</b> %s" "\n"
+					    "<b>Icon:</b> %s" "\n" "<b>file:</b> %s", n, c, e, i,
+					    f);
+	} else {
+		t = g_markup_printf_escaped("<b>%s</b>: %s", n, c);
+	}
 
-	gtk_list_store_append(model, &iter);
+	gtk_list_store_append(store, &iter);
 	/* *INDENT-OFF* */
-	gtk_list_store_set(model, &iter,
+	gtk_list_store_set(store, &iter,
 			XSESS_COL_PIXBUF,   i,
 			XSESS_COL_NAME,	    n,
 			XSESS_COL_COMMENT,  c,
@@ -840,59 +847,61 @@ on_idle(gpointer data)
 	g_free(t);
 	g_key_file_free(entry);
 #if 0
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
 					     GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
 					     GTK_SORT_ASCENDING);
 #endif
 
 #if 1
-	if (!strcmp(options.choice, key) ||
-	    ((!strcmp(options.choice, "choose") || !strcmp(options.choice, "default")) &&
-	     !strcmp(options.session, key)
-	    )) {
-		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 
-		/* FIXME: don't do this if the user has made a selection in the
-		   mean time. */
-		gtk_tree_selection_select_iter(selection, &iter);
+	if (gtk_tree_selection_get_selected(selection, NULL, NULL))
+		return G_SOURCE_CONTINUE;
+	if (strcmp(options.choice, key) && strcmp(options.session, key))
+		return G_SOURCE_CONTINUE;
+	if (strcmp(options.choice, key) && strcmp(options.choice, "choose")
+	    && strcmp(options.choice, "default"))
+		return G_SOURCE_CONTINUE;
+	gtk_tree_selection_select_iter(selection, &iter);
+#ifdef DO_ONIDLE
+	gchar *string;
 
-#if 0
-		gchar *string;
-		if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter))) {
-			GtkTreePath *path = gtk_tree_path_new_from_string(string);
+	if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
+		GtkTreeView *tree = GTK_TREE_VIEW(sess);
+		GtkTreePath *path = gtk_tree_path_new_from_string(string);
+		GtkTreeViewColumn *cursor = gtk_tree_view_get_column(tree, 1);
 
-			g_free(string);
-			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor,
-							 NULL, FALSE);
-			gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(view), path,
-					NULL, TRUE, 0.5, 0.5);
-			gtk_tree_path_free(path);
-		}
-#endif
+		g_free(string);
+		gtk_tree_view_set_cursor_on_cell(tree, path, cursor, NULL, FALSE);
+		gtk_tree_view_scroll_to_cell(tree, path, cursor, TRUE, 0.5, 0.5);
+		gtk_tree_path_free(path);
 	}
+#endif
 #endif
 	return G_SOURCE_CONTINUE;
 }
+#endif				/* DO_XSESSION */
 
 void
-on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer user_data)
+on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer data)
 {
+	GtkListStore *store = GTK_LIST_STORE(data);
 	GtkTreeIter iter;
 
-	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(model), &iter, path)) {
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter, path)) {
 		GValue user_v = G_VALUE_INIT;
 		GValue orig_v = G_VALUE_INIT;
 		gboolean user;
 		gboolean orig;
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_MANAGED, &user_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_ORIGINAL, &orig_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter, XSESS_COL_MANAGED, &user_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter, XSESS_COL_ORIGINAL, &orig_v);
 		user = g_value_get_boolean(&user_v);
 		orig = g_value_get_boolean(&orig_v);
 		if (orig) {
 			user = user ? FALSE : TRUE;
 			g_value_set_boolean(&user_v, user);
-			gtk_list_store_set_value(GTK_LIST_STORE(model), &iter,
+			gtk_list_store_set_value(GTK_LIST_STORE(store), &iter,
 					XSESS_COL_MANAGED,
 						 &user_v);
 		}
@@ -909,12 +918,12 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
 		const gchar *label;
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_LABEL, &label_v);
+		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 		if ((label = g_value_get_string(&label_v)))
 			DPRINTF("Label selected %s\n", label);
 		g_value_unset(&label_v);
@@ -934,7 +943,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
 		const gchar *label;
@@ -964,7 +973,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 		strcpy(file, cdir);
 		strcat(file, "/default");
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_LABEL, &label_v);
+		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 		if ((label = g_value_get_string(&label_v)))
 			DPRINTF("Label selected %s\n", label);
 
@@ -998,21 +1007,22 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 }
 
 void
-on_select_clicked(GtkButton *button, gpointer user_data)
+on_select_clicked(GtkButton *button, gpointer data)
 {
 	GtkTreeSelection *selection;
+	GtkListStore *store = GTK_LIST_STORE(data);
 
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (options.session) {
 		GtkTreeIter iter;
 		gboolean valid;
 
-		for (valid = gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(model), &iter, NULL, 0);
-		     valid; valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)) {
+		for (valid = gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(store), &iter, NULL, 0);
+		     valid; valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter)) {
 			GValue label_v = G_VALUE_INIT;
 			const gchar *label;
 
-			gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter,
+			gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter,
 						 XSESS_COL_LABEL, &label_v);
 			label = g_value_get_string(&label_v);
 			if (!strcmp(label, options.session)) {
@@ -1026,11 +1036,12 @@ on_select_clicked(GtkButton *button, gpointer user_data)
 
 			gtk_tree_selection_select_iter(GTK_TREE_SELECTION(selection), &iter);
 			if ((string =
-			     gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter))) {
+			     gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
 				GtkTreePath *path = gtk_tree_path_new_from_string(string);
+				GtkTreeViewColumn *cursor = gtk_tree_view_get_column(GTK_TREE_VIEW(sess), 1);
 
 				g_free(string);
-				gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor,
+				gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(sess), path, cursor,
 								 NULL, FALSE);
 				gtk_tree_path_free(path);
 			}
@@ -1047,15 +1058,15 @@ on_launch_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
 		GValue manage_v = G_VALUE_INIT;
 		const gchar *label;
 		gboolean manage;
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_LABEL, &label_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_MANAGED, &manage_v);
+		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
+		gtk_tree_model_get_value(model, &iter, XSESS_COL_MANAGED, &manage_v);
 		label = g_value_get_string(&label_v);
 		manage = g_value_get_boolean(&manage_v);
 		free(options.current);
@@ -1077,7 +1088,7 @@ on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 		GValue label_v = G_VALUE_INIT;
 		const gchar *label;
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_LABEL, &label_v);
+		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 		if ((label = g_value_get_string(&label_v)))
 			DPRINTF("Label selected %s\n", label);
 		if (label && !strcmp(label, options.session)) {
@@ -1098,21 +1109,21 @@ on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 }
 
 static void
-on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data)
+on_row_activated(GtkTreeView *sess, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data)
 {
 	GtkTreeSelection *selection;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
 		GValue manage_v = G_VALUE_INIT;
 		const gchar *label;
 		gboolean manage;
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_LABEL, &label_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XSESS_COL_MANAGED, &manage_v);
+		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
+		gtk_tree_model_get_value(model, &iter, XSESS_COL_MANAGED, &manage_v);
 		if ((label = g_value_get_string(&label_v)))
 			DPRINTF("Label selected %s\n", label);
 		manage = g_value_get_boolean(&manage_v);
@@ -1127,7 +1138,7 @@ on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col, g
 }
 
 static gboolean
-on_button_press(GtkWidget *view, GdkEvent *event, gpointer user_data)
+on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 {
 	GtkTreeSelection *selection;
 	GtkTreePath *path;
@@ -1135,16 +1146,16 @@ on_button_press(GtkWidget *view, GdkEvent *event, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
-	if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(view),
+	if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(sess),
 					  event->button.x,
 					  event->button.y, &path, &col, NULL, NULL)) {
-		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 		gtk_tree_selection_select_path(selection, path);
 		if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 			GValue label_v = G_VALUE_INIT;
 			const gchar *label;
 
-			gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter,
+			gtk_tree_model_get_value(model, &iter,
 					XSESS_COL_LABEL,
 						 &label_v);
 			if ((label = g_value_get_string(&label_v)))
@@ -1758,16 +1769,6 @@ GetBanner(void)
 	return (ban);
 }
 
-static void
-FillView(void)
-{
-	while (on_idle(NULL) != G_SOURCE_REMOVE) ;
-
-	/* TODO: we should really set a timeout and if no user interaction has
-	   occured before the timeout, we should continue if we have a viable
-	   default or choice. */
-}
-
 GtkWidget *
 GetPanel(void)
 {
@@ -1786,7 +1787,7 @@ GetPanel(void)
 	gtk_box_pack_start(GTK_BOX(pan), sw, TRUE, TRUE, 0);
 
 	/* *INDENT-OFF* */
-	model = gtk_list_store_new(9
+	store = gtk_list_store_new(9
 			,GTK_TYPE_STRING	/* pixbuf */
 			,GTK_TYPE_STRING	/* Name */
 			,GTK_TYPE_STRING	/* Comment */
@@ -1798,21 +1799,21 @@ GetPanel(void)
 			,GTK_TYPE_STRING	/* tooltip */
 	    );
 	/* *INDENT-ON* */
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
 					     XSESS_COL_MARKUP, GTK_SORT_ASCENDING);
-	view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
-	gtk_widget_set_can_default(view, TRUE);
-	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
-	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), XSESS_COL_NAME);
-	gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(view), XSESS_COL_TOOLTIP);
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), FALSE);
-	gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(view), GTK_TREE_VIEW_GRID_LINES_BOTH);
-	gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(view));
+	sess = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
+	gtk_widget_set_can_default(sess, TRUE);
+	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(sess), TRUE);
+	gtk_tree_view_set_search_column(GTK_TREE_VIEW(sess), XSESS_COL_NAME);
+	gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(sess), XSESS_COL_TOOLTIP);
+	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(sess), FALSE);
+	gtk_tree_view_set_grid_lines(GTK_TREE_VIEW(sess), GTK_TREE_VIEW_GRID_LINES_BOTH);
+	gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(sess));
 
-	g_signal_connect(G_OBJECT(view), "row_activated", G_CALLBACK(on_row_activated), NULL);
-	g_signal_connect(G_OBJECT(view), "button_press_event", G_CALLBACK(on_button_press), NULL);
+	g_signal_connect(G_OBJECT(sess), "row_activated", G_CALLBACK(on_row_activated), NULL);
+	g_signal_connect(G_OBJECT(sess), "button_press_event", G_CALLBACK(on_button_press), NULL);
 
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
 
 	g_signal_connect(G_OBJECT(selection), "changed", G_CALLBACK(on_selection_changed), buttons);
@@ -1820,15 +1821,15 @@ GetPanel(void)
 	GtkCellRenderer *rend = gtk_cell_renderer_toggle_new();
 
 	gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), TRUE);
-	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), NULL);
+	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), store);
 	GtkTreeViewColumn *col;
 
 	col = gtk_tree_view_column_new_with_attributes("Managed", rend, "active", XSESS_COL_MANAGED,
 						       NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(col));
+	gtk_tree_view_append_column(GTK_TREE_VIEW(sess), GTK_TREE_VIEW_COLUMN(col));
 
 	rend = gtk_cell_renderer_pixbuf_new();
-	gtk_tree_view_insert_column_with_data_func(GTK_TREE_VIEW(view),
+	gtk_tree_view_insert_column_with_data_func(GTK_TREE_VIEW(sess),
 						   -1, "Icon", rend, on_render_pixbuf, NULL, NULL);
 
 	rend = gtk_cell_renderer_text_new();
@@ -1836,8 +1837,7 @@ GetPanel(void)
 						       XSESS_COL_MARKUP, NULL);
 	gtk_tree_view_column_set_sort_column_id(GTK_TREE_VIEW_COLUMN(col),
 			XSESS_COL_NAME);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(col));
-	cursor = col;
+	gtk_tree_view_append_column(GTK_TREE_VIEW(sess), GTK_TREE_VIEW_COLUMN(col));
 
 	GtkWidget *bb = gtk_hbutton_box_new();
 
@@ -1885,7 +1885,7 @@ GetPanel(void)
 		gtk_button_set_image(GTK_BUTTON(b), i);
 	gtk_button_set_label(GTK_BUTTON(b), "Select Default");
 	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
-	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_select_clicked), buttons);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_select_clicked), store);
 	gtk_widget_set_sensitive(b, TRUE);
 #endif
 
@@ -1901,7 +1901,17 @@ GetPanel(void)
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_launch_clicked), buttons);
 	gtk_widget_set_sensitive(b, TRUE);
 
-	FillView();
+#ifdef DO_XSESSION
+#ifdef DO_ONIDLE
+	g_idle_add(on_idle, store);
+#else
+	while (on_idle(store) != G_SOURCE_REMOVE) ;
+#endif
+#endif				/* DO_XSESSION */
+
+	/* TODO: we should really set a timeout and if no user interaction has
+	   occured before the timeout, we should continue if we have a viable
+	   default or choice. */
 
 	return (pan);
 }
@@ -1978,24 +1988,24 @@ GetWindow(void)
 	gtk_widget_grab_default(buttons[3]);
 	gtk_widget_grab_focus(buttons[3]);
 #else
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	GtkTreeModel *model = NULL;
 	GtkTreeIter iter;
 	gchar *string;
-	GtkTreePath *path;
 
 	if (gtk_tree_selection_get_selected(selection, &model, &iter) &&
-	    (string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(model), &iter))) {
-		path = gtk_tree_path_new_from_string(string);
+	    (string = gtk_tree_model_get_string_from_iter(model, &iter))) {
+		GtkTreeView *tree = GTK_TREE_VIEW(sess);
+		GtkTreePath *path = gtk_tree_path_new_from_string(string);
+		GtkTreeViewColumn *cursor = gtk_tree_view_get_column(tree, 1);
+
 		g_free(string);
-		gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor, NULL, FALSE);
-		gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(view), path, NULL, TRUE, 0.5, 0.0);
+		gtk_tree_view_set_cursor_on_cell(tree, path, cursor, NULL, FALSE);
+		gtk_tree_view_scroll_to_cell(tree, path, cursor, TRUE, 0.5, 0.5);
 		gtk_tree_path_free(path);
-	} else {
-		EPRINTF("Nothing selected!\n");
 	}
-	gtk_widget_grab_default(view);
-	gtk_widget_grab_focus(view);
+	gtk_widget_grab_default(sess);
+	gtk_widget_grab_focus(sess);
 #endif
 	grabbed_window(xscr->wind, NULL);
 	return xscr->wind;
