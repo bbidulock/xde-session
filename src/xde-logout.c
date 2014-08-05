@@ -2322,7 +2322,7 @@ action_PowerOff(void)
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "PowerOff", NULL,
-			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to PowerOff failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -2351,7 +2351,7 @@ action_Reboot(void)
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "Reboot", NULL,
-			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to Reboot failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -2380,7 +2380,7 @@ action_Suspend(void)
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "Suspend", NULL,
-			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to Suspend failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -2409,7 +2409,7 @@ action_Hibernate(void)
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "Hibernate", NULL,
-			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to Hibernate failed\n");
 		g_object_unref(G_OBJECT(proxy));
@@ -2438,7 +2438,7 @@ action_HybridSleep(void)
 		return;
 	}
 	ok = dbus_g_proxy_call(proxy, "HybridSleep", NULL,
-			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
+			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
 		EPRINTF("call to HybridSleep failed\n");
 		g_object_unref(G_OBJECT(proxy));
