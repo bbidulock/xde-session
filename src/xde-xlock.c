@@ -3730,9 +3730,9 @@ General options:\n\
     -p, --prompt TEXT\n\
         text to prompt for password\n\
         (%4$s)\n\
-    -x, --xdmAddress ADDRESS\n\
+    -x, --xdmaddress ADDRESS\n\
         address of xdm socket\n\
-    -c, --clientAddress IPADDR\n\
+    -c, --clientaddress IPADDR\n\
         client address that initiated the request\n\
     -t, --connectionType TYPE\n\
         connection type supported by the client\n\
@@ -4187,34 +4187,34 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 #ifdef DO_XCHOOSER
-			{"xdmAddress",	    required_argument,	NULL, 'x'},
-			{"clientAddress",   required_argument,	NULL, 'c'},
+			{"xdmaddress",	    required_argument,	NULL, 'x'},
+			{"clientaddress",   required_argument,	NULL, 'c'},
 			{"connectionType",  required_argument,	NULL, 't'},
 			{"welcome",	    required_argument,	NULL, 'w'},
 #else					/* DO_XCHOOSER */
-			{"prompt",	required_argument,	NULL, 'p'},
+			{"prompt",	    required_argument,	NULL, 'p'},
 #endif					/* DO_XCHOOSER */
 #ifdef DO_XLOCKING
-			{"replace",	no_argument,		NULL, 'r'},
-			{"lock",	no_argument,		NULL, 'l'},
-			{"quit",	no_argument,		NULL, 'q'},
+			{"replace",	    no_argument,	NULL, 'r'},
+			{"lock",	    no_argument,	NULL, 'l'},
+			{"quit",	    no_argument,	NULL, 'q'},
 #endif					/* DO_XLOCKING */
 
-			{"banner",	required_argument,	NULL, 'b'},
-			{"splash",	required_argument,	NULL, 'S'},
-			{"xde-theme",	no_argument,		NULL, 'u'},
-			{"charset",	required_argument,	NULL, '1'},
-			{"language",	required_argument,	NULL, '2'},
-			{"icons",	required_argument,	NULL, 'i'},
-			{"theme",	required_argument,	NULL, 'T'},
+			{"banner",	    required_argument,	NULL, 'b'},
+			{"splash",	    required_argument,	NULL, 'S'},
+			{"xde-theme",	    no_argument,	NULL, 'u'},
+			{"charset",	    required_argument,	NULL, '1'},
+			{"language",	    required_argument,	NULL, '2'},
+			{"icons",	    required_argument,	NULL, 'i'},
+			{"theme",	    required_argument,	NULL, 'T'},
 
-			{"dry-run",	no_argument,		NULL, 'n'},
-			{"debug",	optional_argument,	NULL, 'D'},
-			{"verbose",	optional_argument,	NULL, 'v'},
-			{"help",	no_argument,		NULL, 'h'},
-			{"version",	no_argument,		NULL, 'V'},
-			{"copying",	no_argument,		NULL, 'C'},
-			{"?",		no_argument,		NULL, 'H'},
+			{"dry-run",	    no_argument,	NULL, 'n'},
+			{"debug",	    optional_argument,	NULL, 'D'},
+			{"verbose",	    optional_argument,	NULL, 'v'},
+			{"help",	    no_argument,	NULL, 'h'},
+			{"version",	    no_argument,	NULL, 'V'},
+			{"copying",	    no_argument,	NULL, 'C'},
+			{"?",		    no_argument,	NULL, 'H'},
 			{ 0, }
 		};
 		/* *INDENT-ON* */
@@ -4233,13 +4233,13 @@ main(int argc, char *argv[])
 			goto bad_usage;
 
 #ifdef DO_XCHOOSER
-		case 'x':	/* -xdmAddress HEXBYTES */
+		case 'x':	/* -xdmaddress HEXBYTES */
 			if (options.xdmAddress.length)
 				goto bad_option;
 			if (!HexToARRAY8(&options.xdmAddress, optarg))
 				goto bad_option;
 			break;
-		case 'c':	/* -clientAddress HEXBYTES */
+		case 'c':	/* -clientaddress HEXBYTES */
 			if (options.clientAddress.length)
 				goto bad_option;
 			if (!HexToARRAY8(&options.clientAddress, optarg))
