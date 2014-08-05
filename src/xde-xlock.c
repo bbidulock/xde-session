@@ -1693,6 +1693,7 @@ Choose(short type, char *name)
 	};
 
 	if (options.xdmAddress.data) {
+		char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
 		struct sockaddr_in in_addr;
 		struct sockaddr_in6 in6_addr;
 		struct sockaddr *addr = NULL;
@@ -1709,16 +1710,20 @@ Choose(short type, char *name)
 		switch (family) {
 		case AF_INET:
 			in_addr.sin_family = family;
-			memmove(&in_addr.sin_port, xdm + 2, 2);
+			in_addr.sin_port = ((int) xdm[2] << 8) + xdm[3];
 			memmove(&in_addr.sin_addr, xdm + 4, 4);
+			inet_ntop(AF_INET, &in_addr.sin_addr, ipaddr, INET_ADDRSTRLEN);
+			DPRINTF("AF_INET: %s:%hd\n", ipaddr, ntohs(in_addr.sin_port));
 			addr = (struct sockaddr *) &in_addr;
 			len = sizeof(in_addr);
 			break;
 		case AF_INET6:
 			memset(&in6_addr, 0, sizeof(in6_addr));
 			in6_addr.sin6_family = family;
-			memmove(&in6_addr.sin6_port, xdm + 2, 2);
+			in6_addr.sin6_port = ((int) xdm[2] << 8) + xdm[3];
 			memmove(&in6_addr.sin6_port, xdm + 4, 16);
+			inet_ntop(AF_INET6, &in6_addr.sin6_addr, ipaddr, INET6_ADDRSTRLEN);
+			DPRINTF("AF_INET6: %s:%hd\n", ipaddr, ntohs(in6_addr.sin6_port));
 			addr = (struct sockaddr *) &in6_addr;
 			len = sizeof(in6_addr);
 			break;
