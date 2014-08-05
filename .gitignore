@@ -32,7 +32,6 @@ Makefile.in
 NEWS
 .nfs*
 *.o
-rc.m4
 README
 scripts
 scripts/
