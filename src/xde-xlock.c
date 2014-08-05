@@ -1709,6 +1709,7 @@ Choose(short type, char *name)
 		family = ((int) xdm[0] << 8) + xdm[1];
 		switch (family) {
 		case AF_INET:
+			memset(&in_addr, 0, sizeof(in_addr));
 			in_addr.sin_family = family;
 			in_addr.sin_port = ((int) xdm[2] << 8) + xdm[3];
 			memmove(&in_addr.sin_addr, xdm + 4, 4);
@@ -1721,7 +1722,7 @@ Choose(short type, char *name)
 			memset(&in6_addr, 0, sizeof(in6_addr));
 			in6_addr.sin6_family = family;
 			in6_addr.sin6_port = ((int) xdm[2] << 8) + xdm[3];
-			memmove(&in6_addr.sin6_port, xdm + 4, 16);
+			memmove(&in6_addr.sin6_addr, xdm + 4, 16);
 			inet_ntop(AF_INET6, &in6_addr.sin6_addr, ipaddr, INET6_ADDRSTRLEN);
 			DPRINTF("AF_INET6: %s:%hd\n", ipaddr, ntohs(in6_addr.sin6_port));
 			addr = (struct sockaddr *) &in6_addr;
