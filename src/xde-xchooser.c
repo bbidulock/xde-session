@@ -490,6 +490,7 @@ enum {
 	XSESS_COL_MANAGED,		/* XDE-Managed? editable setting */
 	XSESS_COL_ORIGINAL,		/* XDE-Managed? original setting */
 	XSESS_COL_FILENAME,		/* the full file name */
+	XSESS_COL_TOOLTIP,		/* the tooltip information */
 };
 #endif				/* DO_XSESSION */
 
@@ -648,8 +649,8 @@ GtkListStore *store;			/* list store for XSessions */
 GtkWidget *sess;
 
 void
-on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell, GtkTreeModel
-		 *store, GtkTreeIter *iter, gpointer data)
+on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell,
+		 GtkTreeModel *store, GtkTreeIter *iter, gpointer data)
 {
 	GValue iname_v = G_VALUE_INIT;
 	const gchar *iname;
@@ -884,8 +885,8 @@ xsession_value_free(gpointer filename)
 
 /** @brief just gets the filenames of the xsession files
   *
-  * This just gest the filenames of the xsession files to avoid performing a lot
-  * of time consuming startup during the login.  We process the actual xession
+  * This just gets the filenames of the xsession files to avoid performing a lot
+  * of time consuming startup during the login.  We process the actual xsession
   * files and add them to the list out of an idle loop.
   */
 GHashTable *
@@ -939,11 +940,12 @@ get_xsessions(void)
 	return (xsessions);
 }
 
+GHashTable *xsessions;
+GHashTableIter xiter;
+
 gboolean
 on_idle(gpointer data)
 {
-	static GHashTable *xsessions = NULL;
-	static GHashTableIter hiter;
 	const char *key;
 	const char *file;
 	GKeyFile *entry;
@@ -958,9 +960,9 @@ on_idle(gpointer data)
 			EPRINTF("cannot find any XSessions\n");
 			return G_SOURCE_REMOVE;
 		}
-		g_hash_table_iter_init(&hiter, xsessions);
+		g_hash_table_iter_init(&xiter, xsessions);
 	}
-	if (!g_hash_table_iter_next(&hiter, (gpointer *) & key, (gpointer *) & file))
+	if (!g_hash_table_iter_next(&xiter, (gpointer *) & key, (gpointer *) & file))
 		return G_SOURCE_REMOVE;
 
 	if (!(entry = get_xsession_entry(key, file)))
@@ -971,7 +973,7 @@ on_idle(gpointer data)
 		return G_SOURCE_CONTINUE;
 	}
 
-	gchar *i, *n, *c, *k, *l, *f;
+	gchar *i, *n, *c, *k, *e, *l, *f, *t;
 	gboolean m;
 
 	f = g_strdup(file);
@@ -983,8 +985,15 @@ on_idle(gpointer data)
 	c = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
 					 G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL,
 					 NULL) ? : g_strdup("");
-	k = g_strdup_printf("<b>%s</b>\n%s", n, c);
+	k = g_markup_printf_escaped("<b>%s</b>\n%s", n, c);
+	e = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
+				  G_KEY_FILE_DESKTOP_KEY_EXEC, NULL) ? : g_strdup("");
 	m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
+	t = g_markup_printf_escaped("<b>Name:</b> %s" "\n"
+				    "<b>Comment:</b> %s" "\n"
+				    "<b>Exec:</b> %s" "\n"
+				    "<b>Icon:</b> %s" "\n" "<b>file:</b> %s", n, c, e, i, f);
+
 	gtk_list_store_append(store, &iter);
 	/* *INDENT-OFF* */
 	gtk_list_store_set(store, &iter,
@@ -996,6 +1005,7 @@ on_idle(gpointer data)
 			XSESS_COL_MANAGED,	m,
 			XSESS_COL_ORIGINAL,	m,
 			XSESS_COL_FILENAME,	f,
+			XSESS_COL_TOOLTIP,	t,
 			-1);
 	/* *INDENT-ON* */
 	g_free(f);
@@ -1003,26 +1013,32 @@ on_idle(gpointer data)
 	g_free(i);
 	g_free(n);
 	g_free(k);
+	g_free(e);
+	g_free(t);
 	g_key_file_free(entry);
+#if 1
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
 					     GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
 					     GTK_SORT_ASCENDING);
+#endif
 
 #if 0
 	if (!strcmp(options.choice, key) ||
 	    ((!strcmp(options.choice, "choose") || !strcmp(options.choice, "default")) &&
 	     !strcmp(options.session, key)
 	    )) {
+		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 		gchar *string;
 
 		/* FIXME: don't do this if the user has made a selection in the
 		   mean time. */
+		gtk_tree_selection_select_iter(selection, &iter);
 		if ((string = gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
 			GtkTreePath *path = gtk_tree_path_new_from_string(string);
 
 			g_free(string);
-			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view),
-							 path, cursor, NULL, FALSE);
+			gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(view), path, cursor,
+							 NULL, FALSE);
 			gtk_tree_path_free(path);
 		}
 	}
@@ -3218,7 +3234,7 @@ GetPanel(void)
 	gtk_table_attach_defaults(GTK_TABLE(login), xsess, 0, 1, 2, 3);
 
 	/* *INDENT-OFF* */
-	store = gtk_list_store_new(8
+	store = gtk_list_store_new(9
 			,G_TYPE_STRING	/* icon */
 			,G_TYPE_STRING	/* Name */
 			,G_TYPE_STRING	/* Comment */
@@ -3227,6 +3243,7 @@ GetPanel(void)
 			,G_TYPE_BOOLEAN	/* SessionManaged?  XDE-Managed?  */
 			,G_TYPE_BOOLEAN /* X-XDE-managed original setting */
 			,G_TYPE_STRING	/* the file name */
+			,G_TYPE_STRING	/* tooltip */
 		);
 	/* *INDENT-ON* */
 
@@ -3238,6 +3255,7 @@ GetPanel(void)
 	GtkTreeIter iter;
 
 	gtk_list_store_append(store, &iter);
+	/* *INDENT-OFF* */
 	gtk_list_store_set(store, &iter,
 			   XSESS_COL_PIXBUF, "",
 			   XSESS_COL_NAME, "(Default)",
@@ -3245,7 +3263,11 @@ GetPanel(void)
 			   XSESS_COL_MARKUP, "",
 			   XSESS_COL_LABEL, "default",
 			   XSESS_COL_MANAGED, FALSE,
-			   XSESS_COL_ORIGINAL, FALSE, XSESS_COL_FILENAME, "", -1);
+			   XSESS_COL_ORIGINAL, FALSE,
+			   XSESS_COL_FILENAME, "",
+			   XSESS_COL_TOOLTIP, "",
+			   -1);
+	/* *INDENT-ON* */
 
 	sess = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
 
