@@ -1711,7 +1711,7 @@ Choose(short type, char *name)
 		case AF_INET:
 			memset(&in_addr, 0, sizeof(in_addr));
 			in_addr.sin_family = family;
-			in_addr.sin_port = ((int) xdm[2] << 8) + xdm[3];
+			memmove(&in_addr.sin_port, xdm + 2, 2);
 			memmove(&in_addr.sin_addr, xdm + 4, 4);
 			inet_ntop(AF_INET, &in_addr.sin_addr, ipaddr, INET_ADDRSTRLEN);
 			DPRINTF("AF_INET: %s:%hd\n", ipaddr, ntohs(in_addr.sin_port));
@@ -1721,7 +1721,7 @@ Choose(short type, char *name)
 		case AF_INET6:
 			memset(&in6_addr, 0, sizeof(in6_addr));
 			in6_addr.sin6_family = family;
-			in6_addr.sin6_port = ((int) xdm[2] << 8) + xdm[3];
+			memmove(&in6_addr.sin6_port, xdm + 2, 2);
 			memmove(&in6_addr.sin6_addr, xdm + 4, 16);
 			inet_ntop(AF_INET6, &in6_addr.sin6_addr, ipaddr, INET6_ADDRSTRLEN);
 			DPRINTF("AF_INET6: %s:%hd\n", ipaddr, ntohs(in6_addr.sin6_port));
