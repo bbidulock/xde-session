@@ -1,0 +1,4 @@
+[Command]
+FileManager=pcmanfm -p OPENBOX %s
+Terminal=lxterminal
+Logout=fluxbox-logout

@@ -1,0 +1,4 @@
+[Command]
+FileManager=pcmanfm -p BLACKBOX %s
+Terminal=lxterminal
+Logout=xde-logout

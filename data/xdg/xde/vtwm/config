@@ -1,0 +1,41 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export VTWM_TYPE=${1:-${VTWM_TYPE:-vtwm}}
+if [ ! -x "`which $VTWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable $VTWM_TYPE program" >&2
+    exit 1;
+fi
+VTWM_VERSION=${2:-${VTWM_VERSION:-$($VTWM_TYPE -V|awk '/VTWM/{print$NF;exit}' 2>/dev/null)}} || VTWM_VERSION="5.5.0"
+export VTWM_VERSION
+export VTWM_CONFIG_HOME=${VTWM_CONFIG_HOME:-${HOME:-~}/.$VTWM_TYPE}
+export VTWM_CONFIG_SDIR=${VTWM_CONFIG_SDIR:-/usr/share/$VTWM_TYPE}
+export VTWM_RCFILE="${3:-${VTWM_RCFILE:-$VTWM_CONFIG_HOME/rc}}"
+
+m4file="$VTWM_CONFIG_HOME/rc.m4"
+[ -s "$m4file" ] || m4file="$VTWM_CONFIG_SDIR/rc.m4"
+[ -s "$m4file" ] || { echo "ERROR: missing file $m4file" >&2; exit 1; }
+
+USER=${LOGNAME:-$USER}
+HOME=${HOME:-~}
+
+WIDTH=$(xwininfo -root|grep 'Width:'|awk '{print$2}')
+HEIGHT=$(xwininfo -root|grep 'Height:'|awk '{print$2}')
+
+CLASS=$(xwininfo -root|grep 'Visual Class:'|awk '{print$3}')
+case "$CLASS" in
+(*Color)    COLOR='Yes' ;;
+(*)	    COLOR='No' ;;
+esac
+
+m4 -DUSER="$USER" -DHOME="$HOME" \
+   -DWIDTH="$WIDTH" -DHEIGHT="$HEIGHT" \
+   -DCLASS="$CLASS" -DCOLOR="$COLOR" \
+   -DTWM_TYPE="$VTWM_TYPE" -DTWM_VERSION="$VTWM_VERSION" \
+   "$m4file" >"$VTWM_CONFIG_HOME/rc"
+
+# vim: sw=4

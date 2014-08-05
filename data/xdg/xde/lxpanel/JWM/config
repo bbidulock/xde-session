@@ -1,0 +1,4 @@
+[Command]
+FileManager=pcmanfm -p JWM %s
+Terminal=lxterminal
+Logout=xde-logout

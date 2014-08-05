@@ -1,0 +1,4 @@
+[Command]
+FileManager=pcmanfm -p ICEWM %s
+Terminal=lxterminal
+Logout=xde-logout

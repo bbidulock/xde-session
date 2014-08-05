@@ -1,0 +1,41 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export CTWM_TYPE=${1:-${CTWM_TYPE:-ctwm}}
+if [ ! -x "`which $CTWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable $CTWM_TYPE program" >&2
+    exit 1;
+fi
+CTWM_VERSION=${2:-${CTWM_VERSION:-$($CTWM_TYPE -version 2>/dev/null)}} || CTWM_VERSION="3.8.1"
+export CTWM_VERSION
+export CTWM_CONFIG_HOME=${CTWM_CONFIG_HOME:-${HOME:-~}/.$CTWM_TYPE}
+export CTWM_CONFIG_SDIR=${CTWM_CONFIG_SDIR:-/usr/share/$CTWM_TYPE}
+export CTWM_RCFILE="${3:-${CTWM_RCFILE:-$CTWM_CONFIG_HOME/rc}}"
+
+m4file="$CTWM_CONFIG_HOME/rc.m4"
+[ -s "$m4file" ] || m4file="$CTWM_CONFIG_SDIR/rc.m4"
+[ -s "$m4file" ] || { echo "ERROR: missing file $m4file" >&2; exit 1; }
+
+USER=${LOGNAME:-$USER}
+HOME=${HOME:-~}
+
+WIDTH=$(xwininfo -root|grep 'Width:'|awk '{print$2}')
+HEIGHT=$(xwininfo -root|grep 'Height:'|awk '{print$2}')
+
+CLASS=$(xwininfo -root|grep 'Visual Class:'|awk '{print$3}')
+case "$CLASS" in
+(*Color)    COLOR='Yes' ;;
+(*)	    COLOR='No' ;;
+esac
+
+m4 -DUSER="$USER" -DHOME="$HOME" \
+   -DWIDTH="$WIDTH" -DHEIGHT="$HEIGHT" \
+   -DCLASS="$CLASS" -DCOLOR="$COLOR" \
+   -DTWM_TYPE="$CTWM_TYPE" -DTWM_VERSION="$CTWM_VERSION" \
+   "$m4file" >"$CTWM_CONFIG_HOME/rc"
+
+# vim: sw=4

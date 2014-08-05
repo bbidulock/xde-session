@@ -1,0 +1,41 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export TWM_TYPE=${1:-${TWM_TYPE:-twm}}
+if [ ! -x "`which $TWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable $TWM_TYPE program" >&2
+    exit 1;
+fi
+TWM_VERSION=${2:-${TWM_VERSION:-"1.0.8"}}
+export TWM_VERSION
+export TWM_CONFIG_HOME=${TWM_CONFIG_HOME:-${HOME:-~}/.$TWM_TYPE}
+export TWM_CONFIG_SDIR=${TWM_CONFIG_SDIR:-/usr/share/$TWM_TYPE}
+export TWM_RCFILE="${3:-${TWM_RCFILE:-$TWM_CONFIG_HOME/rc}}"
+
+m4file="$TWM_CONFIG_HOME/rc.m4"
+[ -s "$m4file" ] || m4file="$TWM_CONFIG_SDIR/rc.m4"
+[ -s "$m4file" ] || { echo "ERROR: missing file $m4file" >&2; exit 1; }
+
+USER=${LOGNAME:-$USER}
+HOME=${HOME:-~}
+
+WIDTH=$(xwininfo -root|grep 'Width:'|awk '{print$2}')
+HEIGHT=$(xwininfo -root|grep 'Height:'|awk '{print$2}')
+
+CLASS=$(xwininfo -root|grep 'Visual Class:'|awk '{print$3}')
+case "$CLASS" in
+(*Color)    COLOR='Yes' ;;
+(*)	    COLOR='No' ;;
+esac
+
+m4 -DUSER="$USER" -DHOME="$HOME" \
+   -DWIDTH="$WIDTH" -DHEIGHT="$HEIGHT" \
+   -DCLASS="$CLASS" -DCOLOR="$COLOR" \
+   -DTWM_TYPE="$TWM_TYPE" -DTWM_VERSION="$TWM_VERSION" \
+   "$m4file" >"$TWM_CONFIG_HOME/rc"
+
+# vim: sw=4
