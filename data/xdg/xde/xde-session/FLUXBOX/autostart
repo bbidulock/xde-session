@@ -1,0 +1,4 @@
+# The @ means to restart the program if it fails
+@lxpanel --profile FLUXBOX
+# @pcmanfm --desktop --profile FLUXBOX
+# @xscreensaver -no-splash

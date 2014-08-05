@@ -1,0 +1,8 @@
+# The @ means to restart the program if it fails
+@lxpanel --profile LXDE
+@pcmanfm --desktop --profile LXDE
+# @xscreensaver -no-splash
+# xde-settings is started here instead of XDG autostart
+# because a true LXDE session should not start it
+# The other XDE tools can run under a pure LXDE session
+@xde-settings
