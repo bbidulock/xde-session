@@ -182,6 +182,12 @@ typedef enum {
 	CommandQuit,			/* ask running instance to quit */
 } CommandType;
 
+enum {
+	BackgroundSourceSplash = (1 << 0),
+	BackgroundSourcePixmap = (1 << 1),
+	BackgroundSourceRoot = (1 << 2),
+};
+
 typedef struct {
 	int output;
 	int debug;
@@ -208,6 +214,7 @@ typedef struct {
 	char *vendor;
 	char *prefix;
 	char *splash;
+	unsigned source;
 } Options;
 
 Options options = {
@@ -236,6 +243,7 @@ Options options = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
+	.source = BackgroundSourceSplash,
 };
 
 Options defaults = {
@@ -496,7 +504,7 @@ enum {
 #endif				/* DO_XSESSION */
 
 static void reparse(Display *dpy, Window root);
-void get_source(XdeScreen *xscr);
+static void redo_source(XdeScreen *xscr);
 
 static GdkFilterReturn
 event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
@@ -518,8 +526,8 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 	}
 	if (xev->xproperty.atom == _XA_XROOTPMAP_ID && xev->xproperty.state == PropertyNewValue) {
 		DPRINT();
-		if (!xscr->pixbuf)
-			get_source(xscr);
+		if (options.source & BackgroundSourcePixmap)
+			redo_source(xscr);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
 	return GDK_FILTER_CONTINUE;	/* event not handled */
@@ -2135,7 +2143,7 @@ free_value(gpointer data, GClosure *unused)
 static void
 append_power_actions(GtkMenu *menu)
 {
-	GError *error = NULL;
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 	gchar *value = NULL;
@@ -2146,15 +2154,16 @@ append_power_actions(GtkMenu *menu)
 	if (!menu)
 		return;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
-		EPRINTF("cannot access system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
+		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
 	}
 	if (!(proxy = dbus_g_proxy_new_for_name(bus,
 						"org.freedesktop.login1",
 						"/org/freedesktop/login1",
 						"org.freedesktop.login1.Manager"))) {
-		EPRINTF("could create DBUS proxy\n");
+		EPRINTF("could not create DBUS proxy\n");
 		return;
 	}
 
@@ -2165,8 +2174,8 @@ append_power_actions(GtkMenu *menu)
 	submenu = gtk_menu_new();
 
 	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
 		DPRINTF("CanPowerOff status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Power Off");
 		imag = gtk_image_new_from_icon_name("system-shutdown", GTK_ICON_SIZE_MENU);
@@ -2181,13 +2190,15 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
-	} else
-		g_clear_error(&error);
+	} else {
+		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 
 	ok = dbus_g_proxy_call(proxy, "CanReboot",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
-		DPRINTF("CanSuspend status is %s\n", value);
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
+		DPRINTF("CanReboot status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Reboot");
 		imag = gtk_image_new_from_icon_name("system-reboot", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
@@ -2201,12 +2212,14 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
-	} else
-		g_clear_error(&error);
+	} else {
+		EPRINTF("CanReboot call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 
 	ok = dbus_g_proxy_call(proxy, "CanSuspend",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Suspend");
 		imag = gtk_image_new_from_icon_name("system-suspend", GTK_ICON_SIZE_MENU);
@@ -2221,13 +2234,15 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
-	} else
-		g_clear_error(&error);
+	} else {
+		EPRINTF("CanSuspend call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 
 	ok = dbus_g_proxy_call(proxy, "CanHibernate",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
-		DPRINTF("CanSuspend status is %s\n", value);
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
+		DPRINTF("CanHibernate status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hibernate");
 		imag = gtk_image_new_from_icon_name("system-suspend-hibernate", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
@@ -2241,13 +2256,15 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
-	} else
-		g_clear_error(&error);
+	} else {
+		EPRINTF("CanHibernate call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 
 	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
-		DPRINTF("CanSuspend status is %s\n", value);
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
+		DPRINTF("CanHybridSleep status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hybrid Sleep");
 		imag = gtk_image_new_from_icon_name("system-sleep", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
@@ -2262,8 +2279,10 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
-	} else
-		g_clear_error(&error);
+	} else {
+		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 
 	g_object_unref(proxy);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(power), submenu);
@@ -2290,23 +2309,31 @@ static void
 on_switch_session(GtkMenuItem *item, gpointer data)
 {
 	gchar *session = data;
-	GError *error = NULL;
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
-		EPRINTF("cannot access system buss\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
+		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
 					  "org.freedesktop.login1",
 					  "/org/freedesktop/login1",
 					  "org.freedesktop.login1.Manager");
-	ok = dbus_g_proxy_call(proxy, "ActivateSession", &error, G_TYPE_STRING,
+	if (!proxy) {
+		EPRINTF("Could not create DBUS proxy\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(proxy, "ActivateSession", &err, G_TYPE_STRING,
 			       session, G_TYPE_INVALID, G_TYPE_INVALID);
-	if (!ok || error)
-		DPRINTF("ActivateSession: %s: call failed\n", session);
+	if (!ok || err) {
+		EPRINTF("ActivateSession: %s: call failed: %s\n", session,
+			err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 	g_object_unref(G_OBJECT(proxy));
 }
 
@@ -2579,12 +2606,15 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	if (xscr->pixmap) {
 		gdk_cairo_set_source_pixmap(cr, xscr->pixmap, 0, 0);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
-	} else
+		cairo_paint(cr);
+	} else {
 		gdk_cairo_set_source_window(cr, r, 0, 0);
-	cairo_paint(cr);
-	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
-	gdk_cairo_set_source_color(cr, &color);
-	cairo_paint_with_alpha(cr, 0.7);
+		cairo_paint(cr);
+		/* only fade out root window contents */
+		GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
+		gdk_cairo_set_source_color(cr, &color);
+		cairo_paint_with_alpha(cr, 0.7);
+	}
 	cairo_destroy(cr);
 	return FALSE;
 }
@@ -2709,7 +2739,7 @@ clr_source(XdeScreen *xscr)
 	}
 }
 
-void
+static void
 get_source(XdeScreen *xscr)
 {
 	GdkDisplay *disp = gdk_screen_get_display(xscr->scrn);
@@ -2718,52 +2748,54 @@ get_source(XdeScreen *xscr)
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 	Atom prop;
 
-	if (!xscr->pixbuf && options.splash) {
-		if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
-			/* cannot use it again */
-			free(options.splash);
-			options.splash = NULL;
+	if (options.source & BackgroundSourcePixmap) {
+		if (!(prop = _XA_XROOTPMAP_ID))
+			prop = _XA_ESETROOT_PMAP_ID;
+
+		if (prop) {
+			Window w = GDK_WINDOW_XID(root);
+			Atom actual = None;
+			int format = 0;
+			unsigned long nitems = 0, after = 0;
+			long *data = NULL;
+
+			if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
+					       &actual, &format, &nitems, &after,
+					       (unsigned char **) &data) == Success &&
+			    format == 32 && actual && nitems >= 1 && data) {
+				Pixmap p;
+
+				if ((p = data[0])) {
+					xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
+					gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+					clr_source(xscr);
+				}
+			}
+			if (data)
+				XFree(data);
 		}
+		if (xscr->pixmap)
+			return;
 	}
-	if (xscr->pixbuf) {
-		if (!xscr->pixmap) {
-			xscr->pixmap =
-			    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
-			gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-			render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
-			clr_source(xscr);
-		}
-		return;
-	}
-	if (xscr->pixmap) {
-		g_object_unref(G_OBJECT(xscr->pixmap));
-		xscr->pixmap = NULL;
-	}
-
-	if (!(prop = _XA_XROOTPMAP_ID))
-		prop = _XA_ESETROOT_PMAP_ID;
-
-	if (prop) {
-		Window w = GDK_WINDOW_XID(root);
-		Atom actual = None;
-		int format = 0;
-		unsigned long nitems = 0, after = 0;
-		long *data = NULL;
-
-		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
-				       &actual, &format, &nitems, &after,
-				       (unsigned char **) &data) == Success &&
-		    format == 32 && actual && nitems >= 1 && data) {
-			Pixmap p;
-
-			if ((p = data[0])) {
-				xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
-				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-				clr_source(xscr);
+	if (options.source & BackgroundSourceSplash) {
+		if (!xscr->pixbuf && options.splash) {
+			if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
+				/* cannot use it again */
+				free(options.splash);
+				options.splash = NULL;
 			}
 		}
-		if (data)
-			XFree(data);
+		if (xscr->pixbuf) {
+			if (!xscr->pixmap) {
+				xscr->pixmap =
+				    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height,
+						   -1);
+				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+				render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
+				clr_source(xscr);
+			}
+			return;
+		}
 	}
 }
 
@@ -3021,7 +3053,7 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
-	get_source(xscr);
+	redo_source(xscr);
 	gtk_widget_show_all(wind);
 
 	gtk_widget_realize(wind);

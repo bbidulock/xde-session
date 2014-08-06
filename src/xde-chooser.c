@@ -149,6 +149,12 @@ typedef enum {
 	CommandCopying,			/* command copying information */
 } CommandType;
 
+enum {
+	BackgroundSourceSplash = (1 << 0),
+	BackgroundSourcePixmap = (1 << 1),
+	BackgroundSourceRoot = (1 << 2),
+};
+
 typedef struct {
 	int output;
 	int debug;
@@ -175,6 +181,7 @@ typedef struct {
 	char *vendor;
 	char *prefix;
 	char *splash;
+	unsigned source;
 } Options;
 
 Options options = {
@@ -203,6 +210,7 @@ Options options = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
+	.source = BackgroundSourceSplash,
 };
 
 Options defaults = {
@@ -281,7 +289,7 @@ enum {
 #endif				/* DO_XSESSION */
 
 static void reparse(Display *dpy, Window root);
-void get_source(XdeScreen *xscr);
+static void redo_source(XdeScreen *xscr);
 
 static GdkFilterReturn
 event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
@@ -303,8 +311,8 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 	}
 	if (xev->xproperty.atom == _XA_XROOTPMAP_ID && xev->xproperty.state == PropertyNewValue) {
 		DPRINT();
-		if (!xscr->pixbuf)
-			get_source(xscr);
+		if (options.source & BackgroundSourcePixmap)
+			redo_source(xscr);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
 	return GDK_FILTER_CONTINUE;	/* event not handled */
@@ -827,15 +835,15 @@ on_idle(gpointer data)
 	gtk_list_store_append(store, &iter);
 	/* *INDENT-OFF* */
 	gtk_list_store_set(store, &iter,
-			XSESS_COL_PIXBUF,   i,
-			XSESS_COL_NAME,	    n,
-			XSESS_COL_COMMENT,  c,
-			XSESS_COL_MARKUP,   k,
-			XSESS_COL_LABEL,    l,
-			XSESS_COL_MANAGED,  m,
-			XSESS_COL_ORIGINAL, m,
-			XSESS_COL_FILENAME, f,
-			XSESS_COL_TOOLTIP,  t,
+			XSESS_COL_PIXBUF,	i,
+			XSESS_COL_NAME,		n,
+			XSESS_COL_COMMENT,	c,
+			XSESS_COL_MARKUP,	k,
+			XSESS_COL_LABEL,	l,
+			XSESS_COL_MANAGED,	m,
+			XSESS_COL_ORIGINAL,	m,
+			XSESS_COL_FILENAME,	f,
+			XSESS_COL_TOOLTIP,	t,
 			-1);
 	/* *INDENT-ON* */
 	g_free(f);
@@ -902,8 +910,7 @@ on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer data)
 			user = user ? FALSE : TRUE;
 			g_value_set_boolean(&user_v, user);
 			gtk_list_store_set_value(GTK_LIST_STORE(store), &iter,
-					XSESS_COL_MANAGED,
-						 &user_v);
+						 XSESS_COL_MANAGED, &user_v);
 		}
 		g_value_unset(&user_v);
 		g_value_unset(&orig_v);
@@ -1038,7 +1045,8 @@ on_select_clicked(GtkButton *button, gpointer data)
 			if ((string =
 			     gtk_tree_model_get_string_from_iter(GTK_TREE_MODEL(store), &iter))) {
 				GtkTreePath *path = gtk_tree_path_new_from_string(string);
-				GtkTreeViewColumn *cursor = gtk_tree_view_get_column(GTK_TREE_VIEW(sess), 1);
+				GtkTreeViewColumn *cursor =
+				    gtk_tree_view_get_column(GTK_TREE_VIEW(sess), 1);
 
 				g_free(string);
 				gtk_tree_view_set_cursor_on_cell(GTK_TREE_VIEW(sess), path, cursor,
@@ -1155,9 +1163,7 @@ on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 			GValue label_v = G_VALUE_INIT;
 			const gchar *label;
 
-			gtk_tree_model_get_value(model, &iter,
-					XSESS_COL_LABEL,
-						 &label_v);
+			gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 			if ((label = g_value_get_string(&label_v)))
 				DPRINTF("Label clicked was: %s\n", label);
 			g_value_unset(&label_v);
@@ -1201,12 +1207,15 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	if (xscr->pixmap) {
 		gdk_cairo_set_source_pixmap(cr, xscr->pixmap, 0, 0);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
-	} else
+		cairo_paint(cr);
+	} else {
 		gdk_cairo_set_source_window(cr, r, 0, 0);
-	cairo_paint(cr);
-	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
-	gdk_cairo_set_source_color(cr, &color);
-	cairo_paint_with_alpha(cr, 0.7);
+		cairo_paint(cr);
+		/* only fade out root window contents */
+		GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
+		gdk_cairo_set_source_color(cr, &color);
+		cairo_paint_with_alpha(cr, 0.7);
+	}
 	cairo_destroy(cr);
 	return FALSE;
 }
@@ -1273,8 +1282,7 @@ render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, Xde
 		/* good size for filling or scaling */
 		/* TODO: check aspect ratio before scaling */
 		DPRINTF("scaling pixbuf from %dx%d to %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width,
 						 xmon->geom.height, GDK_INTERP_BILINEAR);
@@ -1282,15 +1290,13 @@ render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, Xde
 	} else if (wp <= 0.5 * wm && hp <= 0.5 * hm) {
 		/* good size for tiling */
 		DPRINTF("tiling pixbuf at %dx%d into %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		gdk_cairo_set_source_pixbuf(cr, pixbuf, xmon->geom.x, xmon->geom.y);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
 	} else {
 		/* somewhere in between: scale down for integer tile */
 		DPRINTF("scaling and tiling pixbuf at %dx%d into %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width / 2,
 						 xmon->geom.height / 2, GDK_INTERP_BILINEAR);
@@ -1334,7 +1340,7 @@ clr_source(XdeScreen *xscr)
 	}
 }
 
-void
+static void
 get_source(XdeScreen *xscr)
 {
 	GdkDisplay *disp = gdk_screen_get_display(xscr->scrn);
@@ -1343,51 +1349,54 @@ get_source(XdeScreen *xscr)
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 	Atom prop;
 
-	if (!xscr->pixbuf && options.splash) {
-		if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
-			/* cannot use it again */
-			free(options.splash);
-			options.splash = NULL;
+	if (options.source & BackgroundSourcePixmap) {
+		if (!(prop = _XA_XROOTPMAP_ID))
+			prop = _XA_ESETROOT_PMAP_ID;
+
+		if (prop) {
+			Window w = GDK_WINDOW_XID(root);
+			Atom actual = None;
+			int format = 0;
+			unsigned long nitems = 0, after = 0;
+			long *data = NULL;
+
+			if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
+					       &actual, &format, &nitems, &after,
+					       (unsigned char **) &data) == Success &&
+			    format == 32 && actual && nitems >= 1 && data) {
+				Pixmap p;
+
+				if ((p = data[0])) {
+					xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
+					gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+					clr_source(xscr);
+				}
+			}
+			if (data)
+				XFree(data);
 		}
+		if (xscr->pixmap)
+			return;
 	}
-	if (xscr->pixbuf) {
-		if (!xscr->pixmap) {
-			xscr->pixmap = gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
-			gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-			render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
-			clr_source(xscr);
-		}
-		return;
-	}
-	if (xscr->pixmap) {
-		g_object_unref(G_OBJECT(xscr->pixmap));
-		xscr->pixmap = NULL;
-	}
-
-	if (!(prop = _XA_XROOTPMAP_ID))
-		prop = _XA_ESETROOT_PMAP_ID;
-
-	if (prop) {
-		Window w = GDK_WINDOW_XID(root);
-		Atom actual = None;
-		int format = 0;
-		unsigned long nitems = 0, after = 0;
-		long *data = NULL;
-
-		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
-					&actual, &format, &nitems, &after,
-					(unsigned char **) &data) == Success &&
-				format == 32 && actual && nitems >= 1 && data) {
-			Pixmap p;
-
-			if ((p = data[0])) {
-				xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
-				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-				clr_source(xscr);
+	if (options.source & BackgroundSourceSplash) {
+		if (!xscr->pixbuf && options.splash) {
+			if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
+				/* cannot use it again */
+				free(options.splash);
+				options.splash = NULL;
 			}
 		}
-		if (data)
-			XFree(data);
+		if (xscr->pixbuf) {
+			if (!xscr->pixmap) {
+				xscr->pixmap =
+				    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height,
+						   -1);
+				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+				render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
+				clr_source(xscr);
+			}
+			return;
+		}
 	}
 }
 
@@ -1500,7 +1509,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	height = gdk_screen_get_height(scrn);
 	if (xscr->width != width || xscr->height != height) {
 		DPRINTF("Screen %d dimensions changed %dx%d -> %dx%d\n", index,
-				xscr->width, xscr->height, width, height);
+			xscr->width, xscr->height, width, height);
 		gtk_window_set_default_size(w, width, height);
 		geom = g_strdup_printf("%dx%d+0+0", width, height);
 		gtk_window_parse_geometry(w, geom);
@@ -1511,7 +1520,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	nmon = gdk_screen_get_n_monitors(scrn);
 	if (nmon > xscr->nmon) {
 		DPRINTF("Screen %d number of monitors increased from %d to %d\n",
-				index, xscr->nmon, nmon);
+			index, xscr->nmon, nmon);
 		xscr->mons = realloc(xscr->mons, nmon * sizeof(*xscr->mons));
 		for (m = xscr->nmon; m <= nmon; m++) {
 			mon = xscr->mons + m;
@@ -1519,7 +1528,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		}
 	} else if (nmon < xscr->nmon) {
 		DPRINTF("Screen %d number of monitors decreased from %d to %d\n",
-				index, xscr->nmon, nmon);
+			index, xscr->nmon, nmon);
 		for (m = xscr->nmon; m > nmon; m--) {
 			mon = xscr->mons + m - 1;
 			if (ebox && cont && mon->align == cont) {
@@ -1669,7 +1678,7 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
-	get_source(xscr);
+	redo_source(xscr);
 	gtk_widget_show_all(wind);
 
 	gtk_widget_realize(wind);
@@ -1777,7 +1786,6 @@ GetPanel(void)
 	pan = gtk_vbox_new(FALSE, 0);
 	gtk_container_set_border_width(GTK_CONTAINER(pan), 0);
 
-
 	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
 
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
@@ -1814,6 +1822,7 @@ GetPanel(void)
 	g_signal_connect(G_OBJECT(sess), "button_press_event", G_CALLBACK(on_button_press), NULL);
 
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
+
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
 
 	g_signal_connect(G_OBJECT(selection), "changed", G_CALLBACK(on_selection_changed), buttons);
@@ -1835,8 +1844,7 @@ GetPanel(void)
 	rend = gtk_cell_renderer_text_new();
 	col = gtk_tree_view_column_new_with_attributes("Window Manager", rend, "markup",
 						       XSESS_COL_MARKUP, NULL);
-	gtk_tree_view_column_set_sort_column_id(GTK_TREE_VIEW_COLUMN(col),
-			XSESS_COL_NAME);
+	gtk_tree_view_column_set_sort_column_id(GTK_TREE_VIEW_COLUMN(col), XSESS_COL_NAME);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(sess), GTK_TREE_VIEW_COLUMN(col));
 
 	GtkWidget *bb = gtk_hbutton_box_new();
@@ -2357,7 +2365,7 @@ set_default_xdgdirs(int argc, char *argv[])
 	}
 	if ((p = strrchr(here, '/')))
 		*p = '\0';
-	if ((p = strstr(here, "/src")) && !*(p+4))
+	if ((p = strstr(here, "/src")) && !*(p + 4))
 		*p = '\0';
 	/* executed in place */
 	if (strcmp(here, "/usr/bin")) {

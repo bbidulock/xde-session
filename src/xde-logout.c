@@ -146,6 +146,12 @@ typedef enum {
 	CommandCopying,			/* command copying information */
 } CommandType;
 
+enum {
+	BackgroundSourceSplash = (1 << 0),
+	BackgroundSourcePixmap = (1 << 1),
+	BackgroundSourceRoot = (1 << 2),
+};
+
 typedef struct {
 	int output;
 	int debug;
@@ -167,6 +173,7 @@ typedef struct {
 	char *vendor;
 	char *prefix;
 	char *splash;
+	unsigned source;
 } Options;
 
 Options options = {
@@ -190,6 +197,7 @@ Options options = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
+	.source = BackgroundSourceRoot,
 };
 
 Options defaults = {
@@ -213,6 +221,7 @@ Options defaults = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
+	.source = BackgroundSourceRoot,
 };
 
 typedef enum {
@@ -288,7 +297,7 @@ status_of_string(const char *string)
 }
 
 static void reparse(Display *dpy, Window root);
-void get_source(XdeScreen *xscr);
+static void redo_source(XdeScreen *xscr);
 
 static GdkFilterReturn
 event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
@@ -310,8 +319,8 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 	}
 	if (xev->xproperty.atom == _XA_XROOTPMAP_ID && xev->xproperty.state == PropertyNewValue) {
 		DPRINT();
-		if (!xscr->pixbuf)
-			get_source(xscr);
+		if (options.source & BackgroundSourcePixmap)
+			redo_source(xscr);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
 	return GDK_FILTER_CONTINUE;	/* event not handled */
@@ -1178,12 +1187,15 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	if (xscr->pixmap) {
 		gdk_cairo_set_source_pixmap(cr, xscr->pixmap, 0, 0);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
-	} else
+		cairo_paint(cr);
+	} else {
 		gdk_cairo_set_source_window(cr, r, 0, 0);
-	cairo_paint(cr);
-	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
-	gdk_cairo_set_source_color(cr, &color);
-	cairo_paint_with_alpha(cr, 0.7);
+		cairo_paint(cr);
+		/* only fade out root window contents */
+		GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
+		gdk_cairo_set_source_color(cr, &color);
+		cairo_paint_with_alpha(cr, 0.7);
+	}
 	cairo_destroy(cr);
 	return FALSE;
 }
@@ -1308,7 +1320,7 @@ clr_source(XdeScreen *xscr)
 	}
 }
 
-void
+static void
 get_source(XdeScreen *xscr)
 {
 	GdkDisplay *disp = gdk_screen_get_display(xscr->scrn);
@@ -1317,52 +1329,54 @@ get_source(XdeScreen *xscr)
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 	Atom prop;
 
-	if (!xscr->pixbuf && options.splash) {
-		if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
-			/* cannot use it again */
-			free(options.splash);
-			options.splash = NULL;
+	if (options.source & BackgroundSourcePixmap) {
+		if (!(prop = _XA_XROOTPMAP_ID))
+			prop = _XA_ESETROOT_PMAP_ID;
+
+		if (prop) {
+			Window w = GDK_WINDOW_XID(root);
+			Atom actual = None;
+			int format = 0;
+			unsigned long nitems = 0, after = 0;
+			long *data = NULL;
+
+			if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
+					       &actual, &format, &nitems, &after,
+					       (unsigned char **) &data) == Success &&
+			    format == 32 && actual && nitems >= 1 && data) {
+				Pixmap p;
+
+				if ((p = data[0])) {
+					xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
+					gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+					clr_source(xscr);
+				}
+			}
+			if (data)
+				XFree(data);
 		}
+		if (xscr->pixmap)
+			return;
 	}
-	if (xscr->pixbuf) {
-		if (!xscr->pixmap) {
-			xscr->pixmap =
-			    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
-			gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-			render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
-			clr_source(xscr);
-		}
-		return;
-	}
-	if (xscr->pixmap) {
-		g_object_unref(G_OBJECT(xscr->pixmap));
-		xscr->pixmap = NULL;
-	}
-
-	if (!(prop = _XA_XROOTPMAP_ID))
-		prop = _XA_ESETROOT_PMAP_ID;
-
-	if (prop) {
-		Window w = GDK_WINDOW_XID(root);
-		Atom actual = None;
-		int format = 0;
-		unsigned long nitems = 0, after = 0;
-		long *data = NULL;
-
-		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
-				       &actual, &format, &nitems, &after,
-				       (unsigned char **) &data) == Success &&
-		    format == 32 && actual && nitems >= 1 && data) {
-			Pixmap p;
-
-			if ((p = data[0])) {
-				xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
-				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-				clr_source(xscr);
+	if (options.source & BackgroundSourceSplash) {
+		if (!xscr->pixbuf && options.splash) {
+			if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
+				/* cannot use it again */
+				free(options.splash);
+				options.splash = NULL;
 			}
 		}
-		if (data)
-			XFree(data);
+		if (xscr->pixbuf) {
+			if (!xscr->pixmap) {
+				xscr->pixmap =
+				    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height,
+						   -1);
+				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+				render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
+				clr_source(xscr);
+			}
+			return;
+		}
 	}
 }
 
@@ -1574,7 +1588,7 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
-	get_source(xscr);
+	redo_source(xscr);
 	gtk_widget_show_all(wind);
 
 	gtk_widget_realize(wind);
