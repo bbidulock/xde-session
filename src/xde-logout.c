@@ -394,6 +394,7 @@ static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_CANCEL]		= AvailStatusUndef,
 	/* *INDENT-ON* */
 };
+
 static GdkFilterReturn
 client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 {
@@ -504,7 +505,7 @@ lxsession_check()
 void
 test_session_lock()
 {
-	GError *error = NULL;
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 
@@ -512,20 +513,19 @@ test_session_lock()
 		DPRINTF("no XDG_SESSION_ID supplied\n");
 		return;
 	}
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
-		EPRINTF("cannot access system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
+		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
-	} else
-		error = NULL;
+	}
 	proxy = dbus_g_proxy_new_for_name(bus,
-			"org.freedesktop.login1",
-			"/org/freedesktop/login1",
-			"org.freedesktop.login1.Manager");
+					  "org.freedesktop.login1",
+					  "/org/freedesktop/login1",
+					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
-	} else
-		error = NULL;
+	}
 	g_object_unref(G_OBJECT(proxy));
 
 	action_can[LOGOUT_ACTION_LOCKSCREEN] = AvailStatusYes;
@@ -607,8 +607,8 @@ test_login_functions()
 {
 	const char *seat;
 	int ret;
-	
-	seat = getenv("XDG_SEAT") ?: "seat0";
+
+	seat = getenv("XDG_SEAT") ? : "seat0";
 	ret = sd_seat_can_multi_session(NULL);
 	if (ret > 0) {
 		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusYes;
@@ -626,23 +626,31 @@ static void
 on_switch_session(GtkMenuItem *item, gpointer data)
 {
 	gchar *session = data;
-	GError *error = NULL;
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
-		EPRINTF("cannot access system buss\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
+		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
-			"org.freedesktop.login1",
-			"/org/freedesktop/login1",
-			"org.freedesktop.login1.Manager");
-	ok = dbus_g_proxy_call(proxy, "ActivateSession", &error, G_TYPE_STRING,
-			session, G_TYPE_INVALID, G_TYPE_INVALID);
-	if (!ok || error)
-		DPRINTF("ActivateSession: %s: call failed\n", session);
+					  "org.freedesktop.login1",
+					  "/org/freedesktop/login1",
+					  "org.freedesktop.login1.Manager");
+	if (!proxy) {
+		EPRINTF("cannot create DBUS proxy\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(proxy, "ActivateSession", &err, G_TYPE_STRING,
+			       session, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok || err) {
+		DPRINTF("ActivateSession: %s: call failed: %s\n", session,
+			err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 	g_object_unref(G_OBJECT(proxy));
 
 	if (ok) {
@@ -678,7 +686,7 @@ get_user_menu(void)
 	menu = gtk_menu_new();
 	for (s = sessions; s && *s; free(*s), s++) {
 		char *type = NULL, *klass = NULL, *user = NULL, *host = NULL,
-			*tty = NULL, *disp = NULL;
+		    *tty = NULL, *disp = NULL;
 		unsigned int vtnr = 0;
 		uid_t uid = -1;
 
@@ -727,7 +735,7 @@ get_user_menu(void)
 					label = g_strdup_printf("%u: %s", vtnr, pw->pw_name);
 				else
 					label = g_strdup_printf("%u: %s", vtnr, "(unknown)");
-			} else if (!strcmp(klass, "greeter")) 
+			} else if (!strcmp(klass, "greeter"))
 				label = g_strdup_printf("%u: login", vtnr);
 			else
 				label = g_strdup_printf("%u: session %s", vtnr, *s);
@@ -741,8 +749,8 @@ get_user_menu(void)
 		g_free(label);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				G_CALLBACK(on_switch_session),
-				strdup(*s), free_string, G_CONNECT_AFTER);
+				      G_CALLBACK(on_switch_session),
+				      strdup(*s), free_string, G_CONNECT_AFTER);
 		gtk_widget_show(item);
 		gotone = TRUE;
 	}
@@ -756,22 +764,22 @@ get_user_menu(void)
 void
 test_manager_functions()
 {
-	GError *error = NULL;
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
-//	gboolean ok;
+
+//      gboolean ok;
 	const char *env;
 	char *path;
 
 	path = calloc(PATH_MAX + 1, sizeof(*path));
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
-		EPRINTF("cannot access system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
+		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		free(path);
 		return;
-	} else
-		error = NULL;
-
+	}
 	if ((env = getenv("XDG_SEAT_PATH"))) {
 		strncpy(path, env, PATH_MAX);
 	} else if ((env = getenv("XDG_SEAT"))) {
@@ -781,7 +789,7 @@ test_manager_functions()
 		strncpy(path, "/org/freedesktop/DisplayManager/Seat0", PATH_MAX);
 
 	proxy = dbus_g_proxy_new_for_name(bus, "org.freedesktop.DisplayManager", path,
-			"org.freedesktop.DisplayManager.Seat");
+					  "org.freedesktop.DisplayManager.Seat");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy for %s\n", path);
 		free(path);
@@ -799,17 +807,17 @@ test_manager_functions()
 void
 test_power_functions()
 {
-	GError *error = NULL;
+	GError *err = NULL;
+	gchar *value = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
-	gchar *value = NULL;
 	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &error)) || error) {
-		EPRINTF("cannot access system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
+		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
-	} else
-		error = NULL;
+	}
 	proxy = dbus_g_proxy_new_for_name(bus,
 					  "org.freedesktop.login1",
 					  "/org/freedesktop/login1",
@@ -820,50 +828,60 @@ test_power_functions()
 	}
 	value = NULL;
 	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
 		DPRINTF("CanPowerOff status is %s\n", value);
 		action_can[LOGOUT_ACTION_POWEROFF] = status_of_string(value);
 		g_free(value);
 		value = NULL;
-	} else
-		error = NULL;
+	} else {
+		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 	ok = dbus_g_proxy_call(proxy, "CanReboot",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
 		DPRINTF("CanReboot status is %s\n", value);
 		action_can[LOGOUT_ACTION_REBOOT] = status_of_string(value);
 		g_free(value);
 		value = NULL;
-	} else
-		error = NULL;
+	} else {
+		EPRINTF("CanReboot call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 	ok = dbus_g_proxy_call(proxy, "CanSuspend",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
 		DPRINTF("CanSuspend status is %s\n", value);
 		action_can[LOGOUT_ACTION_SUSPEND] = status_of_string(value);
 		g_free(value);
 		value = NULL;
-	} else
-		error = NULL;
+	} else {
+		EPRINTF("CanSuspend call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 	ok = dbus_g_proxy_call(proxy, "CanHibernate",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
 		DPRINTF("CanHibernate status is %s\n", value);
 		action_can[LOGOUT_ACTION_HIBERNATE] = status_of_string(value);
 		g_free(value);
 		value = NULL;
-	} else
-		error = NULL;
+	} else {
+		EPRINTF("CanHibernate call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
-			       &error, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-	if (ok && !error) {
+			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+	if (ok && !err) {
 		DPRINTF("CanHybridSleep status is %s\n", value);
 		action_can[LOGOUT_ACTION_HYBRIDSLEEP] = status_of_string(value);
 		g_free(value);
 		value = NULL;
-	} else
-		error = NULL;
+	} else {
+		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 	g_object_unref(G_OBJECT(proxy));
 }
 
@@ -1232,8 +1250,7 @@ render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, Xde
 		/* good size for filling or scaling */
 		/* TODO: check aspect ratio before scaling */
 		DPRINTF("scaling pixbuf from %dx%d to %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width,
 						 xmon->geom.height, GDK_INTERP_BILINEAR);
@@ -1241,15 +1258,13 @@ render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, Xde
 	} else if (wp <= 0.5 * wm && hp <= 0.5 * hm) {
 		/* good size for tiling */
 		DPRINTF("tiling pixbuf at %dx%d into %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		gdk_cairo_set_source_pixbuf(cr, pixbuf, xmon->geom.x, xmon->geom.y);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
 	} else {
 		/* somewhere in between: scale down for integer tile */
 		DPRINTF("scaling and tiling pixbuf at %dx%d into %dx%d\n",
-				(int) wp, (int) hp,
-				xmon->geom.width, xmon->geom.height);
+			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width / 2,
 						 xmon->geom.height / 2, GDK_INTERP_BILINEAR);
@@ -1311,7 +1326,8 @@ get_source(XdeScreen *xscr)
 	}
 	if (xscr->pixbuf) {
 		if (!xscr->pixmap) {
-			xscr->pixmap = gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
+			xscr->pixmap =
+			    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height, -1);
 			gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
 			render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
 			clr_source(xscr);
@@ -1334,9 +1350,9 @@ get_source(XdeScreen *xscr)
 		long *data = NULL;
 
 		if (XGetWindowProperty(dpy, w, prop, 0, 1, False, XA_PIXMAP,
-					&actual, &format, &nitems, &after,
-					(unsigned char **) &data) == Success &&
-				format == 32 && actual && nitems >= 1 && data) {
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data) {
 			Pixmap p;
 
 			if ((p = data[0])) {
@@ -1389,7 +1405,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	height = gdk_screen_get_height(scrn);
 	if (xscr->width != width || xscr->height != height) {
 		DPRINTF("Screen %d dimensions changed %dx%d -> %dx%d\n", index,
-				xscr->width, xscr->height, width, height);
+			xscr->width, xscr->height, width, height);
 		gtk_window_set_default_size(w, width, height);
 		geom = g_strdup_printf("%dx%d+0+0", width, height);
 		gtk_window_parse_geometry(w, geom);
@@ -1400,7 +1416,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	nmon = gdk_screen_get_n_monitors(scrn);
 	if (nmon > xscr->nmon) {
 		DPRINTF("Screen %d number of monitors increased from %d to %d\n",
-				index, xscr->nmon, nmon);
+			index, xscr->nmon, nmon);
 		xscr->mons = realloc(xscr->mons, nmon * sizeof(*xscr->mons));
 		for (m = xscr->nmon; m <= nmon; m++) {
 			mon = xscr->mons + m;
@@ -1408,7 +1424,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		}
 	} else if (nmon < xscr->nmon) {
 		DPRINTF("Screen %d number of monitors decreased from %d to %d\n",
-				index, xscr->nmon, nmon);
+			index, xscr->nmon, nmon);
 		for (m = xscr->nmon; m > nmon; m--) {
 			mon = xscr->mons + m - 1;
 			if (ebox && cont && mon->align == cont) {
@@ -1742,8 +1758,7 @@ GetPane(GtkWidget *cont)
 	GtkWidget *lab = gtk_label_new(NULL);
 	gchar *markup;
 
-	markup = g_strdup_printf
-	    ("<span font=\"Liberation Sans 10\">%s</span>", options.welcome);
+	markup = g_strdup_printf("<span font=\"Liberation Sans 10\">%s</span>", options.welcome);
 	gtk_label_set_markup(GTK_LABEL(lab), markup);
 	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
@@ -1835,7 +1850,6 @@ do_run(int argc, char *argv[])
 	gtk_main();
 }
 
-
 static void
 logoutSetProperties(SmcConn smcConn, SmPointer data)
 {
@@ -1848,6 +1862,7 @@ logoutSetProperties(SmcConn smcConn, SmPointer data)
 	SmPropValue *penv = NULL, *prst = NULL, *pcln = NULL;
 	SmPropValue propval[11];
 	SmProp prop[11];
+
 	SmProp *props[11] = {
 		&prop[0], &prop[1], &prop[2], &prop[3], &prop[4],
 		&prop[5], &prop[6], &prop[7], &prop[8], &prop[9],
@@ -2123,8 +2138,7 @@ logoutSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdow
 		     int interactStyle, Bool fast)
 {
 	if (!(shutting_down = shutdown)) {
-		if (!SmcRequestSaveYourselfPhase2(smcConn,
-				logoutSaveYourselfPhase2CB, data))
+		if (!SmcRequestSaveYourselfPhase2(smcConn, logoutSaveYourselfPhase2CB, data))
 			SmcSaveYourselfDone(smcConn, False);
 		return;
 	}
@@ -2305,26 +2319,29 @@ run_logout(int argc, char *argv[])
 static void
 action_PowerOff(void)
 {
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
-		EPRINTF("cannot access the system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err))) {
+		EPRINTF("cannot access the system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
 					  "org.freedesktop.login1",
-					  "/org/freedesktp/login1",
+					  "/org/freedesktop/login1",
 					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(proxy, "PowerOff", NULL,
-			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
+	ok = dbus_g_proxy_call(proxy, "PowerOff", &err,
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
-		EPRINTF("call to PowerOff failed\n");
+		EPRINTF("call to PowerOff failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		g_object_unref(G_OBJECT(proxy));
 		return;
 	}
@@ -2334,26 +2351,29 @@ action_PowerOff(void)
 static void
 action_Reboot(void)
 {
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
-		EPRINTF("cannot access the system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err))) {
+		EPRINTF("cannot access the system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
 					  "org.freedesktop.login1",
-					  "/org/freedesktp/login1",
+					  "/org/freedesktop/login1",
 					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(proxy, "Reboot", NULL,
-			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
+	ok = dbus_g_proxy_call(proxy, "Reboot", &err,
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
-		EPRINTF("call to Reboot failed\n");
+		EPRINTF("call to Reboot failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		g_object_unref(G_OBJECT(proxy));
 		return;
 	}
@@ -2363,26 +2383,29 @@ action_Reboot(void)
 static void
 action_Suspend(void)
 {
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
-		EPRINTF("cannot access the system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err))) {
+		EPRINTF("cannot access the system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
 					  "org.freedesktop.login1",
-					  "/org/freedesktp/login1",
+					  "/org/freedesktop/login1",
 					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(proxy, "Suspend", NULL,
-			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
+	ok = dbus_g_proxy_call(proxy, "Suspend", &err,
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
-		EPRINTF("call to Suspend failed\n");
+		EPRINTF("call to Suspend failed %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		g_object_unref(G_OBJECT(proxy));
 		return;
 	}
@@ -2392,26 +2415,29 @@ action_Suspend(void)
 static void
 action_Hibernate(void)
 {
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
-		EPRINTF("cannot access the system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err))) {
+		EPRINTF("cannot access the system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
 					  "org.freedesktop.login1",
-					  "/org/freedesktp/login1",
+					  "/org/freedesktop/login1",
 					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(proxy, "Hibernate", NULL,
-			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
+	ok = dbus_g_proxy_call(proxy, "Hibernate", &err,
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
-		EPRINTF("call to Hibernate failed\n");
+		EPRINTF("call to Hibernate failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		g_object_unref(G_OBJECT(proxy));
 		return;
 	}
@@ -2421,26 +2447,29 @@ action_Hibernate(void)
 static void
 action_HybridSleep(void)
 {
+	GError *err = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
 	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, NULL))) {
-		EPRINTF("cannot access the system bus\n");
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err))) {
+		EPRINTF("cannot access the system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		return;
 	}
 	proxy = dbus_g_proxy_new_for_name(bus,
 					  "org.freedesktop.login1",
-					  "/org/freedesktp/login1",
+					  "/org/freedesktop/login1",
 					  "org.freedesktop.login1.Manager");
 	if (!proxy) {
 		EPRINTF("cannot create DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(proxy, "HybridSleep", NULL,
-			       G_TYPE_BOOLEAN, FALSE, G_TYPE_INVALID, G_TYPE_INVALID);
+	ok = dbus_g_proxy_call(proxy, "HybridSleep", &err,
+			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok) {
-		EPRINTF("call to HybridSleep failed\n");
+		EPRINTF("call to HybridSleep failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
 		g_object_unref(G_OBJECT(proxy));
 		return;
 	}
@@ -2876,7 +2905,7 @@ set_default_xdgdirs(int argc, char *argv[])
 	}
 	if ((p = strrchr(here, '/')))
 		*p = '\0';
-	if ((p = strstr(here, "/src")) && !*(p+4))
+	if ((p = strstr(here, "/src")) && !*(p + 4))
 		*p = '\0';
 	/* executed in place */
 	if (strcmp(here, "/usr/bin")) {
@@ -3267,7 +3296,8 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "p:b:S:s:nD::v::hVCH?", long_options, &option_index);
+		c = getopt_long_only(argc, argv, "p:b:S:s:nD::v::hVCH?", long_options,
+				     &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "p:b:S:s:nDvhVC?");
 #endif				/* defined _GNU_SOURCE */
@@ -3328,11 +3358,11 @@ main(int argc, char *argv[])
 			options.timeout = strtoul(optarg, NULL, 0);
 			break;
 
-		case '8': /* -clientId CLIENTID */
+		case '8':	/* -clientId CLIENTID */
 			free(options.clientId);
 			options.clientId = strdup(optarg);
 			break;
-		case '9': /* -restore SAVEFILE */
+		case '9':	/* -restore SAVEFILE */
 			free(options.saveFile);
 			options.saveFile = strdup(optarg);
 			break;
