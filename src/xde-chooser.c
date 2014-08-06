@@ -2254,6 +2254,7 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
+        /* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [OPTIONS] [--] [SESSION]\n\
@@ -2261,12 +2262,12 @@ Usage:\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Arguments:\n\
-    SESSION                (%17$s)\n\
+    SESSION                (%2$s)\n\
         The name of the XDG session to execute, or \"default\"\n\
         or \"choose\".  When unspecified defaults to \"default\"\n\
         \"default\" means execute default without prompting\n\
         \"choose\" means post a dialog to choose the session\n\
-	[default: %18$s] [current: %19$s]\n\
+	[default: %3$s] [current: %4$s]\n\
 Command options:\n\
     -h, --help, -?, --?\n\
         print this usage information and exit\n\
@@ -2275,39 +2276,65 @@ Command options:\n\
     -C, --copying\n\
         print copying permission and exit\n\
 General options:\n\
-    -b, --banner BANNER    (%2$s)\n\
+    -b, --banner BANNER    (%5$s)\n\
         specify custom login branding\n\
-    -p, --prompt           (%3$s)\n\
+    -S, --splash SPLASH    (%6$s)\n\
+        background image to display\n\
+    -p, --prompt           (%7$s)\n\
         prompt for session regardless of SESSION argument\n\
-    -s, --side {l|t|r|b}   (%4$s)\n\
+    -s, --side {l|t|r|b}   (%8$s)\n\
         specify side  of dialog for logo placement\n\
-    -n, --noask            (%5$s)\n\
+    -n, --noask            (%9$s)\n\
         do not ask to set session as default\n\
-    -c, --charset CHARSET  (%6$s)\n\
+    -c, --charset CHARSET  (%10$s)\n\
         specify the character set\n\
-    -l, --language LANG    (%7$s)\n\
+    -l, --language LANG    (%11$s)\n\
         specify the language\n\
-    -d, --default          (%8$s)\n\
+    -d, --default          (%12$s)\n\
         set the future default to choice\n\
-    -i, --icons THEME      (%15$s)\n\
-        set the icon theme to use\n\
-    -t, --theme THEME      (%16$s)\n\
-        set the gtk+ theme to use\n\
-    -e, --exec             (%9$s)\n\
+    -e, --exec             (%13$s)\n\
         execute the Exec= statement instead of returning as string\n\
         indicating the selected XSession\n\
-    -x, --xde-theme        (%10$s)\n\
+    -i, --icons THEME      (%14$s)\n\
+        set the icon theme to use\n\
+    -t, --theme THEME      (%15$s)\n\
+        set the gtk+ theme to use\n\
+    -x, --xde-theme        (%16$s)\n\
         use the XDE desktop theme for the selection window\n\
-    -T, --timeout SECONDS  (%11$u sec)\n\
+    -T, --timeout SECONDS  (%17$u sec)\n\
         set dialog timeout\n\
-    -N, --dry-run          (%12$s)\n\
+    --vendor VENDOR        (%18$s)\n\
+        vendor identifier for branding\n\
+    -N, --dry-run          (%19$s)\n\
         do not do anything: just print it\n\
-    -D, --debug [LEVEL]    (%13$d)\n\
+    -D, --debug [LEVEL]    (%20$d)\n\
         increment or set debug LEVEL\n\
-    -v, --verbose [LEVEL]  (%14$d)\n\
+    -v, --verbose [LEVEL]  (%21$d)\n\
         increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
-", argv[0], options.banner, show_bool(options.prompt), show_side(options.side), show_bool(options.noask), options.charset, options.language, show_bool(options.setdflt), show_bool(options.execute), show_bool(options.usexde), options.timeout, show_bool(options.dryrun), options.debug, options.output, options.usexde ? "xde" : (options.gtk2_theme ? : "auto"), options.usexde ? "xde" : (options.icon_theme ? : "auto"), options.choice, options.session ? : "", options.current ? : "");
+"	,argv[0]
+	,options.choice
+	,options.session ? : ""
+	,options.current ? : ""
+	,options.banner
+	,options.splash
+	,show_bool(options.prompt)
+	,show_side(options.side)
+	,show_bool(options.noask)
+	,options.charset
+	,options.language
+	,show_bool(options.setdflt)
+	,show_bool(options.execute)
+	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
+	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
+	,show_bool(options.usexde)
+	,options.timeout
+	,options.vendor
+	,show_bool(options.dryrun)
+	,options.debug
+	,options.output
+	);
+        /* *INDENT-ON* */
 }
 
 void
@@ -2378,7 +2405,7 @@ set_default_xdgdirs(int argc, char *argv[])
 	if ((p = strstr(here, "/src")) && !*(p + 4))
 		*p = '\0';
 	/* executed in place */
-	if (strcmp(here, "/usr/bin")) {
+	if (strchr(here, '/') && strcmp(here, "/usr/bin")) {
 		len = strlen(here) + strlen("/data/xdg/xde:")
 		    + strlen(here) + strlen("/data/xdg:") + strlen(confdir);
 		conf = calloc(len + 1, sizeof(*conf));
@@ -2876,7 +2903,7 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "pb:s:nc:l:di:t:exT:ND::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "pb:S:s:nc:l:di:t:exT:ND::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "pb:s:nc:l:di:t:exT:NDvhVCH?");

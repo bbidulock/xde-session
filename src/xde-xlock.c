@@ -3761,6 +3761,7 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
+        /* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [options] ADDRESS [...]\n\
@@ -3787,29 +3788,52 @@ Command options:\n\
     -C, --copying\n\
         print copying permission and exit\n\
 General options:\n\
-    -b, --banner PNGFILE\n\
-        banner graphic to display\n\
-        (%2$s)\n\
-    -S, --splash JPGFILE\n\
-        background impage to display\n\
-        (%3$s)\n\
     -p, --prompt TEXT\n\
         text to prompt for password\n\
+        (%2$s)\n\
+    -b, --banner PNGFILE\n\
+        banner graphic to display\n\
+        (%3$s)\n\
+    -S, --splash JPGFILE\n\
+        background impage to display\n\
         (%4$s)\n\
-    -x, --xdmaddress ADDRESS\n\
-        address of xdm socket\n\
-    -c, --clientaddress IPADDR\n\
-        client address that initiated the request\n\
-    -t, --connectionType TYPE\n\
-        connection type supported by the client\n\
+    -s, --side {top|left|bottom|right}\n\
+        side on which to display branding (%5$s)\n\
+    --charset CHARSET\n\
+        character set to use (%6$s)\n\
+    --language LANG\n\
+        language to use (%7$s)\n\
+    -i, --icons THEME\n\
+        icon theme name to use for icons (%8$s)\n\
+    -T, --theme THEME\n\
+        GTK2 theme name to use for widgets (%9$s)\n\
+    -u, --xde-theme\n\
+        use the XDE theme (%10$s)\n\
+    -v, --vendor VENDOR\n\
+        vendor identifier for branding (%11$s)\n\
     -n, --dry-run\n\
-        do not act: only print intentions (%5$s)\n\
+        do not act: only print intentions (%12$s)\n\
     -D, --debug [LEVEL]\n\
-        increment or set debug LEVEL (%6$d)\n\
+        increment or set debug LEVEL (%13$d)\n\
     -v, --verbose [LEVEL]\n\
-        increment or set output verbosity LEVEL (%7$d)\n\
+        increment or set output verbosity LEVEL (%14$d)\n\
         this option may be repeated.\n\
-", argv[0], options.banner, options.splash, options.welcome, (options.dryrun ? "true" : "false"), options.debug, options.output);
+"	,argv[0]
+	,options.welcome
+	,options.banner
+	,options.splash
+	,show_side(options.side)
+	,options.charset
+	,options.language
+	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
+	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
+	,show_bool(options.usexde)
+	,options.vendor
+	,show_bool(options.dryrun)
+	,options.debug
+	,options.output
+	);
+        /* *INDENT-ON* */
 }
 
 void
@@ -3880,7 +3904,7 @@ set_default_xdgdirs(int argc, char *argv[])
 	if ((p = strstr(here, "/src")) && !*(p + 4))
 		*p = '\0';
 	/* executed in place */
-	if (strcmp(here, "/usr/bin")) {
+	if (strchr(here, '/') && strcmp(here, "/usr/bin")) {
 		len = strlen(here) + strlen("/data/xdg/xde:")
 		    + strlen(here) + strlen("/data/xdg:") + strlen(confdir);
 		conf = calloc(len + 1, sizeof(*conf));
@@ -4268,11 +4292,13 @@ main(int argc, char *argv[])
 
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'S'},
-			{"xde-theme",	    no_argument,	NULL, 'u'},
+			{"side",	    required_argument,	NULL, 's'},
 			{"charset",	    required_argument,	NULL, '1'},
 			{"language",	    required_argument,	NULL, '2'},
 			{"icons",	    required_argument,	NULL, 'i'},
 			{"theme",	    required_argument,	NULL, 'T'},
+			{"xde-theme",	    no_argument,	NULL, 'u'},
+			{"vendor",	    required_argument,	NULL, '5'},
 
 			{"dry-run",	    no_argument,	NULL, 'n'},
 			{"debug",	    optional_argument,	NULL, 'D'},
@@ -4285,10 +4311,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "b:S:p:unD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "rlqb:S:s:p:i:T:unD::v::hVCH?", long_options,
 				     &option_index);
 #else
-		c = getopt(argc, argv, "b:S:p:unDvhVCH?");
+		c = getopt(argc, argv, "rlqb:S:s:p:i:T:unDvhVCH?");
 #endif
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -4365,9 +4391,24 @@ main(int argc, char *argv[])
 			free(options.splash);
 			options.splash = strdup(optarg);
 			break;
-		case 'u':	/* -u, --xde-theme */
-			options.usexde = True;
-			break;
+		case 's':	/* -s, --side {top|bottom|left|right} */
+			if (!strncasecmp(optarg, "left", strlen(optarg))) {
+				options.side = LOGO_SIDE_LEFT;
+				break;
+			}
+			if (!strncasecmp(optarg, "top", strlen(optarg))) {
+				options.side = LOGO_SIDE_TOP;
+				break;
+			}
+			if (!strncasecmp(optarg, "right", strlen(optarg))) {
+				options.side = LOGO_SIDE_RIGHT;
+				break;
+			}
+			if (!strncasecmp(optarg, "bottom", strlen(optarg))) {
+				options.side = LOGO_SIDE_BOTTOM;
+				break;
+			}
+			goto bad_option;
 		case '1':	/* -c --charset CHARSET */
 			free(options.charset);
 			options.charset = strdup(optarg);
@@ -4383,6 +4424,13 @@ main(int argc, char *argv[])
 		case 'T':	/* -t, --theme THEME */
 			free(options.gtk2_theme);
 			options.gtk2_theme = strdup(optarg);
+			break;
+		case 'u':	/* -u, --xde-theme */
+			options.usexde = True;
+			break;
+		case '5':	/* --vendor VENDOR */
+			free(options.vendor);
+			options.vendor = strdup(optarg);
 			break;
 
 		case 'n':	/* -n, --dry-run */

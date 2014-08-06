@@ -2932,7 +2932,7 @@ set_default_xdgdirs(int argc, char *argv[])
 	if ((p = strstr(here, "/src")) && !*(p + 4))
 		*p = '\0';
 	/* executed in place */
-	if (strcmp(here, "/usr/bin")) {
+	if (strchr(here, '/') && strcmp(here, "/usr/bin")) {
 		len = strlen(here) + strlen("/data/xdg/xde:")
 		    + strlen(here) + strlen("/data/xdg:") + strlen(confdir);
 		conf = calloc(len + 1, sizeof(*conf));
@@ -3300,10 +3300,13 @@ main(int argc, char *argv[])
 			{"banner",	required_argument,	NULL, 'b'},
 			{"splash",	required_argument,	NULL, 'S'},
 			{"side",	required_argument,	NULL, 's'},
+			{"charset",	    required_argument,	NULL, '1'},
+			{"language",	    required_argument,	NULL, '2'},
 			{"noask",	no_argument,		NULL, 'n'},
 			{"icons",	required_argument,	NULL, 'i'},
 			{"theme",	required_argument,	NULL, 't'},
 			{"xde-theme",	no_argument,		NULL, 'x'},
+			{"vendor",	    required_argument,	NULL, '5'},
 			{"timeout",	required_argument,	NULL, 'T'},
 
 			{"clientId",	required_argument,	NULL, '8'},
@@ -3320,14 +3323,13 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "p:b:S:s:nD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "p:b:S:s:ni:t:xT:ND::v::hVCH?", long_options,
 				     &option_index);
-#else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "p:b:S:s:nDvhVC?");
-#endif				/* defined _GNU_SOURCE */
+#else
+		c = getopt(argc, argv, "p:b:S:s:ni:t:xT:NDvhVC?");
+#endif
 		if (c == -1) {
-			if (options.debug)
-				fprintf(stderr, "%s: done options processing\n", argv[0]);
+			DPRINTF("%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
@@ -3364,6 +3366,14 @@ main(int argc, char *argv[])
 				break;
 			}
 			goto bad_option;
+		case '1':	/* -c --charset CHARSET */
+			free(options.charset);
+			options.charset = strdup(optarg);
+			break;
+		case '2':	/* -l, --language LANG */
+			free(options.language);
+			options.language = strdup(optarg);
+			break;
 		case 'n':	/* -n, --noask */
 			options.noask = True;
 			break;
@@ -3375,8 +3385,12 @@ main(int argc, char *argv[])
 			free(options.gtk2_theme);
 			options.gtk2_theme = strdup(optarg);
 			break;
-		case 'x':
+		case 'x':	/* -x, --xde-theme */
 			options.usexde = True;
+			break;
+		case '5':	/* --vendor VENDOR */
+			free(options.vendor);
+			options.vendor = strdup(optarg);
 			break;
 		case 'T':
 			options.timeout = strtoul(optarg, NULL, 0);
