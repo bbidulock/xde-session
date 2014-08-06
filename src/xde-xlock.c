@@ -2867,6 +2867,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 {
 	XdeMonitor *mon;
 	GtkWindow *w = GTK_WINDOW(xscr->wind);
+	GdkWindow *win = gtk_widget_get_window(xscr->wind);
 	char *geom;
 	int m, nmon, width, height, index;
 
@@ -2889,6 +2890,10 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		geom = g_strdup_printf("%dx%d+0+0", width, height);
 		gtk_window_parse_geometry(w, geom);
 		g_free(geom);
+		gtk_widget_set_size_request(GTK_WIDGET(w), width, height);
+		gtk_window_resize(w, width, height);
+		gtk_window_move(w, 0, 0);
+		gdk_window_move_resize(win, 0, 0, width, height);
 		xscr->width = width;
 		xscr->height = height;
 	}
@@ -3026,6 +3031,10 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	gtk_window_parse_geometry(w, geom);
 	g_free(geom);
 
+	gtk_widget_set_size_request(GTK_WIDGET(w), xscr->width, xscr->height);
+	gtk_window_resize(w, xscr->width, xscr->height);
+	gtk_window_move(w, 0, 0);
+
 	gtk_widget_set_app_paintable(wind, TRUE);
 
 	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
@@ -3060,6 +3069,7 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	GdkWindow *win = gtk_widget_get_window(wind);
 
 	gdk_window_set_override_redirect(win, TRUE);
+	gdk_window_move_resize(win, 0, 0, xscr->width, xscr->height);
 
 	GdkDisplay *disp = gdk_screen_get_display(scrn);
 	GdkCursor *curs = gdk_cursor_new_for_display(disp, GDK_LEFT_PTR);
