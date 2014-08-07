@@ -135,6 +135,7 @@
 
 #include <ctype.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <netdb.h>
@@ -195,6 +196,7 @@ typedef struct {
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
+	Bool isLocal;
 	char *banner;
 	char *welcome;
 	CommandType command;
@@ -224,6 +226,7 @@ Options options = {
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
+	.isLocal = False,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
 	.command = CommandDefault,
@@ -253,6 +256,7 @@ Options defaults = {
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
+	.isLocal = False,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
 	.command = CommandDefault,
@@ -1153,6 +1157,80 @@ xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, g
 
 #ifdef DO_XCHOOSER
 Bool
+CanConnect(struct sockaddr *sa)
+{
+	int sock;
+	socklen_t salen;
+
+	switch (sa->sa_family) {
+	case AF_INET:
+		salen = sizeof(struct sockaddr_in);
+		break;
+	case AF_INET6:
+		salen = sizeof(struct sockaddr_in6);
+		break;
+	case AF_UNIX:
+		salen = sizeof(struct sockaddr_un);
+		break;
+	default:
+		EPRINTF("wrong socket family %d\n", (int) sa->sa_family);
+		return False;
+	}
+	if ((sock = socket(sa->sa_family, SOCK_DGRAM, 0)) == -1) {
+		EPRINTF("socket: %s\n", strerror(errno));
+		return False;
+	}
+	if (connect(sock, sa, salen) == -1) {
+		DPRINTF("connect: %s\n", strerror(errno));
+		close(sock);
+		return False;
+	}
+	if (options.debug) {
+		struct sockaddr conn;
+		char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
+
+		if (getsockname(sock, &conn, &salen) == -1) {
+			EPRINTF("getsockname: %s\n", strerror(errno));
+			close(sock);
+			return False;
+		}
+		switch (conn.sa_family) {
+		case AF_INET:
+		{
+			struct sockaddr_in *sin = (typeof(sin)) & conn;
+			int port = ntohs(sin->sin_port);
+
+			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
+			DPRINTF("address is %s port %d\n", ipaddr, port);
+			break;
+		}
+		case AF_INET6:
+		{
+			struct sockaddr_in6 *sin6 = (typeof(sin6)) & conn;
+			int port = ntohs(sin6->sin6_port);
+
+			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
+			DPRINTF("address is %s port %d\n", ipaddr, port);
+			break;
+		}
+		case AF_UNIX:
+		{
+			struct sockaddr_un *sun = (typeof(sun)) & conn;
+
+			DPRINTF("family is AF_UNIX\n");
+			break;
+		}
+		default:
+			EPRINTF("bad connected family %d\n", (int) conn.sa_family);
+			close(sock);
+			return False;
+		}
+	}
+	close(sock);
+	return True;
+}
+
+Bool
 AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname_a,
 	ARRAY8 *status_a)
 {
@@ -1217,7 +1295,12 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	default:
 		return False;
 	}
-	if (options.connectionType != FamilyInternet6 && options.connectionType != ctype) {
+	if (options.isLocal && !CanConnect(sa)) {
+		DPRINTF("cannot connect\n");
+		return False;
+	}
+	if (!options.isLocal && options.connectionType != FamilyInternet6
+	    && options.connectionType != ctype) {
 		DPRINTF("wrong connection type\n");
 		return False;
 	}
@@ -4052,6 +4135,17 @@ set_default_language(void)
 	defaults.charset = strdup(nl_langinfo(CODESET));
 }
 
+#ifdef DO_XCHOOSER
+void
+set_default_address(void)
+{
+	XdmcpReallocARRAY8(&defaults.clientAddress, sizeof(struct in6_addr));
+	*(struct in6_addr *) defaults.clientAddress.data = (struct in6_addr) IN6ADDR_LOOPBACK_INIT;
+	defaults.connectionType = FamilyInternet6;
+	defaults.isLocal = True;
+}
+#endif				/* DO_XCHOOSER */
+
 void
 set_defaults(int argc, char *argv[])
 {
@@ -4066,6 +4160,9 @@ set_defaults(int argc, char *argv[])
 	set_default_splash();
 	set_default_welcome();
 	set_default_language();
+#ifdef DO_XCHOOSER
+	set_default_address();
+#endif				/* DO_XCHOOSER */
 }
 
 void
@@ -4225,6 +4322,106 @@ get_default_language(void)
 	}
 }
 
+#ifdef DO_XCHOOSER
+Bool
+TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
+{
+	sa_family_t family;
+	struct ifaddrs *ifa, *ifas = NULL;
+
+	switch (connectionType) {
+	case FamilyLocal:
+		family = AF_UNIX;
+		return True;
+	case FamilyInternet:
+		if ((*(in_addr_t *) clientAddress->data) == INADDR_LOOPBACK)
+			return True;
+		family = AF_INET;
+		break;
+	case FamilyInternet6:
+		if (IN6_IS_ADDR_LOOPBACK(clientAddress->data))
+			return True;
+		family = AF_INET6;
+		break;
+	default:
+		family = AF_UNSPEC;
+		return False;
+	}
+	if (getifaddrs(&ifas) == 0) {
+		for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
+			struct sockaddr *ifa_addr;
+
+			if (!(ifa_addr = ifa->ifa_addr)) {
+				EPRINTF("interface %s has no address\n", ifa->ifa_name);
+				continue;
+			}
+			if (ifa_addr->sa_family != family) {
+				DPRINTF("interface %s has wrong family\n", ifa->ifa_name);
+				continue;
+			}
+			switch (family) {
+			case AF_INET:
+			{
+				struct sockaddr_in *sin = (typeof(sin)) ifa_addr;
+
+				if (!memcmp(&sin->sin_addr, clientAddress->data, 4)) {
+					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					freeifaddrs(ifas);
+					return True;
+				}
+
+				break;
+			}
+			case AF_INET6:
+			{
+				struct sockaddr_in6 *sin6 = (typeof(sin6)) ifa_addr;
+
+				if (!memcmp(&sin6->sin6_addr, clientAddress->data, 16)) {
+					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					freeifaddrs(ifas);
+					return True;
+				}
+				break;
+			}
+			}
+		}
+		freeifaddrs(ifas);
+	}
+	return False;
+}
+
+void
+get_default_address(void)
+{
+	switch (options.clientAddress.length) {
+	case 0:
+		options.clientAddress = defaults.clientAddress;
+		options.connectionType = defaults.connectionType;
+		options.isLocal = defaults.isLocal;
+		break;
+	case 4:
+		if (options.connectionType != FamilyInternet) {
+			EPRINTF("Mismatch in connectionType %d != %d\n",
+				FamilyInternet, options.connectionType);
+			exit(EXIT_SYNTAXERR);
+		}
+		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		break;
+	case 16:
+		if (options.connectionType != FamilyInternet6) {
+			EPRINTF("Mismatch in connectionType %d != %d\n",
+				FamilyInternet, options.connectionType);
+			exit(EXIT_SYNTAXERR);
+		}
+		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		break;
+	default:
+		EPRINTF("Invalid client address length %d\n", options.clientAddress.length);
+		exit(EXIT_SYNTAXERR);
+	}
+}
+#endif				/* DO_XCHOOSER */
+
 void
 get_defaults(int argc, char *argv[])
 {
@@ -4233,6 +4430,9 @@ get_defaults(int argc, char *argv[])
 	get_default_splash();
 	get_default_welcome();
 	get_default_language();
+#ifdef DO_XCHOOSER
+	get_default_address();
+#endif				/* DO_XCHOOSER */
 }
 
 Bool

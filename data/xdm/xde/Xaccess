@@ -8,13 +8,13 @@
 #
 # Any indirect host can get a chooser
 #
-#*		CHOOSER BROADCAST 239.192.1.1/16 ff01::12b ff02::12b ff03::12b ff04::12b ff05::12b
-*		CHOOSER BROADCAST 239.192.1.1/16 ff01::12b ff02::12b ff03::12b ff04::12b ff05::12b
+#*		CHOOSER BROADCAST 239.192.1.1/16 ff01::12b ff02::12b ff05::12b ff08::12b
+*		CHOOSER BROADCAST 239.192.1.1/16 ff01::12b ff02::12b ff05::12b ff08::12b
 #
 # Listen on all unicast, IPv4 multicast and IPv6 multicast
 #
-LISTEN		* 239.192.1.1 ff01::12b ff02::12b ff03::12b ff04::12b ff05::12b
-#LISTEN		* 239.192.1.1 ff01::12b ff02::12b ff03::12b ff04::12b ff05::12b
+#LISTEN		* 239.192.1.1 ff01::12b ff02::12b ff05::12b ff08::12b
+LISTEN		* 239.192.1.1 ff01::12b ff02::12b ff05::12b ff08::12b
 #
 #
 #
