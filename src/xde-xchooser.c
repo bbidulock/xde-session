@@ -1959,7 +1959,8 @@ DoAccept(GtkButton *button, gpointer data)
 	gtk_tree_model_get_value(model, &iter, XDM_COL_CTYPE, &ctype);
 	connectionType = g_value_get_int(&ctype);
 	g_value_unset(&ctype);
-	if (options.connectionType != FamilyInternet6 && connectionType != options.connectionType) {
+	if (!options.isLocal && options.connectionType != FamilyInternet6
+	    && connectionType != options.connectionType) {
 		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
 								    GTK_DIALOG_DESTROY_WITH_PARENT,
 								    GTK_MESSAGE_ERROR,
