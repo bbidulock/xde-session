@@ -189,6 +189,14 @@ enum {
 	BackgroundSourceRoot = (1 << 2),
 };
 
+typedef enum {
+	SocketScopeLoopback,
+	SocketScopeLinklocal,
+	SocketScopeSitelocal,
+	SocketScopePrivate,
+	SocketScopeGlobal,
+} SocketScope;
+
 typedef struct {
 	int output;
 	int debug;
@@ -196,6 +204,7 @@ typedef struct {
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
+	SocketScope clientScope;
 	Bool isLocal;
 	char *banner;
 	char *welcome;
@@ -226,6 +235,7 @@ Options options = {
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
+	.clientScope = SocketScopeLoopback,
 	.isLocal = False,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
@@ -256,6 +266,7 @@ Options defaults = {
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
+	.clientScope = SocketScopeLoopback,
 	.isLocal = False,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
@@ -479,6 +490,41 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 XdmcpBuffer directBuffer;
 XdmcpBuffer broadcastBuffer;
 
+static gpointer
+sockaddr_copy_func(gpointer boxed)
+{
+	struct sockaddr_storage *sa = boxed;
+	struct sockaddr_storage *na = NULL;
+
+	if (sa && (na = calloc(1, sizeof(*na))))
+		memmove(na, sa, sizeof(*na));
+	return (na);
+}
+
+static void
+sockaddr_free_func(gpointer boxed)
+{
+	free(boxed);
+}
+
+static GType
+g_sockaddr_get_type(void)
+{
+	static int initialized = 0;
+	static GType mytype;
+
+	if (!initialized) {
+		mytype = g_boxed_type_register_static("sockaddr",
+				sockaddr_copy_func,
+				sockaddr_free_func);
+		initialized = 1;
+	}
+	return mytype;
+}
+
+#undef G_TYPE_SOCKADDR
+#define G_TYPE_SOCKADDR (g_sockaddr_get_type())
+
 enum {
 	XDM_COL_HOSTNAME,		/* the manager hostname */
 	XDM_COL_REMOTENAME,		/* the manager remote name */
@@ -490,6 +536,8 @@ enum {
 	XDM_COL_PORT,			/* the port number */
 	XDM_COL_MARKUP,			/* the combined markup description */
 	XDM_COL_TOOLTIP,		/* the tooltip information */
+	XDM_COL_SOCKADDR,		/* the socket address */
+	XDM_COL_SCOPE,			/* the socket address scope */
 };
 #endif				/* DO_XCHOOSER */
 
@@ -1180,6 +1228,19 @@ CanConnect(struct sockaddr *sa)
 		EPRINTF("socket: %s\n", strerror(errno));
 		return False;
 	}
+	if (options.debug) {
+		char *p, *e, *rawbuf;
+		unsigned char *b;
+		int i, len;
+
+		len = 2 * salen + 1;
+		rawbuf = calloc(len, sizeof(*rawbuf));
+		for (i = 0, p = rawbuf, e = rawbuf + len, b = (typeof(b)) sa;
+				i < salen; i++, p += 2, b++)
+			snprintf(p, e - p, "%02x", *b);
+		DPRINTF("raw socket address for connect: %s\n", rawbuf);
+		free(rawbuf);
+	}
 	if (connect(sock, sa, salen) == -1) {
 		DPRINTF("connect: %s\n", strerror(errno));
 		close(sock);
@@ -1230,6 +1291,62 @@ CanConnect(struct sockaddr *sa)
 	return True;
 }
 
+#define IN_LINKLOCAL(a) ((((in_addr_t)(a)) & 0xffff0000) == 0xa9fe0000)
+#define IN_LOOPBACK(a)	((((in_addr_t)(a)) & 0xffffff00) == 0x7f000000)
+#define IN_ORGLOCAL(a) ( \
+	((((in_addr_t)(a)) & 0xff000000) == 0x0a000000) || \
+	((((in_addr_t)(a)) & 0xfff00000) == 0xac100000) || \
+	((((in_addr_t)(a)) & 0xffff0000) == 0xc0a80000))
+
+
+static SocketScope
+getaddrscope(struct sockaddr *sa)
+{
+	switch (sa->sa_family) {
+	case AF_INET:
+	{
+		struct sockaddr_in *sin = (typeof(sin)) sa;
+		in_addr_t addr = ntohl(sin->sin_addr.s_addr);
+
+		if (IN_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN_ORGLOCAL(addr))
+			return SocketScopePrivate;
+		return SocketScopeGlobal;
+	}
+	case AF_INET6:
+	{
+		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
+		struct in6_addr *addr = &sin6->sin6_addr;
+
+		if (IN6_IS_ADDR_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN6_IS_ADDR_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN6_IS_ADDR_SITELOCAL(addr))
+			return SocketScopeSitelocal;
+		if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
+			in_addr_t ipv4 = ntohl(((uint32_t *)addr)[3]);
+			if (IN_LOOPBACK(ipv4))
+				return SocketScopeLoopback;
+			if (IN_LINKLOCAL(ipv4))
+				return SocketScopeLinklocal;
+			if (IN_ORGLOCAL(ipv4))
+				return SocketScopePrivate;
+			return SocketScopeGlobal;
+		}
+		return SocketScopeGlobal;
+	}
+	default:
+	case AF_UNSPEC:
+	case AF_UNIX:
+		break;
+	}
+	return SocketScopeLoopback;
+}
+
 Bool
 AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname_a,
 	ARRAY8 *status_a)
@@ -1244,9 +1361,17 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	char markup[BUFSIZ + 1] = { 0, };
 	char tooltip[BUFSIZ + 1] = { 0, };
 	char status[256] = { 0, };
-	socklen_t len;
+	socklen_t len, salen;
+	SocketScope scope;
 
 	DPRINT();
+
+	scope = getaddrscope(sa);
+	if (scope < options.clientScope) {
+		DPRINTF("cannot use local scoped address for remote clients\n");
+		return False;
+	}
+
 	len = hostname_a->length;
 	if (len > NI_MAXHOST)
 		len = NI_MAXHOST;
@@ -1263,28 +1388,31 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	case AF_INET:
 	{
 		struct sockaddr_in *sin = (typeof(sin)) sa;
+		salen = sizeof(*sin);
 
 		DPRINTF("family is AF_INET\n");
 		ctype = FamilyInternet;
 		port = ntohs(sin->sin_port);
 		inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
-		DPRINTF("address is %s\n", ipaddr);
+		DPRINTF("address is %s port %hd\n", ipaddr, port);
 		break;
 	}
 	case AF_INET6:
 	{
 		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
+		salen = sizeof(*sin6);
 
 		DPRINTF("family is AF_INET6\n");
 		ctype = FamilyInternet6;
 		port = ntohs(sin6->sin6_port);
 		inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-		DPRINTF("address is %s\n", ipaddr);
+		DPRINTF("address is %s port %hd\n", ipaddr, port);
 		break;
 	}
 	case AF_UNIX:
 	{
 		struct sockaddr_un *sun = (typeof(sun)) sa;
+		salen = sizeof(*sun);
 
 		DPRINTF("family is AF_UNIX\n");
 		ctype = FamilyLocal;
@@ -1304,7 +1432,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 		DPRINTF("wrong connection type\n");
 		return False;
 	}
-	if (getnameinfo(sa, len, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
+	if (getnameinfo(sa, salen, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
 		DPRINTF("getnameinfo: %s\n", strerror(errno));
 		return False;
 	}
@@ -1314,22 +1442,16 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 
 	for (valid = gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(model), &iter, NULL, 0); valid;
 	     valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)) {
-		GValue addr_v = G_VALUE_INIT;
-		GValue name_v = G_VALUE_INIT;
-		const gchar *addr;
-		const gchar *name;
+		GValue sock_v = G_VALUE_INIT;
+		const struct sockaddr *sock;
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XDM_COL_IPADDR, &addr_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XDM_COL_HOSTNAME, &name_v);
-		addr = g_value_get_string(&addr_v);
-		name = g_value_get_string(&name_v);
-		if (!strcmp(addr, ipaddr) && !strcmp(name, hostname)) {
-			g_value_unset(&addr_v);
-			g_value_unset(&name_v);
+		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XDM_COL_SOCKADDR, &sock_v);
+		sock = g_value_get_boxed(&sock_v);
+		if (!memcmp(sock, sa, salen)) {
+			g_value_unset(&sock_v);
 			break;
 		}
-		g_value_unset(&addr_v);
-		g_value_unset(&name_v);
+		g_value_unset(&sock_v);
 	}
 	if (!valid)
 		gtk_list_store_append(model, &iter);
@@ -1343,6 +1465,8 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 			   XDM_COL_CTYPE, ctype,
 			   XDM_COL_SERVICE, service,
 			   XDM_COL_PORT, port,
+			   XDM_COL_SOCKADDR, sa,
+			   XDM_COL_SCOPE, scope,
 			   -1);
 	/* *INDENT-ON* */
 
@@ -1418,6 +1542,26 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	strncat(tooltip, ipaddr, BUFSIZ);
 	strncat(tooltip, "</small>\n", BUFSIZ);
 
+	strncat(tooltip, "<small><b>Scope:</b>\t\t", BUFSIZ);
+	switch (scope) {
+	case SocketScopeLoopback:
+		strncat(tooltip, "Loopback", BUFSIZ);
+		break;
+	case SocketScopeLinklocal:
+		strncat(tooltip, "Link Local", BUFSIZ);
+		break;
+	case SocketScopeSitelocal:
+		strncat(tooltip, "Site Local", BUFSIZ);
+		break;
+	case SocketScopePrivate:
+		strncat(tooltip, "Private Network", BUFSIZ);
+		break;
+	case SocketScopeGlobal:
+		strncat(tooltip, "Global Network", BUFSIZ);
+		break;
+	}
+	strncat(tooltip, "</small>\n", BUFSIZ);
+
 	strncat(tooltip, "<small><b>ConnType:</b>\t", BUFSIZ);
 	strncat(tooltip, conntype, BUFSIZ);
 	strncat(tooltip, "</small>\n", BUFSIZ);
@@ -1455,7 +1599,8 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 	DPRINT();
 	sfd = g_io_channel_unix_get_fd(source);
 	addrlen = sizeof(addr);
-	if (!XdmcpFill(sfd, buffer, (XdmcpNetaddr) & addr, &addrlen)) {
+	memset(&addr, 0, addrlen);
+	if (!XdmcpFill(sfd, buffer, (XdmcpNetaddr) &addr, &addrlen)) {
 		EPRINTF("could not fill buffer!\n");
 		return G_SOURCE_CONTINUE;
 	}
@@ -1778,94 +1923,110 @@ on_msg_timeout(gpointer data)
 }
 
 void
-Choose(short connectionType, char *name)
+Choose(short connectionType, char *name, struct sockaddr *sa, int scope)
 {
-	CARD8 rawaddr[16] = { 0, };
-	ARRAY8 hostAddress = { 0, NULL };
+	CARD8 rawaddr[20] = { 0, };
+	ARRAY8 hostAddress = { 0, rawaddr };
 
-	switch (connectionType) {
-	case FamilyInternet:
-		inet_pton(AF_INET, name, rawaddr);
-		hostAddress.data = rawaddr;
+	switch (sa->sa_family) {
+	case AF_INET:
+	{
+		struct sockaddr_in *sin = (typeof(sin)) sa;
+
+		memmove(rawaddr, &sin->sin_addr, 4);
 		hostAddress.length = 4;
 		break;
-	case FamilyInternet6:
-		inet_pton(AF_INET6, name, rawaddr);
-		hostAddress.data = rawaddr;
-		hostAddress.length = 16;
+	}
+	case AF_INET6:
+	{
+		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
+		uint32_t scope_id = htonl(sin6->sin6_scope_id);
+
+		memmove(rawaddr, &sin6->sin6_addr, 16);
+
+		switch (scope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			memmove(rawaddr + 16, &scope_id, 4);
+			hostAddress.length = 20;
+			break;
+		default:
+			hostAddress.length = 16;
+			break;
+		}
 		break;
+	}
 	default:
-	case FamilyLocal:
-		hostAddress.data = rawaddr;
-		hostAddress.length = 0;
+	case AF_UNIX:
+	{
 		break;
+	}
 	}
 
 	if (options.xdmAddress.data) {
 		char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
-		struct sockaddr_in in_addr;
-		struct sockaddr_in6 in6_addr;
-		struct sockaddr *addr = NULL;
-		int family, len = 0, fd;
+		struct sockaddr_storage xdmAddr;
+		struct sockaddr *xa;
+		socklen_t xalen;
 		char buf[1024];
 		XdmcpBuffer buffer;
 		char *xdm;
+		int fd;
 
 		/* 
 		 * Connect to XDM and output result
 		 */
+		memset(&xdmAddr, 0, sizeof(xdmAddr));
+		xa = (typeof(xa)) & xdmAddr;
 		xdm = (char *) options.xdmAddress.data;
-		family = ((int) xdm[0] << 8) + xdm[1];
-		switch (family) {
+		xa->sa_family = ((int) xdm[0] << 8) + xdm[1];
+		switch (xa->sa_family) {
 		case AF_INET:
-			memset(&in_addr, 0, sizeof(in_addr));
-			in_addr.sin_family = family;
-			memmove(&in_addr.sin_port, xdm + 2, 2);
-			memmove(&in_addr.sin_addr, xdm + 4, 4);
-			inet_ntop(AF_INET, &in_addr.sin_addr, ipaddr, INET_ADDRSTRLEN);
-			DPRINTF("AF_INET: %s:%hu\n", ipaddr,
-				(unsigned short) ntohs(in_addr.sin_port));
-			addr = (struct sockaddr *) &in_addr;
-			len = sizeof(in_addr);
-			break;
-		case AF_INET6:
-			memset(&in6_addr, 0, sizeof(in6_addr));
-			in6_addr.sin6_family = family;
-			memmove(&in6_addr.sin6_port, xdm + 2, 2);
-			memmove(&in6_addr.sin6_addr, xdm + 4, 16);
-			inet_ntop(AF_INET6, &in6_addr.sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-			DPRINTF("AF_INET6: %s:%hu\n", ipaddr,
-				(unsigned short) ntohs(in6_addr.sin6_port));
-			addr = (struct sockaddr *) &in6_addr;
-			len = sizeof(in6_addr);
-			break;
-		case AF_UNIX:
-			/* FIXME: why not AF_UNIX? If the Display happens to be
-			   on the local host, why not offer a AF_UNIX
-			   connection? */
-		default:
 		{
-			/* should not happen: we should not be displaying
-			   incompatible address families */
-			GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
-									    GTK_DIALOG_DESTROY_WITH_PARENT,
-									    GTK_MESSAGE_ERROR,
-									    GTK_BUTTONS_OK,
-									    "<b>%s</b>\nNumber: %d\n",
-									    "Bad address family!",
-									    family);
-			gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+			struct sockaddr_in *sin;
 
-			gtk_dialog_run(GTK_DIALOG(msg));
-			g_source_remove(id);
+			if (options.xdmAddress.length != 2 + 2 + 4) {
+				EPRINTF("Bad xdm address length %d\n",
+					(int) options.xdmAddress.length);
+				return;
+			}
+			sin = (typeof(sin)) xa;
+			memmove(&sin->sin_port, xdm + 2, 2);
+			memmove(&sin->sin_addr, xdm + 4, 4);
+			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
+			DPRINTF("AF_INET: %s port %hd\n", ipaddr, ntohs(sin->sin_port));
+			xalen = sizeof(*sin);
+			break;
+		}
+		case AF_INET6:
+		{
+			struct sockaddr_in6 *sin6;
+
+			if (options.xdmAddress.length != 2 + 2 + 16 &&
+			    options.xdmAddress.length != 2 + 2 + 20) {
+				EPRINTF("Bad xdm address length %d\n",
+					(int) options.xdmAddress.length);
+				return;
+			}
+			sin6 = (typeof(sin6)) xa;
+			memmove(&sin6->sin6_port, xdm + 2, 2);
+			memmove(&sin6->sin6_addr, xdm + 4, 16);
+			if (options.xdmAddress.length == 2 + 2 + 20)
+				sin6->sin6_scope_id = ntohl(*(uint32_t *) (xdm + 20));
+			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
+			DPRINTF("AF_INET6: %s port %hd\n", ipaddr, ntohs(sin6->sin6_port));
+			xalen = sizeof(*sin6);
+			break;
+		}
+		case AF_UNIX:
+		default:
 			return;
 		}
-		}
-		if ((fd = socket(family, SOCK_STREAM, 0)) == -1) {
-			EPRINTF("Cannot create reponse socket: %s\n", strerror(errno));
+		if ((fd = socket(xa->sa_family, SOCK_STREAM, 0)) == -1) {
+			EPRINTF("Cannot create response socket: %s\n", strerror(errno));
 			exit(REMANAGE_DISPLAY);
 		}
-		if (connect(fd, addr, len) == -1) {
+		if (connect(fd, xa, xalen) == -1) {
 			EPRINTF("Cannot connect to xdm: %s\n", strerror(errno));
 			exit(REMANAGE_DISPLAY);
 		}
@@ -1878,28 +2039,24 @@ Choose(short connectionType, char *name)
 		XdmcpWriteARRAY8(&buffer, &hostAddress);
 		if (write(fd, (char *) buffer.data, buffer.pointer)) ;
 		close(fd);
-	} else {
-		int len, i;
+	}
+	if (!options.xdmAddress.data || options.debug) {
+		int i, len;
+		CARD8Ptr b, buf;
+		FILE *where = options.xdmAddress.data ? stderr : stdout;
 
-#if 0
-		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
-								    GTK_DIALOG_DESTROY_WITH_PARENT,
-								    GTK_MESSAGE_INFO,
-								    GTK_BUTTONS_OK,
-								    "<b>%s</b>: %s\n",
-								    "Would have connected to",
-								    ipAddress);
-		gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
-
-		gtk_dialog_run(GTK_DIALOG(msg));
-		g_source_remove(id);
-#endif
-
-		fprintf(stdout, "%u\n", (unsigned int) connectionType);
+		if (options.xdmAddress.data)
+			DPRINTF("choice: ");
+		len = options.clientAddress.length;
+		buf = options.clientAddress.data;
+		for (i = 0, b = buf; i < len; i++, b++)
+			fprintf(where, "%02x", (unsigned) *b);
+		fprintf(where, " %d ", (int) connectionType);
 		len = hostAddress.length;
-		for (i = 0; i < len; i++)
-			fprintf(stdout, "%u%s", (unsigned int) rawaddr[i],
-				i == len - 1 ? "\n" : " ");
+		buf = hostAddress.data;
+		for (i = 0, b = buf; i < len; i++, b++)
+			fprintf(where, "%02x", (unsigned) *b);
+		fprintf(where, "\n");
 	}
 	exit(OBEYSESS_DISPLAY);
 }
@@ -1914,8 +2071,11 @@ DoAccept(GtkButton *button, gpointer data)
 	GValue ctype = G_VALUE_INIT;
 	GValue ipaddr = G_VALUE_INIT;
 	GValue willing = G_VALUE_INIT;
-	gint willingness, connectionType;
+	GValue saddr = G_VALUE_INIT;
+	GValue scope = G_VALUE_INIT;
+	gint willingness, connectionType, sockScope;
 	gchar *ipAddress;
+	struct sockaddr *sockAddress;
 
 	if (!view)
 		return;
@@ -1979,7 +2139,15 @@ DoAccept(GtkButton *button, gpointer data)
 	ipAddress = g_value_dup_string(&ipaddr);
 	g_value_unset(&ipaddr);
 
-	Choose(connectionType, ipAddress);
+	gtk_tree_model_get_value(model, &iter, XDM_COL_SOCKADDR, &saddr);
+	sockAddress = g_value_dup_boxed(&saddr);
+	g_value_unset(&saddr);
+
+	gtk_tree_model_get_value(model, &iter, XDM_COL_SCOPE, &scope);
+	sockScope = g_value_get_int(&scope);
+	g_value_unset(&scope);
+
+	Choose(connectionType, ipAddress, sockAddress, sockScope);
 }
 
 typedef struct {
@@ -3466,17 +3634,19 @@ GetPanel(void)
 	gtk_box_pack_start(GTK_BOX(pan), sw, TRUE, TRUE, 4);
 
 	/* *INDENT-OFF* */
-	model = gtk_list_store_new(10
-			,GTK_TYPE_STRING	/* hostname */
-			,GTK_TYPE_STRING	/* remotename */
-			,GTK_TYPE_INT		/* willing */
-			,GTK_TYPE_STRING	/* status */
-			,GTK_TYPE_STRING	/* IP Address */
-			,GTK_TYPE_INT		/* connection type */
-			,GTK_TYPE_STRING	/* service */
-			,GTK_TYPE_INT		/* port */
-			,GTK_TYPE_STRING	/* markup */
-			,GTK_TYPE_STRING	/* tooltip */
+	model = gtk_list_store_new(12
+			,G_TYPE_STRING		/* hostname */
+			,G_TYPE_STRING		/* remotename */
+			,G_TYPE_INT		/* willing */
+			,G_TYPE_STRING		/* status */
+			,G_TYPE_STRING		/* IP Address */
+			,G_TYPE_INT		/* connection type */
+			,G_TYPE_STRING		/* service */
+			,G_TYPE_INT		/* port */
+			,G_TYPE_STRING		/* markup */
+			,G_TYPE_STRING		/* tooltip */
+			,G_TYPE_SOCKADDR	/* socket address */
+			,G_TYPE_INT		/* scope */
 	    );
 	/* *INDENT-ON* */
 
@@ -4142,6 +4312,7 @@ set_default_address(void)
 	XdmcpReallocARRAY8(&defaults.clientAddress, sizeof(struct in6_addr));
 	*(struct in6_addr *) defaults.clientAddress.data = (struct in6_addr) IN6ADDR_LOOPBACK_INIT;
 	defaults.connectionType = FamilyInternet6;
+	defaults.clientScope = SocketScopeLoopback;
 	defaults.isLocal = True;
 }
 #endif				/* DO_XCHOOSER */
@@ -4323,6 +4494,53 @@ get_default_language(void)
 }
 
 #ifdef DO_XCHOOSER
+SocketScope
+GetScope(ARRAY8Ptr clientAddress, CARD16 connectionType)
+{
+	switch (connectionType) {
+	case FamilyLocal:
+		break;
+	case FamilyInternet:
+	{
+		in_addr_t addr = ntohl(*(in_addr_t *) clientAddress->data);
+
+		if (IN_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN_ORGLOCAL(addr))
+			return SocketScopePrivate;
+		return SocketScopeGlobal;
+	}
+	case FamilyInternet6:
+	{
+		struct in6_addr *addr = (typeof(addr)) clientAddress->data;
+
+		if (IN6_IS_ADDR_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN6_IS_ADDR_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN6_IS_ADDR_SITELOCAL(addr))
+			return SocketScopeSitelocal;
+		if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
+			in_addr_t ipv4 = ntohl(((uint32_t *) addr)[3]);
+
+			if (IN_LOOPBACK(ipv4))
+				return SocketScopeLoopback;
+			if (IN_LINKLOCAL(ipv4))
+				return SocketScopeLinklocal;
+			if (IN_ORGLOCAL(ipv4))
+				return SocketScopePrivate;
+			return SocketScopeGlobal;
+		}
+		return SocketScopeGlobal;
+	}
+	default:
+		break;
+	}
+	return SocketScopeLoopback;
+}
+
 Bool
 TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
 {
@@ -4334,7 +4552,7 @@ TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
 		family = AF_UNIX;
 		return True;
 	case FamilyInternet:
-		if ((*(in_addr_t *) clientAddress->data) == INADDR_LOOPBACK)
+		if (ntohl((*(in_addr_t *) clientAddress->data)) == INADDR_LOOPBACK)
 			return True;
 		family = AF_INET;
 		break;
@@ -4397,6 +4615,7 @@ get_default_address(void)
 	case 0:
 		options.clientAddress = defaults.clientAddress;
 		options.connectionType = defaults.connectionType;
+		options.clientScope = defaults.clientScope;
 		options.isLocal = defaults.isLocal;
 		break;
 	case 4:
@@ -4405,14 +4624,17 @@ get_default_address(void)
 				FamilyInternet, options.connectionType);
 			exit(EXIT_SYNTAXERR);
 		}
+		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
 		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
 		break;
 	case 16:
+	case 20:
 		if (options.connectionType != FamilyInternet6) {
 			EPRINTF("Mismatch in connectionType %d != %d\n",
 				FamilyInternet, options.connectionType);
 			exit(EXIT_SYNTAXERR);
 		}
+		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
 		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
 		break;
 	default:
@@ -4435,6 +4657,7 @@ get_defaults(int argc, char *argv[])
 #endif				/* DO_XCHOOSER */
 }
 
+#ifdef DO_XCHOOSER
 Bool
 HexToARRAY8(ARRAY8 *array, char *hex)
 {
@@ -4446,8 +4669,7 @@ HexToARRAY8(ARRAY8 *array, char *hex)
 	if (len & 0x01)
 		return False;
 	len >>= 1;
-	array->length = len;
-	array->data = calloc(len, sizeof(CARD8));
+	XdmcpReallocARRAY8(array, len);
 	for (p = hex, o = array->data; *p; p += 2, o++) {
 		c = tolower(p[0]);
 		if (!isxdigit(c))
@@ -4462,6 +4684,7 @@ HexToARRAY8(ARRAY8 *array, char *hex)
 	}
 	return True;
 }
+#endif
 
 int
 main(int argc, char *argv[])

@@ -24,6 +24,7 @@
 -ss
 -hnl
 -nbc
+-TXdmcpNetaddr
 -TGdkPixbuf
 -TGdkPixmap
 -TGdkScreen
