@@ -205,6 +205,7 @@ typedef struct {
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
 	SocketScope clientScope;
+	uint32_t clientIface;
 	Bool isLocal;
 	char *banner;
 	char *welcome;
@@ -236,6 +237,7 @@ Options options = {
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
 	.clientScope = SocketScopeLoopback,
+	.clientIface = 0,
 	.isLocal = False,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
@@ -267,6 +269,7 @@ Options defaults = {
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
 	.clientScope = SocketScopeLoopback,
+	.clientIface = 0,
 	.isLocal = False,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
@@ -515,8 +518,7 @@ g_sockaddr_get_type(void)
 
 	if (!initialized) {
 		mytype = g_boxed_type_register_static("sockaddr",
-				sockaddr_copy_func,
-				sockaddr_free_func);
+						      sockaddr_copy_func, sockaddr_free_func);
 		initialized = 1;
 	}
 	return mytype;
@@ -538,6 +540,7 @@ enum {
 	XDM_COL_TOOLTIP,		/* the tooltip information */
 	XDM_COL_SOCKADDR,		/* the socket address */
 	XDM_COL_SCOPE,			/* the socket address scope */
+	XDM_COL_IFINDEX,		/* the socket interface index */
 };
 #endif				/* DO_XCHOOSER */
 
@@ -1236,7 +1239,7 @@ CanConnect(struct sockaddr *sa)
 		len = 2 * salen + 1;
 		rawbuf = calloc(len, sizeof(*rawbuf));
 		for (i = 0, p = rawbuf, e = rawbuf + len, b = (typeof(b)) sa;
-				i < salen; i++, p += 2, b++)
+		     i < salen; i++, p += 2, b++)
 			snprintf(p, e - p, "%02x", *b);
 		DPRINTF("raw socket address for connect: %s\n", rawbuf);
 		free(rawbuf);
@@ -1298,7 +1301,6 @@ CanConnect(struct sockaddr *sa)
 	((((in_addr_t)(a)) & 0xfff00000) == 0xac100000) || \
 	((((in_addr_t)(a)) & 0xffff0000) == 0xc0a80000))
 
-
 static SocketScope
 getaddrscope(struct sockaddr *sa)
 {
@@ -1328,7 +1330,8 @@ getaddrscope(struct sockaddr *sa)
 		if (IN6_IS_ADDR_SITELOCAL(addr))
 			return SocketScopeSitelocal;
 		if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
-			in_addr_t ipv4 = ntohl(((uint32_t *)addr)[3]);
+			in_addr_t ipv4 = ntohl(((uint32_t *) addr)[3]);
+
 			if (IN_LOOPBACK(ipv4))
 				return SocketScopeLoopback;
 			if (IN_LINKLOCAL(ipv4))
@@ -1348,8 +1351,8 @@ getaddrscope(struct sockaddr *sa)
 }
 
 Bool
-AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname_a,
-	ARRAY8 *status_a)
+AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
+	ARRAY8 *authname_a, ARRAY8 *hostname_a, ARRAY8 *status_a)
 {
 	int ctype;
 	sa_family_t family;
@@ -1361,7 +1364,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	char markup[BUFSIZ + 1] = { 0, };
 	char tooltip[BUFSIZ + 1] = { 0, };
 	char status[256] = { 0, };
-	socklen_t len, salen;
+	socklen_t len;
 	SocketScope scope;
 
 	DPRINT();
@@ -1370,6 +1373,21 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	if (scope < options.clientScope) {
 		DPRINTF("cannot use local scoped address for remote clients\n");
 		return False;
+	}
+	switch (scope) {
+	case SocketScopeLinklocal:
+	case SocketScopeSitelocal:
+		if (!ifindex) {
+			DPRINTF("cannot use site/link local address without ifindex\n");
+			return False;
+		}
+		if (scope == options.clientScope && ifindex != options.clientIface) {
+			DPRINTF("cannot use site/link local address with other ifindex\n");
+			return False;
+		}
+		break;
+	default:
+		break;
 	}
 
 	len = hostname_a->length;
@@ -1388,6 +1406,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	case AF_INET:
 	{
 		struct sockaddr_in *sin = (typeof(sin)) sa;
+
 		salen = sizeof(*sin);
 
 		DPRINTF("family is AF_INET\n");
@@ -1400,6 +1419,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	case AF_INET6:
 	{
 		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
+
 		salen = sizeof(*sin6);
 
 		DPRINTF("family is AF_INET6\n");
@@ -1412,6 +1432,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	case AF_UNIX:
 	{
 		struct sockaddr_un *sun = (typeof(sun)) sa;
+
 		salen = sizeof(*sun);
 
 		DPRINTF("family is AF_UNIX\n");
@@ -1467,6 +1488,7 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 			   XDM_COL_PORT, port,
 			   XDM_COL_SOCKADDR, sa,
 			   XDM_COL_SCOPE, scope,
+			   XDM_COL_IFINDEX, ifindex,
 			   -1);
 	/* *INDENT-ON* */
 
@@ -1543,21 +1565,22 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 	strncat(tooltip, "</small>\n", BUFSIZ);
 
 	strncat(tooltip, "<small><b>Scope:</b>\t\t", BUFSIZ);
+	len = strlen(tooltip);
 	switch (scope) {
 	case SocketScopeLoopback:
-		strncat(tooltip, "Loopback", BUFSIZ);
+		snprintf(tooltip + len, BUFSIZ - len, "Loopback [%d]", ifindex);
 		break;
 	case SocketScopeLinklocal:
-		strncat(tooltip, "Link Local", BUFSIZ);
+		snprintf(tooltip + len, BUFSIZ - len, "Link Local [%d]", ifindex);
 		break;
 	case SocketScopeSitelocal:
-		strncat(tooltip, "Site Local", BUFSIZ);
+		snprintf(tooltip + len, BUFSIZ - len, "Site Local [%d]", ifindex);
 		break;
 	case SocketScopePrivate:
-		strncat(tooltip, "Private Network", BUFSIZ);
+		snprintf(tooltip + len, BUFSIZ - len, "Private Network");
 		break;
 	case SocketScopeGlobal:
-		strncat(tooltip, "Global Network", BUFSIZ);
+		snprintf(tooltip + len, BUFSIZ - len, "Global Network");
 		break;
 	}
 	strncat(tooltip, "</small>\n", BUFSIZ);
@@ -1585,6 +1608,84 @@ AddHost(struct sockaddr *sa, xdmOpCode opc, ARRAY8 *authname_a, ARRAY8 *hostname
 
 }
 
+/*
+ * Does what XdmcpFill does but also retrieves the interface index of the
+ * received interface on IP version 4 sockets or scope_id on IP version 6
+ * sockets.
+ */
+int
+XdmcpRecv(int fd, XdmcpBufferPtr buffer, XdmcpNetaddr from, int *fromlen, int *fromif)
+{
+	static char cbuf[BUFSIZ];
+	BYTE *newBuf;
+	struct iovec iov;
+	struct msghdr msg;
+
+	if (buffer->size < XDM_MAX_MSGLEN) {
+		newBuf = calloc(XDM_MAX_MSGLEN, sizeof(*newBuf));
+		if (newBuf) {
+			free(buffer->data);
+			buffer->data = newBuf;
+			buffer->size = XDM_MAX_MSGLEN;
+		}
+	}
+
+	iov.iov_base = (void *) buffer->data;
+	iov.iov_len = buffer->size;
+
+	msg.msg_name = (void *) from;
+	msg.msg_namelen = *fromlen;
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = (void *) cbuf;
+	msg.msg_controllen = sizeof(cbuf);
+	msg.msg_flags = 0;
+
+	buffer->pointer = 0;
+	buffer->count = recvmsg(fd, &msg, 0);
+
+	if (buffer->count == -1) {
+		buffer->count = 0;
+		return FALSE;
+	}
+	if (buffer->count < 6) {
+		buffer->count = 0;
+		errno = EMSGSIZE;
+		return FALSE;
+	}
+
+	*fromlen = msg.msg_namelen;
+	*fromif = 0;
+	switch (((struct sockaddr *) from)->sa_family) {
+	case AF_INET:
+	{
+#if defined(IP_PKTINFO)
+		struct cmsghdr *cmsg;
+		struct in_pktinfo *ipi;
+
+		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+			if (cmsg->cmsg_level != IPPROTO_IP)
+				continue;
+			if (cmsg->cmsg_type != IP_PKTINFO)
+				continue;
+			ipi = (typeof(ipi)) CMSG_DATA(cmsg);
+			*fromif = ipi->ipi_ifindex;
+			break;
+		}
+#elif defined(IP_RECVIF)
+		/* FIXME: there is a way to do this for BSD too... */
+#endif
+		break;
+	}
+	case AF_INET6:
+		*fromif = ((struct sockaddr_in6 *) from)->sin6_scope_id;
+		break;
+	default:
+		break;
+	}
+	return TRUE;
+}
+
 gboolean
 ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 {
@@ -1594,14 +1695,14 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 	ARRAY8 hostname = { 0, NULL };
 	ARRAY8 status = { 0, NULL };
 	struct sockaddr_storage addr;
-	int addrlen, sfd;
+	int addrlen, sfd, ifindex;
 
 	DPRINT();
 	sfd = g_io_channel_unix_get_fd(source);
 	addrlen = sizeof(addr);
 	memset(&addr, 0, addrlen);
-	if (!XdmcpFill(sfd, buffer, (XdmcpNetaddr) &addr, &addrlen)) {
-		EPRINTF("could not fill buffer!\n");
+	if (!XdmcpRecv(sfd, buffer, (XdmcpNetaddr) &addr, &addrlen, &ifindex)) {
+		EPRINTF("could not fill buffer: %s\n", strerror(errno));
 		return G_SOURCE_CONTINUE;
 	}
 	if (!XdmcpReadHeader(buffer, &header)) {
@@ -1620,8 +1721,8 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 		    && XdmcpReadARRAY8(buffer, &status)) {
 			if (header.length == 6 + authenticationName.length +
 			    hostname.length + status.length)
-				AddHost((struct sockaddr *) &addr, header.opcode,
-					&authenticationName, &hostname, &status);
+				AddHost((struct sockaddr *) &addr, addrlen, ifindex,
+					header.opcode, &authenticationName, &hostname, &status);
 			else
 				EPRINTF("message is the wrong length\n");
 		} else
@@ -1631,8 +1732,8 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 		DPRINTF("host is UNWILLING\n");
 		if (XdmcpReadARRAY8(buffer, &hostname) && XdmcpReadARRAY8(buffer, &status)) {
 			if (header.length == 4 + hostname.length + status.length)
-				AddHost((struct sockaddr *) &addr, header.opcode,
-					&authenticationName, &hostname, &status);
+				AddHost((struct sockaddr *) &addr, addrlen, ifindex,
+					header.opcode, &authenticationName, &hostname, &status);
 			else
 				EPRINTF("message is the wrong length\n");
 		} else
@@ -1695,11 +1796,11 @@ PingHosts(gpointer data)
 		}
 		if (ha->type == QUERY) {
 			DPRINTF("ping type is QUERY\n");
-			XdmcpFlush(ha->sfd, &directBuffer, (XdmcpNetaddr) & ha->addr, ha->addrlen);
+			XdmcpFlush(ha->sfd, &directBuffer, (XdmcpNetaddr) &ha->addr, ha->addrlen);
 		} else {
 			DPRINTF("ping type is BROADCAST_QUERY\n");
 			XdmcpFlush(ha->sfd, &broadcastBuffer,
-				   (XdmcpNetaddr) & ha->addr, ha->addrlen);
+				   (XdmcpNetaddr) &ha->addr, ha->addrlen);
 		}
 	}
 	if (++pingTry < PING_TRIES)
@@ -1747,6 +1848,11 @@ InitXDMCP(char *argv[], int argc)
 	if (setsockopt(sock4, SOL_SOCKET, SO_BROADCAST, &value, sizeof(value)) == -1) {
 		EPRINTF("setsockopt: Could not set IPv4 broadcast: %s\n", strerror(errno));
 	}
+#ifdef IP_PKTINFO
+	if (setsockopt(sock4, IPPROTO_IP, IP_PKTINFO, &value, sizeof(value)) == -1) {
+		EPRINTF("setsockopt: could not set IP_PKTINFO: %s\n", strerror(errno));
+	}
+#endif
 	if ((sock6 = socket(PF_INET6, SOCK_DGRAM, 0)) == -1) {
 		EPRINTF("socket: Could not create IPv6 socket: %s\n", strerror(errno));
 	}
@@ -1915,15 +2021,18 @@ InitXDMCP(char *argv[], int argc)
 	return True;
 }
 
+static gint timer_id;
+
 gboolean
 on_msg_timeout(gpointer data)
 {
 	gtk_dialog_response(GTK_DIALOG(data), GTK_RESPONSE_NONE);
-	return FALSE;
+	timer_id = 0;
+	return G_SOURCE_REMOVE;
 }
 
 void
-Choose(short connectionType, char *name, struct sockaddr *sa, int scope)
+Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifindex)
 {
 	CARD8 rawaddr[20] = { 0, };
 	ARRAY8 hostAddress = { 0, rawaddr };
@@ -1934,7 +2043,17 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope)
 		struct sockaddr_in *sin = (typeof(sin)) sa;
 
 		memmove(rawaddr, &sin->sin_addr, 4);
+
+		switch (scope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			memmove(rawaddr + 4, &ifindex, 4);
+			hostAddress.length = 8;
+			break;
+		default:
 		hostAddress.length = 4;
+		break;
+	}
 		break;
 	}
 	case AF_INET6:
@@ -1958,9 +2077,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope)
 	}
 	default:
 	case AF_UNIX:
-	{
 		break;
-	}
 	}
 
 	if (options.xdmAddress.data) {
@@ -2061,6 +2178,8 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope)
 	exit(OBEYSESS_DISPLAY);
 }
 
+void grabbed_window(GtkWidget *window, gpointer user_data);
+
 void
 DoAccept(GtkButton *button, gpointer data)
 {
@@ -2073,10 +2192,12 @@ DoAccept(GtkButton *button, gpointer data)
 	GValue willing = G_VALUE_INIT;
 	GValue saddr = G_VALUE_INIT;
 	GValue scope = G_VALUE_INIT;
-	gint willingness, connectionType, sockScope;
+	GValue index = G_VALUE_INIT;
+	gint willingness, connectionType, sockScope, ifindex;
 	gchar *ipAddress;
 	struct sockaddr *sockAddress;
 
+	DPRINT();
 	if (!view)
 		return;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
@@ -2088,10 +2209,16 @@ DoAccept(GtkButton *button, gpointer data)
 								    "<b>%s</b>\n%s\n",
 								    "No selection!",
 								    "Click on a list entry to make a selection.");
-		gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
 
+		timer_id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+
+		gtk_widget_realize(msg);
+		grabbed_window(msg, NULL);
 		gtk_dialog_run(GTK_DIALOG(msg));
-		g_source_remove(id);
+		g_object_unref(G_OBJECT(msg));
+		grabbed_window(top, NULL);
+		if (timer_id)
+			g_source_remove(timer_id);
 		return;
 	}
 
@@ -2109,10 +2236,16 @@ DoAccept(GtkButton *button, gpointer data)
 								    willingness,
 								    (int) WILLING,
 								    "Please select another host.");
-		gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
 
+		timer_id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+
+		gtk_widget_realize(msg);
+		grabbed_window(msg, NULL);
 		gtk_dialog_run(GTK_DIALOG(msg));
-		g_source_remove(id);
+		g_object_unref(G_OBJECT(msg));
+		grabbed_window(top, NULL);
+		if (timer_id)
+			g_source_remove(timer_id);
 		return;
 	}
 
@@ -2128,10 +2261,16 @@ DoAccept(GtkButton *button, gpointer data)
 								    "<b>%s</b>\n%s\n",
 								    "Host has wrong connection type!",
 								    "Please select another host.");
-		gint id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
 
+		timer_id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
+
+		gtk_widget_realize(msg);
+		grabbed_window(msg, NULL);
 		gtk_dialog_run(GTK_DIALOG(msg));
-		g_source_remove(id);
+		g_object_unref(G_OBJECT(msg));
+		grabbed_window(top, NULL);
+		if (timer_id)
+			g_source_remove(timer_id);
 		return;
 	}
 
@@ -2147,7 +2286,11 @@ DoAccept(GtkButton *button, gpointer data)
 	sockScope = g_value_get_int(&scope);
 	g_value_unset(&scope);
 
-	Choose(connectionType, ipAddress, sockAddress, sockScope);
+	gtk_tree_model_get_value(model, &iter, XDM_COL_IFINDEX, &index);
+	ifindex = g_value_get_int(&index);
+	g_value_unset(&index);
+
+	Choose(connectionType, ipAddress, sockAddress, sockScope, ifindex);
 }
 
 typedef struct {
@@ -3634,7 +3777,7 @@ GetPanel(void)
 	gtk_box_pack_start(GTK_BOX(pan), sw, TRUE, TRUE, 4);
 
 	/* *INDENT-OFF* */
-	model = gtk_list_store_new(12
+	model = gtk_list_store_new(13
 			,G_TYPE_STRING		/* hostname */
 			,G_TYPE_STRING		/* remotename */
 			,G_TYPE_INT		/* willing */
@@ -3647,6 +3790,7 @@ GetPanel(void)
 			,G_TYPE_STRING		/* tooltip */
 			,G_TYPE_SOCKADDR	/* socket address */
 			,G_TYPE_INT		/* scope */
+			,G_TYPE_INT		/* interface index */
 	    );
 	/* *INDENT-ON* */
 
@@ -4616,9 +4760,11 @@ get_default_address(void)
 		options.clientAddress = defaults.clientAddress;
 		options.connectionType = defaults.connectionType;
 		options.clientScope = defaults.clientScope;
+		options.clientIface = defaults.clientIface;
 		options.isLocal = defaults.isLocal;
 		break;
 	case 4:
+	case 8:
 		if (options.connectionType != FamilyInternet) {
 			EPRINTF("Mismatch in connectionType %d != %d\n",
 				FamilyInternet, options.connectionType);
@@ -4626,6 +4772,25 @@ get_default_address(void)
 		}
 		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
 		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		switch (options.clientAddress.length) {
+		case 4:
+			options.clientIface = defaults.clientIface;
+			break;
+		case 8:
+			memmove(&options.clientIface, options.clientAddress.data + 4, 4);
+			break;
+		}
+		switch (options.clientScope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			if (!options.clientIface) {
+				EPRINTF("link or site local address with no interface\n");
+				exit(EXIT_SYNTAXERR);
+			}
+			break;
+		default:
+			break;
+		}
 		break;
 	case 16:
 	case 20:
@@ -4636,6 +4801,25 @@ get_default_address(void)
 		}
 		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
 		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		switch (options.clientAddress.length) {
+		case 16:
+			options.clientIface = defaults.clientIface;
+			break;
+		case 20:
+			memmove(&options.clientIface, options.clientAddress.data + 16, 4);
+			break;
+		}
+		switch (options.clientScope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			if (!options.clientIface) {
+				EPRINTF("link or site local address with no interface\n");
+				exit(EXIT_SYNTAXERR);
+			}
+			break;
+		default:
+			break;
+		}
 		break;
 	default:
 		EPRINTF("Invalid client address length %d\n", options.clientAddress.length);
