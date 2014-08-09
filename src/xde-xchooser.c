@@ -1994,7 +1994,7 @@ InitXDMCP(char *argv[], int argc)
 						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
 						ha->addrlen = ai->ai_addrlen;
 						ha->sfd = sock4;
-						ha->type = IN_MULTICAST(sin->sin_addr.s_addr) ?
+						ha->type = IN_MULTICAST(ntohl(sin->sin_addr.s_addr)) ?
 						    BROADCAST_QUERY : QUERY;
 						ha->next = hostAddrdb;
 						hostAddrdb = ha;
@@ -2059,7 +2059,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 	case AF_INET6:
 	{
 		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
-		uint32_t scope_id = htonl(sin6->sin6_scope_id);
+		uint32_t scope_id = sin6->sin6_scope_id;
 
 		memmove(rawaddr, &sin6->sin6_addr, 16);
 

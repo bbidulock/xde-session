@@ -2059,7 +2059,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 	case AF_INET6:
 	{
 		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
-		uint32_t scope_id = htonl(sin6->sin6_scope_id);
+		uint32_t scope_id = sin6->sin6_scope_id;
 
 		memmove(rawaddr, &sin6->sin6_addr, 16);
 
