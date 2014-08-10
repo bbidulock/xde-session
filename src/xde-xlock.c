@@ -2880,15 +2880,34 @@ at_pointer(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer user)
 	*push_in = TRUE;
 }
 
+void grabbed_window(GtkWidget *window, gpointer user_data);
+
+static void
+on_menu_popdown(GtkMenuShell *shell, gpointer data)
+{
+	GtkWidget *window = data;
+
+	grabbed_window(window, NULL);
+}
+
+gulong grab_broken_handler;
+
 static void
 on_action_clicked(GtkButton *button, gpointer user_data)
 {
 	GtkMenu *menu;
+	GtkWidget *window;
 
 	if (!(menu = create_action_menu())) {
 		DPRINTF("No actions to perform\n");
 		return;
 	}
+	window = gtk_widget_get_toplevel(GTK_WIDGET(button));
+	if (grab_broken_handler) {
+		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
+		grab_broken_handler = 0;
+	}
+	g_signal_connect(G_OBJECT(menu), "deactivate", G_CALLBACK(on_menu_popdown), window);
 	gtk_menu_popup(menu, NULL, NULL, at_pointer, NULL, 1, GDK_CURRENT_TIME);
 	return;
 }
@@ -3027,6 +3046,17 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	return FALSE;
 }
 
+gboolean
+on_grab_broken(GtkWidget *window, GdkEvent *event, gpointer data)
+{
+	GdkEventGrabBroken *ev = (typeof(ev)) event;
+	EPRINTF("Grab broken!\n");
+	EPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
+	EPRINTF("Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
+	EPRINTF("Grab broken by %s\n", ev->grab_window ? "this application" : "other");
+	return TRUE; /* propagate */
+}
+
 /** @brief transform window into pointer-grabbed window
   * @param window - window to transform
   *
@@ -3056,6 +3086,7 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 		EPRINTF("Could not grab keyboard!\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
+	grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
 }
 
 /** @brief transform a window away from a grabbed window
@@ -3069,6 +3100,11 @@ ungrabbed_window(GtkWidget *window)
 {
 	GdkWindow *win = gtk_widget_get_window(window);
 
+	if (grab_broken_handler) {
+		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
+		grab_broken_handler = 0;
+	}
+	g_signal_connect(G_OBJECT(window), "grab-broken-event", NULL, NULL);
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 	gdk_window_hide(win);
@@ -3933,8 +3969,26 @@ GetWindow(void)
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
 #if 1
-	gtk_widget_grab_default(user);
-	gtk_widget_grab_focus(user);
+	if (options.username) {
+		gtk_entry_set_text(GTK_ENTRY(user), options.username);
+		gtk_entry_set_text(GTK_ENTRY(pass), "");
+		gtk_widget_set_sensitive(user, FALSE);
+		gtk_widget_set_sensitive(pass, TRUE);
+		gtk_widget_set_sensitive(buttons[0], TRUE);
+		gtk_widget_set_sensitive(buttons[3], FALSE);
+		gtk_widget_grab_default(GTK_WIDGET(pass));
+		gtk_widget_grab_focus(GTK_WIDGET(pass));
+	} else {
+		gtk_entry_set_text(GTK_ENTRY(user), "");
+		gtk_entry_set_text(GTK_ENTRY(pass), "");
+		gtk_widget_set_sensitive(user, TRUE);
+		gtk_widget_set_sensitive(pass, FALSE);
+		gtk_widget_set_sensitive(buttons[0], TRUE);
+		gtk_widget_set_sensitive(buttons[3], FALSE);
+		gtk_widget_grab_default(GTK_WIDGET(user));
+		gtk_widget_grab_focus(GTK_WIDGET(user));
+	}
+
 #else
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	GtkTreeModel *model = NULL;
@@ -4000,6 +4054,7 @@ do_run(int argc, char *argv[])
 {
 	pam_handle_t *pamh = NULL;
 	int status = 0;
+	const char *uname = NULL;
 
 	startup(argc, argv);
 	top = GetWindow();
@@ -4007,6 +4062,13 @@ do_run(int argc, char *argv[])
 	InitXDMCP(argv, argc);
 #endif
 	pam_start("system-login", NULL, &xde_pam_conv, &pamh);
+	if (options.username) {
+		pam_set_item(pamh, PAM_USER, options.username);
+		state = LoginStateUsername;
+#ifdef DO_XLOCKING
+		uname = strdup(options.username);
+#endif
+	}
 	for (;;) {
 		status = pam_authenticate(pamh, 0);
 		if (login_result == LoginResultLogout)
@@ -4018,7 +4080,7 @@ do_run(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		case PAM_AUTH_ERR:
 			EPRINTF("PAM_AUTH_ERR\n");
-			pam_set_item(pamh, PAM_USER, NULL);
+			pam_set_item(pamh, PAM_USER, uname);
 			continue;
 		case PAM_CRED_INSUFFICIENT:
 			EPRINTF("PAM_CRED_INSUFFICIENT\n");
@@ -4026,7 +4088,7 @@ do_run(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		case PAM_AUTHINFO_UNAVAIL:
 			EPRINTF("PAM_AUTHINFO_UNAVAIL\n");
-			pam_set_item(pamh, PAM_USER, NULL);
+			pam_set_item(pamh, PAM_USER, uname);
 			continue;
 		case PAM_MAXTRIES:
 			EPRINTF("PAM_MAXTRIES\n");
@@ -4039,7 +4101,7 @@ do_run(int argc, char *argv[])
 			return;
 		case PAM_USER_UNKNOWN:
 			EPRINTF("PAM_USER_UNKNOWN\n");
-			pam_set_item(pamh, PAM_USER, NULL);
+			pam_set_item(pamh, PAM_USER, uname);
 			continue;
 		default:
 			EPRINTF("Unexpected pam error\n");
@@ -4375,7 +4437,8 @@ get_resources(int argc, char *argv[])
 	}
 	if (XrmGetResource(rdb, "user.default", "XDE-XChooser", &type, &value)) {
 		if (value.addr && *(char *) value.addr) {
-			/* TODO */
+			free(options.username);
+			options.username = strndup(value.addr, 32);
 		}
 	}
 	if (XrmGetResource(rdb, "autologin", "XDE-XChooser", &type, &value)) {
@@ -5057,6 +5120,24 @@ get_default_choice(void)
 }
 #endif				/* DO_XSESSION */
 
+#ifdef DO_XLOCKING
+void
+get_default_username(void)
+{
+	struct passwd *pw;
+
+	if (options.username)
+		return;
+
+	if (!(pw = getpwuid(getuid()))) {
+		EPRINTF("cannot get users password entry\n");
+		exit(EXIT_FAILURE);
+	}
+	free(options.username);
+	options.username = strdup(pw->pw_name);
+}
+#endif				/* DO_XLOCKING */
+
 void
 get_defaults(int argc, char *argv[])
 {
@@ -5071,6 +5152,9 @@ get_defaults(int argc, char *argv[])
 #ifdef DO_XSESSION
 	get_default_session();
 	get_default_choice();
+#endif
+#ifdef DO_XLOCKING
+	get_default_username();
 #endif
 }
 
@@ -5146,6 +5230,9 @@ main(int argc, char *argv[])
 			{"vendor",	    required_argument,	NULL, '5'},
 			{"xsessions",	    no_argument,	NULL, 'X'},
 			{"default",	    required_argument,	NULL, '6'},
+#ifndef DO_XLOCKING
+			{"username",	    required_argument,	NULL, '7'},
+#endif
 
 			{"dry-run",	    no_argument,	NULL, 'n'},
 			{"debug",	    optional_argument,	NULL, 'D'},
@@ -5286,6 +5373,12 @@ main(int argc, char *argv[])
 			free(options.choice);
 			options.choice = strdup(optarg);
 			break;
+#ifndef DO_XLOCKING
+		case '7':	/* --username USERNAME */
+			free(options.username);
+			options.username = strdup(optarg);
+			break;
+#endif
 
 		case 'n':	/* -n, --dry-run */
 			options.dryrun = True;
