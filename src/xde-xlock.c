@@ -147,6 +147,7 @@
 #undef DO_XSESSION
 #define DO_XLOCKING 1
 #undef DO_ONIDLE
+#define DO_SETSTYLE 1
 
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
@@ -228,6 +229,8 @@ typedef struct {
 	char *splash;
 	unsigned source;
 	Bool xsession;
+	Bool setbg;
+	Bool transparent;
 } Options;
 
 Options options = {
@@ -261,6 +264,8 @@ Options options = {
 	.splash = NULL,
 	.source = BackgroundSourceSplash,
 	.xsession = False,
+	.setbg = False,
+	.transparent = False,
 };
 
 Options defaults = {
@@ -292,7 +297,10 @@ Options defaults = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
+	.source = BackgroundSourceSplash,
 	.xsession = False,
+	.setbg = False,
+	.transparent = False,
 };
 
 typedef enum {
@@ -3019,10 +3027,14 @@ gboolean
 on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	XdeScreen *xscr = data;
-	GdkWindow *w = gtk_widget_get_window(xscr->wind);
-	GdkWindow *r = gdk_screen_get_root_window(xscr->scrn);
+	GdkWindow *w;
+	GdkWindow *r;
 	cairo_t *cr;
-	GdkEventExpose *ev = (typeof(ev)) event;
+	GdkEventExpose *ev;
+
+	w = gtk_widget_get_window(xscr->wind);
+	r = gdk_screen_get_root_window(xscr->scrn);
+	ev = (typeof(ev)) event;
 
 	cr = gdk_cairo_create(GDK_DRAWABLE(w));
 	// gdk_cairo_reset_clip(cr, GDK_DRAWABLE(w));
@@ -3183,6 +3195,78 @@ clr_source(XdeScreen *xscr)
 	}
 }
 
+GtkStyle *style;
+
+void
+set_style(XdeScreen *xscr)
+{
+	GtkWidget *window = xscr->wind;
+
+	if (!style) {
+		style = gtk_widget_get_default_style();
+		style = gtk_style_copy(style);
+	}
+	style->bg_pixmap[GTK_STATE_NORMAL] = xscr->pixmap;
+	style->bg_pixmap[GTK_STATE_PRELIGHT] = xscr->pixmap;
+	gtk_widget_set_style(window, style);
+}
+
+void
+update_source(XdeScreen *xscr)
+{
+#ifndef DO_SETSTYLE
+	clr_source(xscr);
+#else
+	set_style(xscr);
+#endif
+	if (xscr->pixmap && options.setbg) {
+		GdkDisplay *disp;
+		GdkWindow *root;
+		GdkColormap *cmap;
+		GdkPixmap *pixmap;
+		Display *dpy;
+		Pixmap p;
+		int s;
+		cairo_t *cr;
+		long data;
+
+		s = xscr->index;
+		if (!(dpy = XOpenDisplay(NULL))) {
+			EPRINTF("cannot open display %s\n", getenv("DISPLAY"));
+			return;
+		}
+		XSetCloseDownMode(dpy, RetainTemporary);
+		p = XCreatePixmap(dpy, RootWindow(dpy, s),
+				  DisplayWidth(dpy, s),
+				  DisplayHeight(dpy, s), DefaultDepth(dpy, s));
+
+		XCloseDisplay(dpy);
+
+		disp = gdk_screen_get_display(xscr->scrn);
+		root = gdk_screen_get_root_window(xscr->scrn);
+		cmap = gdk_drawable_get_colormap(GDK_DRAWABLE(root));
+		pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
+		gdk_drawable_set_colormap(GDK_DRAWABLE(pixmap), cmap);
+
+		cr = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+		gdk_cairo_set_source_pixmap(cr, xscr->pixmap, 0, 0);
+		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+		cairo_paint(cr);
+		cairo_destroy(cr);
+
+		g_object_unref(G_OBJECT(pixmap));
+
+		dpy = GDK_DISPLAY_XDISPLAY(disp);
+		XSetWindowBackgroundPixmap(dpy, RootWindow(dpy, s), p);
+
+		data = p;
+		XChangeProperty(dpy, RootWindow(dpy, s),
+				_XA_XROOTPMAP_ID, XA_PIXMAP,
+				32, PropModeReplace, (unsigned char *) &data, 1);
+		XKillClient(dpy, AllTemporary);
+	}
+}
+
 static void
 get_source(XdeScreen *xscr)
 {
@@ -3212,7 +3296,7 @@ get_source(XdeScreen *xscr)
 				if ((p = data[0])) {
 					xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
 					gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-					clr_source(xscr);
+					update_source(xscr);
 				}
 			}
 			if (data)
@@ -3236,7 +3320,7 @@ get_source(XdeScreen *xscr)
 						   -1);
 				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
 				render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
-				clr_source(xscr);
+				update_source(xscr);
 			}
 			return;
 		}
@@ -3487,11 +3571,13 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	gtk_window_resize(w, xscr->width, xscr->height);
 	gtk_window_move(w, 0, 0);
 
-	gtk_widget_set_app_paintable(wind, TRUE);
-
 	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
 	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), NULL);
+
+#ifndef DO_SETSTYLE
+	gtk_widget_set_app_paintable(wind, TRUE);
 	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), xscr);
+#endif
 
 	gtk_window_set_focus_on_map(w, TRUE);
 	gtk_window_set_accept_focus(w, TRUE);
@@ -3907,7 +3993,10 @@ GetPane(GtkWidget *cont)
 
 	gethostname(hostname, sizeof(hostname));
 
-	ebox = gtk_event_box_new();
+	if (options.transparent)
+		ebox = gtk_hbox_new(FALSE, 0);
+	else
+		ebox = gtk_event_box_new();
 
 	gtk_container_add(GTK_CONTAINER(cont), ebox);
 	gtk_widget_set_size_request(ebox, -1, -1);
@@ -4494,6 +4583,22 @@ get_resources(int argc, char *argv[])
 		if (value.addr && *(char *) value.addr) {
 			free(options.choice);
 			options.choice = strndup(value.addr, 64);
+		}
+	}
+	if (XrmGetResource(rdb, "setbg", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			if (!strncasecmp(value.addr, "true", value.size))
+				options.setbg = True;
+			else
+				options.setbg = False;
+		}
+	}
+	if (XrmGetResource(rdb, "transparent", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			if (!strncasecmp(value.addr, "true", value.size))
+				options.transparent = True;
+			else
+				options.transparent = False;
 		}
 	}
 #endif				/* DO_XCHOOSER */
@@ -5233,6 +5338,8 @@ main(int argc, char *argv[])
 #ifndef DO_XLOCKING
 			{"username",	    required_argument,	NULL, '7'},
 #endif
+			{"setbg",	    no_argument,	NULL, '8'},
+			{"transparent",	    no_argument,	NULL, '9'},
 
 			{"dry-run",	    no_argument,	NULL, 'n'},
 			{"debug",	    optional_argument,	NULL, 'D'},
@@ -5379,6 +5486,12 @@ main(int argc, char *argv[])
 			options.username = strdup(optarg);
 			break;
 #endif
+		case '8':	/* --setbg */
+			options.setbg = True;
+			break;
+		case '9':	/* --transparent */
+			options.transparent = True;
+			break;
 
 		case 'n':	/* -n, --dry-run */
 			options.dryrun = True;
