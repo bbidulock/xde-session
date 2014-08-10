@@ -43,28 +43,7 @@ L<xdm(1)> workalike.
 
 =over 4
 
-=item B<-banner> I<PNGFILE>
-
-Specifies the banner graphic to display in the left pane of the host
-menu.  L<xdm(1)> does not provide this option, but it can easily be
-invoked by a shell script invoked by L<xdm(1)> that adds the options.
-For example:
-
- #!/bin/sh
- /usr/lib/X11/xdm/xde-xchooser -banner /usr/lib/X11/xdm/banner.png $@
-
-=item B<-welcome> I<TEXT>
-
-Specifies the pango markup text that is to be displayed in the title
-area of the host menu.  As with the B<-banner> option, this option can
-easily be supplied by a shell script between L<xdm(1)> and
-B<xde-xchooser> that adds the options:
-
- #!/bin/sh
- /usr/lib/X11/xdm/xde-xchooser -welcome "Welcome to X!" \
-	 -banner /usr/lib/X11/xdm/banner.png $@
-
-=item B<-xdmAddress> I<ADDRESS>
+=item B<-xdmaddress> I<ADDRESS>
 
 Specifies the address of a TCP socket upon which L<xdm(1)> is awaiting
 instructions for the server.  L<xdm(1)> encodes this as I<ADDRESS> as a
@@ -74,9 +53,10 @@ address family (e.g. AF_INET); the second and third bytes are the
 host-byte-order 16-bit port number; and the remaining 4 or 16 bytes are
 the IPv4 or IPv6 network-byte-order IP address.
 
-B<xde-xchooser> uses this option to communicate the selection back to L<xdm(1)>.
+B<xde-xchooser> uses this option to communicate the selection back to
+L<xdm(1)>.
 
-=item B<-clientAddress> I<IPADDR>
+=item B<-clientaddress> I<IPADDR>
 
 Specifies the client IP address I<IPADDR> that initiated the request.
 L<xdm(1)> encodes this as a string of hexadecimal characters (with no 0x
@@ -105,14 +85,227 @@ interest to L<xdm(1)> (see F</usr/include/X11/Xdmcp.h>) are:
 
 =back
 
+L<xdm(1)> will only supply B<FamilyInternet>(0) or B<FamilyInternet6>(6).
+
+=item B<-welcome> I<TEXT>
+
+Specifies the pango markup text that is to be displayed in the title
+area of the host menu.  As with the B<-banner> option, this option can
+easily be supplied by a shell script between L<xdm(1)> and
+B<xde-xchooser> that adds the options:
+
+ #!/bin/sh
+ /usr/bin/xde-xchooser -welcome "Welcome to X!" $@
+
+When unspecified, the default welcome text is C<Welcome to %s!>, where C<%s>
+is the fully qualified domain name of the local host.
+
+=item B<-banner> I<PNGFILE>
+
+Specifies the banner graphic to display in the left pane of the host
+menu.  L<xdm(1)> does not provide this option, but it can easily be
+invoked by a shell script invoked by L<xdm(1)> that adds the options.
+For example:
+
+ #!/bin/sh
+ /usr/bin/xde-xchooser -banner /usr/lib/X11/xdm/xde/banner.png $@
+
+When unspecified, the program searches for an image file named
+F<${XDG_VENDOR_ID--}banner.png>.
+
+=item B<-splash> I<JPGFILE>
+
+Specifies the graphic to use as the root window background for the
+chooser.  L<xdm(1)> does not provide this option, but it can easliy be
+invoked by a shell script by L<xdm(1)> that adds the options.  For
+example:
+
+ #!/bin/sh
+ /usr/bin/xde-xchooser -splash /usr/lib/X11/xdm/xde/splash.jpg $@
+
+When unspecified, the program searches for an image file named
+F<${XDG_VENDOR_ID:--}splash.jpg>.
+
+
+=item B<-side> {B<top>|B<bottom>|B<left>|B<right>}
+
+Specifies the side on which the logo (banner) will be displayed.  This
+option is currently ignored and the logo will always be placed on the
+left side.
+
+=item B<-charset> I<CHARSET>
+
+Specifies the character set to use.  Defaults to the character set of
+the current locale.
+
+=item B<-language> I<LANG>
+
+Specifies the language to use.  Defaults to the language of the current
+locale.
+
+=item B<-icons> I<ICON-THEME>
+
+Specifies the GTK+ icon theme to use.  The default is to use the system
+default icon theme.
+
+=item B<-theme> I<GTK2-THEME>
+
+Specifies the GTK+ theme name to use.  The default is to use the system
+default icon theme.
+
+=item B<-xde-theme>
+
+Specifies that the GTK+ icon theme and theme name to be used are those
+of the X Desktop Environment (XDE) rather than the system default theme.
+
+=item B<-vendor> I<VENDOR>
+
+=item B<-dry-run>
+
+=item B<-debug> [I<LEVEL>]
+
+=item B<-verbose> [I<LEVEL>]
+
+=item B<-login>
+
+=item B<-xsessions>
+
 =back
 
 =head1 CONFIGURATION
+
+=cut 
 
 B<xde-xchooser> has no configuration of its own.  If you want to change
 its look or behaviour, you are welcome to hack the code.  It is only
 about 600 lines of C<C>.  There is a F<banner.png> file used that is
 installed by default in F</usr/lib/X11/xdm/banner.png>.
+
+=pod
+
+B<xde-xchooser> observes the following X11 Resource Manager resources when
+loaded by L<xdm(1)> prior to execution:
+
+=over 4
+
+=item B<XDE-XChooser>*B<debug>: I<BOOLEAN>
+
+=item B<XDE-XChooser>*B<banner>: I<PATH>
+
+=item B<XDE-XChooser>*B<splash>: I<PATH>
+
+=item B<XDE-XChooser>*B<welcome>: I<MARKUP>
+
+=item B<XDE-XChooser>*B<charset>: I<CHARSET>
+
+=item B<XDE-XChooser>*B<language>: I<LANG>
+
+=item B<XDE-XChooser>*B<theme.icon>: I<NAME>
+
+=item B<XDE-XChooser>*B<theme.name>: I<NAME>
+
+=item B<XDE-XChooser>*B<theme.xde>: I<BOOLEAN>
+
+=item B<XDE-XChooser>*B<side>: {B<left>|B<right>|B<top>|B<bottom>}
+
+=item B<XDE-XChooser>*B<user.default>: I<USERNAME>
+
+=item B<XDE-XChooser>*B<autologin>: I<BOOLEAN>
+
+=item B<XDE-XChooser>*B<vendor>: I<VENDOR-ID>
+
+=item B<XDE-XChooser>*B<prefix>: I<MENU-PREFIX>
+
+=item B<XDE-XChooser>*B<login.permit>: I<BOOLEAN>
+
+=item B<XDE-XChooser>*B<login.remote>: I<BOOLEAN>
+
+=item B<XDE-XChooser>*B<xsession.chooser>: I<BOOLEAN>
+
+=item B<XDE-XChooser>*B<xsession.execute>: I<BOOLEAN>
+
+=item B<XDE-XChooser>*B<xsession.default>: I<APPID>
+
+=back
+
+B<xde-xchooser> may observe some of the resources intended for the L<xdm(1)>
+chooser, such as:
+
+=over 4
+
+=item B<Chooser>*B<geometry>
+
+=item B<Chooser>*B<allowShellResize>
+
+=item B<Chooser>*B<viewport.forceBars>
+
+=item B<Chooser>*B<label.font>
+
+=item B<Chooser>*B<label.label>
+
+=item B<Chooser>*B<list.font>
+
+=item B<Chooser>*B<Command.font>
+
+=back
+
+B<xde-xchooser> may observe some of the resources intended for the L<xdm(1)>
+login, such as:
+
+=over 4
+
+=item B<xlogin>*B<login.translations>
+
+=item B<xlogin>*B<greeting>
+
+=item B<xlogin>*B<namePrompt>
+
+=item B<xlogin>*B<fail>
+
+=item B<xlogin>*B<greetFont>
+
+=item B<xlogin>*B<font>
+
+=item B<xlogin>*B<promptFont>
+
+=item B<xlogin>*B<failFont>
+
+=item B<xlogin>*B<greetFace>
+
+=item B<xlogin>*B<face>
+
+=item B<xlogin>*B<promptFace>
+
+=item B<xlogin>*B<failFace>
+
+=item B<xlogin>*B<borderWidth>
+
+=item B<xlogin>*B<frameWidth>
+
+=item B<xlogin>*B<innerFramesWidth>
+
+=item B<xlogin>*B<shdColor>
+
+=item B<xlogin>*B<hiColor>
+
+=item B<xlogin>*B<background>
+
+=item B<xlogin>*B<foreground>
+
+=item B<xlogin>*B<greetColor>
+
+=item B<xlogin>*B<failColor>
+
+=item B<xlogin>*B<logoFileName>
+
+=item B<xlogin>*B<useShape>
+
+=item B<xlogin>*B<logoPadding>
+
+=back
+
+L<xdm(1)> specifies which chooser to execute in its configuration file
+F</usr/lib/X11/xdm/xdm-config>:
 
 =over 4
 
@@ -163,3 +356,5 @@ See the F<COPYING> file in the distribution or use the B<--copying> flag
 to display copying permissions.
 
 =cut
+
+# vim: set tw=72 nocin:

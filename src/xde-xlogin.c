@@ -1994,7 +1994,8 @@ InitXDMCP(char *argv[], int argc)
 						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
 						ha->addrlen = ai->ai_addrlen;
 						ha->sfd = sock4;
-						ha->type = IN_MULTICAST(ntohl(sin->sin_addr.s_addr)) ?
+						ha->type =
+						    IN_MULTICAST(ntohl(sin->sin_addr.s_addr)) ?
 						    BROADCAST_QUERY : QUERY;
 						ha->next = hostAddrdb;
 						hostAddrdb = ha;
@@ -2051,9 +2052,9 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 			hostAddress.length = 8;
 			break;
 		default:
-		hostAddress.length = 4;
-		break;
-	}
+			hostAddress.length = 4;
+			break;
+		}
 		break;
 	}
 	case AF_INET6:
@@ -3408,8 +3409,16 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 
 	w = GTK_WINDOW(wind);
 	gtk_window_set_screen(w, scrn);
+#if defined(DO_XCHOOSER)
+	gtk_window_set_wmclass(w, "xde-xchooser", "XDE-XChooser");
+	gtk_window_set_title(w, "XDMCP Chooser");
+#elif defined(DO_XLOCKING)
+	gtk_window_set_wmclass(w, "xde-xlock", "XDE-XLock");
+	gtk_window_set_title(w, "X11 Locker");
+#else
 	gtk_window_set_wmclass(w, "xde-xlogin", "XDE-XLogin");
 	gtk_window_set_title(w, "XDMCP Greeter");
+#endif
 	gtk_window_set_modal(w, TRUE);
 	gtk_window_set_gravity(w, GDK_GRAVITY_CENTER);
 	gtk_window_set_type_hint(w, GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
@@ -3937,9 +3946,13 @@ startup(int argc, char *argv[])
 {
 	if (options.usexde) {
 		static const char *suffix = "/.gtkrc-2.0.xde";
-		const char *home = getenv("HOME") ? : ".";
-		int len = strlen(home) + strlen(suffix) + 1;
-		char *file = calloc(len, sizeof(*file));
+		const char *home;
+		int len;
+		char *file;
+
+		home = getenv("HOME") ? : ".";
+		len = strlen(home) + strlen(suffix) + 1;
+		file = calloc(len, sizeof(*file));
 
 		strncpy(file, home, len);
 		strncat(file, suffix, len);
@@ -4234,6 +4247,181 @@ General options:\n\
 	);
         /* *INDENT-ON* */
 }
+
+#if defined(DO_XCHOOSER) || !defined(DO_XLOCKING)
+void
+get_resources(int argc, char *argv[])
+{
+	Display *dpy;
+	XrmDatabase rdb;
+	char *type = NULL;
+	XrmValue value = { 0, NULL };
+	XTextProperty xtp;
+	Window root;
+	Atom atom;
+
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
+		exit(EXIT_FAILURE);
+	}
+	root = DefaultRootWindow(dpy);
+	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
+		XCloseDisplay(dpy);
+		DPRINTF("no resource manager database allocated\n");
+		return;
+	}
+	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
+		XCloseDisplay(dpy);
+		EPRINTF("could not retrieve RESOURCE_MANAGER property\n");
+		return;
+	}
+	XrmInitialize();
+	rdb = XrmGetStringDatabase((char *) xtp.value);
+	XFree(xtp.value);
+	if (!rdb) {
+		DPRINTF("no resource manager database allocated\n");
+		XCloseDisplay(dpy);
+		return;
+	}
+	(void) type;
+	(void) value;
+#ifdef DO_XCHOOSER
+	if (XrmGetResource(rdb, "debug", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			options.debug = atoi(value.addr);
+		}
+	}
+	if (XrmGetResource(rdb, "banner", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.banner);
+			options.banner = strndup(value.addr, PATH_MAX);
+		}
+	}
+	if (XrmGetResource(rdb, "splash", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.splash);
+			options.splash = strndup(value.addr, PATH_MAX);
+		}
+	}
+	if (XrmGetResource(rdb, "welcome", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.welcome);
+			options.welcome = strndup(value.addr, 256);
+		}
+	}
+	if (XrmGetResource(rdb, "charset", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.charset);
+			options.charset = strndup(value.addr, 64);
+		}
+	}
+	if (XrmGetResource(rdb, "language", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.language);
+			options.language = strndup(value.addr, 64);
+		}
+	}
+	if (XrmGetResource(rdb, "theme.icon", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.icon_theme);
+			options.icon_theme = strndup(value.addr, 64);
+		}
+	}
+	if (XrmGetResource(rdb, "theme.name", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.gtk2_theme);
+			options.gtk2_theme = strndup(value.addr, 64);
+		}
+	}
+	if (XrmGetResource(rdb, "theme.xde", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			if (!strncasecmp(value.addr, "true", value.size))
+				options.usexde = True;
+			else
+				options.usexde = False;
+		}
+	}
+	if (XrmGetResource(rdb, "side", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			if (!strncasecmp(value.addr, "left", value.size))
+				options.side = LOGO_SIDE_LEFT;
+			else if (!strncasecmp(value.addr, "top", value.size))
+				options.side = LOGO_SIDE_TOP;
+			else if (!strncasecmp(value.addr, "right", value.size))
+				options.side = LOGO_SIDE_RIGHT;
+			else if (!strncasecmp(value.addr, "bottom", value.size))
+				options.side = LOGO_SIDE_RIGHT;
+			else
+				EPRINTF("invalid value for XDE-XChooser*side: %s\n",
+					(char *) value.addr);
+		}
+	}
+	if (XrmGetResource(rdb, "user.default", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			/* TODO */
+		}
+	}
+	if (XrmGetResource(rdb, "autologin", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			/* TODO */
+		}
+	}
+	if (XrmGetResource(rdb, "vendor", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.vendor);
+			options.vendor = strdup(value.addr);
+		}
+	}
+	if (XrmGetResource(rdb, "prefix", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.prefix);
+			options.prefix = strdup(value.addr);
+		}
+	}
+	if (XrmGetResource(rdb, "login.permit", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			if (!strncasecmp(value.addr, "true", value.size))
+				/* TODO */ ;
+			else
+				/* TODO */ ;
+		}
+	}
+	if (XrmGetResource(rdb, "login.remote", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			if (!strncasecmp(value.addr, "true", value.size))
+				/* TODO */ ;
+			else
+				/* TODO */ ;
+		}
+	}
+	if (XrmGetResource(rdb, "xsession.chooser", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			if (!strncasecmp(value.addr, "true", value.size))
+				/* TODO */ ;
+			else
+				/* TODO */ ;
+		}
+	}
+	if (XrmGetResource(rdb, "xsession.execute", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			if (!strncasecmp(value.addr, "true", value.size))
+				/* TODO */ ;
+			else
+				/* TODO */ ;
+		}
+	}
+	if (XrmGetResource(rdb, "xsession.default", "XDE-XChooser", &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			free(options.choice);
+			options.choice = strndup(value.addr, 64);
+		}
+	}
+#endif				/* DO_XCHOOSER */
+	XrmDestroyDatabase(rdb);
+	XCloseDisplay(dpy);
+}
+#endif				/* defined(DO_XCHOOSER) ||
+				   !defined(DO_XLOCKING) */
 
 void
 set_default_vendor(void)
@@ -4877,6 +5065,10 @@ main(int argc, char *argv[])
 	CommandType command = CommandDefault;
 
 	set_defaults(argc, argv);
+
+#if defined(DO_XCHOOSER) || !defined(DO_XLOCKING)
+	get_resources(argc, argv);
+#endif
 
 	while (1) {
 		int c, val;

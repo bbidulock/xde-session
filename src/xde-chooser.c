@@ -2878,6 +2878,7 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"prompt",	no_argument,		NULL, 'p'},
+			{"welcome",	required_argument,	NULL, 'w'},
 			{"banner",	required_argument,	NULL, 'b'},
 			{"splash",	required_argument,	NULL, 'S'},
 			{"side",	required_argument,	NULL, 's'},
@@ -2919,6 +2920,10 @@ main(int argc, char *argv[])
 
 		case 'p':	/* -p, --prompt */
 			options.prompt = True;
+			break;
+		case 'w':	/* -w, --welcome WELCOME */
+			free(options.welcome);
+			options.welcome = strndup(optarg, 256);
 			break;
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
