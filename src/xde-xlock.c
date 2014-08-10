@@ -1994,7 +1994,7 @@ InitXDMCP(char *argv[], int argc)
 						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
 						ha->addrlen = ai->ai_addrlen;
 						ha->sfd = sock4;
-						ha->type = IN_MULTICAST(sin->sin_addr.s_addr) ?
+						ha->type = IN_MULTICAST(ntohl(sin->sin_addr.s_addr)) ?
 						    BROADCAST_QUERY : QUERY;
 						ha->next = hostAddrdb;
 						hostAddrdb = ha;
