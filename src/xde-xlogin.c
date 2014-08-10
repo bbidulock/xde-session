@@ -144,7 +144,7 @@
 #include <netinet/ip.h>
 
 #undef DO_XCHOOSER
-#undef DO_XSESSION
+#define DO_XSESSION 1
 #undef DO_XLOCKING
 #undef DO_ONIDLE
 
@@ -227,6 +227,7 @@ typedef struct {
 	char *prefix;
 	char *splash;
 	unsigned source;
+	Bool xsession;
 } Options;
 
 Options options = {
@@ -259,6 +260,7 @@ Options options = {
 	.prefix = NULL,
 	.splash = NULL,
 	.source = BackgroundSourceSplash,
+	.xsession = False,
 };
 
 Options defaults = {
@@ -290,6 +292,7 @@ Options defaults = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
+	.xsession = False,
 };
 
 typedef enum {
@@ -1119,6 +1122,15 @@ on_idle(gpointer data)
 		gtk_tree_path_free(path);
 	}
 #endif
+#else
+	if (gtk_combo_box_get_active(GTK_COMBO_BOX(sess)) != -1)
+		return G_SOURCE_CONTINUE;
+	if (strcmp(options.choice, key) && strcmp(options.session, key))
+		return G_SOURCE_CONTINUE;
+	if (strcmp(options.choice, key) && strcmp(options.choice, "choose")
+	    && strcmp(options.choice, "default"))
+		return G_SOURCE_CONTINUE;
+	gtk_combo_box_set_active_iter(GTK_COMBO_BOX(sess), &iter);
 #endif
 	return G_SOURCE_CONTINUE;
 }
@@ -3607,11 +3619,13 @@ GetPanel(void)
 
 	gtk_container_add(GTK_CONTAINER(inp), align);
 
+	int rows = 2;
+
 #ifdef DO_XSESSION
-	GtkWidget *login = gtk_table_new(3, 3, TRUE);
-#else
-	GtkWidget *login = gtk_table_new(2, 3, TRUE);
+	if (options.xsession)
+		rows = 3;
 #endif
+	GtkWidget *login = gtk_table_new(2, rows, TRUE);
 
 	gtk_container_set_border_width(GTK_CONTAINER(login), 5);
 	gtk_table_set_col_spacings(GTK_TABLE(login), 5);
@@ -3713,6 +3727,7 @@ GetPanel(void)
 	gtk_widget_set_sensitive(b, FALSE);
 
 #ifdef DO_XSESSION
+	if (options.xsession) {
 	GtkWidget *xsess = gtk_label_new(NULL);
 
 	gtk_label_set_markup(GTK_LABEL(xsess),
@@ -3775,6 +3790,7 @@ GetPanel(void)
 				      XSESS_COL_NAME);
 
 	gtk_table_attach_defaults(GTK_TABLE(login), sess, 1, 2, 2, 3);
+	}
 #endif				/* DO_XSESSION */
 
 #ifdef DO_XCHOOSER
@@ -3836,11 +3852,13 @@ GetPanel(void)
 #endif				/* DO_XCHOOSER */
 
 #ifdef DO_XSESSION
+	if (options.xsession) {
 #ifdef DO_ONIDLE
 	g_idle_add(on_idle, store);
 #else
 	while (on_idle(store) != G_SOURCE_REMOVE) ;
 #endif
+	}
 #endif				/* DO_XSESSION */
 
 	return (pan);
@@ -4397,9 +4415,9 @@ get_resources(int argc, char *argv[])
 	if (XrmGetResource(rdb, "xsession.chooser", "XDE-XChooser", &type, &value)) {
 		if (value.addr && *(char *) value.addr) {
 			if (!strncasecmp(value.addr, "true", value.size))
-				/* TODO */ ;
+				options.xsession = True;
 			else
-				/* TODO */ ;
+				options.xsession = False;
 		}
 	}
 	if (XrmGetResource(rdb, "xsession.execute", "XDE-XChooser", &type, &value)) {
@@ -5017,6 +5035,29 @@ get_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
+#ifdef DO_XSESSION
+void
+get_default_session(void)
+{
+	if (!options.session) {
+		free(options.session);
+		options.session = strdup("");
+	}
+	if (!options.current) {
+		free(options.current);
+		options.current = strdup("");
+	}
+}
+void
+get_default_choice(void)
+{
+	if (!options.choice) {
+		free(options.choice);
+		options.choice = strdup("default");
+	}
+}
+#endif				/* DO_XSESSION */
+
 void
 get_defaults(int argc, char *argv[])
 {
@@ -5028,6 +5069,10 @@ get_defaults(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	get_default_address();
 #endif				/* DO_XCHOOSER */
+#ifdef DO_XSESSION
+	get_default_session();
+	get_default_choice();
+#endif
 }
 
 #ifdef DO_XCHOOSER
@@ -5100,6 +5145,8 @@ main(int argc, char *argv[])
 			{"theme",	    required_argument,	NULL, 'T'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
 			{"vendor",	    required_argument,	NULL, '5'},
+			{"xsessions",	    no_argument,	NULL, 'X'},
+			{"default",	    required_argument,	NULL, '6'},
 
 			{"dry-run",	    no_argument,	NULL, 'n'},
 			{"debug",	    optional_argument,	NULL, 'D'},
@@ -5232,6 +5279,13 @@ main(int argc, char *argv[])
 		case '5':	/* --vendor VENDOR */
 			free(options.vendor);
 			options.vendor = strdup(optarg);
+			break;
+		case 'X':	/* --xsessions */
+			options.xsession = True;
+			break;
+		case '6':	/* --default DEFAULT */
+			free(options.choice);
+			options.choice = strdup(optarg);
 			break;
 
 		case 'n':	/* -n, --dry-run */
