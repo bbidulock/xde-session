@@ -35,8 +35,8 @@ xde_input_LDFLAGS = $(AM_LDFLAGS)
 
 xde_logout_CPPFLAGS = -DNAME=\"xde-logout\"
 xde_logout_SOURCES = xde-logout.c xde-logout.h
-xde_logout_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_logout_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_logout_CFLAGS = $(AM_CFLAGS) $(XVNC_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_logout_LDFLAGS = $(SMLIB_LIBS) $(XVNC_LIBS) $(ICE_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_session_CPPFLAGS = -DNAME=\"xde-session\"
 xde_session_SOURCES = xde-session.c xde-session.h
@@ -50,18 +50,18 @@ xde_wmproxy_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
 
 xde_xchooser_CPPFLAGS = -DNAME=\"xde-xchooser\"
 xde_xchooser_SOURCES = xde-xchooser.c xde-xchooser.h
-xde_xchooser_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_xchooser_LDFLAGS = -lpam $(XDMCP_LIBS) $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_xchooser_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_xchooser_LDFLAGS = -lpam $(XDMCP_LIBS) $(XVNC_LIBS) $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_xlogin_CPPFLAGS = -DNAME=\"xde-xlogin\"
 xde_xlogin_SOURCES = xde-xlogin.c xde-xlogin.h
-xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_xlogin_LDFLAGS = -lpam $(XDMCP_LIBS) $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_xlogin_LDFLAGS = -lpam $(XDMCP_LIBS) $(XVNC_LIBS) $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_xlock_CPPFLAGS = -DNAME=\"xde-xlock\"
 xde_xlock_SOURCES = xde-xlock.c
-xde_xlock_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_xlock_LDFLAGS = -lpam $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_xlock_CFLAGS = $(AM_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_xlock_LDFLAGS = -lpam $(XVNC_LIBS) $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_xsession_CPPFLAGS = -DNAME=\"xde-xsession\"
 xde_xsession_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS)

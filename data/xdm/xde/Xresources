@@ -267,3 +267,70 @@ Chooser*list.font:			-*-*-medium-r-normal-*-*-230-*-*-c-*-iso8859-1
 !Chooser*Command.font:			-*-terminus-*-*-*-*-*-*-*-*-*-*-*
 !Chooser*Command.font:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
 Chooser*Command.font:			*-new century schoolbook-bold-r-normal-*-180-*
+
+XDE-XChooser*x:				0.27
+XDE-XChooser*y:				0.27
+XDE-XChooser*debug:			1
+XDE-XChooser*banner:			/usr/share/xde/images/unexicon-banner.png
+XDE-XChooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
+XDE-XChooser*welcome:			Welcome to Unexicon!
+XDE-XChooser*theme.icon:		gnome-brave
+XDE-XChooser*theme.name:		Squared-blue
+XDE-XChooser*theme.xde:			false
+XDE-XChooser*side:			left
+XDE-XChooser*user.default:		unexicon
+XDE-XChooser*autologin:			false
+XDE-XChooser*vendor:			unexicon
+XDE-XChooser*prefix:			unexicon-
+XDE-XChooser*login.permit:		true
+XDE-XChooser*login.remote:		false
+XDE-XChooser*xsession.chooser:		false
+XDE-XChooser*xsession.execute:		false
+XDE-XChooser*xsession.default:		adwm
+XDE-XChooser*setbg:			true
+XDE-XChooser*transparent:		true
+
+XDE-XLogin*x:				0.27
+XDE-XLogin*y:				0.27
+XDE-XLogin*debug:			1
+XDE-XLogin*banner:			/usr/share/xde/images/unexicon-banner.png
+XDE-XLogin*splash:			/usr/share/xde/images/unexicon-splash.jpg
+XDE-XLogin*welcome:			Welcome to Unexicon!
+XDE-XLogin*theme.icon:			gnome-brave
+XDE-XLogin*theme.name:			Squared-blue
+XDE-XLogin*theme.xde:			false
+XDE-XLogin*side:			left
+XDE-XLogin*user.default:		unexicon
+XDE-XLogin*autologin:			false
+XDE-XLogin*vendor:			unexicon
+XDE-XLogin*prefix:			unexicon-
+XDE-XLogin*login.permit:		true
+XDE-XLogin*login.remote:		false
+XDE-XLogin*xsession.chooser:		false
+XDE-XLogin*xsession.execute:		false
+XDE-XLogin*xsession.default:		adwm
+XDE-XLogin*setbg:			true
+XDE-XLogin*transparent:			true
+
+XDE-XLock*x:				0.27
+XDE-XLock*y:				0.27
+XDE-XLock*debug:			1
+XDE-XLock*banner:			/usr/share/xde/images/unexicon-banner.png
+XDE-XLock*splash:			/usr/share/xde/images/unexicon-splash.jpg
+XDE-XLock*welcome:			Welcome to Unexicon!
+XDE-XLock*theme.icon:			gnome-brave
+XDE-XLock*theme.name:			Squared-blue
+XDE-XLock*theme.xde:			false
+XDE-XLock*side:				left
+XDE-XLock*user.default:			unexicon
+XDE-XLock*autologin:			false
+XDE-XLock*vendor:			unexicon
+XDE-XLock*prefix:			unexicon-
+XDE-XLock*login.permit:			true
+XDE-XLock*login.remote:			false
+XDE-XLock*xsession.chooser:		false
+XDE-XLock*xsession.execute:		false
+XDE-XLock*xsession.default:		adwm
+XDE-XLock*setbg:			true
+XDE-XLock*transparent:			true
+

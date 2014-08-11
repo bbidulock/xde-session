@@ -149,6 +149,20 @@
 #undef DO_ONIDLE
 #define DO_SETSTYLE 1
 
+#if defined(DO_XCHOOSER)
+#   define RESNAME "xde-xchooser"
+#   define RESCLAS "XDE-XChooser"
+#   define RESTITL "XDMCP Chooser"
+#elif defined(DO_XLOCKING)
+#   define RESNAME "xde-xlock"
+#   define RESCLAS "XDE-XLock"
+#   define RESTITL "X11 Locker"
+#else
+#   define RESNAME "xde-xlogin"
+#   define RESCLAS "XDE-XLogin"
+#   define RESTITL "XDMCP Greeter"
+#endif
+
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
 	LOGO_SIDE_TOP,
@@ -231,6 +245,10 @@ typedef struct {
 	Bool xsession;
 	Bool setbg;
 	Bool transparent;
+	int width;
+	int height;
+	double xposition;
+	double yposition;
 } Options;
 
 Options options = {
@@ -266,6 +284,10 @@ Options options = {
 	.xsession = False,
 	.setbg = False,
 	.transparent = False,
+	.width = -1,
+	.height = -1,
+	.xposition = 0.5,
+	.yposition = 0.5,
 };
 
 Options defaults = {
@@ -301,6 +323,10 @@ Options defaults = {
 	.xsession = False,
 	.setbg = False,
 	.transparent = False,
+	.width = -1,
+	.height = -1,
+	.xposition = 0.5,
+	.yposition = 0.5,
 };
 
 typedef enum {
@@ -2542,6 +2568,14 @@ free_value(gpointer data, GClosure *unused)
 		g_free(data);
 }
 
+/** @brief test is the user is remote or local
+  */
+Bool
+test_remote_user(void)
+{
+	return True;
+}
+
 /** @brief add a power actions submenu to the actions menu
   *
   * We can provide power management actions to the user on the following
@@ -3454,12 +3488,12 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		xscr->nmon = nmon;
 	/* always realign center alignment widgets */
 	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
-		float xrel, yrel;
+		double xrel, yrel;
 
 		DPRINTF("Realigning screen %d monitor %d\n", index, m);
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-		xrel = (float) (mon->geom.x + mon->geom.width / 2) / (float) xscr->width;
-		yrel = (float) (mon->geom.y + mon->geom.height / 2) / (float) xscr->height;
+		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
+		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
 		if (!mon->align) {
 			mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 			gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -3541,16 +3575,8 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 
 	w = GTK_WINDOW(wind);
 	gtk_window_set_screen(w, scrn);
-#if defined(DO_XCHOOSER)
-	gtk_window_set_wmclass(w, "xde-xchooser", "XDE-XChooser");
-	gtk_window_set_title(w, "XDMCP Chooser");
-#elif defined(DO_XLOCKING)
-	gtk_window_set_wmclass(w, "xde-xlock", "XDE-XLock");
-	gtk_window_set_title(w, "X11 Locker");
-#else
-	gtk_window_set_wmclass(w, "xde-xlogin", "XDE-XLogin");
-	gtk_window_set_title(w, "XDMCP Greeter");
-#endif
+	gtk_window_set_wmclass(w, RESNAME, RESCLAS);
+	gtk_window_set_title(w, RESTITL);
 	gtk_window_set_modal(w, TRUE);
 	gtk_window_set_gravity(w, GDK_GRAVITY_CENTER);
 	gtk_window_set_type_hint(w, GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
@@ -3589,13 +3615,13 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	xscr->nmon = gdk_screen_get_n_monitors(scrn);
 	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
 	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
-		float xrel, yrel;
+		double xrel, yrel;
 
 		mon->index = m;
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
 
-		xrel = (float) (mon->geom.x + mon->geom.width / 2) / (float) xscr->width;
-		yrel = (float) (mon->geom.y + mon->geom.height / 2) / (float) xscr->height;
+		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
+		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
 
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -4416,7 +4442,24 @@ General options:\n\
         /* *INDENT-ON* */
 }
 
-#if defined(DO_XCHOOSER) || !defined(DO_XLOCKING)
+char *
+get_resource(XrmDatabase xrdb, const char *resource)
+{
+	char *type;
+	static char name[64];
+	static char clas[64];
+	XrmValue value = { 0, NULL };
+
+	snprintf(name, sizeof(name), "%s.%s", RESNAME, resource);
+	snprintf(clas, sizeof(clas), "%s.%s", RESCLAS, resource);
+	if (XrmGetResource(xrdb, name, clas, &type, &value))
+		if (value.addr && *(char *) value.addr) {
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			return (char *) value.addr;
+		}
+	return (NULL);
+}
+
 void
 get_resources(int argc, char *argv[])
 {
@@ -4428,6 +4471,7 @@ get_resources(int argc, char *argv[])
 	Window root;
 	Atom atom;
 
+	DPRINT();
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
 		exit(EXIT_FAILURE);
@@ -4444,6 +4488,7 @@ get_resources(int argc, char *argv[])
 		return;
 	}
 	XrmInitialize();
+	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
 	rdb = XrmGetStringDatabase((char *) xtp.value);
 	XFree(xtp.value);
 	if (!rdb) {
@@ -4453,64 +4498,109 @@ get_resources(int argc, char *argv[])
 	}
 	(void) type;
 	(void) value;
-#ifdef DO_XCHOOSER
-	if (XrmGetResource(rdb, "debug", "XDE-XChooser", &type, &value)) {
+	if (XrmGetResource(rdb, "xlogin.Login.width", "Xlogin.Login.width", &type, &value)) {
+		DPRINTF("xlogin.Login.width:\t\t%s\n", value.addr);
 		if (value.addr && *(char *) value.addr) {
-			options.debug = atoi(value.addr);
+			if (strchr(value.addr, '%')) {
+				char *endptr = NULL;
+				double width = strtod(value.addr, &endptr);
+
+				if (endptr != value.addr && *endptr == '%' && width > 0) {
+					options.width =
+					    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
+					if (options.width < 0.20 * DisplayWidth(dpy, 0))
+						options.width = -1;
+				}
+			} else {
+				options.width = strtoul(value.addr, NULL, 0);
+				if (options.width <= 0)
+					options.width = -1;
+			}
 		}
 	}
-	if (XrmGetResource(rdb, "banner", "XDE-XChooser", &type, &value)) {
+	if (XrmGetResource(rdb, "xlogin.Login.height", "Xlogin.Login.height", &type, &value)) {
+		DPRINTF("xlogin.Login.height:\t\t%s\n", value.addr);
 		if (value.addr && *(char *) value.addr) {
+			if (strchr(value.addr, '%')) {
+				char *endptr = NULL;
+				double height = strtod(value.addr, &endptr);
+
+				if (endptr != value.addr && *endptr == '%' && height > 0) {
+					options.height =
+					    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
+					if (options.height < 0.20 * DisplayHeight(dpy, 0))
+						options.height = -1;
+				}
+			} else {
+				options.height = strtoul(value.addr, NULL, 0);
+				if (options.height <= 0)
+					options.height = -1;
+			}
+		}
+	}
+	if (XrmGetResource(rdb, "xlogin.Login.x", "Xlogin.Login.x", &type, &value)) {
+		DPRINTF("xlogin.Login.x:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			options.xposition =
+			    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+			if (options.xposition < 0)
+				options.xposition = 0;
+			if (options.xposition > DisplayWidth(dpy, 0))
+				options.xposition = 1.0;
+		}
+	}
+	if (XrmGetResource(rdb, "xlogin.Login.y", "Xlogin.Login.y", &type, &value)) {
+		DPRINTF("xlogin.Login.y:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			options.yposition =
+			    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+			if (options.yposition < 0)
+				options.yposition = 0;
+			if (options.yposition > DisplayWidth(dpy, 0))
+				options.yposition = 1.0;
+		}
+	}
+	if ((value.addr = get_resource(rdb, "Chooser.x"))) {
+		options.xposition = strtod(value.addr, NULL);
+	}
+	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
+		options.yposition = strtod(value.addr, NULL);
+	}
+	if ((value.addr = get_resource(rdb, "debug"))) {
+		options.debug = strtoul(value.addr, NULL, 0);
+	}
+	if ((value.addr = get_resource(rdb, "banner"))) {
 			free(options.banner);
 			options.banner = strndup(value.addr, PATH_MAX);
 		}
-	}
-	if (XrmGetResource(rdb, "splash", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "splash"))) {
 			free(options.splash);
 			options.splash = strndup(value.addr, PATH_MAX);
 		}
-	}
-	if (XrmGetResource(rdb, "welcome", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "welcome"))) {
 			free(options.welcome);
 			options.welcome = strndup(value.addr, 256);
 		}
-	}
-	if (XrmGetResource(rdb, "charset", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "charset"))) {
 			free(options.charset);
 			options.charset = strndup(value.addr, 64);
 		}
-	}
-	if (XrmGetResource(rdb, "language", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "language"))) {
 			free(options.language);
 			options.language = strndup(value.addr, 64);
 		}
-	}
-	if (XrmGetResource(rdb, "theme.icon", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "theme.icon"))) {
 			free(options.icon_theme);
 			options.icon_theme = strndup(value.addr, 64);
 		}
-	}
-	if (XrmGetResource(rdb, "theme.name", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "theme.name"))) {
 			free(options.gtk2_theme);
 			options.gtk2_theme = strndup(value.addr, 64);
 		}
+	if ((value.addr = get_resource(rdb, "theme.xde"))) {
+		options.usexde = !strncasecmp(value.addr, "true", value.size) ? True : False;
 	}
-	if (XrmGetResource(rdb, "theme.xde", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
-			if (!strncasecmp(value.addr, "true", value.size))
-				options.usexde = True;
-			else
-				options.usexde = False;
-		}
-	}
-	if (XrmGetResource(rdb, "side", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "side"))) {
 			if (!strncasecmp(value.addr, "left", value.size))
 				options.side = LOGO_SIDE_LEFT;
 			else if (!strncasecmp(value.addr, "top", value.size))
@@ -4520,93 +4610,57 @@ get_resources(int argc, char *argv[])
 			else if (!strncasecmp(value.addr, "bottom", value.size))
 				options.side = LOGO_SIDE_RIGHT;
 			else
-				EPRINTF("invalid value for XDE-XChooser*side: %s\n",
-					(char *) value.addr);
-		}
+			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
 	}
-	if (XrmGetResource(rdb, "user.default", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "user.default"))) {
 			free(options.username);
 			options.username = strndup(value.addr, 32);
 		}
-	}
-	if (XrmGetResource(rdb, "autologin", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "autologin"))) {
 			/* TODO */
 		}
-	}
-	if (XrmGetResource(rdb, "vendor", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "vendor"))) {
 			free(options.vendor);
 			options.vendor = strdup(value.addr);
 		}
-	}
-	if (XrmGetResource(rdb, "prefix", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "prefix"))) {
 			free(options.prefix);
 			options.prefix = strdup(value.addr);
 		}
-	}
-	if (XrmGetResource(rdb, "login.permit", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "login.permit"))) {
 			if (!strncasecmp(value.addr, "true", value.size))
 				/* TODO */ ;
 			else
 				/* TODO */ ;
 		}
-	}
-	if (XrmGetResource(rdb, "login.remote", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "login.remote"))) {
 			if (!strncasecmp(value.addr, "true", value.size))
 				/* TODO */ ;
 			else
 				/* TODO */ ;
 		}
+	if ((value.addr = get_resource(rdb, "login.chooser"))) {
+		options.xsession = !strncasecmp(value.addr, "true", value.size) ? True : False;
 	}
-	if (XrmGetResource(rdb, "xsession.chooser", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
-			if (!strncasecmp(value.addr, "true", value.size))
-				options.xsession = True;
-			else
-				options.xsession = False;
-		}
-	}
-	if (XrmGetResource(rdb, "xsession.execute", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "xsession.execute"))) {
 			if (!strncasecmp(value.addr, "true", value.size))
 				/* TODO */ ;
 			else
 				/* TODO */ ;
 		}
-	}
-	if (XrmGetResource(rdb, "xsession.default", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
+	if ((value.addr = get_resource(rdb, "xsession.default"))) {
 			free(options.choice);
 			options.choice = strndup(value.addr, 64);
 		}
+	if ((value.addr = get_resource(rdb, "setbg"))) {
+		options.setbg = !strncasecmp(value.addr, "true", value.size) ? True : False;
 	}
-	if (XrmGetResource(rdb, "setbg", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
-			if (!strncasecmp(value.addr, "true", value.size))
-				options.setbg = True;
-			else
-				options.setbg = False;
-		}
+	if ((value.addr = get_resource(rdb, "transparent"))) {
+		options.transparent = !strncasecmp(value.addr, "true", value.size) ? True : False;
 	}
-	if (XrmGetResource(rdb, "transparent", "XDE-XChooser", &type, &value)) {
-		if (value.addr && *(char *) value.addr) {
-			if (!strncasecmp(value.addr, "true", value.size))
-				options.transparent = True;
-			else
-				options.transparent = False;
-		}
-	}
-#endif				/* DO_XCHOOSER */
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);
 }
-#endif				/* defined(DO_XCHOOSER) ||
-				   !defined(DO_XLOCKING) */
 
 void
 set_default_vendor(void)
@@ -5299,9 +5353,7 @@ main(int argc, char *argv[])
 
 	set_defaults(argc, argv);
 
-#if defined(DO_XCHOOSER) || !defined(DO_XLOCKING)
 	get_resources(argc, argv);
-#endif
 
 	while (1) {
 		int c, val;

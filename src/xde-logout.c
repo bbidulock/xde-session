@@ -567,8 +567,9 @@ struct prog_cmd {
 void
 test_lock_screen_program()
 {
-	static const struct prog_cmd progs[6] = {
+	static const struct prog_cmd progs[7] = {
 		/* *INDENT-OFF* */
+		{"xde-xlock",	    "xde-xlock -lock &"	    },
 		{"xlock",	    "xlock -mode blank &"   },
 		{"slock",	    "slock &"		    },
 		{"slimlock",	    "slimlock &"	    },
@@ -2291,8 +2292,8 @@ run_logout(int argc, char *argv[])
 
 	/* determine which functions are available */
 	test_login_functions();
-	test_power_functions();
 	test_lock_screen_program();
+	test_power_functions();
 	test_user_functions();
 	test_session_functions();
 
