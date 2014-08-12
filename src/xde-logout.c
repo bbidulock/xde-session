@@ -162,10 +162,10 @@ static char **saveArgv;
 #endif
 
 typedef enum _LogoSide {
-	LOGO_SIDE_LEFT,
-	LOGO_SIDE_TOP,
-	LOGO_SIDE_RIGHT,
-	LOGO_SIDE_BOTTOM,
+	LogoSideLeft,
+	LogoSideTop,
+	LogoSideRight,
+	LogoSideBottom,
 } LogoSide;
 
 enum {
@@ -208,6 +208,7 @@ typedef struct {
 	char *language;
 	char *icon_theme;
 	char *gtk2_theme;
+	char *curs_theme;
 	LogoSide side;
 	Bool noask;
 	Bool execute;
@@ -248,7 +249,8 @@ Options options = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
-	.side = LOGO_SIDE_LEFT,
+	.curs_theme = NULL,
+	.side = LogoSideLeft,
 	.noask = False,
 	.execute = False,
 	.current = NULL,
@@ -288,7 +290,8 @@ Options defaults = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
-	.side = LOGO_SIDE_LEFT,
+	.curs_theme = NULL,
+	.side = LogoSideLeft,
 	.noask = False,
 	.execute = False,
 	.current = NULL,
@@ -1887,6 +1890,26 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	gdk_window_add_filter(root, root_handler, xscr);
 	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK;
 	gdk_window_set_events(root, mask);
+
+#ifdef DO_XLOCKING
+	Window owner = None;
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	xscr->selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
+	if ((owner = get_selection(xscr->selwin, xscr->selection, s))) {
+		if (!options.replace) {
+			XDestroyWindow(dpy, xscr->selwin);
+			EPRINTF("%s: instance already running\n", NAME);
+			exit(EXIT_FAILURE);
+		}
+	}
+	GdkWindow *sel = gdk_x11_window_foreign_new_for_display(disp, xscr->selwin);
+
+	gdk_window_add_filter(sel, selwin_handler, xscr);
+	mask = gdk_window_get_events(sel);
+	mask |= GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK | GDK_PROPERTY_CHANGE_MASK;
+	gdk_window_set_events(sel, mask);
+#endif				/* DO_XLOCKING */
 }
 
 static void
@@ -1953,9 +1976,10 @@ GetBanner(void)
 	GtkWidget *ban = NULL, *bin, *pan, *img;
 
 	if (options.banner && (img = gtk_image_new_from_file(options.banner))) {
+		GtkShadowType shadow = (options.transparent) ? GTK_SHADOW_NONE : GTK_SHADOW_ETCHED_IN;
 		ban = gtk_vbox_new(FALSE, 0);
 		bin = gtk_frame_new(NULL);
-		gtk_frame_set_shadow_type(GTK_FRAME(bin), GTK_SHADOW_ETCHED_IN);
+		gtk_frame_set_shadow_type(GTK_FRAME(bin), shadow);
 		gtk_container_set_border_width(GTK_CONTAINER(bin), 0);
 		gtk_box_pack_start(GTK_BOX(ban), bin, TRUE, TRUE, 4);
 		pan = gtk_frame_new(NULL);
@@ -1977,14 +2001,17 @@ GtkWidget *
 GetPanel(void)
 {
 	GtkWidget *pan = gtk_vbox_new(FALSE, 0);
-
 	GtkWidget *inp = gtk_frame_new(NULL);
+	GtkShadowType shadow = (options.transparent) ? GTK_SHADOW_NONE : GTK_SHADOW_ETCHED_IN;
 
-	gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
+	gtk_frame_set_shadow_type(GTK_FRAME(inp), shadow);
 	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
 
+#ifdef DO_XCHOOSER
+	gtk_box_pack_start(GTK_BOX(pan), inp, FALSE, FALSE, 4);
+#else
 	gtk_box_pack_start(GTK_BOX(pan), inp, TRUE, TRUE, 4);
-
+#endif
 	GtkWidget *bb = gtk_vbutton_box_new();
 
 	gtk_container_set_border_width(GTK_CONTAINER(bb), BB_BORDER_WIDTH);
@@ -2067,23 +2094,55 @@ GetPane(GtkWidget *cont)
 	GtkWidget *lab = gtk_label_new(NULL);
 	gchar *markup;
 
-	markup = g_strdup_printf
-	    ("<span font=\"Liberation Sans 12\">%s</span>", options.welcome);
+	markup = g_strdup_printf ("<span size=\"xx-large\"><b><i>%s</i></b></span>", options.welcome);
 	gtk_label_set_markup(GTK_LABEL(lab), markup);
 	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
 	g_free(markup);
 	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
 
-	GtkWidget *h = gtk_hbox_new(FALSE, 5);
+	GtkWidget *box;
+	
+	switch (options.side) {
+	default:
+	case LogoSideLeft:
+	case LogoSideRight:
+		box = gtk_hbox_new(FALSE, 5);
+		break;
+	case LogoSideTop:
+	case LogoSideBottom:
+		box = gtk_vbox_new(TRUE, 5);
+		break;
+	}
 
-	gtk_box_pack_end(GTK_BOX(v), h, TRUE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(v), box, TRUE, TRUE, 0);
 
-	if ((v = GetBanner()))
-		gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
+	if ((v = GetBanner())) {
+		switch (options.side) {
+		default:
+		case LogoSideLeft:
+		case LogoSideTop:
+			gtk_box_pack_start(GTK_BOX(box), v, TRUE, TRUE, 0);
+			break;
+		case LogoSideRight:
+		case LogoSideBottom:
+			gtk_box_pack_end(GTK_BOX(box), v, TRUE, TRUE, 0);
+			break;
+		}
+	}
 
 	v = GetPanel();
-	gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
+	switch (options.side) {
+	default:
+	case LogoSideLeft:
+	case LogoSideTop:
+		gtk_box_pack_end(GTK_BOX(box), v, TRUE, TRUE, 0);
+		break;
+	case LogoSideRight:
+	case LogoSideBottom:
+		gtk_box_pack_start(GTK_BOX(box), v, TRUE, TRUE, 0);
+		break;
+	}
 
 	return (ebox);
 }
@@ -3088,13 +3147,13 @@ const char *
 show_side(LogoSide side)
 {
 	switch (side) {
-	case LOGO_SIDE_LEFT:
+	case LogoSideLeft:
 		return ("left");
-	case LOGO_SIDE_TOP:
+	case LogoSideTop:
 		return ("top");
-	case LOGO_SIDE_RIGHT:
+	case LogoSideRight:
 		return ("right");
-	case LOGO_SIDE_BOTTOM:
+	case LogoSideBottom:
 		return ("bottom");
 	}
 	return ("unknown");
@@ -3309,21 +3368,26 @@ get_resources(int argc, char *argv[])
 		free(options.gtk2_theme);
 		options.gtk2_theme = strndup(value.addr, 64);
 	}
+	if ((value.addr = get_resource(rdb, "theme.cursor"))) {
+		free(options.curs_theme);
+		options.curs_theme = strndup(value.addr, 64);
+	}
 	if ((value.addr = get_resource(rdb, "theme.xde"))) {
 		options.usexde = !strncasecmp(value.addr, "true", value.size) ? True : False;
 	}
 	if ((value.addr = get_resource(rdb, "side"))) {
 		if (!strncasecmp(value.addr, "left", value.size))
-			options.side = LOGO_SIDE_LEFT;
+			options.side = LogoSideLeft;
 		else if (!strncasecmp(value.addr, "top", value.size))
-			options.side = LOGO_SIDE_TOP;
+			options.side = LogoSideTop;
 		else if (!strncasecmp(value.addr, "right", value.size))
-			options.side = LOGO_SIDE_RIGHT;
+			options.side = LogoSideRight;
 		else if (!strncasecmp(value.addr, "bottom", value.size))
-			options.side = LOGO_SIDE_RIGHT;
+			options.side = LogoSideBottom;
 		else
 			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
 	}
+#ifndef DO_XLOCKING
 	if ((value.addr = get_resource(rdb, "user.default"))) {
 		free(options.username);
 		options.username = strndup(value.addr, 32);
@@ -3331,6 +3395,7 @@ get_resources(int argc, char *argv[])
 	if ((value.addr = get_resource(rdb, "autologin"))) {
 		/* TODO */
 	}
+#endif
 	if ((value.addr = get_resource(rdb, "vendor"))) {
 		free(options.vendor);
 		options.vendor = strdup(value.addr);
@@ -4020,19 +4085,19 @@ main(int argc, char *argv[])
 			break;
 		case 's':	/* -s, --side {top|bottom|left|right} */
 			if (!strncasecmp(optarg, "left", strlen(optarg))) {
-				options.side = LOGO_SIDE_LEFT;
+				options.side = LogoSideLeft;
 				break;
 			}
 			if (!strncasecmp(optarg, "top", strlen(optarg))) {
-				options.side = LOGO_SIDE_TOP;
+				options.side = LogoSideTop;
 				break;
 			}
 			if (!strncasecmp(optarg, "right", strlen(optarg))) {
-				options.side = LOGO_SIDE_RIGHT;
+				options.side = LogoSideRight;
 				break;
 			}
 			if (!strncasecmp(optarg, "bottom", strlen(optarg))) {
-				options.side = LOGO_SIDE_BOTTOM;
+				options.side = LogoSideBottom;
 				break;
 			}
 			goto bad_option;

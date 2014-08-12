@@ -59,7 +59,8 @@
 
 ! pick one
 !Xcursor.theme:				whiteglass
-Xcursor.theme:				XcursorHuman
+!Xcursor.theme:				XcursorHuman
+Xcursor.theme:				Bluecurve
 
 !xlogin.Login.width:			! automatic
 !xlogin.Login.height:			! automatic

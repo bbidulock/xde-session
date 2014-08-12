@@ -175,10 +175,10 @@ static char **saveArgv;
 #endif
 
 typedef enum _LogoSide {
-	LOGO_SIDE_LEFT,
-	LOGO_SIDE_TOP,
-	LOGO_SIDE_RIGHT,
-	LOGO_SIDE_BOTTOM,
+	LogoSideLeft,
+	LogoSideTop,
+	LogoSideRight,
+	LogoSideBottom,
 } LogoSide;
 
 enum {
@@ -240,6 +240,7 @@ typedef struct {
 	char *language;
 	char *icon_theme;
 	char *gtk2_theme;
+	char *curs_theme;
 	LogoSide side;
 	char *current;
 	Bool managed;
@@ -281,7 +282,8 @@ Options options = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
-	.side = LOGO_SIDE_LEFT,
+	.curs_theme = NULL,
+	.side = LogoSideLeft,
 	.current = NULL,
 	.managed = True,
 	.session = NULL,
@@ -322,7 +324,8 @@ Options defaults = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
-	.side = LOGO_SIDE_LEFT,
+	.curs_theme = NULL,
+	.side = LogoSideLeft,
 	.current = NULL,
 	.managed = True,
 	.session = NULL,
@@ -1244,7 +1247,8 @@ get_data_dirs(int *np)
 
 static GtkWidget *buttons[5];
 static GtkWidget *l_uname;
-static GtkWidget *l_pword;		// , *l_lstat;
+static GtkWidget *l_pword;
+static GtkWidget *l_lstat;
 static GtkWidget *user, *pass;
 
 gint
@@ -2401,16 +2405,14 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 		case PAM_PROMPT_ECHO_ON:	/* obtain a string whilst
 						   echoing */
 		{
-			gchar *prompt =
-			    g_strdup_printf("<span font=\"Liberation Sans 9\"><b>%s</b></span>",
-					    (*m)->msg);
+			gchar *prompt = g_strdup_printf("<span size=\"xx-large\"><b>%s</b></span>", (*m)->msg);
 
 			DPRINTF("PAM_PROMPT_ECHO_ON: %s\n", (*m)->msg);
 			gtk_label_set_markup(GTK_LABEL(l_uname), prompt);
 			g_free(prompt);
 			gtk_entry_set_text(GTK_ENTRY(user), "");
 			gtk_entry_set_text(GTK_ENTRY(pass), "");
-			// gtk_label_set_text(GTK_LABEL(l_lstat), "");
+			gtk_label_set_text(GTK_LABEL(l_lstat), "");
 			gtk_widget_set_sensitive(user, TRUE);
 			gtk_widget_set_sensitive(pass, FALSE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
@@ -2427,15 +2429,13 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 		case PAM_PROMPT_ECHO_OFF:	/* obtain a string without
 						   echoing */
 		{
-			gchar *prompt =
-			    g_strdup_printf("<span font=\"Liberation Sans 9\"><b>%s</b></span>",
-					    (*m)->msg);
+			gchar *prompt = g_strdup_printf("<b>%s</b>", (*m)->msg);
 
 			DPRINTF("PAM_PROMPT_ECHO_OFF: %s\n", (*m)->msg);
 			gtk_label_set_markup(GTK_LABEL(l_pword), prompt);
 			g_free(prompt);
 			gtk_entry_set_text(GTK_ENTRY(pass), "");
-			// gtk_label_set_text(GTK_LABEL(l_lstat), "");
+			gtk_label_set_text(GTK_LABEL(l_lstat), "");
 			gtk_widget_set_sensitive(user, FALSE);
 			gtk_widget_set_sensitive(pass, TRUE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
@@ -2451,25 +2451,20 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 		}
 		case PAM_ERROR_MSG:	/* display an error message */
 		{
-			gchar *prompt =
-			    g_strdup_printf
-			    ("<span font=\"Liberation Sans 9\" color=\"red\"><b>%s</b></span>",
-			     (*m)->msg);
+			gchar *prompt = g_strdup_printf("<span color=\"red\"><b>%s</b></span>", (*m)->msg);
 
 			DPRINTF("PAM_ERROR_MSG: %s\n", (*m)->msg);
-			// gtk_label_set_markup(GTK_LABEL(l_lstat), prompt);
+			gtk_label_set_markup(GTK_LABEL(l_lstat), prompt);
 			g_free(prompt);
 			relax();
 			break;
 		}
 		case PAM_TEXT_INFO:	/* display some text */
 		{
-			gchar *prompt =
-			    g_strdup_printf("<span font=\"Liberation Sans 9\"><b>%s</b></span>",
-					    (*m)->msg);
+			gchar *prompt = g_strdup_printf("<b>%s</b>", (*m)->msg);
 
 			DPRINTF("PAM_TEXT_INFO: %s\n", (*m)->msg);
-			// gtk_label_set_markup(GTK_LABEL(l_lstat), prompt);
+			gtk_label_set_markup(GTK_LABEL(l_lstat), prompt);
 			g_free(prompt);
 			relax();
 			break;
@@ -3750,9 +3745,10 @@ GetBanner(void)
 	GtkWidget *ban = NULL, *bin, *pan, *img;
 
 	if (options.banner && (img = gtk_image_new_from_file(options.banner))) {
+		GtkShadowType shadow = (options.transparent) ? GTK_SHADOW_NONE : GTK_SHADOW_ETCHED_IN;
 		ban = gtk_vbox_new(FALSE, 0);
 		bin = gtk_frame_new(NULL);
-		gtk_frame_set_shadow_type(GTK_FRAME(bin), GTK_SHADOW_ETCHED_IN);
+		gtk_frame_set_shadow_type(GTK_FRAME(bin), shadow);
 		gtk_container_set_border_width(GTK_CONTAINER(bin), 0);
 		gtk_box_pack_start(GTK_BOX(ban), bin, TRUE, TRUE, 4);
 		pan = gtk_frame_new(NULL);
@@ -3768,10 +3764,10 @@ GtkWidget *
 GetPanel(void)
 {
 	GtkWidget *pan = gtk_vbox_new(FALSE, 0);
-
 	GtkWidget *inp = gtk_frame_new(NULL);
+	GtkShadowType shadow = (options.transparent) ? GTK_SHADOW_NONE : GTK_SHADOW_ETCHED_IN;
 
-	gtk_frame_set_shadow_type(GTK_FRAME(inp), GTK_SHADOW_ETCHED_IN);
+	gtk_frame_set_shadow_type(GTK_FRAME(inp), shadow);
 	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
 
 #ifdef DO_XCHOOSER
@@ -3784,12 +3780,12 @@ GetPanel(void)
 
 	gtk_container_add(GTK_CONTAINER(inp), align);
 
-	int rows = 2;
+	int rows = 3;
 
 	if (options.xsession)
-		rows = 3;
+		rows = 4;
 
-	GtkWidget *login = gtk_table_new(2, rows, TRUE);
+	GtkWidget *login = gtk_table_new(3, rows, TRUE);
 
 	gtk_container_set_border_width(GTK_CONTAINER(login), 5);
 	gtk_table_set_col_spacings(GTK_TABLE(login), 5);
@@ -3798,8 +3794,7 @@ GetPanel(void)
 	gtk_container_add(GTK_CONTAINER(align), login);
 
 	l_uname = gtk_label_new(NULL);
-	gtk_label_set_markup(GTK_LABEL(l_uname),
-			     "<span font=\"Liberation Sans 9\"><b>Username:</b></span>");
+	gtk_label_set_markup(GTK_LABEL(l_uname), "<b>Username:</b>");
 	gtk_misc_set_alignment(GTK_MISC(l_uname), 1.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l_uname), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(login), l_uname, 0, 1, 0, 1);
@@ -3812,8 +3807,7 @@ GetPanel(void)
 	gtk_table_attach_defaults(GTK_TABLE(login), user, 1, 2, 0, 1);
 
 	l_pword = gtk_label_new(NULL);
-	gtk_label_set_markup(GTK_LABEL(l_pword),
-			     "<span font=\"Liberation Sans 9\"><b>Password:</b></span>");
+	gtk_label_set_markup(GTK_LABEL(l_pword), "<b>Password:</b>");
 	gtk_misc_set_alignment(GTK_MISC(l_pword), 1.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l_pword), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(login), l_pword, 0, 1, 1, 2);
@@ -3824,6 +3818,14 @@ GetPanel(void)
 	gtk_widget_set_can_default(pass, TRUE);
 	gtk_widget_set_can_focus(pass, TRUE);
 	gtk_table_attach_defaults(GTK_TABLE(login), pass, 1, 2, 1, 2);
+
+	l_lstat = gtk_label_new(NULL);
+	gtk_misc_set_alignment(GTK_MISC(l_lstat), 0.5, 0.5);
+	gtk_misc_set_padding(GTK_MISC(l_lstat), 5, 2);
+	if (options.xsession)
+		gtk_table_attach_defaults(GTK_TABLE(login), l_lstat, 0, 3, 3, 4);
+	else
+		gtk_table_attach_defaults(GTK_TABLE(login), l_lstat, 0, 3, 2, 3);
 
 	g_signal_connect(G_OBJECT(user), "activate", G_CALLBACK(on_user_activate), pass);
 	g_signal_connect(G_OBJECT(pass), "activate", G_CALLBACK(on_pass_activate), user);
@@ -3893,8 +3895,7 @@ GetPanel(void)
 	if (options.xsession) {
 	GtkWidget *xsess = gtk_label_new(NULL);
 
-	gtk_label_set_markup(GTK_LABEL(xsess),
-			     "<span font=\"Liberation Sans 9\"><b>XSession:</b></span>");
+	gtk_label_set_markup(GTK_LABEL(xsess), "<b>XSession:</b>");
 	gtk_misc_set_alignment(GTK_MISC(xsess), 1.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(xsess), 5, 2);
 
@@ -3958,7 +3959,7 @@ GetPanel(void)
 #ifdef DO_XCHOOSER
 	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
 
-	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_ETCHED_IN);
+	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), shadow);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
 				       GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_box_pack_start(GTK_BOX(pan), sw, TRUE, TRUE, 4);
@@ -4015,9 +4016,9 @@ GetPanel(void)
 
 	if (options.xsession) {
 #ifdef DO_ONIDLE
-	g_idle_add(on_idle, store);
+		g_idle_add(on_idle, store);
 #else
-	while (on_idle(store) != G_SOURCE_REMOVE) ;
+		while (on_idle(store) != G_SOURCE_REMOVE) ;
 #endif
 	}
 
@@ -4052,23 +4053,55 @@ GetPane(GtkWidget *cont)
 	GtkWidget *lab = gtk_label_new(NULL);
 	gchar *markup;
 
-	markup = g_markup_printf_escaped
-	    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
+	markup = g_markup_printf_escaped("<span size=\"xx-large\"><b><i>%s</i></b></span>", options.welcome);
 	gtk_label_set_markup(GTK_LABEL(lab), markup);
 	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
 	g_free(markup);
 	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
 
-	GtkWidget *h = gtk_hbox_new(FALSE, 5);
+	GtkWidget *box;
+	
+	switch (options.side) {
+	default:
+	case LogoSideLeft:
+	case LogoSideRight:
+		box = gtk_hbox_new(FALSE, 5);
+		break;
+	case LogoSideTop:
+	case LogoSideBottom:
+		box = gtk_vbox_new(FALSE, 5);
+		break;
+	}
 
-	gtk_box_pack_end(GTK_BOX(v), h, TRUE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(v), box, TRUE, TRUE, 0);
 
-	if ((v = GetBanner()))
-		gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
+	if ((v = GetBanner())) {
+		switch (options.side) {
+		default:
+		case LogoSideLeft:
+		case LogoSideTop:
+			gtk_box_pack_start(GTK_BOX(box), v, TRUE, TRUE, 0);
+			break;
+		case LogoSideRight:
+		case LogoSideBottom:
+			gtk_box_pack_end(GTK_BOX(box), v, TRUE, TRUE, 0);
+			break;
+		}
+	}
 
 	v = GetPanel();
-	gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
+	switch (options.side) {
+	default:
+	case LogoSideLeft:
+	case LogoSideTop:
+		gtk_box_pack_end(GTK_BOX(box), v, TRUE, TRUE, 0);
+		break;
+	case LogoSideRight:
+	case LogoSideBottom:
+		gtk_box_pack_start(GTK_BOX(box), v, TRUE, TRUE, 0);
+		break;
+	}
 
 	return (ebox);
 }
@@ -4358,13 +4391,13 @@ const char *
 show_side(LogoSide side)
 {
 	switch (side) {
-	case LOGO_SIDE_LEFT:
+	case LogoSideLeft:
 		return ("left");
-	case LOGO_SIDE_TOP:
+	case LogoSideTop:
 		return ("top");
-	case LOGO_SIDE_RIGHT:
+	case LogoSideRight:
 		return ("right");
-	case LOGO_SIDE_BOTTOM:
+	case LogoSideBottom:
 		return ("bottom");
 	}
 	return ("unknown");
@@ -4579,7 +4612,7 @@ get_resources(int argc, char *argv[])
 	}
 	if ((value.addr = get_resource(rdb, "Chooser.x"))) {
 		options.xposition = strtod(value.addr, NULL);
-		}
+	}
 	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
 		options.yposition = strtod(value.addr, NULL);
 	}
@@ -4587,88 +4620,94 @@ get_resources(int argc, char *argv[])
 		options.debug = strtoul(value.addr, NULL, 0);
 	}
 	if ((value.addr = get_resource(rdb, "banner"))) {
-			free(options.banner);
-			options.banner = strndup(value.addr, PATH_MAX);
-		}
+		free(options.banner);
+		options.banner = strndup(value.addr, PATH_MAX);
+	}
 	if ((value.addr = get_resource(rdb, "splash"))) {
-			free(options.splash);
-			options.splash = strndup(value.addr, PATH_MAX);
-		}
+		free(options.splash);
+		options.splash = strndup(value.addr, PATH_MAX);
+	}
 	if ((value.addr = get_resource(rdb, "welcome"))) {
-			free(options.welcome);
-			options.welcome = strndup(value.addr, 256);
-		}
+		free(options.welcome);
+		options.welcome = strndup(value.addr, 256);
+	}
 	if ((value.addr = get_resource(rdb, "charset"))) {
-			free(options.charset);
-			options.charset = strndup(value.addr, 64);
-		}
+		free(options.charset);
+		options.charset = strndup(value.addr, 64);
+	}
 	if ((value.addr = get_resource(rdb, "language"))) {
-			free(options.language);
-			options.language = strndup(value.addr, 64);
-		}
+		free(options.language);
+		options.language = strndup(value.addr, 64);
+	}
 	if ((value.addr = get_resource(rdb, "theme.icon"))) {
-			free(options.icon_theme);
-			options.icon_theme = strndup(value.addr, 64);
-		}
+		free(options.icon_theme);
+		options.icon_theme = strndup(value.addr, 64);
+	}
 	if ((value.addr = get_resource(rdb, "theme.name"))) {
-			free(options.gtk2_theme);
-			options.gtk2_theme = strndup(value.addr, 64);
-		}
+		free(options.gtk2_theme);
+		options.gtk2_theme = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "theme.cursor"))) {
+		free(options.curs_theme);
+		options.curs_theme = strndup(value.addr, 64);
+	}
 	if ((value.addr = get_resource(rdb, "theme.xde"))) {
 		options.usexde = !strncasecmp(value.addr, "true", value.size) ? True : False;
 	}
 	if ((value.addr = get_resource(rdb, "side"))) {
-			if (!strncasecmp(value.addr, "left", value.size))
-				options.side = LOGO_SIDE_LEFT;
-			else if (!strncasecmp(value.addr, "top", value.size))
-				options.side = LOGO_SIDE_TOP;
-			else if (!strncasecmp(value.addr, "right", value.size))
-				options.side = LOGO_SIDE_RIGHT;
-			else if (!strncasecmp(value.addr, "bottom", value.size))
-				options.side = LOGO_SIDE_RIGHT;
-			else
+		if (!strncasecmp(value.addr, "left", value.size))
+			options.side = LogoSideLeft;
+		else if (!strncasecmp(value.addr, "top", value.size))
+			options.side = LogoSideTop;
+		else if (!strncasecmp(value.addr, "right", value.size))
+			options.side = LogoSideRight;
+		else if (!strncasecmp(value.addr, "bottom", value.size))
+			options.side = LogoSideBottom;
+		else
 			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
-		}
+	}
+#ifndef DO_XLOCKING
 	if ((value.addr = get_resource(rdb, "user.default"))) {
-			free(options.username);
-			options.username = strndup(value.addr, 32);
-		}
+		free(options.username);
+		options.username = strndup(value.addr, 32);
+	}
 	if ((value.addr = get_resource(rdb, "autologin"))) {
-			/* TODO */
-		}
+		/* TODO */
+	}
+#endif
 	if ((value.addr = get_resource(rdb, "vendor"))) {
-			free(options.vendor);
-			options.vendor = strdup(value.addr);
-		}
+		free(options.vendor);
+		options.vendor = strdup(value.addr);
+	}
 	if ((value.addr = get_resource(rdb, "prefix"))) {
-			free(options.prefix);
-			options.prefix = strdup(value.addr);
-		}
+		free(options.prefix);
+		options.prefix = strdup(value.addr);
+	}
 	if ((value.addr = get_resource(rdb, "login.permit"))) {
-			if (!strncasecmp(value.addr, "true", value.size))
-				/* TODO */ ;
-			else
-				/* TODO */ ;
-		}
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
 	if ((value.addr = get_resource(rdb, "login.remote"))) {
-			if (!strncasecmp(value.addr, "true", value.size))
-				/* TODO */ ;
-			else
-				/* TODO */ ;
-		}
-	if ((value.addr = get_resource(rdb, "login.chooser"))) {
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
+	if ((value.addr = get_resource(rdb, "xsession.chooser"))) {
 		options.xsession = !strncasecmp(value.addr, "true", value.size) ? True : False;
 	}
 	if ((value.addr = get_resource(rdb, "xsession.execute"))) {
-			if (!strncasecmp(value.addr, "true", value.size))
-				/* TODO */ ;
-			else
-				/* TODO */ ;
-		}
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
 	if ((value.addr = get_resource(rdb, "xsession.default"))) {
-			free(options.choice);
-			options.choice = strndup(value.addr, 64);
-		}
+		free(options.choice);
+		options.choice = strndup(value.addr, 64);
+	}
 	if ((value.addr = get_resource(rdb, "setbg"))) {
 		options.setbg = !strncasecmp(value.addr, "true", value.size) ? True : False;
 	}
@@ -5530,9 +5569,9 @@ main(int argc, char *argv[])
 
 		c = getopt_long_only(argc, argv, "x:c:t:b:S:s:w:i:T:unD::v::hVCH?", long_options,
 				     &option_index);
-#else
+#else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "x:c:t:b:S:s:w:i:T:unDvhVCH?");
-#endif
+#endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
 			break;
@@ -5610,19 +5649,19 @@ main(int argc, char *argv[])
 			break;
 		case 's':	/* -s, --side {top|bottom|left|right} */
 			if (!strncasecmp(optarg, "left", strlen(optarg))) {
-				options.side = LOGO_SIDE_LEFT;
+				options.side = LogoSideLeft;
 				break;
 			}
 			if (!strncasecmp(optarg, "top", strlen(optarg))) {
-				options.side = LOGO_SIDE_TOP;
+				options.side = LogoSideTop;
 				break;
 			}
 			if (!strncasecmp(optarg, "right", strlen(optarg))) {
-				options.side = LOGO_SIDE_RIGHT;
+				options.side = LogoSideRight;
 				break;
 			}
 			if (!strncasecmp(optarg, "bottom", strlen(optarg))) {
-				options.side = LOGO_SIDE_BOTTOM;
+				options.side = LogoSideBottom;
 				break;
 			}
 			goto bad_option;

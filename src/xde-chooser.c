@@ -162,10 +162,10 @@ static char **saveArgv;
 #endif
 
 typedef enum _LogoSide {
-	LOGO_SIDE_LEFT,
-	LOGO_SIDE_TOP,
-	LOGO_SIDE_RIGHT,
-	LOGO_SIDE_BOTTOM,
+	LogoSideLeft,
+	LogoSideTop,
+	LogoSideRight,
+	LogoSideBottom,
 } LogoSide;
 
 enum {
@@ -207,6 +207,7 @@ typedef struct {
 	char *language;
 	char *icon_theme;
 	char *gtk2_theme;
+	char *curs_theme;
 	LogoSide side;
 	Bool prompt;
 	Bool noask;
@@ -248,7 +249,8 @@ Options options = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
-	.side = LOGO_SIDE_LEFT,
+	.curs_theme = NULL,
+	.side = LogoSideLeft,
 	.prompt = False,
 	.noask = False,
 	.setdflt = False,
@@ -289,7 +291,8 @@ Options defaults = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
-	.side = LOGO_SIDE_LEFT,
+	.curs_theme = NULL,
+	.side = LogoSideLeft,
 	.prompt = False,
 	.noask = False,
 	.setdflt = False,
@@ -2146,23 +2149,55 @@ GetPane(GtkWidget *cont)
 	GtkWidget *lab = gtk_label_new(NULL);
 	gchar *markup;
 
-	markup = g_markup_printf_escaped
-	    ("<span font=\"Liberation Sans 12\"><b><i>%s</i></b></span>", options.welcome);
+	markup = g_markup_printf_escaped("<span size=\"xx-large\"><b><i>%s</i></b></span>", options.welcome);
 	gtk_label_set_markup(GTK_LABEL(lab), markup);
 	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
 	g_free(markup);
 	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
 
-	GtkWidget *h = gtk_hbox_new(FALSE, 5);
+	GtkWidget *box;
+	
+	switch (options.side) {
+	default:
+	case LogoSideLeft:
+	case LogoSideRight:
+		box = gtk_hbox_new(FALSE, 5);
+		break;
+	case LogoSideTop:
+	case LogoSideBottom:
+		box = gtk_vbox_new(TRUE, 5);
+		break;
+	}
 
-	gtk_box_pack_end(GTK_BOX(v), h, TRUE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(v), box, TRUE, TRUE, 0);
 
-	if ((v = GetBanner()))
-		gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
+	if ((v = GetBanner())) {
+		switch (options.side) {
+		default:
+		case LogoSideLeft:
+		case LogoSideTop:
+			gtk_box_pack_start(GTK_BOX(box), v, TRUE, TRUE, 0);
+			break;
+		case LogoSideRight:
+		case LogoSideBottom:
+			gtk_box_pack_end(GTK_BOX(box), v, TRUE, TRUE, 0);
+			break;
+		}
+	}
 
 	v = GetPanel();
-	gtk_box_pack_start(GTK_BOX(h), v, TRUE, TRUE, 0);
+	switch (options.side) {
+	default:
+	case LogoSideLeft:
+	case LogoSideTop:
+		gtk_box_pack_end(GTK_BOX(box), v, TRUE, TRUE, 0);
+		break;
+	case LogoSideRight:
+	case LogoSideBottom:
+		gtk_box_pack_start(GTK_BOX(box), v, TRUE, TRUE, 0);
+		break;
+	}
 
 	return (ebox);
 }
@@ -2852,13 +2887,13 @@ const char *
 show_side(LogoSide side)
 {
 	switch (side) {
-	case LOGO_SIDE_LEFT:
+	case LogoSideLeft:
 		return ("left");
-	case LOGO_SIDE_TOP:
+	case LogoSideTop:
 		return ("top");
-	case LOGO_SIDE_RIGHT:
+	case LogoSideRight:
 		return ("right");
-	case LOGO_SIDE_BOTTOM:
+	case LogoSideBottom:
 		return ("bottom");
 	}
 	return ("unknown");
@@ -3120,13 +3155,13 @@ get_resources(int argc, char *argv[])
 	}
 	if ((value.addr = get_resource(rdb, "side"))) {
 		if (!strncasecmp(value.addr, "left", value.size))
-			options.side = LOGO_SIDE_LEFT;
+			options.side = LogoSideLeft;
 		else if (!strncasecmp(value.addr, "top", value.size))
-			options.side = LOGO_SIDE_TOP;
+			options.side = LogoSideTop;
 		else if (!strncasecmp(value.addr, "right", value.size))
-			options.side = LOGO_SIDE_RIGHT;
+			options.side = LogoSideRight;
 		else if (!strncasecmp(value.addr, "bottom", value.size))
-			options.side = LOGO_SIDE_RIGHT;
+			options.side = LogoSideBottom;
 		else
 			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
 	}
@@ -3815,19 +3850,19 @@ main(int argc, char *argv[])
 			break;
 		case 's':	/* -s, --side {top|bottom|left|right} */
 			if (!strncasecmp(optarg, "left", strlen(optarg))) {
-				options.side = LOGO_SIDE_LEFT;
+				options.side = LogoSideLeft;
 				break;
 			}
 			if (!strncasecmp(optarg, "top", strlen(optarg))) {
-				options.side = LOGO_SIDE_TOP;
+				options.side = LogoSideTop;
 				break;
 			}
 			if (!strncasecmp(optarg, "right", strlen(optarg))) {
-				options.side = LOGO_SIDE_RIGHT;
+				options.side = LogoSideRight;
 				break;
 			}
 			if (!strncasecmp(optarg, "bottom", strlen(optarg))) {
-				options.side = LOGO_SIDE_BOTTOM;
+				options.side = LogoSideBottom;
 				break;
 			}
 			goto bad_option;

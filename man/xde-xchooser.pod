@@ -188,43 +188,123 @@ loaded by L<xdm(1)> prior to execution:
 
 =over 4
 
-=item B<XDE-XChooser>*B<debug>: I<BOOLEAN>
+=item B<XDE-XChooser>*B<x>: I<DOUBLE>
+
+Specifies the X position on the monitor as a floating point number
+between C<0.0> and C<1.0>, where C<0.0> represents the left edge of the
+monitor and C<1.0>, the right edge.  The dialog will be positioned on this
+point depending on its gravity (currently static or centered).
+
+=item B<XDE-XChooser>*B<y>: I<DOUBLE>
+
+Specifies the Y position on the monitor as a floating point number
+between C<0.0> and C<1.0>, where C<0.0> represents the top edge of the
+monitor and C<1.0>, the bottom edge.  The dialog will be positioned on
+this point depending on its gravity (currently static or centered).
+
+=item B<XDE-XChooser>*B<debug>: I<INTEGER>
+
+Provides the debugging level in the same fasion as the B<-debug> command
+line option.
 
 =item B<XDE-XChooser>*B<banner>: I<PATH>
 
+Provides the banner to use for the branding logo in the same fashion as
+the B<-banner> command line option.
+
 =item B<XDE-XChooser>*B<splash>: I<PATH>
+
+Provides the background to use for the root window in the same fashion
+as the B<-splash> command line option.
 
 =item B<XDE-XChooser>*B<welcome>: I<MARKUP>
 
+Provides the welcome message to use for the root window in the same
+fashion as the B<-welcome> command line option.
+
 =item B<XDE-XChooser>*B<charset>: I<CHARSET>
+
+Provides the character set in the same fashion as the B<-charset>
+command line option.
 
 =item B<XDE-XChooser>*B<language>: I<LANG>
 
+Provides the language in the same fashion as the B<-language> command
+line option.
+
 =item B<XDE-XChooser>*B<theme.icon>: I<NAME>
+
+Provides the XDG icon theme name.
 
 =item B<XDE-XChooser>*B<theme.name>: I<NAME>
 
-=item B<XDE-XChooser>*B<theme.xde>: I<BOOLEAN>
+Provides the XDG theme name (for GTK+).
+
+=item B<XDE-XChooser>*B<theme.cursor>: I<NAME>
+
+Provides the XDG cursor theme name.
+
+=item B<XDE-XChooser>*B<theme.xde>: {B<true>|B<false>}
+
+When I<true>, specifies that the system XDE desktop theme should be used
+instead of the system GTK+ theme.
 
 =item B<XDE-XChooser>*B<side>: {B<left>|B<right>|B<top>|B<bottom>}
 
+Speecifies the side on which the logo (banner) should appear.  Currently
+only I<left> is supported.
+
 =item B<XDE-XChooser>*B<user.default>: I<USERNAME>
 
-=item B<XDE-XChooser>*B<autologin>: I<BOOLEAN>
+Specifies a default use name to use for the login (when a login is
+provided).  Note that a default user name will not be presented when it
+can be detected that the display is remote from the current host.
+
+=item B<XDE-XChooser>*B<autologin>: {B<true>|B<false>}
+
+When I<true>, spefifies that the user defined in
+B<XDE-XChooser>*B<user.default> should be automatically logged into a
+session without requiring a password.  It may be necessary for such a
+user to be a member of the C<autologin> group.  Auto login will be
+suppressed when it can be detected that the display is remote from the
+current host.
 
 =item B<XDE-XChooser>*B<vendor>: I<VENDOR-ID>
 
+Provides a vendor identifier for use in lookup up banners and
+backgrounds automatically, as with the B<-vendor> command line option.
+
 =item B<XDE-XChooser>*B<prefix>: I<MENU-PREFIX>
 
-=item B<XDE-XChooser>*B<login.permit>: I<BOOLEAN>
+Provides a vendor identifier as a menu prefix (C<XDG_MENU_PREFIX>)
+instead of as a plain identifier.  The prefix normally has a dash (C<->)
+appended.
 
-=item B<XDE-XChooser>*B<login.remote>: I<BOOLEAN>
+=item B<XDE-XChooser>*B<login.permit>: {B<true>|B<false>}
 
-=item B<XDE-XChooser>*B<xsession.chooser>: I<BOOLEAN>
+The XDMCP Chooser has control of an X Display in the same manner as the
+XDMCP Greeter program and may provide an immeditate login option in
+addition to a list of XDMCP hosts.  When I<true>, this option specifies
+that this login is to be presented as an option to users of the XDMCP
+Chooser.
 
-=item B<XDE-XChooser>*B<xsession.execute>: I<BOOLEAN>
+=item B<XDE-XChooser>*B<login.remote>: {B<true>|B<false>}
+
+The XDMCP Chooser may provide a direct login option to the user of the
+chooser.  When I<true>, this option specifies that remote displays will
+be given the same opportunity to log in directly.  WHen I<false>,
+displays that are detected as remote from the host will no be offered a
+direct login.
+
+=item B<XDE-XChooser>*B<xsession.chooser>: {B<true>|B<false>}
+
+=item B<XDE-XChooser>*B<xsession.execute>: {B<true>|B<false>}
 
 =item B<XDE-XChooser>*B<xsession.default>: I<APPID>
+
+=item B<XDE-XChooser>*B<xsession.setbg>: {B<true>|B<false>}
+
+=item B<XDE-XChooser>*B<xsession.transparent>: {B<true>|B<false>}
 
 =back
 
@@ -253,6 +333,14 @@ B<xde-xchooser> may observe some of the resources intended for the L<xdm(1)>
 login, such as:
 
 =over 4
+
+=item B<xlogin>.B<Login.width>
+
+=item B<xlogin>.B<Login.height>
+
+=item B<xlogin>.B<Login.x>
+
+=item B<xlogin>.B<Login.y>
 
 =item B<xlogin>*B<login.translations>
 
