@@ -25,8 +25,8 @@ xde_autostart_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
 
 xde_chooser_CPPFLAGS = -DNAME=\"xde-chooser\"
 xde_chooser_SOURCES = xde-chooser.c xde-chooser.h
-xde_chooser_CFLAGS = $(AM_CFLAGS)
-xde_chooser_LDFLAGS = $(AM_LDFLAGS)
+xde_chooser_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
+xde_chooser_LDFLAGS = $(AM_LDFLAGS) $(SMLIB_LIBS) $(ICE_LIBS)
 
 xde_input_CPPFLAGS = -DNAME=\"xde-input\"
 xde_input_SOURCES = xde-input.c xde-input.h

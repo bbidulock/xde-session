@@ -143,11 +143,14 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 
+static int saveArgc;
+static char **saveArgv;
+
 #undef DO_XCHOOSER
-#define DO_XSESSION 1
 #undef DO_XLOCKING
 #undef DO_ONIDLE
-#define DO_SETSTYLE 1
+#undef DO_CHOOSER
+#undef DO_LOGOUT
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -157,6 +160,14 @@
 #   define RESNAME "xde-xlock"
 #   define RESCLAS "XDE-XLock"
 #   define RESTITL "X11 Locker"
+#elif defined(DO_CHOOSER)
+#   define RESNAME "xde-chooser"
+#   define RESCLAS "XDE-Chooser"
+#   define RESTITL "XDE X11 Session Chooser"
+#elif defined(DO_LOGOUT)
+#   define RESNAME "xde-logout"
+#   define RESCLAS "XDE-Logout"
+#   define RESTITL "XDE X11 Session Logout"
 #else
 #   define RESNAME "xde-xlogin"
 #   define RESCLAS "XDE-XLogin"
@@ -238,6 +249,7 @@ typedef struct {
 	char *password;
 	Bool usexde;
 	Bool replace;
+	GKeyFile *dmrc;
 	char *vendor;
 	char *prefix;
 	char *splash;
@@ -249,6 +261,7 @@ typedef struct {
 	int height;
 	double xposition;
 	double yposition;
+	Bool setstyle;
 } Options;
 
 Options options = {
@@ -277,6 +290,7 @@ Options options = {
 	.password = NULL,
 	.usexde = False,
 	.replace = False,
+	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
@@ -288,6 +302,7 @@ Options options = {
 	.height = -1,
 	.xposition = 0.5,
 	.yposition = 0.5,
+	.setstyle = True,
 };
 
 Options defaults = {
@@ -316,6 +331,7 @@ Options defaults = {
 	.password = NULL,
 	.usexde = False,
 	.replace = False,
+	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
@@ -327,6 +343,7 @@ Options defaults = {
 	.height = -1,
 	.xposition = 0.5,
 	.yposition = 0.5,
+	.setstyle = True,
 };
 
 typedef enum {
@@ -581,7 +598,6 @@ enum {
 };
 #endif				/* DO_XCHOOSER */
 
-#ifdef DO_XSESSION
 enum {
 	XSESS_COL_PIXBUF,		/* the icon name for the pixbuf */
 	XSESS_COL_NAME,			/* the Name= of the XSession */
@@ -593,7 +609,6 @@ enum {
 	XSESS_COL_FILENAME,		/* the full file name */
 	XSESS_COL_TOOLTIP,		/* the tooltip information */
 };
-#endif				/* DO_XSESSION */
 
 static void reparse(Display *dpy, Window root);
 static void redo_source(XdeScreen *xscr);
@@ -745,9 +760,11 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	return GDK_FILTER_CONTINUE;
 }
 
-#ifdef DO_XSESSION
 GtkListStore *store;			/* list store for XSessions */
 GtkWidget *sess;
+
+#define XDE_ICON_GEOM 16
+#define XDE_ICON_SIZE GTK_ICON_SIZE_MENU
 
 void
 on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell,
@@ -781,7 +798,7 @@ on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell,
 	has = gtk_icon_theme_has_icon(theme, name);
 	if (has) {
 		XPRINTF("trying to load icon \"%s\"\n", name);
-		pixbuf = gtk_icon_theme_load_icon(theme, name, 16,
+		pixbuf = gtk_icon_theme_load_icon(theme, name, XDE_ICON_GEOM,
 						  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
 						  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
 	}
@@ -792,7 +809,7 @@ on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell,
 		has = gtk_icon_theme_has_icon(theme, name);
 		if (has) {
 			XPRINTF("tyring to load icon \"%s\"\n", name);
-			pixbuf = gtk_icon_theme_load_icon(theme, name, 16,
+			pixbuf = gtk_icon_theme_load_icon(theme, name, XDE_ICON_GEOM,
 							  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
 							  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
 		}
@@ -801,11 +818,11 @@ on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell,
 
 			XPRINTF("tyring to load image \"%s\"\n", "gtk-missing-image");
 			if ((image = gtk_image_new_from_stock("gtk-missing-image",
-							      GTK_ICON_SIZE_MENU))) {
+							      XDE_ICON_SIZE))) {
 				XPRINTF("tyring to load icon \"%s\"\n", "gtk-missing-image");
 				pixbuf = gtk_widget_render_icon(GTK_WIDGET(image),
 								"gtk-missing-image",
-								GTK_ICON_SIZE_MENU, NULL);
+								XDE_ICON_SIZE, NULL);
 				g_object_unref(G_OBJECT(image));
 			}
 		}
@@ -1168,7 +1185,6 @@ on_idle(gpointer data)
 #endif
 	return G_SOURCE_CONTINUE;
 }
-#endif				/* DO_XSESSION */
 
 #ifdef DO_XCHOOSER
 GtkListStore *model;
@@ -1231,7 +1247,6 @@ static GtkWidget *l_uname;
 static GtkWidget *l_pword;		// , *l_lstat;
 static GtkWidget *user, *pass;
 
-#ifdef DO_XSESSION
 gint
 xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, gpointer data)
 {
@@ -1250,7 +1265,6 @@ xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, g
 	g_value_unset(&b_v);
 	return (ret);
 }
-#endif
 
 #ifdef DO_XCHOOSER
 Bool
@@ -3132,7 +3146,9 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 		EPRINTF("Could not grab keyboard!\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
+#if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
 	grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
+#endif
 }
 
 /** @brief transform a window away from a grabbed window
@@ -3146,11 +3162,13 @@ ungrabbed_window(GtkWidget *window)
 {
 	GdkWindow *win = gtk_widget_get_window(window);
 
+#if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
 	if (grab_broken_handler) {
 		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
 		grab_broken_handler = 0;
 	}
 	g_signal_connect(G_OBJECT(window), "grab-broken-event", NULL, NULL);
+#endif
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 	gdk_window_hide(win);
@@ -3248,11 +3266,10 @@ set_style(XdeScreen *xscr)
 void
 update_source(XdeScreen *xscr)
 {
-#ifndef DO_SETSTYLE
-	clr_source(xscr);
-#else
-	set_style(xscr);
-#endif
+	if (options.setstyle)
+		clr_source(xscr);
+	else
+		set_style(xscr);
 	if (xscr->pixmap && options.setbg) {
 		GdkDisplay *disp;
 		GdkWindow *root;
@@ -3600,10 +3617,10 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
 	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), NULL);
 
-#ifndef DO_SETSTYLE
-	gtk_widget_set_app_paintable(wind, TRUE);
-	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), xscr);
-#endif
+	if (options.setstyle) {
+		gtk_widget_set_app_paintable(wind, TRUE);
+		g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), xscr);
+	}
 
 	gtk_window_set_focus_on_map(w, TRUE);
 	gtk_window_set_accept_focus(w, TRUE);
@@ -3769,10 +3786,9 @@ GetPanel(void)
 
 	int rows = 2;
 
-#ifdef DO_XSESSION
 	if (options.xsession)
 		rows = 3;
-#endif
+
 	GtkWidget *login = gtk_table_new(2, rows, TRUE);
 
 	gtk_container_set_border_width(GTK_CONTAINER(login), 5);
@@ -3874,7 +3890,6 @@ GetPanel(void)
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_login_clicked), buttons);
 	gtk_widget_set_sensitive(b, FALSE);
 
-#ifdef DO_XSESSION
 	if (options.xsession) {
 	GtkWidget *xsess = gtk_label_new(NULL);
 
@@ -3939,7 +3954,6 @@ GetPanel(void)
 
 	gtk_table_attach_defaults(GTK_TABLE(login), sess, 1, 2, 2, 3);
 	}
-#endif				/* DO_XSESSION */
 
 #ifdef DO_XCHOOSER
 	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
@@ -3999,7 +4013,6 @@ GetPanel(void)
 
 #endif				/* DO_XCHOOSER */
 
-#ifdef DO_XSESSION
 	if (options.xsession) {
 #ifdef DO_ONIDLE
 	g_idle_add(on_idle, store);
@@ -4007,7 +4020,10 @@ GetPanel(void)
 	while (on_idle(store) != G_SOURCE_REMOVE) ;
 #endif
 	}
-#endif				/* DO_XSESSION */
+
+	/* TODO: we should really set a timeout and if no user interaction has
+	   occured before the timeout, we should continue if we have a viable
+	   default or choice. */
 
 	return (pan);
 }
@@ -4890,6 +4906,106 @@ set_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
+#if 0
+void
+set_default_session(void)
+{
+	char **xdg_dirs, **dirs, *file, *line, *p;
+	int i, n = 0;
+	static const char *session = "/xde/default";
+	static const char *current = "/xde/current";
+	static const char *dmrc = "/.dmrc";
+	const char *home = getenv("HOME") ? : ".";
+
+	free(defaults.session);
+	defaults.session = NULL;
+	free(defaults.current);
+	defaults.current = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	strncpy(file, home, PATH_MAX);
+	strncat(file, dmrc, PATH_MAX);
+
+	if (!defaults.dmrc)
+		defaults.dmrc = g_key_file_new();
+	if (defaults.dmrc) {
+		if (g_key_file_load_from_file(defaults.dmrc, file,
+					      G_KEY_FILE_KEEP_COMMENTS |
+					      G_KEY_FILE_KEEP_TRANSLATIONS, NULL)) {
+			gchar *sess;
+
+			if ((sess = g_key_file_get_string(defaults.dmrc,
+							  "Desktop", "Session", NULL))) {
+				free(defaults.session);
+				defaults.session = strdup(sess);
+				free(defaults.current);
+				defaults.current = strdup(sess);
+				g_free(sess);
+				free(file);
+				return;
+			}
+		}
+	}
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n) {
+		free(file);
+		return;
+	}
+
+	line = calloc(BUFSIZ + 1, sizeof(*line));
+
+	/* go through them forward */
+	for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+		FILE *f;
+
+		if (!defaults.session) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, session, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						defaults.session = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+
+		}
+		if (!defaults.current) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, current, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						defaults.current = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+		}
+	}
+	free(line);
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+#endif
+
+void
+set_default_choice(void)
+{
+	free(defaults.choice);
+	defaults.choice = strdup("default");
+}
+
 void
 set_defaults(int argc, char *argv[])
 {
@@ -4907,6 +5023,10 @@ set_defaults(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	set_default_address();
 #endif				/* DO_XCHOOSER */
+#if 0
+	set_default_session();
+#endif
+	set_default_choice();
 }
 
 void
@@ -5257,28 +5377,30 @@ get_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
-#ifdef DO_XSESSION
 void
 get_default_session(void)
 {
 	if (!options.session) {
 		free(options.session);
-		options.session = strdup("");
+		if (!(options.session = defaults.session))
+			options.session = strdup("");
 	}
 	if (!options.current) {
 		free(options.current);
-		options.current = strdup("");
+		if (!(options.current = defaults.current))
+			options.current = strdup("");
 	}
 }
+
 void
 get_default_choice(void)
 {
 	if (!options.choice) {
 		free(options.choice);
-		options.choice = strdup("default");
+		if (!(options.choice = defaults.choice))
+			options.choice = strdup("default");
 	}
 }
-#endif				/* DO_XSESSION */
 
 #ifdef DO_XLOCKING
 void
@@ -5309,10 +5431,8 @@ get_defaults(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	get_default_address();
 #endif				/* DO_XCHOOSER */
-#ifdef DO_XSESSION
 	get_default_session();
 	get_default_choice();
-#endif
 #ifdef DO_XLOCKING
 	get_default_username();
 #endif
@@ -5351,6 +5471,9 @@ int
 main(int argc, char *argv[])
 {
 	CommandType command = CommandDefault;
+
+	saveArgc = argc;
+	saveArgv = argv;
 
 	set_defaults(argc, argv);
 

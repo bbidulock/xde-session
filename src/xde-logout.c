@@ -104,6 +104,7 @@
 #include <dbus/dbus-glib.h>
 #include <pwd.h>
 #include <systemd/sd-login.h>
+#include <security/pam_appl.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -132,12 +133,55 @@
 static int saveArgc;
 static char **saveArgv;
 
+#undef DO_XCHOOSER
+#undef DO_XLOCKING
+#undef DO_ONIDLE
+#undef DO_CHOOSER
+#define DO_LOGOUT 1
+
+#if defined(DO_XCHOOSER)
+#   define RESNAME "xde-xchooser"
+#   define RESCLAS "XDE-XChooser"
+#   define RESTITL "XDMCP Chooser"
+#elif defined(DO_XLOCKING)
+#   define RESNAME "xde-xlock"
+#   define RESCLAS "XDE-XLock"
+#   define RESTITL "X11 Locker"
+#elif defined(DO_CHOOSER)
+#   define RESNAME "xde-chooser"
+#   define RESCLAS "XDE-Chooser"
+#   define RESTITL "XDE X11 Session Chooser"
+#elif defined(DO_LOGOUT)
+#   define RESNAME "xde-logout"
+#   define RESCLAS "XDE-Logout"
+#   define RESTITL "XDE X11 Session Logout"
+#else
+#   define RESNAME "xde-xlogin"
+#   define RESCLAS "XDE-XLogin"
+#   define RESTITL "XDMCP Greeter"
+#endif
+
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
 	LOGO_SIDE_TOP,
 	LOGO_SIDE_RIGHT,
 	LOGO_SIDE_BOTTOM,
 } LogoSide;
+
+enum {
+	OBEYSESS_DISPLAY,		/* obey multipleSessions resource */
+	REMANAGE_DISPLAY,		/* force remanage */
+	UNMANAGE_DISPLAY,		/* force deletion */
+	RESERVER_DISPLAY,		/* force server termination */
+	OPENFAILED_DISPLAY,		/* XOpenDisplay failed, retry */
+};
+
+#undef EXIT_SUCCESS
+#define EXIT_SUCCESS	OBEYSESS_DISPLAY
+#undef EXIT_FAILURE
+#define EXIT_FAILURE	REMANAGE_DISPLAY
+#undef EXIT_SYNTAXERR
+#define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
 
 typedef enum {
 	CommandDefault,
@@ -165,15 +209,31 @@ typedef struct {
 	char *icon_theme;
 	char *gtk2_theme;
 	LogoSide side;
-	Bool usexde;
 	Bool noask;
+	Bool execute;
+	char *current;
+	Bool managed;
+	char *session;
+	char *choice;
+	char *username;
+	char *password;
+	Bool usexde;
 	unsigned int timeout;
 	char *clientId;
 	char *saveFile;
+	GKeyFile *dmrc;
 	char *vendor;
 	char *prefix;
 	char *splash;
 	unsigned source;
+	Bool xsession;
+	Bool setbg;
+	Bool transparent;
+	int width;
+	int height;
+	double xposition;
+	double yposition;
+	Bool setstyle;
 } Options;
 
 Options options = {
@@ -189,15 +249,31 @@ Options options = {
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
 	.side = LOGO_SIDE_LEFT,
-	.usexde = False,
 	.noask = False,
+	.execute = False,
+	.current = NULL,
+	.managed = True,
+	.session = NULL,
+	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
+	.usexde = False,
 	.timeout = 15,
 	.clientId = NULL,
 	.saveFile = NULL,
+	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
 	.source = BackgroundSourceRoot,
+	.xsession = False,
+	.setbg = False,
+	.transparent = False,
+	.width = -1,
+	.height = -1,
+	.xposition = 0.5,
+	.yposition = 0.5,
+	.setstyle = True,
 };
 
 Options defaults = {
@@ -213,15 +289,31 @@ Options defaults = {
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
 	.side = LOGO_SIDE_LEFT,
-	.usexde = False,
 	.noask = False,
+	.execute = False,
+	.current = NULL,
+	.managed = True,
+	.session = NULL,
+	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
+	.usexde = False,
 	.timeout = 15,
 	.clientId = NULL,
 	.saveFile = NULL,
+	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
 	.source = BackgroundSourceRoot,
+	.xsession = False,
+	.setbg = False,
+	.transparent = False,
+	.width = -1,
+	.height = -1,
+	.xposition = 0.5,
+	.yposition = 0.5,
+	.setstyle = True,
 };
 
 typedef enum {
@@ -243,6 +335,8 @@ typedef enum {
 
 LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
+
+static SmcConn smcConn;
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
@@ -428,6 +522,12 @@ relax()
 		gtk_main_iteration();
 }
 
+/** @brief get system data directories
+  *
+  * Note that, unlike some other tools, there is no home directory at this point
+  * so just search the system XDG data directories for things, but treat the XDM
+  * home as /usr/lib/X11/xdm.
+  */
 char **
 get_data_dirs(int *np)
 {
@@ -905,8 +1005,6 @@ test_user_functions()
 	action_can[LOGOUT_ACTION_SWITCHDESK] = AvailStatusNa;
 }
 
-static SmcConn smcConn;
-
 /** @brief test availability of session functions
   *
   * For now, always let the user logout or cancel, but not restart the current
@@ -1174,10 +1272,14 @@ gboolean
 on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	XdeScreen *xscr = data;
-	GdkWindow *w = gtk_widget_get_window(xscr->wind);
-	GdkWindow *r = gdk_screen_get_root_window(xscr->scrn);
+	GdkWindow *w;
+	GdkWindow *r;
 	cairo_t *cr;
-	GdkEventExpose *ev = (typeof(ev)) event;
+	GdkEventExpose *ev;
+
+	w = gtk_widget_get_window(xscr->wind);
+	r = gdk_screen_get_root_window(xscr->scrn);
+	ev = (typeof(ev)) event;
 
 	cr = gdk_cairo_create(GDK_DRAWABLE(w));
 	// gdk_cairo_reset_clip(cr, GDK_DRAWABLE(w));
@@ -1199,6 +1301,17 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	}
 	cairo_destroy(cr);
 	return FALSE;
+}
+
+gboolean
+on_grab_broken(GtkWidget *window, GdkEvent *event, gpointer data)
+{
+	GdkEventGrabBroken *ev = (typeof(ev)) event;
+	EPRINTF("Grab broken!\n");
+	EPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
+	EPRINTF("Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
+	EPRINTF("Grab broken by %s\n", ev->grab_window ? "this application" : "other");
+	return TRUE; /* propagate */
 }
 
 /** @brief transform window into pointer-grabbed window
@@ -1230,6 +1343,9 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 		EPRINTF("Could not grab keyboard!\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
+#if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
+	grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
+#endif
 }
 
 /** @brief transform a window away from a grabbed window
@@ -1243,6 +1359,13 @@ ungrabbed_window(GtkWidget *window)
 {
 	GdkWindow *win = gtk_widget_get_window(window);
 
+#if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
+	if (grab_broken_handler) {
+		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
+		grab_broken_handler = 0;
+	}
+	g_signal_connect(G_OBJECT(window), "grab-broken-event", NULL, NULL);
+#endif
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 	gdk_window_hide(win);
@@ -1321,6 +1444,77 @@ clr_source(XdeScreen *xscr)
 	}
 }
 
+GtkStyle *style;
+
+void
+set_style(XdeScreen *xscr)
+{
+	GtkWidget *window = xscr->wind;
+
+	if (!style) {
+		style = gtk_widget_get_default_style();
+		style = gtk_style_copy(style);
+	}
+	style->bg_pixmap[GTK_STATE_NORMAL] = xscr->pixmap;
+	style->bg_pixmap[GTK_STATE_PRELIGHT] = xscr->pixmap;
+	gtk_widget_set_style(window, style);
+}
+
+void
+update_source(XdeScreen *xscr)
+{
+	if (options.setstyle)
+		clr_source(xscr);
+	else
+		set_style(xscr);
+	if (xscr->pixmap && options.setbg) {
+		GdkDisplay *disp;
+		GdkWindow *root;
+		GdkColormap *cmap;
+		GdkPixmap *pixmap;
+		Display *dpy;
+		Pixmap p;
+		int s;
+		cairo_t *cr;
+		long data;
+
+		s = xscr->index;
+		if (!(dpy = XOpenDisplay(NULL))) {
+			EPRINTF("cannot open display %s\n", getenv("DISPLAY"));
+			return;
+		}
+		XSetCloseDownMode(dpy, RetainTemporary);
+		p = XCreatePixmap(dpy, RootWindow(dpy, s),
+				  DisplayWidth(dpy, s),
+				  DisplayHeight(dpy, s), DefaultDepth(dpy, s));
+
+		XCloseDisplay(dpy);
+
+		disp = gdk_screen_get_display(xscr->scrn);
+		root = gdk_screen_get_root_window(xscr->scrn);
+		cmap = gdk_drawable_get_colormap(GDK_DRAWABLE(root));
+		pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
+		gdk_drawable_set_colormap(GDK_DRAWABLE(pixmap), cmap);
+
+		cr = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+		gdk_cairo_set_source_pixmap(cr, xscr->pixmap, 0, 0);
+		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+		cairo_paint(cr);
+		cairo_destroy(cr);
+
+		g_object_unref(G_OBJECT(pixmap));
+
+		dpy = GDK_DISPLAY_XDISPLAY(disp);
+		XSetWindowBackgroundPixmap(dpy, RootWindow(dpy, s), p);
+
+		data = p;
+		XChangeProperty(dpy, RootWindow(dpy, s),
+				_XA_XROOTPMAP_ID, XA_PIXMAP,
+				32, PropModeReplace, (unsigned char *) &data, 1);
+		XKillClient(dpy, AllTemporary);
+	}
+}
+
 static void
 get_source(XdeScreen *xscr)
 {
@@ -1350,7 +1544,7 @@ get_source(XdeScreen *xscr)
 				if ((p = data[0])) {
 					xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
 					gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-					clr_source(xscr);
+					update_source(xscr);
 				}
 			}
 			if (data)
@@ -1374,7 +1568,7 @@ get_source(XdeScreen *xscr)
 						   -1);
 				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
 				render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
-				clr_source(xscr);
+				update_source(xscr);
 			}
 			return;
 		}
@@ -1394,6 +1588,78 @@ redo_source(XdeScreen *xscr)
 	}
 	get_source(xscr);
 }
+
+#ifdef DO_CHOOSER
+/** @brief create the selected session
+  * @param label - the application id of the XSession
+  * @param filename - the desktop entry file name for the XSession
+  *
+  * Launch the session specified by the label argument with the xsession desktop
+  * file pass in the session argument.  This function writes the selection and
+  * default to the user's current and default files in
+  * $XDG_CONFIG_HOME/xde/current and $XDG_CONFIG_HOME/xde/default, sets the
+  * option variables options.current and options.session.  A NULL session
+  * pointer means that a logout should be performed instead.
+  */
+void
+create_session(const char *label, const char *filename)
+{
+	char *home = getenv("HOME") ? : ".";
+	char *xhome = getenv("XDG_CONFIG_HOME");
+	char *cdir, *file;
+	int len, dlen, flen;
+	FILE *f;
+
+	len = xhome ? strlen(xhome) : strlen(home) + strlen("/.config");
+	dlen = len + strlen("/xde");
+	flen = dlen + strlen("/default");
+	cdir = calloc(dlen, sizeof(*cdir));
+	file = calloc(flen, sizeof(*file));
+	if (xhome)
+		strcpy(cdir, xhome);
+	else {
+		strcpy(cdir, home);
+		strcat(cdir, "/.config");
+	}
+	strcat(cdir, "/xde");
+
+	strcpy(file, cdir);
+	strcat(file, "/current");
+	if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
+		if ((f = fopen(file, "w"))) {
+			fprintf(f, "%s\n", options.current ? : "");
+			fclose(f);
+		}
+	}
+
+	if (options.setdflt) {
+		strcpy(file, cdir);
+		strcat(file, "/default");
+		if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
+			if ((f = fopen(file, "w"))) {
+				fprintf(f, "%s\n", options.session ? : "");
+				fclose(f);
+			}
+		}
+		if (options.session && options.dmrc) {
+			char *dmrc;
+
+			len = strlen(home) + strlen("/.dmrc");
+			dmrc = calloc(len + 1, sizeof(*dmrc));
+			strncpy(dmrc, home, len);
+			strncat(dmrc, "/.dmrc", len);
+
+			g_key_file_set_string(options.dmrc, "Desktop", "Session", options.session);
+			g_key_file_save_to_file(options.dmrc, dmrc, NULL);
+
+			free(dmrc);
+		}
+	}
+
+	free(file);
+	free(cdir);
+}
+#endif
 
 GtkWidget *cont;			/* container of event box */
 GtkWidget *ebox;			/* event box window within the screen */
@@ -1462,12 +1728,12 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		xscr->nmon = nmon;
 	/* always realign center alignment widgets */
 	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
-		float xrel, yrel;
+		double xrel, yrel;
 
 		DPRINTF("Realigning screen %d monitor %d\n", index, m);
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-		xrel = (float) (mon->geom.x + mon->geom.width / 2) / (float) xscr->width;
-		yrel = (float) (mon->geom.y + mon->geom.height / 2) / (float) xscr->height;
+		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
+		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
 		if (!mon->align) {
 			mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 			gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -1549,8 +1815,8 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 
 	w = GTK_WINDOW(wind);
 	gtk_window_set_screen(w, scrn);
-	gtk_window_set_wmclass(w, "xde-xlogin", "XDE-XLogin");
-	gtk_window_set_title(w, "XDMCP Greeter");
+	gtk_window_set_wmclass(w, RESNAME, RESCLAS);
+	gtk_window_set_title(w, RESTITL);
 	gtk_window_set_modal(w, TRUE);
 	gtk_window_set_gravity(w, GDK_GRAVITY_CENTER);
 	gtk_window_set_type_hint(w, GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
@@ -1571,11 +1837,13 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	gtk_window_resize(w, xscr->width, xscr->height);
 	gtk_window_move(w, 0, 0);
 
-	gtk_widget_set_app_paintable(wind, TRUE);
-
 	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
 	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), NULL);
-	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), xscr);
+
+	if (options.setstyle) {
+		gtk_widget_set_app_paintable(wind, TRUE);
+		g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), xscr);
+	}
 
 	gtk_window_set_focus_on_map(w, TRUE);
 	gtk_window_set_accept_focus(w, TRUE);
@@ -1587,13 +1855,13 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	xscr->nmon = gdk_screen_get_n_monitors(scrn);
 	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
 	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
-		float xrel, yrel;
+		double xrel, yrel;
 
 		mon->index = m;
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
 
-		xrel = (float) (mon->geom.x + mon->geom.width / 2) / (float) xscr->width;
-		yrel = (float) (mon->geom.y + mon->geom.height / 2) / (float) xscr->height;
+		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
+		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
 
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -1758,6 +2026,19 @@ GetPanel(void)
 		gtk_widget_set_tooltip_text(b, button_tips[i]);
 		gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, BB_PACK_PADDING);
 	}
+#if 0
+	if (options.xsession) {
+#ifdef DO_ONIDLE
+		g_idle_add(on_idle, store);
+#else
+		while (on_idle(store) != G_SOURCE_REMOVE) ;
+#endif
+	}
+#endif
+
+	/* TODO: we should really set a timeout and if no user interaction has
+	   occured before the timeout, we should continue if we have a viable
+	   default or choice. */
 
 	return (pan);
 }
@@ -1769,7 +2050,10 @@ GetPane(GtkWidget *cont)
 
 	gethostname(hostname, sizeof(hostname));
 
-	ebox = gtk_event_box_new();
+	if (options.transparent)
+		ebox = gtk_hbox_new(FALSE, 0);
+	else
+		ebox = gtk_event_box_new();
 
 	gtk_container_add(GTK_CONTAINER(cont), ebox);
 	gtk_widget_set_size_request(ebox, -1, -1);
@@ -1783,7 +2067,8 @@ GetPane(GtkWidget *cont)
 	GtkWidget *lab = gtk_label_new(NULL);
 	gchar *markup;
 
-	markup = g_strdup_printf("<span font=\"Liberation Sans 10\">%s</span>", options.welcome);
+	markup = g_strdup_printf
+	    ("<span font=\"Liberation Sans 12\">%s</span>", options.welcome);
 	gtk_label_set_markup(GTK_LABEL(lab), markup);
 	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
@@ -1840,9 +2125,13 @@ startup(int argc, char *argv[])
 {
 	if (options.usexde) {
 		static const char *suffix = "/.gtkrc-2.0.xde";
-		const char *home = getenv("HOME") ? : ".";
-		int len = strlen(home) + strlen(suffix) + 1;
-		char *file = calloc(len, sizeof(*file));
+		const char *home;
+		int len;
+		char *file;
+
+		home = getenv("HOME") ? : ".";
+		len = strlen(home) + strlen(suffix) + 1;
+		file = calloc(len, sizeof(*file));
 
 		strncpy(file, home, len);
 		strncat(file, suffix, len);
@@ -1876,7 +2165,7 @@ do_run(int argc, char *argv[])
 }
 
 static void
-logoutSetProperties(SmcConn smcConn, SmPointer data)
+xdeSetProperties(SmcConn smcConn, SmPointer data)
 {
 	char userID[20];
 	int i, j, argc = saveArgc;
@@ -2133,9 +2422,9 @@ static Bool saving_yourself;
 static Bool shutting_down;
 
 static void
-logoutSaveYourselfPhase2CB(SmcConn smcConn, SmPointer data)
+xdeSaveYourselfPhase2CB(SmcConn smcConn, SmPointer data)
 {
-	logoutSetProperties(smcConn, data);
+	xdeSetProperties(smcConn, data);
 	SmcSaveYourselfDone(smcConn, True);
 }
 
@@ -2159,15 +2448,15 @@ logoutSaveYourselfPhase2CB(SmcConn smcConn, SmPointer data)
   * it calls SmcSaveYourSelfDone().
   */
 static void
-logoutSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
+xdeSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
 		     int interactStyle, Bool fast)
 {
 	if (!(shutting_down = shutdown)) {
-		if (!SmcRequestSaveYourselfPhase2(smcConn, logoutSaveYourselfPhase2CB, data))
+		if (!SmcRequestSaveYourselfPhase2(smcConn, xdeSaveYourselfPhase2CB, data))
 			SmcSaveYourselfDone(smcConn, False);
 		return;
 	}
-	logoutSetProperties(smcConn, data);
+	xdeSetProperties(smcConn, data);
 	SmcSaveYourselfDone(smcConn, True);
 }
 
@@ -2179,7 +2468,7 @@ logoutSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdow
   * "Die" message.
   */
 static void
-logoutDieCB(SmcConn smcConn, SmPointer data)
+xdeDieCB(SmcConn smcConn, SmPointer data)
 {
 	SmcCloseConnection(smcConn, 0, NULL);
 	shutting_down = False;
@@ -2187,7 +2476,7 @@ logoutDieCB(SmcConn smcConn, SmPointer data)
 }
 
 static void
-logoutSaveCompleteCB(SmcConn smcConn, SmPointer data)
+xdeSaveCompleteCB(SmcConn smcConn, SmPointer data)
 {
 	if (saving_yourself) {
 		saving_yourself = False;
@@ -2207,31 +2496,31 @@ logoutSaveCompleteCB(SmcConn smcConn, SmPointer data)
   * of the save.
   */
 static void
-logoutShutdownCancelledCB(SmcConn smcConn, SmPointer data)
+xdeShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 {
 	shutting_down = False;
 	gtk_main_quit();
 }
 
-static unsigned long logoutCBMask =
+static unsigned long xdeCBMask =
     SmcSaveYourselfProcMask | SmcDieProcMask |
     SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
 
-static SmcCallbacks logoutCBs = {
+static SmcCallbacks xdeCBs = {
 	.save_yourself = {
-			  .callback = &logoutSaveYourselfCB,
+			  .callback = &xdeSaveYourselfCB,
 			  .client_data = NULL,
 			  },
 	.die = {
-		.callback = &logoutDieCB,
+		.callback = &xdeDieCB,
 		.client_data = NULL,
 		},
 	.save_complete = {
-			  .callback = &logoutSaveCompleteCB,
+			  .callback = &xdeSaveCompleteCB,
 			  .client_data = NULL,
 			  },
 	.shutdown_cancelled = {
-			       .callback = &logoutShutdownCancelledCB,
+			       .callback = &xdeShutdownCancelledCB,
 			       .client_data = NULL,
 			       },
 };
@@ -2268,7 +2557,7 @@ init_smclient(void)
 	}
 
 	smcConn = SmcOpenConnection(env, NULL, SmProtoMajor, SmProtoMinor,
-				    logoutCBMask, &logoutCBs, options.clientId,
+				    xdeCBMask, &xdeCBs, options.clientId,
 				    &options.clientId, sizeof(err), err);
 	if (!smcConn) {
 		EPRINTF("SmcOpenConnection: %s\n", err);
@@ -2865,6 +3154,226 @@ General options:\n\
 ", argv[0], options.welcome, options.banner, show_side(options.side), show_bool(options.noask), options.usexde ? "xde" : (options.icon_theme ? : "auto"), options.usexde ? "xde" : (options.gtk2_theme ? : "auto"), show_bool(options.usexde), options.timeout, show_bool(options.dryrun), options.debug, options.output);
 }
 
+char *
+get_resource(XrmDatabase xrdb, const char *resource)
+{
+	char *type;
+	static char name[64];
+	static char clas[64];
+	XrmValue value = { 0, NULL };
+
+	snprintf(name, sizeof(name), "%s.%s", RESNAME, resource);
+	snprintf(clas, sizeof(clas), "%s.%s", RESCLAS, resource);
+	if (XrmGetResource(xrdb, name, clas, &type, &value))
+		if (value.addr && *(char *) value.addr) {
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			return (char *) value.addr;
+		}
+	return (NULL);
+}
+
+void
+get_resources(int argc, char *argv[])
+{
+	Display *dpy;
+	XrmDatabase rdb;
+	char *type = NULL;
+	XrmValue value = { 0, NULL };
+	XTextProperty xtp;
+	Window root;
+	Atom atom;
+
+	DPRINT();
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
+		exit(EXIT_FAILURE);
+	}
+	root = DefaultRootWindow(dpy);
+	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
+		XCloseDisplay(dpy);
+		DPRINTF("no resource manager database allocated\n");
+		return;
+	}
+	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
+		XCloseDisplay(dpy);
+		EPRINTF("could not retrieve RESOURCE_MANAGER property\n");
+		return;
+	}
+	XrmInitialize();
+	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
+	rdb = XrmGetStringDatabase((char *) xtp.value);
+	XFree(xtp.value);
+	if (!rdb) {
+		DPRINTF("no resource manager database allocated\n");
+		XCloseDisplay(dpy);
+		return;
+	}
+	(void) type;
+	(void) value;
+	if (XrmGetResource(rdb, "xlogin.Login.width", "Xlogin.Login.width", &type, &value)) {
+		DPRINTF("xlogin.Login.width:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			if (strchr(value.addr, '%')) {
+				char *endptr = NULL;
+				double width = strtod(value.addr, &endptr);
+
+				if (endptr != value.addr && *endptr == '%' && width > 0) {
+					options.width =
+					    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
+					if (options.width < 0.20 * DisplayWidth(dpy, 0))
+						options.width = -1;
+				}
+			} else {
+				options.width = strtoul(value.addr, NULL, 0);
+				if (options.width <= 0)
+					options.width = -1;
+			}
+		}
+	}
+	if (XrmGetResource(rdb, "xlogin.Login.height", "Xlogin.Login.height", &type, &value)) {
+		DPRINTF("xlogin.Login.height:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			if (strchr(value.addr, '%')) {
+				char *endptr = NULL;
+				double height = strtod(value.addr, &endptr);
+
+				if (endptr != value.addr && *endptr == '%' && height > 0) {
+					options.height =
+					    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
+					if (options.height < 0.20 * DisplayHeight(dpy, 0))
+						options.height = -1;
+				}
+			} else {
+				options.height = strtoul(value.addr, NULL, 0);
+				if (options.height <= 0)
+					options.height = -1;
+			}
+		}
+	}
+	if (XrmGetResource(rdb, "xlogin.Login.x", "Xlogin.Login.x", &type, &value)) {
+		DPRINTF("xlogin.Login.x:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			options.xposition =
+			    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+			if (options.xposition < 0)
+				options.xposition = 0;
+			if (options.xposition > DisplayWidth(dpy, 0))
+				options.xposition = 1.0;
+		}
+	}
+	if (XrmGetResource(rdb, "xlogin.Login.y", "Xlogin.Login.y", &type, &value)) {
+		DPRINTF("xlogin.Login.y:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			options.yposition =
+			    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+			if (options.yposition < 0)
+				options.yposition = 0;
+			if (options.yposition > DisplayWidth(dpy, 0))
+				options.yposition = 1.0;
+		}
+	}
+	if ((value.addr = get_resource(rdb, "Chooser.x"))) {
+		options.xposition = strtod(value.addr, NULL);
+	}
+	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
+		options.yposition = strtod(value.addr, NULL);
+	}
+	if ((value.addr = get_resource(rdb, "debug"))) {
+		options.debug = strtoul(value.addr, NULL, 0);
+	}
+	if ((value.addr = get_resource(rdb, "banner"))) {
+		free(options.banner);
+		options.banner = strndup(value.addr, PATH_MAX);
+	}
+	if ((value.addr = get_resource(rdb, "splash"))) {
+		free(options.splash);
+		options.splash = strndup(value.addr, PATH_MAX);
+	}
+	if ((value.addr = get_resource(rdb, "welcome"))) {
+		free(options.welcome);
+		options.welcome = strndup(value.addr, 256);
+	}
+	if ((value.addr = get_resource(rdb, "charset"))) {
+		free(options.charset);
+		options.charset = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "language"))) {
+		free(options.language);
+		options.language = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "theme.icon"))) {
+		free(options.icon_theme);
+		options.icon_theme = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "theme.name"))) {
+		free(options.gtk2_theme);
+		options.gtk2_theme = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "theme.xde"))) {
+		options.usexde = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	}
+	if ((value.addr = get_resource(rdb, "side"))) {
+		if (!strncasecmp(value.addr, "left", value.size))
+			options.side = LOGO_SIDE_LEFT;
+		else if (!strncasecmp(value.addr, "top", value.size))
+			options.side = LOGO_SIDE_TOP;
+		else if (!strncasecmp(value.addr, "right", value.size))
+			options.side = LOGO_SIDE_RIGHT;
+		else if (!strncasecmp(value.addr, "bottom", value.size))
+			options.side = LOGO_SIDE_RIGHT;
+		else
+			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
+	}
+	if ((value.addr = get_resource(rdb, "user.default"))) {
+		free(options.username);
+		options.username = strndup(value.addr, 32);
+	}
+	if ((value.addr = get_resource(rdb, "autologin"))) {
+		/* TODO */
+	}
+	if ((value.addr = get_resource(rdb, "vendor"))) {
+		free(options.vendor);
+		options.vendor = strdup(value.addr);
+	}
+	if ((value.addr = get_resource(rdb, "prefix"))) {
+		free(options.prefix);
+		options.prefix = strdup(value.addr);
+	}
+	if ((value.addr = get_resource(rdb, "login.permit"))) {
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
+	if ((value.addr = get_resource(rdb, "login.remote"))) {
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
+	if ((value.addr = get_resource(rdb, "login.chooser"))) {
+		options.xsession = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	}
+	if ((value.addr = get_resource(rdb, "xsession.execute"))) {
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
+	if ((value.addr = get_resource(rdb, "xsession.default"))) {
+		free(options.choice);
+		options.choice = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "setbg"))) {
+		options.setbg = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	}
+	if ((value.addr = get_resource(rdb, "transparent"))) {
+		options.transparent = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	}
+	XrmDestroyDatabase(rdb);
+	XCloseDisplay(dpy);
+}
+
 void
 set_default_vendor(void)
 {
@@ -3097,6 +3606,106 @@ set_default_language(void)
 	defaults.charset = strdup(nl_langinfo(CODESET));
 }
 
+#if 0
+void
+set_default_session(void)
+{
+	char **xdg_dirs, **dirs, *file, *line, *p;
+	int i, n = 0;
+	static const char *session = "/xde/default";
+	static const char *current = "/xde/current";
+	static const char *dmrc = "/.dmrc";
+	const char *home = getenv("HOME") ? : ".";
+
+	free(defaults.session);
+	defaults.session = NULL;
+	free(defaults.current);
+	defaults.current = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	strncpy(file, home, PATH_MAX);
+	strncat(file, dmrc, PATH_MAX);
+
+	if (!defaults.dmrc)
+		defaults.dmrc = g_key_file_new();
+	if (defaults.dmrc) {
+		if (g_key_file_load_from_file(defaults.dmrc, file,
+					      G_KEY_FILE_KEEP_COMMENTS |
+					      G_KEY_FILE_KEEP_TRANSLATIONS, NULL)) {
+			gchar *sess;
+
+			if ((sess = g_key_file_get_string(defaults.dmrc,
+							  "Desktop", "Session", NULL))) {
+				free(defaults.session);
+				defaults.session = strdup(sess);
+				free(defaults.current);
+				defaults.current = strdup(sess);
+				g_free(sess);
+				free(file);
+				return;
+			}
+		}
+	}
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n) {
+		free(file);
+		return;
+	}
+
+	line = calloc(BUFSIZ + 1, sizeof(*line));
+
+	/* go through them forward */
+	for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+		FILE *f;
+
+		if (!defaults.session) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, session, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						defaults.session = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+
+		}
+		if (!defaults.current) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, current, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						defaults.current = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+		}
+	}
+	free(line);
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+#endif
+
+void
+set_default_choice(void)
+{
+	free(defaults.choice);
+	defaults.choice = strdup("default");
+}
+
 void
 set_defaults(int argc, char *argv[])
 {
@@ -3111,6 +3720,10 @@ set_defaults(int argc, char *argv[])
 	set_default_splash();
 	set_default_welcome();
 	set_default_language();
+#if 0
+	set_default_session();
+#endif
+	set_default_choice();
 }
 
 void
@@ -3271,6 +3884,52 @@ get_default_language(void)
 }
 
 void
+get_default_session(void)
+{
+	if (options.dmrc)
+		g_key_file_unref(options.dmrc);
+	options.dmrc = defaults.dmrc;
+	if (!options.session) {
+		free(options.session);
+		if (!(options.session = defaults.session))
+			options.session = strdup("");
+	}
+	if (!options.current) {
+		free(options.current);
+		if (!(options.current = defaults.current))
+			options.current = strdup("");
+	}
+}
+
+void
+get_default_choice(void)
+{
+	if (!options.choice) {
+		free(options.choice);
+		if (!(options.choice = defaults.choice))
+			options.choice = strdup("default");
+	}
+}
+
+#ifdef DO_XLOCKING
+void
+get_default_username(void)
+{
+	struct passwd *pw;
+
+	if (options.username)
+		return;
+
+	if (!(pw = getpwuid(getuid()))) {
+		EPRINTF("cannot get users password entry\n");
+		exit(EXIT_FAILURE);
+	}
+	free(options.username);
+	options.username = strdup(pw->pw_name);
+}
+#endif				/* DO_XLOCKING */
+
+void
 get_defaults(int argc, char *argv[])
 {
 	get_default_vendor();
@@ -3278,6 +3937,11 @@ get_defaults(int argc, char *argv[])
 	get_default_splash();
 	get_default_welcome();
 	get_default_language();
+	get_default_session();
+	get_default_choice();
+#ifdef DO_XLOCKING
+	get_default_username();
+#endif
 }
 
 int
@@ -3285,10 +3949,12 @@ main(int argc, char *argv[])
 {
 	CommandType command = CommandDefault;
 
-	set_defaults(argc, argv);
-
 	saveArgc = argc;
 	saveArgv = argv;
+
+	set_defaults(argc, argv);
+
+	get_resources(argc, argv);
 
 	while (1) {
 		int c, val;
@@ -3301,17 +3967,20 @@ main(int argc, char *argv[])
 			{"banner",	required_argument,	NULL, 'b'},
 			{"splash",	required_argument,	NULL, 'S'},
 			{"side",	required_argument,	NULL, 's'},
-			{"charset",	    required_argument,	NULL, '1'},
-			{"language",	    required_argument,	NULL, '2'},
 			{"noask",	no_argument,		NULL, 'n'},
+			{"charset",	required_argument,	NULL, '1'},
+			{"language",	required_argument,	NULL, '2'},
 			{"icons",	required_argument,	NULL, 'i'},
 			{"theme",	required_argument,	NULL, 't'},
 			{"xde-theme",	no_argument,		NULL, 'x'},
-			{"vendor",	    required_argument,	NULL, '5'},
 			{"timeout",	required_argument,	NULL, 'T'},
+			{"vendor",	required_argument,	NULL, '5'},
+			{"default",	required_argument,	NULL, '6'},
+			{"setbg",	no_argument,		NULL, '8'},
+			{"transparent",	no_argument,		NULL, '9'},
 
-			{"clientId",	required_argument,	NULL, '8'},
-			{"restore",	required_argument,	NULL, '9'},
+			{"clientId",	required_argument,	NULL, '3'},
+			{"restore",	required_argument,	NULL, '4'},
 
 			{"dry-run",	no_argument,		NULL, 'N'},
 			{"debug",	optional_argument,	NULL, 'D'},
@@ -3326,9 +3995,9 @@ main(int argc, char *argv[])
 
 		c = getopt_long_only(argc, argv, "p:b:S:s:ni:t:xT:ND::v::hVCH?", long_options,
 				     &option_index);
-#else
+#else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "p:b:S:s:ni:t:xT:NDvhVC?");
-#endif
+#endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
 			break;
@@ -3337,7 +4006,7 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case 'p':	/* -p, --prompt PROPMT */
+		case 'p':	/* -p, --prompt PROMPT */
 			free(options.welcome);
 			options.welcome = strdup(optarg);
 			break;
@@ -3389,21 +4058,30 @@ main(int argc, char *argv[])
 		case 'x':	/* -x, --xde-theme */
 			options.usexde = True;
 			break;
+		case 'T':	/* -T, --timeout TIMEOUT */
+			options.timeout = strtoul(optarg, NULL, 0);
+			break;
 		case '5':	/* --vendor VENDOR */
 			free(options.vendor);
 			options.vendor = strdup(optarg);
 			break;
-		case 'T':
-			options.timeout = strtoul(optarg, NULL, 0);
+		case '6':	/* --default DEFAULT */
+			free(options.choice);
+			options.choice = strdup(optarg);
 			break;
-
-		case '8':	/* -clientId CLIENTID */
+		case '3':	/* -clientId CLIENTID */
 			free(options.clientId);
 			options.clientId = strdup(optarg);
 			break;
-		case '9':	/* -restore SAVEFILE */
+		case '4':	/* -restore SAVEFILE */
 			free(options.saveFile);
 			options.saveFile = strdup(optarg);
+			break;
+		case '8':	/* --setbg */
+			options.setbg = True;
+			break;
+		case '9':	/* --transparent */
+			options.transparent = True;
 			break;
 
 		case 'N':	/* -n, --dry-run */
@@ -3469,7 +4147,7 @@ main(int argc, char *argv[])
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(2);
+			exit(EXIT_SYNTAXERR);
 		}
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);

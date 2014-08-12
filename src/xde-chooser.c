@@ -130,10 +130,36 @@
 	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
+static int saveArgc;
+static char **saveArgv;
+
 #undef DO_XCHOOSER
-#define DO_XSESSION 1
 #undef DO_XLOCKING
 #undef DO_ONIDLE
+#define DO_CHOOSER 1
+#undef DO_LOGOUT
+
+#if defined(DO_XCHOOSER)
+#   define RESNAME "xde-xchooser"
+#   define RESCLAS "XDE-XChooser"
+#   define RESTITL "XDMCP Chooser"
+#elif defined(DO_XLOCKING)
+#   define RESNAME "xde-xlock"
+#   define RESCLAS "XDE-XLock"
+#   define RESTITL "X11 Locker"
+#elif defined(DO_CHOOSER)
+#   define RESNAME "xde-chooser"
+#   define RESCLAS "XDE-Chooser"
+#   define RESTITL "XDE X11 Session Chooser"
+#elif defined(DO_LOGOUT)
+#   define RESNAME "xde-logout"
+#   define RESCLAS "XDE-Logout"
+#   define RESTITL "XDE X11 Session Logout"
+#else
+#   define RESNAME "xde-xlogin"
+#   define RESCLAS "XDE-XLogin"
+#   define RESTITL "XDMCP Greeter"
+#endif
 
 typedef enum _LogoSide {
 	LOGO_SIDE_LEFT,
@@ -141,6 +167,21 @@ typedef enum _LogoSide {
 	LOGO_SIDE_RIGHT,
 	LOGO_SIDE_BOTTOM,
 } LogoSide;
+
+enum {
+	OBEYSESS_DISPLAY,		/* obey multipleSessions resource */
+	REMANAGE_DISPLAY,		/* force remanage */
+	UNMANAGE_DISPLAY,		/* force deletion */
+	RESERVER_DISPLAY,		/* force server termination */
+	OPENFAILED_DISPLAY,		/* XOpenDisplay failed, retry */
+};
+
+#undef EXIT_SUCCESS
+#define EXIT_SUCCESS	OBEYSESS_DISPLAY
+#undef EXIT_FAILURE
+#define EXIT_FAILURE	REMANAGE_DISPLAY
+#undef EXIT_SYNTAXERR
+#define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
 
 typedef enum {
 	CommandDefault,
@@ -175,13 +216,25 @@ typedef struct {
 	Bool managed;
 	char *session;
 	char *choice;
+	char *username;
+	char *password;
 	Bool usexde;
 	unsigned int timeout;
+	char *clientId;
+	char *saveFile;
 	GKeyFile *dmrc;
 	char *vendor;
 	char *prefix;
 	char *splash;
 	unsigned source;
+	Bool xsession;
+	Bool setbg;
+	Bool transparent;
+	int width;
+	int height;
+	double xposition;
+	double yposition;
+	Bool setstyle;
 } Options;
 
 Options options = {
@@ -204,13 +257,25 @@ Options options = {
 	.managed = True,
 	.session = NULL,
 	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
 	.usexde = False,
 	.timeout = 15,
+	.clientId = NULL,
+	.saveFile = NULL,
 	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
 	.source = BackgroundSourceSplash,
+	.xsession = True,
+	.setbg = False,
+	.transparent = False,
+	.width = -1,
+	.height = -1,
+	.xposition = 0.5,
+	.yposition = 0.5,
+	.setstyle = True,
 };
 
 Options defaults = {
@@ -233,12 +298,25 @@ Options defaults = {
 	.managed = True,
 	.session = NULL,
 	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
 	.usexde = False,
 	.timeout = 15,
+	.clientId = NULL,
+	.saveFile = NULL,
 	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
 	.splash = NULL,
+	.source = BackgroundSourceSplash,
+	.xsession = True,
+	.setbg = False,
+	.transparent = False,
+	.width = -1,
+	.height = -1,
+	.xposition = 0.5,
+	.yposition = 0.5,
+	.setstyle = True,
 };
 
 typedef enum {
@@ -247,6 +325,8 @@ typedef enum {
 } ChooseResult;
 
 ChooseResult choose_result;
+
+static SmcConn smcConn;
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
@@ -274,7 +354,6 @@ typedef struct {
 
 XdeScreen *screens;
 
-#ifdef DO_XSESSION
 enum {
 	XSESS_COL_PIXBUF,		/* the icon name for the pixbuf */
 	XSESS_COL_NAME,			/* the Name= of the XSession */
@@ -286,7 +365,6 @@ enum {
 	XSESS_COL_FILENAME,		/* the full file name */
 	XSESS_COL_TOOLTIP,		/* the tooltip information */
 };
-#endif				/* DO_XSESSION */
 
 static void reparse(Display *dpy, Window root);
 static void redo_source(XdeScreen *xscr);
@@ -474,9 +552,11 @@ get_config_dirs(int *np)
 	return (xdg_dirs);
 }
 
-#ifdef DO_XSESSION
 GtkListStore *store;			/* list store for XSessions */
 GtkWidget *sess;
+
+#define XDE_ICON_GEOM 32
+#define XDE_ICON_SIZE GTK_ICON_SIZE_LARGE_TOOLBAR
 
 void
 on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
@@ -510,7 +590,7 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	has = gtk_icon_theme_has_icon(theme, name);
 	if (has) {
 		XPRINTF("trying to load icon \"%s\"\n", name);
-		pixbuf = gtk_icon_theme_load_icon(theme, name, 32,
+		pixbuf = gtk_icon_theme_load_icon(theme, name, XDE_ICON_GEOM,
 						  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
 						  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
 	}
@@ -521,7 +601,7 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 		has = gtk_icon_theme_has_icon(theme, name);
 		if (has) {
 			XPRINTF("tyring to load icon \"%s\"\n", name);
-			pixbuf = gtk_icon_theme_load_icon(theme, name, 32,
+			pixbuf = gtk_icon_theme_load_icon(theme, name, XDE_ICON_GEOM,
 							  GTK_ICON_LOOKUP_GENERIC_FALLBACK |
 							  GTK_ICON_LOOKUP_USE_BUILTIN, NULL);
 		}
@@ -530,11 +610,11 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 
 			XPRINTF("tyring to load image \"%s\"\n", "gtk-missing-image");
 			if ((image = gtk_image_new_from_stock("gtk-missing-image",
-							      GTK_ICON_SIZE_LARGE_TOOLBAR))) {
+							      XDE_ICON_SIZE))) {
 				XPRINTF("tyring to load icon \"%s\"\n", "gtk-missing-image");
 				pixbuf = gtk_widget_render_icon(GTK_WIDGET(image),
 								"gtk-missing-image",
-								GTK_ICON_SIZE_LARGE_TOOLBAR, NULL);
+								XDE_ICON_SIZE, NULL);
 				g_object_unref(G_OBJECT(image));
 			}
 		}
@@ -885,10 +965,18 @@ on_idle(gpointer data)
 		gtk_tree_path_free(path);
 	}
 #endif
+#else
+	if (gtk_combo_box_get_active(GTK_COMBO_BOX(sess)) != -1)
+		return G_SOURCE_CONTINUE;
+	if (strcmp(options.choice, key) && strcmp(options.session, key))
+		return G_SOURCE_CONTINUE;
+	if (strcmp(options.choice, key) && strcmp(options.choice, "choose")
+	    && strcmp(options.choice, "default"))
+		return G_SOURCE_CONTINUE;
+	gtk_combo_box_set_active_iter(GTK_COMBO_BOX(sess), &iter);
 #endif
 	return G_SOURCE_CONTINUE;
 }
-#endif				/* DO_XSESSION */
 
 void
 on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer data)
@@ -1193,10 +1281,14 @@ gboolean
 on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
 	XdeScreen *xscr = data;
-	GdkWindow *w = gtk_widget_get_window(xscr->wind);
-	GdkWindow *r = gdk_screen_get_root_window(xscr->scrn);
+	GdkWindow *w;
+	GdkWindow *r;
 	cairo_t *cr;
-	GdkEventExpose *ev = (typeof(ev)) event;
+	GdkEventExpose *ev;
+
+	w = gtk_widget_get_window(xscr->wind);
+	r = gdk_screen_get_root_window(xscr->scrn);
+	ev = (typeof(ev)) event;
 
 	cr = gdk_cairo_create(GDK_DRAWABLE(w));
 	// gdk_cairo_reset_clip(cr, GDK_DRAWABLE(w));
@@ -1218,6 +1310,17 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	}
 	cairo_destroy(cr);
 	return FALSE;
+}
+
+gboolean
+on_grab_broken(GtkWidget *window, GdkEvent *event, gpointer data)
+{
+	GdkEventGrabBroken *ev = (typeof(ev)) event;
+	EPRINTF("Grab broken!\n");
+	EPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
+	EPRINTF("Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
+	EPRINTF("Grab broken by %s\n", ev->grab_window ? "this application" : "other");
+	return TRUE; /* propagate */
 }
 
 /** @brief transform window into pointer-grabbed window
@@ -1249,6 +1352,9 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 		EPRINTF("Could not grab keyboard!\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
+#if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
+	grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
+#endif
 }
 
 /** @brief transform a window away from a grabbed window
@@ -1262,6 +1368,13 @@ ungrabbed_window(GtkWidget *window)
 {
 	GdkWindow *win = gtk_widget_get_window(window);
 
+#if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
+	if (grab_broken_handler) {
+		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
+		grab_broken_handler = 0;
+	}
+	g_signal_connect(G_OBJECT(window), "grab-broken-event", NULL, NULL);
+#endif
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 	gdk_window_hide(win);
@@ -1340,6 +1453,77 @@ clr_source(XdeScreen *xscr)
 	}
 }
 
+GtkStyle *style;
+
+void
+set_style(XdeScreen *xscr)
+{
+	GtkWidget *window = xscr->wind;
+
+	if (!style) {
+		style = gtk_widget_get_default_style();
+		style = gtk_style_copy(style);
+	}
+	style->bg_pixmap[GTK_STATE_NORMAL] = xscr->pixmap;
+	style->bg_pixmap[GTK_STATE_PRELIGHT] = xscr->pixmap;
+	gtk_widget_set_style(window, style);
+}
+
+void
+update_source(XdeScreen *xscr)
+{
+	if (options.setstyle)
+		clr_source(xscr);
+	else
+		set_style(xscr);
+	if (xscr->pixmap && options.setbg) {
+		GdkDisplay *disp;
+		GdkWindow *root;
+		GdkColormap *cmap;
+		GdkPixmap *pixmap;
+		Display *dpy;
+		Pixmap p;
+		int s;
+		cairo_t *cr;
+		long data;
+
+		s = xscr->index;
+		if (!(dpy = XOpenDisplay(NULL))) {
+			EPRINTF("cannot open display %s\n", getenv("DISPLAY"));
+			return;
+		}
+		XSetCloseDownMode(dpy, RetainTemporary);
+		p = XCreatePixmap(dpy, RootWindow(dpy, s),
+				  DisplayWidth(dpy, s),
+				  DisplayHeight(dpy, s), DefaultDepth(dpy, s));
+
+		XCloseDisplay(dpy);
+
+		disp = gdk_screen_get_display(xscr->scrn);
+		root = gdk_screen_get_root_window(xscr->scrn);
+		cmap = gdk_drawable_get_colormap(GDK_DRAWABLE(root));
+		pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
+		gdk_drawable_set_colormap(GDK_DRAWABLE(pixmap), cmap);
+
+		cr = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+		gdk_cairo_set_source_pixmap(cr, xscr->pixmap, 0, 0);
+		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
+		cairo_paint(cr);
+		cairo_destroy(cr);
+
+		g_object_unref(G_OBJECT(pixmap));
+
+		dpy = GDK_DISPLAY_XDISPLAY(disp);
+		XSetWindowBackgroundPixmap(dpy, RootWindow(dpy, s), p);
+
+		data = p;
+		XChangeProperty(dpy, RootWindow(dpy, s),
+				_XA_XROOTPMAP_ID, XA_PIXMAP,
+				32, PropModeReplace, (unsigned char *) &data, 1);
+		XKillClient(dpy, AllTemporary);
+	}
+}
+
 static void
 get_source(XdeScreen *xscr)
 {
@@ -1369,7 +1553,7 @@ get_source(XdeScreen *xscr)
 				if ((p = data[0])) {
 					xscr->pixmap = gdk_pixmap_foreign_new_for_display(disp, p);
 					gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
-					clr_source(xscr);
+					update_source(xscr);
 				}
 			}
 			if (data)
@@ -1393,7 +1577,7 @@ get_source(XdeScreen *xscr)
 						   -1);
 				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
 				render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
-				clr_source(xscr);
+				update_source(xscr);
 			}
 			return;
 		}
@@ -1414,11 +1598,12 @@ redo_source(XdeScreen *xscr)
 	get_source(xscr);
 }
 
+#ifdef DO_CHOOSER
 /** @brief create the selected session
   * @param label - the application id of the XSession
   * @param filename - the desktop entry file name for the XSession
   *
-  * Launch the session specified by the label arguemtnwith the xsession desktop
+  * Launch the session specified by the label argument with the xsession desktop
   * file pass in the session argument.  This function writes the selection and
   * default to the user's current and default files in
   * $XDG_CONFIG_HOME/xde/current and $XDG_CONFIG_HOME/xde/default, sets the
@@ -1483,6 +1668,7 @@ create_session(const char *label, const char *filename)
 	free(file);
 	free(cdir);
 }
+#endif
 
 GtkWidget *cont;			/* container of event box */
 GtkWidget *ebox;			/* event box window within the screen */
@@ -1551,12 +1737,12 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		xscr->nmon = nmon;
 	/* always realign center alignment widgets */
 	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
-		float xrel, yrel;
+		double xrel, yrel;
 
 		DPRINTF("Realigning screen %d monitor %d\n", index, m);
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-		xrel = (float) (mon->geom.x + mon->geom.width / 2) / (float) xscr->width;
-		yrel = (float) (mon->geom.y + mon->geom.height / 2) / (float) xscr->height;
+		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
+		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
 		if (!mon->align) {
 			mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 			gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -1638,8 +1824,8 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 
 	w = GTK_WINDOW(wind);
 	gtk_window_set_screen(w, scrn);
-	gtk_window_set_wmclass(w, "xde-chooser", "XDE-Chooser");
-	gtk_window_set_title(w, "XDE XSession Chooser");
+	gtk_window_set_wmclass(w, RESNAME, RESCLAS);
+	gtk_window_set_title(w, RESTITL);
 	gtk_window_set_modal(w, TRUE);
 	gtk_window_set_gravity(w, GDK_GRAVITY_CENTER);
 	gtk_window_set_type_hint(w, GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
@@ -1660,11 +1846,13 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	gtk_window_resize(w, xscr->width, xscr->height);
 	gtk_window_move(w, 0, 0);
 
-	gtk_widget_set_app_paintable(wind, TRUE);
-
 	g_signal_connect(G_OBJECT(w), "destroy", G_CALLBACK(on_destroy), NULL);
 	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(on_delete_event), NULL);
-	g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), xscr);
+
+	if (options.setstyle) {
+		gtk_widget_set_app_paintable(wind, TRUE);
+		g_signal_connect(G_OBJECT(w), "expose-event", G_CALLBACK(on_expose_event), xscr);
+	}
 
 	gtk_window_set_focus_on_map(w, TRUE);
 	gtk_window_set_accept_focus(w, TRUE);
@@ -1676,13 +1864,13 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	xscr->nmon = gdk_screen_get_n_monitors(scrn);
 	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
 	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
-		float xrel, yrel;
+		double xrel, yrel;
 
 		mon->index = m;
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
 
-		xrel = (float) (mon->geom.x + mon->geom.width / 2) / (float) xscr->width;
-		yrel = (float) (mon->geom.y + mon->geom.height / 2) / (float) xscr->height;
+		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
+		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
 
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -1806,15 +1994,15 @@ GetPanel(void)
 
 	/* *INDENT-OFF* */
 	store = gtk_list_store_new(9
-			,GTK_TYPE_STRING	/* pixbuf */
-			,GTK_TYPE_STRING	/* Name */
-			,GTK_TYPE_STRING	/* Comment */
-			,GTK_TYPE_STRING	/* Name and Comment Markup */
-			,GTK_TYPE_STRING	/* Label */
-			,GTK_TYPE_BOOL		/* SessionManaged?  XDE-Managed?  */
-			,GTK_TYPE_BOOL		/* X-XDE-Managed original setting */
-			,GTK_TYPE_STRING	/* filename */
-			,GTK_TYPE_STRING	/* tooltip */
+			,G_TYPE_STRING	/* icon */
+			,G_TYPE_STRING	/* Name */
+			,G_TYPE_STRING	/* Comment */
+			,G_TYPE_STRING	/* Name and Comment Markup */
+			,G_TYPE_STRING	/* Label */
+			,G_TYPE_BOOLEAN	/* SessionManaged?  XDE-Managed?  */
+			,G_TYPE_BOOLEAN	/* X-XDE-managed original setting */
+			,G_TYPE_STRING	/* the file name */
+			,G_TYPE_STRING	/* tooltip */
 	    );
 	/* *INDENT-ON* */
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
@@ -1919,13 +2107,13 @@ GetPanel(void)
 	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(on_launch_clicked), buttons);
 	gtk_widget_set_sensitive(b, TRUE);
 
-#ifdef DO_XSESSION
+	if (options.xsession) {
 #ifdef DO_ONIDLE
-	g_idle_add(on_idle, store);
+		g_idle_add(on_idle, store);
 #else
-	while (on_idle(store) != G_SOURCE_REMOVE) ;
+		while (on_idle(store) != G_SOURCE_REMOVE) ;
 #endif
-#endif				/* DO_XSESSION */
+	}
 
 	/* TODO: we should really set a timeout and if no user interaction has
 	   occured before the timeout, we should continue if we have a viable
@@ -1941,7 +2129,10 @@ GetPane(GtkWidget *cont)
 
 	gethostname(hostname, sizeof(hostname));
 
-	ebox = gtk_event_box_new();
+	if (options.transparent)
+		ebox = gtk_hbox_new(FALSE, 0);
+	else
+		ebox = gtk_event_box_new();
 
 	gtk_container_add(GTK_CONTAINER(cont), ebox);
 	gtk_widget_set_size_request(ebox, -1, -1);
@@ -2003,8 +2194,26 @@ GetWindow(void)
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
 #if 0
-	gtk_widget_grab_default(buttons[3]);
-	gtk_widget_grab_focus(buttons[3]);
+	if (options.username) {
+		gtk_entry_set_text(GTK_ENTRY(user), options.username);
+		gtk_entry_set_text(GTK_ENTRY(pass), "");
+		gtk_widget_set_sensitive(user, FALSE);
+		gtk_widget_set_sensitive(pass, TRUE);
+		gtk_widget_set_sensitive(buttons[0], TRUE);
+		gtk_widget_set_sensitive(buttons[3], FALSE);
+		gtk_widget_grab_default(GTK_WIDGET(pass));
+		gtk_widget_grab_focus(GTK_WIDGET(pass));
+	} else {
+		gtk_entry_set_text(GTK_ENTRY(user), "");
+		gtk_entry_set_text(GTK_ENTRY(pass), "");
+		gtk_widget_set_sensitive(user, TRUE);
+		gtk_widget_set_sensitive(pass, FALSE);
+		gtk_widget_set_sensitive(buttons[0], TRUE);
+		gtk_widget_set_sensitive(buttons[3], FALSE);
+		gtk_widget_grab_default(GTK_WIDGET(user));
+		gtk_widget_grab_focus(GTK_WIDGET(user));
+	}
+
 #else
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	GtkTreeModel *model = NULL;
@@ -2034,9 +2243,13 @@ startup(int argc, char *argv[])
 {
 	if (options.usexde) {
 		static const char *suffix = "/.gtkrc-2.0.xde";
-		const char *home = getenv("HOME") ? : ".";
-		int len = strlen(home) + strlen(suffix) + 1;
-		char *file = calloc(len, sizeof(*file));
+		const char *home;
+		int len;
+		char *file;
+
+		home = getenv("HOME") ? : ".";
+		len = strlen(home) + strlen(suffix) + 1;
+		file = calloc(len, sizeof(*file));
 
 		strncpy(file, home, len);
 		strncat(file, suffix, len);
@@ -2069,12 +2282,422 @@ do_run(int argc, char *argv[])
 	gtk_main();
 }
 
+static void
+xdeSetProperties(SmcConn smcConn, SmPointer data)
+{
+	char userID[20];
+	int i, j, argc = saveArgc;
+	char **argv = saveArgv;
+	char *cwd = NULL;
+	char hint;
+	struct passwd *pw;
+	SmPropValue *penv = NULL, *prst = NULL, *pcln = NULL;
+	SmPropValue propval[11];
+	SmProp prop[11];
+
+	SmProp *props[11] = {
+		&prop[0], &prop[1], &prop[2], &prop[3], &prop[4],
+		&prop[5], &prop[6], &prop[7], &prop[8], &prop[9],
+		&prop[10]
+	};
+
+	j = 0;
+
+	/* CloneCommand: This is like the RestartCommand except it restarts a
+	   copy of the application.  The only difference is that the
+	   application doesn't supply its client id at register time.  On POSIX 
+	   systems the type should be a LISTofARRAY8. */
+	prop[j].name = SmCloneCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = pcln = calloc(argc, sizeof(*pcln));
+	prop[j].num_vals = 0;
+	props[j] = &prop[j];
+	for (i = 0; i < argc; i++) {
+		if (!strcmp(argv[i], "-clientId") || !strcmp(argv[i], "-restore"))
+			i++;
+		else {
+			prop[j].vals[prop[j].num_vals].value = (SmPointer) argv[i];
+			prop[j].vals[prop[j].num_vals++].length = strlen(argv[i]);
+		}
+	}
+	j++;
+
+#if 0
+	/* CurrentDirectory: On POSIX-based systems, specifies the value of the 
+	   current directory that needs to be set up prior to starting the
+	   program and should be of type ARRAY8. */
+	prop[j].name = SmCurrentDirectory;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = NULL;
+	propval[j].length = 0;
+	cwd = calloc(PATH_MAX + 1, sizeof(propval[j].value[0]));
+	if (getcwd(cwd, PATH_MAX)) {
+		propval[j].value = cwd;
+		propval[j].length = strlen(propval[j].value);
+		j++;
+	} else {
+		free(cwd);
+		cwd = NULL;
+	}
+#endif
+
+#if 0
+	/* DiscardCommand: The discard command contains a command that when
+	   delivered to the host that the client is running on (determined from 
+	   the connection), will cause it to discard any information about the
+	   current state.  If this command is not specified, the SM will assume 
+	   that all of the client's state is encoded in the RestartCommand [and 
+	   properties].  On POSIX systems the type should be LISTofARRAY8. */
+	prop[j].name = SmDiscardCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = "/bin/true";
+	propval[j].length = strlen("/bin/true");
+	j++;
+#endif
+
+#if 0
+	char **env;
+
+	/* Environment: On POSIX based systems, this will be of type
+	   LISTofARRAY8 where the ARRAY8s alternate between environment
+	   variable name and environment variable value. */
+	/* XXX: we might want to filter a few out */
+	for (i = 0, env = environ; *env; i += 2, env++) ;
+	prop[j].name = SmEnvironment;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = penv = calloc(i, sizeof(*penv));
+	prop[j].num_vals = i;
+	props[j] = &prop[j];
+	for (i = 0, env = environ; *env; i += 2, env++) {
+		char *equal;
+		int len;
+
+		equal = strchrnul(*env, '=');
+		len = (int) (*env - equal);
+		if (*equal)
+			equal++;
+		prop[j].vals[i].value = *env;
+		prop[j].vals[i].length = len;
+		prop[j].vals[i + 1].value = equal;
+		prop[j].vals[i + 1].length = strlen(equal);
+	}
+	j++;
+#endif
+
+#if 0
+	char procID[20];
+
+	/* ProcessID: This specifies an OS-specific identifier for the process. 
+	   On POSIX systems this should be of type ARRAY8 and contain the
+	   return of getpid() turned into a Latin-1 (decimal) string. */
+	prop[j].name = SmProcessID;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	snprintf(procID, sizeof(procID), "%ld", (long) getpid());
+	propval[j].value = procID;
+	propval[j].length = strlen(procID);
+	j++;
+#endif
+
+	/* Program: The name of the program that is running.  On POSIX systems, 
+	   this should eb the first parameter passed to execve(3) and should be 
+	   of type ARRAY8. */
+	prop[j].name = SmProgram;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = argv[0];
+	propval[j].length = strlen(argv[0]);
+	j++;
+
+	/* RestartCommand: The restart command contains a command that when
+	   delivered to the host that the client is running on (determined from
+	   the connection), will cause the client to restart in its current
+	   state.  On POSIX-based systems this if of type LISTofARRAY8 and each
+	   of the elements in the array represents an element in the argv[]
+	   array.  This restart command should ensure that the client restarts
+	   with the specified client-ID.  */
+	prop[j].name = SmRestartCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = prst = calloc(argc + 4, sizeof(*prst));
+	prop[j].num_vals = 0;
+	props[j] = &prop[j];
+	for (i = 0; i < argc; i++) {
+		if (!strcmp(argv[i], "-clientId") || !strcmp(argv[i], "-restore"))
+			i++;
+		else {
+			prop[j].vals[prop[j].num_vals].value = (SmPointer) argv[i];
+			prop[j].vals[prop[j].num_vals++].length = strlen(argv[i]);
+		}
+	}
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) "-clientId";
+	prop[j].vals[prop[j].num_vals++].length = 9;
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) options.clientId;
+	prop[j].vals[prop[j].num_vals++].length = strlen(options.clientId);
+
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) "-restore";
+	prop[j].vals[prop[j].num_vals++].length = 9;
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) options.saveFile;
+	prop[j].vals[prop[j].num_vals++].length = strlen(options.saveFile);
+	j++;
+
+#if 0
+	/* ResignCommand: A client that sets the RestartStyleHint to
+	   RestartAnyway uses this property to specify a command that undoes
+	   the effect of the client and removes any saved state. */
+	prop[j].name = SmResignCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = "/bin/true";
+	propval[j].length = strlen("/bin/true");
+	j++;
+#endif
+
+	/* RestartStyleHint: If the RestartStyleHint property is present, it
+	   will contain the style of restarting the client prefers.  If this
+	   flag is not specified, RestartIfRunning is assumed.  The possible
+	   values are as follows: RestartIfRunning(0), RestartAnyway(1),
+	   RestartImmediately(2), RestartNever(3).  The RestartIfRunning(0)
+	   style is used in the usual case.  The client should be restarted in
+	   the next session if it is connected to the session manager at the
+	   end of the current session. The RestartAnyway(1) style is used to
+	   tell the SM that the application should be restarted in the next
+	   session even if it exits before the current session is terminated.
+	   It should be noted that this is only a hint and the SM will follow
+	   the policies specified by its users in determining what applications 
+	   to restart.  A client that uses RestartAnyway(1) should also set the
+	   ResignCommand and ShutdownCommand properties to the commands that
+	   undo the state of the client after it exits.  The
+	   RestartImmediately(2) style is like RestartAnyway(1) but in addition,
+	   the client is meant to run continuously.  If the client exits, the SM
+	   should try to restart it in the current session.  The RestartNever(3)
+	   style specifies that the client does not wish to be restarted in the
+	   next session. */
+	prop[j].name = SmRestartStyleHint;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[0];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	hint = SmRestartNever;
+	propval[j].value = &hint;
+	propval[j].length = 1;
+	j++;
+
+#if 0
+	/* ShutdownCommand: This command is executed at shutdown time to clean
+	   up after a client that is no longer running but retained its state
+	   by setting RestartStyleHint to RestartAnyway(1).  The command must
+	   not remove any saved state as the client is still part of the
+	   session. */
+	prop[j].name = SmShutdownCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = "/bin/true";
+	propval[j].length = strlen("/bin/true");
+	j++;
+#endif
+
+	/* UserID: Specifies the user's ID.  On POSIX-based systems this will
+	   contain the user's name (the pw_name field of struct passwd).  */
+	errno = 0;
+	prop[j].name = SmUserID;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	if ((pw = getpwuid(getuid())))
+		strncpy(userID, pw->pw_name, sizeof(userID) - 1);
+	else {
+		EPRINTF("%s: %s\n", "getpwuid()", strerror(errno));
+		snprintf(userID, sizeof(userID), "%ld", (long) getuid());
+	}
+	propval[j].value = userID;
+	propval[j].length = strlen(userID);
+	j++;
+
+	SmcSetProperties(smcConn, j, props);
+
+	free(cwd);
+	free(pcln);
+	free(prst);
+	free(penv);
+}
+
+static Bool saving_yourself;
+static Bool shutting_down;
+
+static void
+xdeSaveYourselfPhase2CB(SmcConn smcConn, SmPointer data)
+{
+	xdeSetProperties(smcConn, data);
+	SmcSaveYourselfDone(smcConn, True);
+}
+
+/** @brief save yourself
+  *
+  * The session manager sends a "Save Yourself" message to a client either to
+  * check-point it or just before termination so that it can save its state.
+  * The client responds with zero or more calls to SmcSetProperties to update
+  * the properties indicating how to restart the client.  When all the
+  * properties have been set, the client calls SmcSaveYourselfDone.
+  *
+  * If interact_type is SmcInteractStyleNone, the client must not interact with
+  * the user while saving state.  If interact_style is SmInteractStyleErrors,
+  * the client may interact with the user only if an error condition arises.  If
+  * interact_style is  SmInteractStyleAny then the client may interact with the
+  * user for any purpose.  Because only one client can interact with the user at
+  * a time, the client must call SmcInteractRequest and wait for an "Interact"
+  * message from the session maanger.  When the client is done interacting with
+  * the user, it calls SmcInteractDone.  The client may only call
+  * SmcInteractRequest() after it receives a "Save Yourself" message and before
+  * it calls SmcSaveYourSelfDone().
+  */
+static void
+xdeSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
+		     int interactStyle, Bool fast)
+{
+	if (!(shutting_down = shutdown)) {
+		if (!SmcRequestSaveYourselfPhase2(smcConn, xdeSaveYourselfPhase2CB, data))
+			SmcSaveYourselfDone(smcConn, False);
+		return;
+	}
+	xdeSetProperties(smcConn, data);
+	SmcSaveYourselfDone(smcConn, True);
+}
+
+/** @brief die
+  *
+  * The session manager sends a "Die" message to a client when it wants it to
+  * die.  The client should respond by calling SmcCloseConnection.  A session
+  * manager that behaves properly will send a "Save Yourself" message before the
+  * "Die" message.
+  */
+static void
+xdeDieCB(SmcConn smcConn, SmPointer data)
+{
+	SmcCloseConnection(smcConn, 0, NULL);
+	shutting_down = False;
+	gtk_main_quit();
+}
+
+static void
+xdeSaveCompleteCB(SmcConn smcConn, SmPointer data)
+{
+	if (saving_yourself) {
+		saving_yourself = False;
+		gtk_main_quit();
+	}
+}
+
+/** @brief shutdown cancelled
+  *
+  * The session manager sends a "Shutdown Cancelled" message when the user
+  * cancelled the shutdown during an interaction (see Section 5.5, "Interacting
+  * With the User").  The client can now continue as if the shutdown had never
+  * happended.  If the client has not called SmcSaveYourselfDone() yet, it can
+  * either abort the save and then send SmcSaveYourselfDone() with the success
+  * argument set to False or it can continue with the save and then call
+  * SmcSaveYourselfDone() with the success argument set to reflect the outcome
+  * of the save.
+  */
+static void
+xdeShutdownCancelledCB(SmcConn smcConn, SmPointer data)
+{
+	shutting_down = False;
+	gtk_main_quit();
+}
+
+static unsigned long xdeCBMask =
+    SmcSaveYourselfProcMask | SmcDieProcMask |
+    SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
+
+static SmcCallbacks xdeCBs = {
+	.save_yourself = {
+			  .callback = &xdeSaveYourselfCB,
+			  .client_data = NULL,
+			  },
+	.die = {
+		.callback = &xdeDieCB,
+		.client_data = NULL,
+		},
+	.save_complete = {
+			  .callback = &xdeSaveCompleteCB,
+			  .client_data = NULL,
+			  },
+	.shutdown_cancelled = {
+			       .callback = &xdeShutdownCancelledCB,
+			       .client_data = NULL,
+			       },
+};
+
+static gboolean
+on_ifd_watch(GIOChannel *chan, GIOCondition cond, pointer data)
+{
+	SmcConn smcConn = (typeof(smcConn)) data;
+	IceConn iceConn = SmcGetIceConnection(smcConn);
+
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
+		EPRINTF("poll failed: %s %s %s\n", (cond & G_IO_NVAL) ? "NVAL" : "",
+			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
+		return G_SOURCE_REMOVE;
+	} else if (cond & (G_IO_IN | G_IO_PRI)) {
+		IceProcessMessages(iceConn, NULL, NULL);
+	}
+	return G_SOURCE_CONTINUE;	/* keep event source */
+}
+
+static void
+init_smclient(void)
+{
+	char err[256] = { 0, };
+	GIOChannel *chan;
+	int ifd, mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
+	char *env;
+	IceConn iceConn;
+
+	if (!(env = getenv("SESSSION_MANAGER"))) {
+		if (options.clientId)
+			EPRINTF("clientId provided but no SESSION_MANAGER\n");
+		return;
+	}
+
+	smcConn = SmcOpenConnection(env, NULL, SmProtoMajor, SmProtoMinor,
+				    xdeCBMask, &xdeCBs, options.clientId,
+				    &options.clientId, sizeof(err), err);
+	if (!smcConn) {
+		EPRINTF("SmcOpenConnection: %s\n", err);
+		return;
+	}
+
+	iceConn = SmcGetIceConnection(smcConn);
+
+	ifd = IceConnectionNumber(iceConn);
+	chan = g_io_channel_unix_new(ifd);
+	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
+}
+
 const char *
 choose(int argc, char *argv[])
 {
 	GHashTable *xsessions;
 	char *file = NULL;
 	char *p;
+
+	/* initialize session managerment functions */
+	init_smclient();
 
 	if (!(xsessions = get_xsessions())) {
 		EPRINTF("cannot build XSessions\n");
@@ -2337,6 +2960,226 @@ General options:\n\
         /* *INDENT-ON* */
 }
 
+char *
+get_resource(XrmDatabase xrdb, const char *resource)
+{
+	char *type;
+	static char name[64];
+	static char clas[64];
+	XrmValue value = { 0, NULL };
+
+	snprintf(name, sizeof(name), "%s.%s", RESNAME, resource);
+	snprintf(clas, sizeof(clas), "%s.%s", RESCLAS, resource);
+	if (XrmGetResource(xrdb, name, clas, &type, &value))
+		if (value.addr && *(char *) value.addr) {
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			return (char *) value.addr;
+		}
+	return (NULL);
+}
+
+void
+get_resources(int argc, char *argv[])
+{
+	Display *dpy;
+	XrmDatabase rdb;
+	char *type = NULL;
+	XrmValue value = { 0, NULL };
+	XTextProperty xtp;
+	Window root;
+	Atom atom;
+
+	DPRINT();
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
+		exit(EXIT_FAILURE);
+	}
+	root = DefaultRootWindow(dpy);
+	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
+		XCloseDisplay(dpy);
+		DPRINTF("no resource manager database allocated\n");
+		return;
+	}
+	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
+		XCloseDisplay(dpy);
+		EPRINTF("could not retrieve RESOURCE_MANAGER property\n");
+		return;
+	}
+	XrmInitialize();
+	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
+	rdb = XrmGetStringDatabase((char *) xtp.value);
+	XFree(xtp.value);
+	if (!rdb) {
+		DPRINTF("no resource manager database allocated\n");
+		XCloseDisplay(dpy);
+		return;
+	}
+	(void) type;
+	(void) value;
+	if (XrmGetResource(rdb, "xlogin.Login.width", "Xlogin.Login.width", &type, &value)) {
+		DPRINTF("xlogin.Login.width:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			if (strchr(value.addr, '%')) {
+				char *endptr = NULL;
+				double width = strtod(value.addr, &endptr);
+
+				if (endptr != value.addr && *endptr == '%' && width > 0) {
+					options.width =
+					    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
+					if (options.width < 0.20 * DisplayWidth(dpy, 0))
+						options.width = -1;
+				}
+			} else {
+				options.width = strtoul(value.addr, NULL, 0);
+				if (options.width <= 0)
+					options.width = -1;
+			}
+		}
+	}
+	if (XrmGetResource(rdb, "xlogin.Login.height", "Xlogin.Login.height", &type, &value)) {
+		DPRINTF("xlogin.Login.height:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			if (strchr(value.addr, '%')) {
+				char *endptr = NULL;
+				double height = strtod(value.addr, &endptr);
+
+				if (endptr != value.addr && *endptr == '%' && height > 0) {
+					options.height =
+					    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
+					if (options.height < 0.20 * DisplayHeight(dpy, 0))
+						options.height = -1;
+				}
+			} else {
+				options.height = strtoul(value.addr, NULL, 0);
+				if (options.height <= 0)
+					options.height = -1;
+			}
+		}
+	}
+	if (XrmGetResource(rdb, "xlogin.Login.x", "Xlogin.Login.x", &type, &value)) {
+		DPRINTF("xlogin.Login.x:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			options.xposition =
+			    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+			if (options.xposition < 0)
+				options.xposition = 0;
+			if (options.xposition > DisplayWidth(dpy, 0))
+				options.xposition = 1.0;
+		}
+	}
+	if (XrmGetResource(rdb, "xlogin.Login.y", "Xlogin.Login.y", &type, &value)) {
+		DPRINTF("xlogin.Login.y:\t\t%s\n", value.addr);
+		if (value.addr && *(char *) value.addr) {
+			options.yposition =
+			    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+			if (options.yposition < 0)
+				options.yposition = 0;
+			if (options.yposition > DisplayWidth(dpy, 0))
+				options.yposition = 1.0;
+		}
+	}
+	if ((value.addr = get_resource(rdb, "Chooser.x"))) {
+		options.xposition = strtod(value.addr, NULL);
+	}
+	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
+		options.yposition = strtod(value.addr, NULL);
+	}
+	if ((value.addr = get_resource(rdb, "debug"))) {
+		options.debug = strtoul(value.addr, NULL, 0);
+	}
+	if ((value.addr = get_resource(rdb, "banner"))) {
+		free(options.banner);
+		options.banner = strndup(value.addr, PATH_MAX);
+	}
+	if ((value.addr = get_resource(rdb, "splash"))) {
+		free(options.splash);
+		options.splash = strndup(value.addr, PATH_MAX);
+	}
+	if ((value.addr = get_resource(rdb, "welcome"))) {
+		free(options.welcome);
+		options.welcome = strndup(value.addr, 256);
+	}
+	if ((value.addr = get_resource(rdb, "charset"))) {
+		free(options.charset);
+		options.charset = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "language"))) {
+		free(options.language);
+		options.language = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "theme.icon"))) {
+		free(options.icon_theme);
+		options.icon_theme = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "theme.name"))) {
+		free(options.gtk2_theme);
+		options.gtk2_theme = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "theme.xde"))) {
+		options.usexde = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	}
+	if ((value.addr = get_resource(rdb, "side"))) {
+		if (!strncasecmp(value.addr, "left", value.size))
+			options.side = LOGO_SIDE_LEFT;
+		else if (!strncasecmp(value.addr, "top", value.size))
+			options.side = LOGO_SIDE_TOP;
+		else if (!strncasecmp(value.addr, "right", value.size))
+			options.side = LOGO_SIDE_RIGHT;
+		else if (!strncasecmp(value.addr, "bottom", value.size))
+			options.side = LOGO_SIDE_RIGHT;
+		else
+			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
+	}
+	if ((value.addr = get_resource(rdb, "user.default"))) {
+		free(options.username);
+		options.username = strndup(value.addr, 32);
+	}
+	if ((value.addr = get_resource(rdb, "autologin"))) {
+		/* TODO */
+	}
+	if ((value.addr = get_resource(rdb, "vendor"))) {
+		free(options.vendor);
+		options.vendor = strdup(value.addr);
+	}
+	if ((value.addr = get_resource(rdb, "prefix"))) {
+		free(options.prefix);
+		options.prefix = strdup(value.addr);
+	}
+	if ((value.addr = get_resource(rdb, "login.permit"))) {
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
+	if ((value.addr = get_resource(rdb, "login.remote"))) {
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
+	if ((value.addr = get_resource(rdb, "login.chooser"))) {
+		options.xsession = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	}
+	if ((value.addr = get_resource(rdb, "xsession.execute"))) {
+		if (!strncasecmp(value.addr, "true", value.size))
+			/* TODO */ ;
+		else
+			/* TODO */ ;
+	}
+	if ((value.addr = get_resource(rdb, "xsession.default"))) {
+		free(options.choice);
+		options.choice = strndup(value.addr, 64);
+	}
+	if ((value.addr = get_resource(rdb, "setbg"))) {
+		options.setbg = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	}
+	if ((value.addr = get_resource(rdb, "transparent"))) {
+		options.transparent = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	}
+	XrmDestroyDatabase(rdb);
+	XCloseDisplay(dpy);
+}
+
 void
 set_default_vendor(void)
 {
@@ -2552,6 +3395,7 @@ set_default_language(void)
 	defaults.charset = strdup(nl_langinfo(CODESET));
 }
 
+#if 1
 void
 set_default_session(void)
 {
@@ -2649,6 +3493,7 @@ set_default_choice(void)
 	free(defaults.choice);
 	defaults.choice = strdup("default");
 }
+#endif
 
 void
 set_defaults(int argc, char *argv[])
@@ -2664,7 +3509,9 @@ set_defaults(int argc, char *argv[])
 	set_default_splash();
 	set_default_welcome();
 	set_default_language();
+#if 1
 	set_default_session();
+#endif
 	set_default_choice();
 }
 
@@ -2833,11 +3680,13 @@ get_default_session(void)
 	options.dmrc = defaults.dmrc;
 	if (!options.session) {
 		free(options.session);
-		options.session = defaults.session;
+		if (!(options.session = defaults.session))
+			options.session = strdup("");
 	}
 	if (!options.current) {
 		free(options.current);
-		options.current = defaults.current;
+		if (!(options.current = defaults.current))
+			options.current = strdup("");
 	}
 }
 
@@ -2846,10 +3695,28 @@ get_default_choice(void)
 {
 	if (!options.choice) {
 		free(options.choice);
-		options.choice = defaults.choice;
+		if (!(options.choice = defaults.choice))
+			options.choice = strdup("default");
 	}
-
 }
+
+#ifdef DO_XLOCKING
+void
+get_default_username(void)
+{
+	struct passwd *pw;
+
+	if (options.username)
+		return;
+
+	if (!(pw = getpwuid(getuid()))) {
+		EPRINTF("cannot get users password entry\n");
+		exit(EXIT_FAILURE);
+	}
+	free(options.username);
+	options.username = strdup(pw->pw_name);
+}
+#endif				/* DO_XLOCKING */
 
 void
 get_defaults(int argc, char *argv[])
@@ -2861,6 +3728,9 @@ get_defaults(int argc, char *argv[])
 	get_default_language();
 	get_default_session();
 	get_default_choice();
+#ifdef DO_XLOCKING
+	get_default_username();
+#endif
 }
 
 int
@@ -2868,7 +3738,12 @@ main(int argc, char *argv[])
 {
 	CommandType command = CommandDefault;
 
+	saveArgc = argc;
+	saveArgv = argv;
+
 	set_defaults(argc, argv);
+
+	get_resources(argc, argv);
 
 	while (1) {
 		int c, val;
@@ -2892,6 +3767,12 @@ main(int argc, char *argv[])
 			{"xde-theme",	no_argument,		NULL, 'x'},
 			{"timeout",	required_argument,	NULL, 'T'},
 			{"vendor",	required_argument,	NULL, '5'},
+			{"default",	required_argument,	NULL, '6'},
+			{"setbg",	no_argument,		NULL, '8'},
+			{"transparent",	no_argument,		NULL, '9'},
+
+			{"clientId",	required_argument,	NULL, '3'},
+			{"restore",	required_argument,	NULL, '4'},
 
 			{"dry-run",	no_argument,		NULL, 'N'},
 			{"debug",	optional_argument,	NULL, 'D'},
@@ -2910,8 +3791,7 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "pb:s:nc:l:di:t:exT:NDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
-			if (options.debug)
-				fprintf(stderr, "%s: done options processing\n", argv[0]);
+			DPRINTF("%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
@@ -2923,7 +3803,7 @@ main(int argc, char *argv[])
 			break;
 		case 'w':	/* -w, --welcome WELCOME */
 			free(options.welcome);
-			options.welcome = strndup(optarg, 256);
+			options.welcome = strdup(optarg);
 			break;
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
@@ -2985,6 +3865,24 @@ main(int argc, char *argv[])
 		case '5':	/* --vendor VENDOR */
 			free(options.vendor);
 			options.vendor = strdup(optarg);
+			break;
+		case '6':	/* --default DEFAULT */
+			free(options.choice);
+			options.choice = strdup(optarg);
+			break;
+		case '3':	/* -clientId CLIENTID */
+			free(options.clientId);
+			options.clientId = strdup(optarg);
+			break;
+		case '4':	/* -restore SAVEFILE */
+			free(options.saveFile);
+			options.saveFile = strdup(optarg);
+			break;
+		case '8':	/* --setbg */
+			options.setbg = True;
+			break;
+		case '9':	/* --transparent */
+			options.transparent = True;
 			break;
 
 		case 'N':	/* -N, --dry-run */
@@ -3050,7 +3948,7 @@ main(int argc, char *argv[])
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(2);
+			exit(EXIT_SYNTAXERR);
 		}
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
@@ -3065,6 +3963,7 @@ main(int argc, char *argv[])
 	}
 	get_defaults(argc, argv);
 	switch (command) {
+	default:
 	case CommandDefault:
 		DPRINTF("%s: running chooser\n", argv[0]);
 		do_chooser(argc, argv);
