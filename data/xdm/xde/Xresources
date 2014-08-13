@@ -161,12 +161,12 @@ xlogin.Login.greetFace:			Sans-12:bold
 !xlogin.Login.greetColor:		white
 xlogin.Login.greetColor:		grey20
 
-xlogin.Login.namePrompt:		Username:  
+xlogin.Login.namePrompt:		Username:\ \ 
 
-xlogin.Login.passwdPrompt:		Password:  
+xlogin.Login.passwdPrompt:		Password:\ \ 
 
-xlogin.Login.promptFace:		Sans-12:bold
 !xlogin.Login.promptFace:		Terminus-18:style=Bold
+xlogin.Login.promptFace:		Sans-12:bold
 
 !xlogin.Login.promptFont:		-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
 
@@ -174,7 +174,8 @@ xlogin.Login.promptFace:		Sans-12:bold
 !xlogin.Login.promptColor:		grey80
 !xlogin.Login.promptColor:		#D8D8D8
 !xlogin.Login.promptColor:		white
-xlogin.Login.promptColor:		grey20
+!xlogin.Login.promptColor:		grey20
+xlogin.Login.promptColor:		blue
 
 xlogin.Login.fail:			Login incorrect!
 
@@ -274,7 +275,7 @@ XDE-XChooser*y:				0.27
 XDE-XChooser*debug:			1
 XDE-XChooser*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XChooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
-XDE-XChooser*welcome:			Welcome to Unexicon!
+XDE-XChooser*welcome:			Welcome to CLIENTHOST!
 XDE-XChooser*theme.icon:		gnome-brave
 XDE-XChooser*theme.name:		Squared-blue
 XDE-XChooser*theme.xde:			false
@@ -296,11 +297,11 @@ XDE-XLogin*y:				0.27
 XDE-XLogin*debug:			1
 XDE-XLogin*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XLogin*splash:			/usr/share/xde/images/unexicon-splash.jpg
-XDE-XLogin*welcome:			Welcome to Unexicon!
+XDE-XLogin*welcome:			Welcome to CLIENTHOST!
 XDE-XLogin*theme.icon:			gnome-brave
 XDE-XLogin*theme.name:			Squared-blue
 XDE-XLogin*theme.xde:			false
-XDE-XLogin*side:			left
+XDE-XLogin*side:			top
 XDE-XLogin*user.default:		unexicon
 XDE-XLogin*autologin:			false
 XDE-XLogin*vendor:			unexicon
@@ -318,11 +319,11 @@ XDE-XLock*y:				0.27
 XDE-XLock*debug:			1
 XDE-XLock*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XLock*splash:			/usr/share/xde/images/unexicon-splash.jpg
-XDE-XLock*welcome:			Welcome to Unexicon!
+XDE-XLock*welcome:			Welcome to CLIENTHOST!
 XDE-XLock*theme.icon:			gnome-brave
 XDE-XLock*theme.name:			Squared-blue
 XDE-XLock*theme.xde:			false
-XDE-XLock*side:				left
+XDE-XLock*side:				top
 XDE-XLock*user.default:			unexicon
 XDE-XLock*autologin:			false
 XDE-XLock*vendor:			unexicon
@@ -333,5 +334,16 @@ XDE-XLock*xsession.chooser:		false
 XDE-XLock*xsession.execute:		false
 XDE-XLock*xsession.default:		adwm
 XDE-XLock*setbg:			true
-XDE-XLock*transparent:			true
+XDE-XLock*transparent:			false
+
+XDE-XLock.greetFace:			Verdata:size=16:bold
+XDE-XLock.greetColor:			#ffffff
+XDE-XLock.promptFace:			Verdana:size=16:bold
+XDE-XLock.promptColor:			#f5f4fd
+XDE-XLock.inputFace:			Verdana:size=12
+XDE-XLock.inputColor:			#000404
+XDE-XLock.inputFgColor:			#000000
+XDE-XLock.inputBgColor:			#ffffff
+XDE-XLock.failFace:			Verdana:size=16
+XDE-XLock.failColor:			red
 

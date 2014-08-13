@@ -334,61 +334,79 @@ login, such as:
 
 =over 4
 
-=item B<xlogin>.B<Login.width>
+=item B<xlogin>.B<Login.width>: I<INTEGER>
 
-=item B<xlogin>.B<Login.height>
+=item B<xlogin>.B<Login.height>: I<INTEGER>
 
-=item B<xlogin>.B<Login.x>
+=item B<xlogin>.B<Login.x>: I<INTEGER>
 
-=item B<xlogin>.B<Login.y>
+=item B<xlogin>.B<Login.y>: I<INTEGER>
 
-=item B<xlogin>*B<login.translations>
+=item B<xlogin>.B<foreground>: I<XCOLOR>
 
-=item B<xlogin>*B<greeting>
+=item B<xlogin>.B<background>: I<XCOLOR>
 
-=item B<xlogin>*B<namePrompt>
+=item B<xlogin>.B<face>: I<XFTFONT>
 
-=item B<xlogin>*B<fail>
+=item B<xlogin>.B<font>: I<XFONT>
 
-=item B<xlogin>*B<greetFont>
+=item B<xlogin>.B<greeting>: I<STRING>
 
-=item B<xlogin>*B<font>
+=item B<xlogin>.B<unsecureGreeting>: I<STRING>
 
-=item B<xlogin>*B<promptFont>
+=item B<xlogin>.B<greetFace>: I<XFTFONT>
 
-=item B<xlogin>*B<failFont>
+=item B<xlogin>.B<greetFont>: I<XFONT>
 
-=item B<xlogin>*B<greetFace>
+=item B<xlogin>.B<greetColor>: I<XCOLOR>
 
-=item B<xlogin>*B<face>
+=item B<xlogin>.B<namePrompt>: I<STRING>
 
-=item B<xlogin>*B<promptFace>
+=item B<xlogin>.B<passwdPrompt>: I<STRING>
 
-=item B<xlogin>*B<failFace>
+=item B<xlogin>.B<promptFace>: I<XFTFONT>
 
-=item B<xlogin>*B<borderWidth>
+=item B<xlogin>.B<promptFont>: I<XFONT>
 
-=item B<xlogin>*B<frameWidth>
+=item B<xlogin>.B<promptColor>: I<XCOLOR>
 
-=item B<xlogin>*B<innerFramesWidth>
+=item B<xlogin>.B<changePasswdMessage>: I<STRING>
 
-=item B<xlogin>*B<shdColor>
+=item B<xlogin>.B<fail>: I<STRING>
 
-=item B<xlogin>*B<hiColor>
+=item B<xlogin>.B<failFace>: I<XFTFONT>
 
-=item B<xlogin>*B<background>
+=item B<xlogin>.B<failFont>: I<XFONT>
 
-=item B<xlogin>*B<foreground>
+=item B<xlogin>.B<failColor>: I<XCOLOR>
 
-=item B<xlogin>*B<greetColor>
+=item B<xlogin>.B<failTimeout>: I<INTEGER>
 
-=item B<xlogin>*B<failColor>
+=item B<xlogin>.B<logoFileName>: I<PATH>
 
-=item B<xlogin>*B<logoFileName>
+=item B<xlogin>.B<logoPadding>: I<INTEGER>
 
-=item B<xlogin>*B<useShape>
+=item B<xlogin>.B<useShape>: {B<true>|B<false>}
 
-=item B<xlogin>*B<logoPadding>
+=item B<xlogin>.B<hiColor>: I<XCOLOR>
+
+=item B<xlogin>.B<shdColor>: I<XCOLOR>
+
+=item B<xlogin>.B<frameWidth>: I<INTEGER>
+
+=item B<xlogin>.B<innerFrameWidth>: I<INTEGER>
+
+=item B<xlogin>.B<sepWidth>: I<INTEGER>
+
+=item B<xlogin>.B<allowRootLogin>: {B<true>|B<false>}
+
+=item B<xlogin>.B<allowNullPasswd>: {B<true>|B<false>}
+
+=item B<xlogin>.B<echoPasswd>: {B<true>|B<false>}
+
+=item B<xlogin>.B<echoPasswdChar>: I<STRING>
+
+=item B<xlogin>.B<borderWidth>: I<INTEGER>
 
 =back
 
