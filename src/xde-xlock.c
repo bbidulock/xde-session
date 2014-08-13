@@ -91,6 +91,9 @@
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#ifdef VNC_SUPPORTED
+#include <X11/extensions/Xvnc.h>
+#endif
 #include <X11/extensions/scrnsaver.h>
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
@@ -2454,6 +2457,133 @@ on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column
 {
 }
 #endif				/* DO_XCHOOSER */
+
+/** @brief determines whether the user is local or remote using a bunch or
+  * techniques and heauristics.  We check for the following conditions:
+  *
+  * 1. the user is local and not remote
+  * 2. the session is associated with a virtual terminal
+  * 3. the DISPLAY starts with ':'
+  * 4. The X Display has no VNC-EXTENSION extension (otherwise it could in fact
+  *    be remote).
+  *
+  * When these coniditions are satistifed, the use is like sitting at a physical
+  * seat of the computer and could have access to the pwoer button anyway.
+  */
+Bool
+isLocal(void)
+{
+	Display *dpy = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
+	Window root = DefaultRootWindow(dpy);
+	Atom prop;
+
+	if ((getenv("DISPLAY") ? : "")[0] != ':')
+		return False;
+
+	if (getenv("SSH_CLIENT") || getenv("SSH_CONNECTION") || getenv("SSH_TTY"))
+		return False;
+
+	/* ssh connection does not set these */
+	if (!getenv("XDG_SEAT") || !getenv("XDG_VTNR"))
+		return False;
+
+	if ((prop = XInternAtom(dpy, "Xorg_Seat", True))) {
+		XTextProperty xtp = { NULL, };
+		char **list = NULL;
+		int strings = 0;
+		int i = 0;
+
+		if (XGetTextProperty(dpy, root, &xtp, prop)) {
+			if (Xutf8TextPropertyToTextList(dpy, &xtp, &list, &strings) == Success) {
+				for (i = 0; i < strings &&
+				     strcmp(list[i], getenv("XDG_SEAT")); i++) ;
+				if (list)
+					XFreeStringList(list);
+			}
+		}
+		if (xtp.value)
+			XFree(xtp.value);
+		if (i >= strings)
+			return False;
+	}
+	if ((prop = XInternAtom(dpy, "XFree86_has_VT", True))) {
+		Atom actual = None;
+		int format = 0;
+		unsigned long nitems = 0, after = 0;
+		long *data = NULL;
+		int value = 1;
+
+		if (XGetWindowProperty(dpy, root, prop, 0, 1, False, XA_INTEGER,
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data)
+			value = data[0];
+
+		if (data)
+			XFree(data);
+		if (!value)
+			return False;
+	}
+	if ((prop = XInternAtom(dpy, "XFree86_VT", True))) {
+		Atom actual = None;
+		int format = 0;
+		unsigned long nitems = 0, after = 0;
+		long *data = NULL;
+		int value = 0;
+
+		if (XGetWindowProperty(dpy, root, prop, 0, 1, False, XA_INTEGER,
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data) {
+			value = data[0];
+			if (value != atoi(getenv("XDG_VTNR")))
+				return False;
+		}
+	}
+#ifdef VNC_SUPPORTED
+	{
+		int xvncEventBase = 0;
+		int xvncErrorBase = 0;
+
+		if (XVncExtQueryExtension(dpy, &xvncEventBase, &xvncErrorBase)) {
+			char *parm = NULL;
+			int len = 0;
+			int value = 0;
+
+			if (XVncExtGetParam(dpy, "DisconnectClients", &parm, &len) && parm) {
+				value = atoi(parm);
+				XFree(parm);
+				parm = NULL;
+			}
+			if (!value)
+				return False;
+			value = 0;
+			if (XVncExtGetParam(dpy, "NeverShared", &parm, &len) && parm) {
+				value = atoi(parm);
+				XFree(parm);
+				parm = NULL;
+			}
+			value = 0;
+			if (XVncExtGetParam(dpy, "rfbport", &parm, &len) && parm) {
+				value = !atoi(parm);
+				XFree(parm);
+				parm = NULL;
+			}
+			if (!value)
+				return False;
+			value = 0;
+			if (XVncExtGetParam(dpy, "SecurityTypes", &parm, &len) && parm) {
+				value = !strcmp(parm, "None");
+				XFree(parm);
+				parm = NULL;
+			}
+			if (!value)
+				return False;
+		}
+	}
+#endif
+	return True;
+}
 
 static int
 xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp, void *appdata_ptr)

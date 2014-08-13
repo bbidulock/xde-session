@@ -91,6 +91,9 @@
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#ifdef VNC_SUPPORTED
+#include <X11/extensions/Xvnc.h>
+#endif
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
@@ -234,8 +237,8 @@ typedef struct {
 	Bool transparent;
 	int width;
 	int height;
-	double xposition;
-	double yposition;
+	float xposition;
+	float yposition;
 	Bool setstyle;
 } Options;
 
@@ -416,6 +419,51 @@ Atom _XA_GTK_READ_RCFILES;
 Atom _XA_XROOTPMAP_ID;
 Atom _XA_ESETROOT_PMAP_ID;
 
+#ifdef DO_XLOCKING
+int xssEventBase;
+int xssErrorBase;
+int xssMajorVersion;
+int xssMinorVersion;
+
+const char *
+xssState(int state)
+{
+	switch (state) {
+	case ScreenSaverOff:
+		return ("Off");
+	case ScreenSaverOn:
+		return ("On");
+	case ScreenSaverCycle:
+		return ("Cycle");
+	case ScreenSaverDisabled:
+		return ("Disabled");
+	}
+	return ("(unknown)");
+}
+
+const char *
+xssKind(int kind)
+{
+	switch (kind) {
+	case ScreenSaverBlanked:
+		return ("Blanked");
+	case ScreenSaverInternal:
+		return ("Internal");
+	case ScreenSaverExternal:
+		return ("External");
+	}
+	return ("(unknown)");
+}
+#endif
+
+const char *
+showBool(Bool boolean)
+{
+	if (boolean)
+		return ("True");
+	return ("False");
+}
+
 typedef struct {
 	int index;
 	GtkWidget *align;		/* alignment widget at center of
@@ -433,9 +481,116 @@ typedef struct {
 	XdeMonitor *mons;		/* monitors for this screen */
 	GdkPixmap *pixmap;		/* pixmap for background image */
 	GdkPixbuf *pixbuf;		/* pixbuf for background image */
+#ifdef DO_XLOCKING
+	XScreenSaverInfo info;		/* screen saver info for this screen */
+	char selection[32];
+	Window selwin;
+#endif
 } XdeScreen;
 
 XdeScreen *screens;
+
+#ifdef DO_XLOCKING
+void
+setup_screensaver(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	int s, nscr = gdk_display_get_n_screens(disp);
+	char **list, **ext;
+	int n, next = 0;
+	Bool gotext = False;
+	Bool present;
+	Status status;
+	XdeScreen *xscr;
+
+	if ((list = XListExtensions(dpy, &next)) && next)
+		for (n = 0, ext = list; n < next; n++, ext++)
+			if (!strcmp(*ext, "MIT-SCREEN-SAVER"))
+				gotext = True;
+	if (!gotext) {
+		DPRINTF("no MIT-SCREEN-SAVER extension\n");
+		return;
+	}
+	if (!(present = XScreenSaverQueryExtension(dpy, &xssEventBase, &xssErrorBase))) {
+		DPRINTF("MIT-SCREEN-SAVER extension not present\n");
+		return;
+	}
+	if (!(status = XScreenSaverQueryVersion(dpy, &xssMajorVersion, &xssMinorVersion))) {
+		DPRINTF("cannot query MIT-SCREEN-SAVER version\n");
+		return;
+	}
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
+		GdkScreen *scrn = gdk_display_get_screen(disp, s);
+		XSetWindowAttributes xwa;
+		unsigned long mask = 0;
+
+		mask |= CWBackPixmap;
+		xwa.background_pixmap = None;
+		mask |= CWBackPixel;
+		xwa.background_pixel = BlackPixel(dpy, s);
+		mask |= CWBorderPixmap;
+		xwa.border_pixmap = None;
+		mask |= CWBorderPixel;
+		xwa.border_pixel = BlackPixel(dpy, s);
+		mask |= CWBitGravity;
+		xwa.bit_gravity = 0;
+		mask |= CWWinGravity;
+		xwa.win_gravity = NorthWestGravity;
+		mask |= CWBackingStore;
+		xwa.backing_store = NotUseful;
+		mask |= CWBackingPlanes;
+		xwa.backing_pixel = 0;
+		mask |= CWSaveUnder;
+		xwa.save_under = True;
+		mask |= CWEventMask;
+		xwa.event_mask = NoEventMask;
+		mask |= CWDontPropagate;
+		xwa.do_not_propagate_mask = NoEventMask;
+		mask |= CWOverrideRedirect;
+		xwa.override_redirect = True;
+		mask |= CWColormap;
+		xwa.colormap = DefaultColormap(dpy, s);
+		mask |= CWCursor;
+		xwa.cursor = None;
+
+		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
+		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
+					ScreenSaverNotifyMask | ScreenSaverCycleMask);
+		XScreenSaverSetAttributes(dpy, RootWindow(dpy, s), 0, 0,
+					  gdk_screen_get_width(scrn),
+					  gdk_screen_get_height(scrn),
+					  0, DefaultDepth(dpy, s), InputOutput,
+					  DefaultVisual(dpy, s), mask, &xwa);
+		GdkWindow *win = gtk_widget_get_window(xscr->wind);
+		Window w = GDK_WINDOW_XID(win);
+
+		XScreenSaverRegister(dpy, s, w, XA_WINDOW);
+
+	}
+}
+
+GdkFilterReturn
+handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
+{
+	XScreenSaverNotifyEvent *ev = (typeof(ev)) xev;
+
+	DPRINT();
+
+	if (options.debug > 1) {
+		fprintf(stderr, "==> XScreenSaverNotify:\n");
+		fprintf(stderr, "    --> send_event = %s\n", showBool(ev->send_event));
+		fprintf(stderr, "    --> window = 0x%lx\n", ev->window);
+		fprintf(stderr, "    --> root = 0x%lx\n", ev->root);
+		fprintf(stderr, "    --> state = %s\n", xssState(ev->state));
+		fprintf(stderr, "    --> kind = %s\n", xssKind(ev->kind));
+		fprintf(stderr, "    --> forced = %s\n", showBool(ev->forced));
+		fprintf(stderr, "    --> time = %lu\n", ev->time);
+		fprintf(stderr, "<== XScreenSaverNotify:\n");
+	}
+	return G_SOURCE_CONTINUE;
+}
+#endif				/* DO_XLOCKING */
 
 typedef enum {
 	AvailStatusUndef,		/* undefined */
@@ -462,6 +617,24 @@ status_of_string(const char *string)
 	EPRINTF("unknown availability status %s\n", string);
 	return AvailStatusUnknown;
 }
+
+static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
+	/* *INDENT-OFF* */
+	[LOGOUT_ACTION_POWEROFF]	= AvailStatusUndef,
+	[LOGOUT_ACTION_REBOOT]		= AvailStatusUndef,
+	[LOGOUT_ACTION_SUSPEND]		= AvailStatusUndef,
+	[LOGOUT_ACTION_HIBERNATE]	= AvailStatusUndef,
+	[LOGOUT_ACTION_HYBRIDSLEEP]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SWITCHUSER]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SWITCHDESK]	= AvailStatusUndef,
+	[LOGOUT_ACTION_LOCKSCREEN]	= AvailStatusUndef,
+	[LOGOUT_ACTION_CHECKPOINT]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SHUTDOWN]	= AvailStatusUndef,
+	[LOGOUT_ACTION_LOGOUT]		= AvailStatusUndef,
+	[LOGOUT_ACTION_RESTART]		= AvailStatusUndef,
+	[LOGOUT_ACTION_CANCEL]		= AvailStatusUndef,
+	/* *INDENT-ON* */
+};
 
 static void reparse(Display *dpy, Window root);
 static void redo_source(XdeScreen *xscr);
@@ -553,23 +726,50 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	return GDK_FILTER_CONTINUE;
 }
 
-static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
-	/* *INDENT-OFF* */
-	[LOGOUT_ACTION_POWEROFF]	= AvailStatusUndef,
-	[LOGOUT_ACTION_REBOOT]		= AvailStatusUndef,
-	[LOGOUT_ACTION_SUSPEND]		= AvailStatusUndef,
-	[LOGOUT_ACTION_HIBERNATE]	= AvailStatusUndef,
-	[LOGOUT_ACTION_HYBRIDSLEEP]	= AvailStatusUndef,
-	[LOGOUT_ACTION_SWITCHUSER]	= AvailStatusUndef,
-	[LOGOUT_ACTION_SWITCHDESK]	= AvailStatusUndef,
-	[LOGOUT_ACTION_LOCKSCREEN]	= AvailStatusUndef,
-	[LOGOUT_ACTION_CHECKPOINT]	= AvailStatusUndef,
-	[LOGOUT_ACTION_SHUTDOWN]	= AvailStatusUndef,
-	[LOGOUT_ACTION_LOGOUT]		= AvailStatusUndef,
-	[LOGOUT_ACTION_RESTART]		= AvailStatusUndef,
-	[LOGOUT_ACTION_CANCEL]		= AvailStatusUndef,
-	/* *INDENT-ON* */
-};
+#ifdef DO_XLOCKING
+static GdkFilterReturn
+event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	DPRINT();
+	if (options.debug > 1) {
+		fprintf(stderr, "==> SelectionClear: %p\n", xscr);
+		fprintf(stderr, "    --> send_event = %s\n",
+			xev->xselectionclear.send_event ? "true" : "false");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xselectionclear.window);
+		fprintf(stderr, "    --> selection = %s\n",
+			XGetAtomName(dpy, xev->xselectionclear.selection));
+		fprintf(stderr, "    --> time = %lu\n", xev->xselectionclear.time);
+		fprintf(stderr, "<== SelectionClear: %p\n", xscr);
+	}
+	if (xscr && xev->xselectionclear.window == xscr->selwin) {
+		XDestroyWindow(dpy, xscr->selwin);
+		EPRINTF("selection cleared, exiting\n");
+		exit(EXIT_SUCCESS);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = (typeof(xscr)) data;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	DPRINT();
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case SelectionClear:
+		return event_handler_SelectionClear(dpy, xev, xscr);
+	}
+	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;
+}
+#endif
 
 static GdkFilterReturn
 client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
@@ -942,6 +1142,133 @@ get_user_menu(void)
 		return (menu);
 	g_object_unref(G_OBJECT(menu));
 	return (NULL);
+}
+
+/** @brief determines whether the user is local or remote using a bunch or
+  * techniques and heauristics.  We check for the following conditions:
+  *
+  * 1. the user is local and not remote
+  * 2. the session is associated with a virtual terminal
+  * 3. the DISPLAY starts with ':'
+  * 4. The X Display has no VNC-EXTENSION extension (otherwise it could in fact
+  *    be remote).
+  *
+  * When these coniditions are satistifed, the use is like sitting at a physical
+  * seat of the computer and could have access to the pwoer button anyway.
+  */
+Bool
+isLocal(void)
+{
+	Display *dpy = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
+	Window root = DefaultRootWindow(dpy);
+	Atom prop;
+
+	if ((getenv("DISPLAY") ? : "")[0] != ':')
+		return False;
+
+	if (getenv("SSH_CLIENT") || getenv("SSH_CONNECTION") || getenv("SSH_TTY"))
+		return False;
+
+	/* ssh connection does not set these */
+	if (!getenv("XDG_SEAT") || !getenv("XDG_VTNR"))
+		return False;
+
+	if ((prop = XInternAtom(dpy, "Xorg_Seat", True))) {
+		XTextProperty xtp = { NULL, };
+		char **list = NULL;
+		int strings = 0;
+		int i = 0;
+
+		if (XGetTextProperty(dpy, root, &xtp, prop)) {
+			if (Xutf8TextPropertyToTextList(dpy, &xtp, &list, &strings) == Success) {
+				for (i = 0; i < strings &&
+				     strcmp(list[i], getenv("XDG_SEAT")); i++) ;
+				if (list)
+					XFreeStringList(list);
+			}
+		}
+		if (xtp.value)
+			XFree(xtp.value);
+		if (i >= strings)
+			return False;
+	}
+	if ((prop = XInternAtom(dpy, "XFree86_has_VT", True))) {
+		Atom actual = None;
+		int format = 0;
+		unsigned long nitems = 0, after = 0;
+		long *data = NULL;
+		int value = 1;
+
+		if (XGetWindowProperty(dpy, root, prop, 0, 1, False, XA_INTEGER,
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data)
+			value = data[0];
+
+		if (data)
+			XFree(data);
+		if (!value)
+			return False;
+	}
+	if ((prop = XInternAtom(dpy, "XFree86_VT", True))) {
+		Atom actual = None;
+		int format = 0;
+		unsigned long nitems = 0, after = 0;
+		long *data = NULL;
+		int value = 0;
+
+		if (XGetWindowProperty(dpy, root, prop, 0, 1, False, XA_INTEGER,
+				       &actual, &format, &nitems, &after,
+				       (unsigned char **) &data) == Success &&
+		    format == 32 && actual && nitems >= 1 && data) {
+			value = data[0];
+			if (value != atoi(getenv("XDG_VTNR")))
+				return False;
+		}
+	}
+#ifdef VNC_SUPPORTED
+	{
+		int xvncEventBase = 0;
+		int xvncErrorBase = 0;
+
+		if (XVncExtQueryExtension(dpy, &xvncEventBase, &xvncErrorBase)) {
+			char *parm = NULL;
+			int len = 0;
+			int value = 0;
+
+			if (XVncExtGetParam(dpy, "DisconnectClients", &parm, &len) && parm) {
+				value = atoi(parm);
+				XFree(parm);
+				parm = NULL;
+			}
+			if (!value)
+				return False;
+			value = 0;
+			if (XVncExtGetParam(dpy, "NeverShared", &parm, &len) && parm) {
+				value = atoi(parm);
+				XFree(parm);
+				parm = NULL;
+			}
+			value = 0;
+			if (XVncExtGetParam(dpy, "rfbport", &parm, &len) && parm) {
+				value = !atoi(parm);
+				XFree(parm);
+				parm = NULL;
+			}
+			if (!value)
+				return False;
+			value = 0;
+			if (XVncExtGetParam(dpy, "SecurityTypes", &parm, &len) && parm) {
+				value = !strcmp(parm, "None");
+				XFree(parm);
+				parm = NULL;
+			}
+			if (!value)
+				return False;
+		}
+	}
+#endif
+	return True;
 }
 
 void
@@ -3404,7 +3731,7 @@ getXrmUint(const char *val, unsigned int *integer)
 }
 
 gboolean
-getXrmDouble(const char *val, double *floating)
+getXrmFloat(const char *val, float *floating)
 {
 	*floating = strtod(val, NULL);
 	return TRUE;
@@ -3479,7 +3806,7 @@ get_resources(int argc, char *argv[])
 	if ((value.addr = get_xlogin_resource(rdb, "width"))) {
 		if (strchr(value.addr, '%')) {
 			char *endptr = NULL;
-			double width = strtod(value.addr, &endptr);
+			float width = strtod(value.addr, &endptr);
 
 			if (endptr != value.addr && *endptr == '%' && width > 0) {
 				options.width =
@@ -3496,7 +3823,7 @@ get_resources(int argc, char *argv[])
 	if ((value.addr = get_xlogin_resource(rdb, "height"))) {
 		if (strchr(value.addr, '%')) {
 			char *endptr = NULL;
-			double height = strtod(value.addr, &endptr);
+			float height = strtod(value.addr, &endptr);
 
 			if (endptr != value.addr && *endptr == '%' && height > 0) {
 				options.height =
@@ -3512,7 +3839,7 @@ get_resources(int argc, char *argv[])
 	}
 	if ((value.addr = get_xlogin_resource(rdb, "x"))) {
 		options.xposition =
-		    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+		    (float) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
 		if (options.xposition < 0)
 			options.xposition = 0;
 		if (options.xposition > DisplayWidth(dpy, 0))
@@ -3520,7 +3847,7 @@ get_resources(int argc, char *argv[])
 	}
 	if ((value.addr = get_xlogin_resource(rdb, "y"))) {
 		options.yposition =
-		    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+		    (float) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
 		if (options.yposition < 0)
 			options.yposition = 0;
 		if (options.yposition > DisplayWidth(dpy, 0))
@@ -3667,10 +3994,10 @@ get_resources(int argc, char *argv[])
 	// Chooser.command.font:	*-new-century-schoolbook-bold-r-normal-*-180-*
 
 	if ((value.addr = get_resource(rdb, "Chooser.x"))) {
-		getXrmDouble(value.addr, &options.xposition);
+		getXrmFloat(value.addr, &options.xposition);
 	}
 	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
-		getXrmDouble(value.addr, &options.yposition);
+		getXrmFloat(value.addr, &options.yposition);
 	}
 	if ((value.addr = get_resource(rdb, "debug"))) {
 		getXrmInt(value.addr, &options.debug);
@@ -3714,14 +4041,14 @@ get_resources(int argc, char *argv[])
 		else
 			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
 	}
-#ifndef DO_XLOCKING
-	if ((value.addr = get_resource(rdb, "user.default"))) {
-		getXrmString(value.addr, &options.username);
+	if (getuid() == 0) {
+		if ((value.addr = get_resource(rdb, "user.default"))) {
+			getXrmString(value.addr, &options.username);
+		}
+		if ((value.addr = get_resource(rdb, "autologin"))) {
+			// getXrmBool(value.addr, &options.autologin);
+		}
 	}
-	if ((value.addr = get_resource(rdb, "autologin"))) {
-		// getXrmBool(value.addr, &options.autologin);
-	}
-#endif
 	if ((value.addr = get_resource(rdb, "vendor"))) {
 		getXrmString(value.addr, &options.vendor);
 	}
@@ -4496,13 +4823,14 @@ get_default_choice(void)
 	}
 }
 
-#ifdef DO_XLOCKING
 void
 get_default_username(void)
 {
 	struct passwd *pw;
 
 	if (options.username)
+		return;
+	if (getuid() == 0)
 		return;
 
 	if (!(pw = getpwuid(getuid()))) {
@@ -4512,7 +4840,6 @@ get_default_username(void)
 	free(options.username);
 	options.username = strdup(pw->pw_name);
 }
-#endif				/* DO_XLOCKING */
 
 void
 get_defaults(int argc, char *argv[])
@@ -4527,9 +4854,7 @@ get_defaults(int argc, char *argv[])
 #endif				/* DO_XCHOOSER */
 	get_default_session();
 	get_default_choice();
-#ifdef DO_XLOCKING
 	get_default_username();
-#endif
 }
 
 #ifdef DO_XCHOOSER

@@ -352,11 +352,11 @@ XDE-XLock*vendor:			unexicon
 XDE-XLock*prefix:			unexicon-
 XDE-XLock*login.permit:			true
 XDE-XLock*login.remote:			false
-XDE-XLock*xsession.chooser:		true
+XDE-XLock*xsession.chooser:		false
 XDE-XLock*xsession.execute:		false
 XDE-XLock*xsession.default:		adwm
 XDE-XLock*setbg:			true
-XDE-XLock*transparent:			false
+XDE-XLock*transparent:			true
 
 XDE-XLock.greetFace:			Verdata:size=16:bold
 XDE-XLock.greetColor:			#ffffff
