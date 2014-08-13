@@ -24,6 +24,8 @@
 -ss
 -hnl
 -nbc
+-TGdkRectangle
+-TGtkAllocation
 -TXdmcpNetaddr
 -TGdkPixbuf
 -TGdkPixmap

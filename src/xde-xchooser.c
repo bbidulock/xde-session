@@ -262,8 +262,8 @@ typedef struct {
 	Bool transparent;
 	int width;
 	int height;
-	double xposition;
-	double yposition;
+	float xposition;
+	float yposition;
 	Bool setstyle;
 } Options;
 
@@ -3557,14 +3557,17 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	}
 	if (nmon != xscr->nmon)
 		xscr->nmon = nmon;
-	/* always realign center alignment widgets */
-	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
-		double xrel, yrel;
 
-		DPRINTF("Realigning screen %d monitor %d\n", index, m);
+	/* always realign center alignment widgets */
+	GtkAllocation alloc = { 0, };
+	if (ebox)
+		gtk_widget_get_allocation(ebox, &alloc);
+	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
+		float xrel, yrel;
+
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
-		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
+		xrel = (float) (mon->geom.x + mon->geom.width * options.xposition) / (float) xscr->width;
+		yrel = (float) (mon->geom.x + mon->geom.height * options.yposition) / (float) xscr->height;
 		if (!mon->align) {
 			mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 			gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -3576,14 +3579,16 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		GdkDisplay *disp = gdk_screen_get_display(scrn);
 		GdkScreen *screen = NULL;
 		gint x = 0, y = 0;
+		XdeScreen *_xscr;
+		XdeMonitor *_xmon;
 
 		DPRINTF("Reassigning event box to new container\n");
 		gdk_display_get_pointer(disp, &screen, &x, &y, NULL);
 		if (!screen)
 			screen = scrn;
-		m = gdk_screen_get_monitor_at_point(screen, x, y);
-		mon = xscr->mons + m;
-		cont = mon->align;
+		_xscr = screens + gdk_screen_get_number(screen);
+		_xmon = _xscr->mons + gdk_screen_get_monitor_at_point(screen, x, y);
+		cont = _xmon->align;
 		gtk_container_add(GTK_CONTAINER(cont), ebox);
 #if 0
 		/* FIXME: only if it should be currently displayed */
@@ -3686,14 +3691,12 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	xscr->nmon = gdk_screen_get_n_monitors(scrn);
 	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
 	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
-		double xrel, yrel;
+		float xrel, yrel;
 
 		mon->index = m;
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-
-		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
-		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
-
+		xrel = (float) (mon->geom.x + mon->geom.width * options.xposition) / (float) xscr->width;
+		yrel = (float) (mon->geom.x + mon->geom.height * options.yposition) / (float) xscr->height;
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
@@ -3836,7 +3839,7 @@ GetPanel(void)
 	gtk_box_pack_start(GTK_BOX(pan), inp, TRUE, TRUE, 4);
 #endif
 
-	GtkWidget *align = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
+	GtkWidget *align = gtk_alignment_new(0.5, 0.5, 1.0, 0.0);
 
 	gtk_container_add(GTK_CONTAINER(inp), align);
 
@@ -3877,7 +3880,7 @@ GetPanel(void)
 	}
 
 	user = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(user), 12);
+	// gtk_entry_set_width_chars(GTK_ENTRY(user), 12);
 	gtk_entry_set_visibility(GTK_ENTRY(user), TRUE);
 	gtk_widget_set_can_default(user, TRUE);
 	gtk_widget_set_can_focus(user, TRUE);
@@ -3911,7 +3914,7 @@ GetPanel(void)
 	}
 
 	pass = gtk_entry_new();
-	gtk_entry_set_width_chars(GTK_ENTRY(pass), 12);
+	// gtk_entry_set_width_chars(GTK_ENTRY(pass), 12);
 	gtk_entry_set_visibility(GTK_ENTRY(pass), FALSE);
 	gtk_widget_set_can_default(pass, TRUE);
 	gtk_widget_set_can_focus(pass, TRUE);
@@ -4271,8 +4274,7 @@ GetWindow(void)
 	GdkDisplay *disp = gdk_display_get_default();
 	GdkScreen *scrn = NULL;
 	XdeScreen *xscr;
-	XdeMonitor *mon;
-	int s, m;
+	XdeMonitor *xmon;
 	gint x = 0, y = 0;
 
 	GetScreens();
@@ -4280,17 +4282,15 @@ GetWindow(void)
 	gdk_display_get_pointer(disp, &scrn, &x, &y, NULL);
 	if (!scrn)
 		scrn = gdk_display_get_default_screen(disp);
-	s = gdk_screen_get_number(scrn);
-	xscr = screens + s;
+	xscr = screens + gdk_screen_get_number(scrn);
+	xmon = xscr->mons + gdk_screen_get_monitor_at_point(scrn, x, y);
 
-	m = gdk_screen_get_monitor_at_point(scrn, x, y);
-	mon = xscr->mons + m;
-
-	cont = mon->align;
+	cont = xmon->align;
 	ebox = GetPane(cont);
 
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
+
 #if 1
 	if (options.username) {
 		gtk_entry_set_text(GTK_ENTRY(user), options.username);
@@ -4388,9 +4388,8 @@ do_run(int argc, char *argv[])
 	if (options.username) {
 		pam_set_item(pamh, PAM_USER, options.username);
 		state = LoginStateUsername;
-#ifdef DO_XLOCKING
-		uname = strdup(options.username);
-#endif
+		if (getuid() != 0)
+			uname = strdup(options.username);
 	}
 	for (;;) {
 		status = pam_authenticate(pamh, 0);
@@ -4748,7 +4747,7 @@ getXrmUint(const char *val, unsigned int *integer)
 }
 
 gboolean
-getXrmDouble(const char *val, double *floating)
+getXrmFloat(const char *val, float *floating)
 {
 	*floating = strtod(val, NULL);
 	return TRUE;
@@ -4823,7 +4822,7 @@ get_resources(int argc, char *argv[])
 	if ((value.addr = get_xlogin_resource(rdb, "width"))) {
 		if (strchr(value.addr, '%')) {
 			char *endptr = NULL;
-			double width = strtod(value.addr, &endptr);
+			float width = strtod(value.addr, &endptr);
 
 			if (endptr != value.addr && *endptr == '%' && width > 0) {
 				options.width =
@@ -4840,7 +4839,7 @@ get_resources(int argc, char *argv[])
 	if ((value.addr = get_xlogin_resource(rdb, "height"))) {
 		if (strchr(value.addr, '%')) {
 			char *endptr = NULL;
-			double height = strtod(value.addr, &endptr);
+			float height = strtod(value.addr, &endptr);
 
 			if (endptr != value.addr && *endptr == '%' && height > 0) {
 				options.height =
@@ -4856,7 +4855,7 @@ get_resources(int argc, char *argv[])
 	}
 	if ((value.addr = get_xlogin_resource(rdb, "x"))) {
 		options.xposition =
-		    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+		    (float) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
 		if (options.xposition < 0)
 			options.xposition = 0;
 		if (options.xposition > DisplayWidth(dpy, 0))
@@ -4864,7 +4863,7 @@ get_resources(int argc, char *argv[])
 	}
 	if ((value.addr = get_xlogin_resource(rdb, "y"))) {
 		options.yposition =
-		    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+		    (float) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
 		if (options.yposition < 0)
 			options.yposition = 0;
 		if (options.yposition > DisplayWidth(dpy, 0))
@@ -5011,10 +5010,10 @@ get_resources(int argc, char *argv[])
 	// Chooser.command.font:	*-new-century-schoolbook-bold-r-normal-*-180-*
 
 	if ((value.addr = get_resource(rdb, "Chooser.x"))) {
-		getXrmDouble(value.addr, &options.xposition);
+		getXrmFloat(value.addr, &options.xposition);
 	}
 	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
-		getXrmDouble(value.addr, &options.yposition);
+		getXrmFloat(value.addr, &options.yposition);
 	}
 	if ((value.addr = get_resource(rdb, "debug"))) {
 		getXrmInt(value.addr, &options.debug);
@@ -5058,14 +5057,14 @@ get_resources(int argc, char *argv[])
 		else
 			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
 	}
-#ifndef DO_XLOCKING
-	if ((value.addr = get_resource(rdb, "user.default"))) {
-		getXrmString(value.addr, &options.username);
+	if (getuid() == 0) {
+		if ((value.addr = get_resource(rdb, "user.default"))) {
+			getXrmString(value.addr, &options.username);
+		}
+		if ((value.addr = get_resource(rdb, "autologin"))) {
+			// getXrmBool(value.addr, &options.autologin);
+		}
 	}
-	if ((value.addr = get_resource(rdb, "autologin"))) {
-		// getXrmBool(value.addr, &options.autologin);
-	}
-#endif
 	if ((value.addr = get_resource(rdb, "vendor"))) {
 		getXrmString(value.addr, &options.vendor);
 	}
@@ -5820,13 +5819,14 @@ get_default_choice(void)
 	}
 }
 
-#ifdef DO_XLOCKING
 void
 get_default_username(void)
 {
 	struct passwd *pw;
 
 	if (options.username)
+		return;
+	if (getuid() == 0)
 		return;
 
 	if (!(pw = getpwuid(getuid()))) {
@@ -5836,7 +5836,6 @@ get_default_username(void)
 	free(options.username);
 	options.username = strdup(pw->pw_name);
 }
-#endif				/* DO_XLOCKING */
 
 void
 get_defaults(int argc, char *argv[])
@@ -5851,9 +5850,7 @@ get_defaults(int argc, char *argv[])
 #endif				/* DO_XCHOOSER */
 	get_default_session();
 	get_default_choice();
-#ifdef DO_XLOCKING
 	get_default_username();
-#endif
 }
 
 #ifdef DO_XCHOOSER

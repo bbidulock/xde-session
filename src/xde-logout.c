@@ -105,6 +105,8 @@
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
+#include <fontconfig/fontconfig.h>
+#include <pango/pangofc-fontmap.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -317,6 +319,74 @@ Options defaults = {
 	.xposition = 0.5,
 	.yposition = 0.5,
 	.setstyle = True,
+};
+
+typedef struct {
+	GdkColor *foreground;
+	GdkColor *background;
+	PangoFontDescription *face;
+	char *greeting;
+	char *unsecureGreeting;
+	PangoFontDescription *greetFace;
+	GdkColor *greetColor;
+	char *namePrompt;
+	char *passwdPrompt;
+	PangoFontDescription *promptFace;
+	GdkColor *promptColor;
+	PangoFontDescription *inputFace;
+	GdkColor *inputColor;
+	char *changePasswdMessage;
+	char *fail;
+	PangoFontDescription *failFace;
+	GdkColor *failColor;
+	unsigned int failTimeout;
+	char *logoFileName;
+	unsigned int logoPadding;
+	Bool useShape;
+	GdkColor *hiColor;
+	GdkColor *shdColor;
+	unsigned int frameWidth;
+	unsigned int innerFrameWidth;
+	unsigned int sepWidth;
+	Bool allowRootLogin;
+	Bool allowNullPasswd;
+	Bool echoPasswd;
+	char *echoPasswdChar;
+	unsigned int borderWidth;
+} Resources;
+
+Resources resources  = {
+	.foreground = NULL,
+	.background = NULL,
+	.face = NULL,
+	.greeting = NULL,
+	.unsecureGreeting = NULL,
+	.greetFace = NULL,
+	.greetColor = NULL,
+	.namePrompt = NULL,
+	.passwdPrompt = NULL,
+	.promptFace = NULL,
+	.promptColor = NULL,
+	.inputFace = NULL,
+	.inputColor = NULL,
+	.changePasswdMessage = NULL,
+	.fail = NULL,
+	.failFace = NULL,
+	.failColor = NULL,
+	.failTimeout = 0,
+	.logoFileName = NULL,
+	.logoPadding = 0,
+	.useShape = False,
+	.hiColor = NULL,
+	.shdColor = NULL,
+	.frameWidth = 0,
+	.innerFrameWidth = 0,
+	.sepWidth = 0,
+	.allowRootLogin = False,
+	.allowNullPasswd = False,
+	.echoPasswd = False,
+	.echoPasswdChar = NULL,
+	.borderWidth = 0,
 };
 
 typedef enum {
@@ -1729,14 +1799,17 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	}
 	if (nmon != xscr->nmon)
 		xscr->nmon = nmon;
-	/* always realign center alignment widgets */
-	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
-		double xrel, yrel;
 
-		DPRINTF("Realigning screen %d monitor %d\n", index, m);
+	/* always realign center alignment widgets */
+	GtkAllocation alloc = { 0, };
+	if (ebox)
+		gtk_widget_get_allocation(ebox, &alloc);
+	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
+		float xrel, yrel;
+
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
-		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
+		xrel = (float) (mon->geom.x + mon->geom.width * options.xposition) / (float) xscr->width;
+		yrel = (float) (mon->geom.x + mon->geom.height * options.yposition) / (float) xscr->height;
 		if (!mon->align) {
 			mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 			gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -1748,14 +1821,16 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		GdkDisplay *disp = gdk_screen_get_display(scrn);
 		GdkScreen *screen = NULL;
 		gint x = 0, y = 0;
+		XdeScreen *_xscr;
+		XdeMonitor *_xmon;
 
 		DPRINTF("Reassigning event box to new container\n");
 		gdk_display_get_pointer(disp, &screen, &x, &y, NULL);
 		if (!screen)
 			screen = scrn;
-		m = gdk_screen_get_monitor_at_point(screen, x, y);
-		mon = xscr->mons + m;
-		cont = mon->align;
+		_xscr = screens + gdk_screen_get_number(screen);
+		_xmon = _xscr->mons + gdk_screen_get_monitor_at_point(screen, x, y);
+		cont = _xmon->align;
 		gtk_container_add(GTK_CONTAINER(cont), ebox);
 #if 0
 		/* FIXME: only if it should be currently displayed */
@@ -1858,14 +1933,12 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 	xscr->nmon = gdk_screen_get_n_monitors(scrn);
 	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
 	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
-		double xrel, yrel;
+		float xrel, yrel;
 
 		mon->index = m;
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-
-		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
-		yrel = (double) (mon->geom.y + mon->geom.height * options.yposition) / (double) xscr->height;
-
+		xrel = (float) (mon->geom.x + mon->geom.width * options.xposition) / (float) xscr->width;
+		yrel = (float) (mon->geom.x + mon->geom.height * options.yposition) / (float) xscr->height;
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
@@ -2001,8 +2074,8 @@ GtkWidget *
 GetPanel(void)
 {
 	GtkWidget *pan = gtk_vbox_new(FALSE, 0);
-	GtkWidget *inp = gtk_frame_new(NULL);
 	GtkShadowType shadow = (options.transparent) ? GTK_SHADOW_NONE : GTK_SHADOW_ETCHED_IN;
+	GtkWidget *inp = gtk_frame_new(NULL);
 
 	gtk_frame_set_shadow_type(GTK_FRAME(inp), shadow);
 	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
@@ -2073,6 +2146,7 @@ GetPanel(void)
 GtkWidget *
 GetPane(GtkWidget *cont)
 {
+	GtkRcStyle *style;
 	char hostname[64] = { 0, };
 
 	gethostname(hostname, sizeof(hostname));
@@ -2091,15 +2165,38 @@ GetPane(GtkWidget *cont)
 
 	gtk_container_add(GTK_CONTAINER(ebox), v);
 
-	GtkWidget *lab = gtk_label_new(NULL);
-	gchar *markup;
+	GtkWidget *l_greet = gtk_label_new(NULL);
+	gtk_label_set_text(GTK_LABEL(l_greet), options.welcome);
+	gtk_misc_set_alignment(GTK_MISC(l_greet), 0.5, 0.5);
+	gtk_misc_set_padding(GTK_MISC(l_greet), 3, 3);
+	switch (options.side) {
+	default:
+	case LogoSideLeft:
+	case LogoSideBottom:
+		gtk_box_pack_start(GTK_BOX(v), l_greet, FALSE, TRUE, 0);
+		break;
+	case LogoSideRight:
+	case LogoSideTop:
+		gtk_box_pack_end(GTK_BOX(v), l_greet, FALSE, TRUE, 0);
+		break;
+	}
+	if ((style = gtk_widget_get_modifier_style(l_greet))) {
+		style->font_desc = pango_font_description_copy(resources.greetFace);
+		if (resources.greetColor) {
+			int i;
 
-	markup = g_strdup_printf ("<span size=\"xx-large\"><b><i>%s</i></b></span>", options.welcome);
-	gtk_label_set_markup(GTK_LABEL(lab), markup);
-	gtk_misc_set_alignment(GTK_MISC(lab), 0.5, 0.5);
-	gtk_misc_set_padding(GTK_MISC(lab), 3, 3);
-	g_free(markup);
-	gtk_box_pack_start(GTK_BOX(v), lab, FALSE, TRUE, 0);
+			for (i = 0; i < 5; i++) {
+				style->text[i] = *resources.greetColor;
+				style->color_flags[i] |= GTK_RC_TEXT;
+				style->fg[i] = *resources.greetColor;
+				style->color_flags[i] |= GTK_RC_FG;
+				// style->base[i] = *resources.greetColor;
+				// style->color_flags[i] |= GTK_RC_BASE;
+			}
+		} else
+			DPRINTF("No resources.greetColor!\n");
+		gtk_widget_modify_style(l_greet, style);
+	}
 
 	GtkWidget *box;
 	
@@ -2153,8 +2250,7 @@ GetWindow(void)
 	GdkDisplay *disp = gdk_display_get_default();
 	GdkScreen *scrn = NULL;
 	XdeScreen *xscr;
-	XdeMonitor *mon;
-	int s, m;
+	XdeMonitor *xmon;
 	gint x = 0, y = 0;
 
 	GetScreens();
@@ -2162,17 +2258,15 @@ GetWindow(void)
 	gdk_display_get_pointer(disp, &scrn, &x, &y, NULL);
 	if (!scrn)
 		scrn = gdk_display_get_default_screen(disp);
-	s = gdk_screen_get_number(scrn);
-	xscr = screens + s;
+	xscr = screens + gdk_screen_get_number(scrn);
+	xmon = xscr->mons + gdk_screen_get_monitor_at_point(scrn, x, y);
 
-	m = gdk_screen_get_monitor_at_point(scrn, x, y);
-	mon = xscr->mons + m;
-
-	cont = mon->align;
+	cont = xmon->align;
 	ebox = GetPane(cont);
 
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
+
 	gtk_widget_grab_default(buttons[LOGOUT_ACTION_LOGOUT]);
 	gtk_widget_grab_focus(buttons[LOGOUT_ACTION_LOGOUT]);
 	grabbed_window(xscr->wind, NULL);
@@ -3214,21 +3308,134 @@ General options:\n\
 }
 
 char *
-get_resource(XrmDatabase xrdb, const char *resource)
+get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
+		const char *resource)
 {
 	char *type;
 	static char name[64];
 	static char clas[64];
 	XrmValue value = { 0, NULL };
 
-	snprintf(name, sizeof(name), "%s.%s", RESNAME, resource);
-	snprintf(clas, sizeof(clas), "%s.%s", RESCLAS, resource);
+	snprintf(name, sizeof(name), "%s.%s", res_name, resource);
+	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
 	if (XrmGetResource(xrdb, name, clas, &type, &value))
 		if (value.addr && *(char *) value.addr) {
 			DPRINTF("%s:\t\t%s\n", clas, value.addr);
 			return (char *) value.addr;
 		}
 	return (NULL);
+}
+
+char *
+get_resource(XrmDatabase xrdb, const char *resource)
+{
+	return get_nc_resource(xrdb, RESNAME, RESCLAS, resource);
+}
+
+char *
+get_xlogin_resource(XrmDatabase xrdb, const char *resource)
+{
+	return get_nc_resource(xrdb, "xlogin.Login", "Xlogin.Login", resource);
+}
+
+char *
+get_any_resource(XrmDatabase xrdb, const char *resource)
+{
+	char *value;
+
+	if (!(value = get_resource(xrdb, resource)))
+		value = get_xlogin_resource(xrdb, resource);
+	return (value);
+}
+
+char *
+get_chooser_resource(XrmDatabase xrdb, const char *resource)
+{
+	return get_nc_resource(xrdb, "chooser", "Chooser", resource);
+}
+
+gboolean
+getXrmColor(const char *val, GdkColor **color)
+{
+	GdkColor c, *p;
+
+	if (gdk_color_parse(val, &c) && (p = calloc(1, sizeof(*p)))) {
+		*p = c;
+		free(*color);
+		*color = p;
+		return TRUE;
+	}
+	EPRINTF("could not parse color '%s'\n", val);
+	return FALSE;
+}
+
+gboolean
+getXrmFont(const char *val, PangoFontDescription **face)
+{
+	FcPattern *pattern;
+	PangoFontDescription *font;
+
+	if ((pattern = FcNameParse((FcChar8 *)val))) {
+		if ((font = pango_fc_font_description_from_pattern(pattern, TRUE))) {
+			pango_font_description_free(*face);
+			*face = font;
+			DPRINTF("Font description is: %s\n",
+					pango_font_description_to_string(font));
+			return TRUE;
+		}
+		FcPatternDestroy(pattern);
+	}
+	EPRINTF("could not parse font descriptikon '%s'\n", val);
+	return FALSE;
+}
+
+gboolean
+getXrmInt(const char *val, int *integer)
+{
+	*integer = strtol(val, NULL, 0);
+	return TRUE;
+}
+
+gboolean
+getXrmUint(const char *val, unsigned int *integer)
+{
+	*integer = strtoul(val, NULL, 0);
+	return TRUE;
+}
+
+gboolean
+getXrmDouble(const char *val, double *floating)
+{
+	*floating = strtod(val, NULL);
+	return TRUE;
+}
+
+gboolean
+getXrmBool(const char *val, Bool *boolean)
+{
+	if (!strncasecmp(val, "true", strlen(val))) {
+		*boolean = True;
+		return TRUE;
+	}
+	if (!strncasecmp(val, "false", strlen(val))) {
+		*boolean = False;
+		return TRUE;
+	}
+	EPRINTF("could not parse boolean'%s'\n", val);
+	return FALSE;
+}
+
+gboolean
+getXrmString(const char *val, char **string)
+{
+	char *tmp;
+
+	if ((tmp = strdup(val))) {
+		free(*string);
+		*string = tmp;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 void
@@ -3269,171 +3476,278 @@ get_resources(int argc, char *argv[])
 	}
 	(void) type;
 	(void) value;
-	if (XrmGetResource(rdb, "xlogin.Login.width", "Xlogin.Login.width", &type, &value)) {
-		DPRINTF("xlogin.Login.width:\t\t%s\n", value.addr);
-		if (value.addr && *(char *) value.addr) {
-			if (strchr(value.addr, '%')) {
-				char *endptr = NULL;
-				double width = strtod(value.addr, &endptr);
+	if ((value.addr = get_xlogin_resource(rdb, "width"))) {
+		if (strchr(value.addr, '%')) {
+			char *endptr = NULL;
+			double width = strtod(value.addr, &endptr);
 
-				if (endptr != value.addr && *endptr == '%' && width > 0) {
-					options.width =
-					    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
-					if (options.width < 0.20 * DisplayWidth(dpy, 0))
-						options.width = -1;
-				}
-			} else {
-				options.width = strtoul(value.addr, NULL, 0);
-				if (options.width <= 0)
+			if (endptr != value.addr && *endptr == '%' && width > 0) {
+				options.width =
+				    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
+				if (options.width < 0.20 * DisplayWidth(dpy, 0))
 					options.width = -1;
 			}
+		} else {
+			options.width = strtoul(value.addr, NULL, 0);
+			if (options.width <= 0)
+				options.width = -1;
 		}
 	}
-	if (XrmGetResource(rdb, "xlogin.Login.height", "Xlogin.Login.height", &type, &value)) {
-		DPRINTF("xlogin.Login.height:\t\t%s\n", value.addr);
-		if (value.addr && *(char *) value.addr) {
-			if (strchr(value.addr, '%')) {
-				char *endptr = NULL;
-				double height = strtod(value.addr, &endptr);
+	if ((value.addr = get_xlogin_resource(rdb, "height"))) {
+		if (strchr(value.addr, '%')) {
+			char *endptr = NULL;
+			double height = strtod(value.addr, &endptr);
 
-				if (endptr != value.addr && *endptr == '%' && height > 0) {
-					options.height =
-					    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
-					if (options.height < 0.20 * DisplayHeight(dpy, 0))
-						options.height = -1;
-				}
-			} else {
-				options.height = strtoul(value.addr, NULL, 0);
-				if (options.height <= 0)
+			if (endptr != value.addr && *endptr == '%' && height > 0) {
+				options.height =
+				    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
+				if (options.height < 0.20 * DisplayHeight(dpy, 0))
 					options.height = -1;
 			}
+		} else {
+			options.height = strtoul(value.addr, NULL, 0);
+			if (options.height <= 0)
+				options.height = -1;
 		}
 	}
-	if (XrmGetResource(rdb, "xlogin.Login.x", "Xlogin.Login.x", &type, &value)) {
-		DPRINTF("xlogin.Login.x:\t\t%s\n", value.addr);
-		if (value.addr && *(char *) value.addr) {
-			options.xposition =
-			    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
-			if (options.xposition < 0)
-				options.xposition = 0;
-			if (options.xposition > DisplayWidth(dpy, 0))
-				options.xposition = 1.0;
-		}
+	if ((value.addr = get_xlogin_resource(rdb, "x"))) {
+		options.xposition =
+		    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+		if (options.xposition < 0)
+			options.xposition = 0;
+		if (options.xposition > DisplayWidth(dpy, 0))
+			options.xposition = 1.0;
 	}
-	if (XrmGetResource(rdb, "xlogin.Login.y", "Xlogin.Login.y", &type, &value)) {
-		DPRINTF("xlogin.Login.y:\t\t%s\n", value.addr);
-		if (value.addr && *(char *) value.addr) {
-			options.yposition =
-			    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
-			if (options.yposition < 0)
-				options.yposition = 0;
-			if (options.yposition > DisplayWidth(dpy, 0))
-				options.yposition = 1.0;
-		}
+	if ((value.addr = get_xlogin_resource(rdb, "y"))) {
+		options.yposition =
+		    (double) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+		if (options.yposition < 0)
+			options.yposition = 0;
+		if (options.yposition > DisplayWidth(dpy, 0))
+			options.yposition = 1.0;
 	}
+	// xlogin.foreground:		grey20
+	if ((value.addr = get_xlogin_resource(rdb, "foreground"))) {
+		getXrmColor(value.addr, &resources.foreground);
+	}
+	// xlogin.background:		LightSteelBlue3
+	if ((value.addr = get_xlogin_resource(rdb, "background"))) {
+		getXrmColor(value.addr, &resources.background);
+	}
+	// xlogin.face:			Sans-12:bold
+	// xlogin.font:
+	if ((value.addr = get_any_resource(rdb, "face"))) {
+		getXrmFont(value.addr, &resources.face);
+	}
+	// xlogin.greeting:		Welcome to CLIENTHOST
+	if ((value.addr = get_xlogin_resource(rdb, "greeting"))) {
+		getXrmString(value.addr, &resources.greeting);
+		getXrmString(value.addr, &options.welcome);
+	}
+	// xlogin.unsecureGreeting:	This is an unsecure session
+	if ((value.addr = get_xlogin_resource(rdb, "unsecureGreeting"))) {
+		getXrmString(value.addr, &resources.unsecureGreeting);
+	}
+	// xlogin.greetFace:		Sans-12:bold
+	// xlogin.greetFont:
+	if ((value.addr = get_any_resource(rdb, "greetFace"))) {
+		getXrmFont(value.addr, &resources.greetFace);
+	}
+	// xlogin.greetColor:		grey20
+	if ((value.addr = get_any_resource(rdb, "greetColor"))) {
+		getXrmColor(value.addr, &resources.greetColor);
+	}
+	// xlogin.namePrompt:		Username:
+	getXrmString("Username: ", &resources.namePrompt);
+	if ((value.addr = get_xlogin_resource(rdb, "namePrompt"))) {
+		getXrmString(value.addr, &resources.namePrompt);
+	}
+	// xlogin.passwdPrompt:		Password:
+	getXrmString("Password: ", &resources.passwdPrompt);
+	if ((value.addr = get_xlogin_resource(rdb, "passwdPrompt"))) {
+		getXrmString(value.addr, &resources.passwdPrompt);
+	}
+	// xlogin.promptFace:		Sans-12:bold
+	// xlogin.promptFont:
+	if ((value.addr = get_any_resource(rdb, "promptFace"))) {
+		getXrmFont(value.addr, &resources.promptFace);
+	}
+	// xlogin.promptColor:		grey20
+	if ((value.addr = get_any_resource(rdb, "promptColor"))) {
+		getXrmColor(value.addr, &resources.promptColor);
+	}
+	if ((value.addr = get_any_resource(rdb, "inputFace"))) {
+		getXrmFont(value.addr, &resources.inputFace);
+	}
+	if ((value.addr = get_any_resource(rdb, "inputColor"))) {
+		getXrmColor(value.addr, &resources.inputColor);
+	}
+	// xlogin.changePasswdMessage:	Password Change Required
+	if ((value.addr = get_xlogin_resource(rdb, "changePasswdMessage"))) {
+		getXrmString(value.addr, &resources.changePasswdMessage);
+	}
+	// xlogin.fail:			Login incorrect!
+	if ((value.addr = get_xlogin_resource(rdb, "fail"))) {
+		getXrmString(value.addr, &resources.fail);
+	}
+	// xlogin.failFace:		Sans-12:bold
+	// xlogin.failFont:
+	if ((value.addr = get_any_resource(rdb, "failFace"))) {
+		getXrmFont(value.addr, &resources.failFace);
+	}
+	// xlogin.failColor:		red
+	if ((value.addr = get_any_resource(rdb, "failColor"))) {
+		getXrmColor(value.addr, &resources.failColor);
+	}
+	// xlogin.failTimeout:		10
+	if ((value.addr = get_xlogin_resource(rdb, "failTimeout"))) {
+		getXrmUint(value.addr, &resources.failTimeout);
+	}
+	// xlogin.logoFileName:		/etc/X11/xdm/xde/banner.png
+	if ((value.addr = get_xlogin_resource(rdb, "logoFileName"))) {
+		getXrmString(value.addr, &resources.logoFileName);
+	}
+	// xlogin.logoPadding:		8
+	if ((value.addr = get_xlogin_resource(rdb, "logoPadding"))) {
+		getXrmUint(value.addr, &resources.logoPadding);
+	}
+	// xlogin.useShape:		true
+	if ((value.addr = get_xlogin_resource(rdb, "useShape"))) {
+		getXrmBool(value.addr, &resources.useShape);
+	}
+	// xlogin.hiColor:		grey80
+	if ((value.addr = get_xlogin_resource(rdb, "hiColor"))) {
+		getXrmColor(value.addr, &resources.hiColor);
+	}
+	// xlogin.shdColor:		grey20
+	if ((value.addr = get_xlogin_resource(rdb, "shdColor"))) {
+		getXrmColor(value.addr, &resources.shdColor);
+	}
+	// xlogin.frameWidth:		2
+	if ((value.addr = get_xlogin_resource(rdb, "frameWidth"))) {
+		getXrmUint(value.addr, &resources.frameWidth);
+	}
+	// xlogin.innerFrameWidth:	2
+	if ((value.addr = get_xlogin_resource(rdb, "innerFrameWidth"))) {
+		getXrmUint(value.addr, &resources.innerFrameWidth);
+	}
+	// xlogin.sepWidth:		2
+	if ((value.addr = get_xlogin_resource(rdb, "sepWidth"))) {
+		getXrmUint(value.addr, &resources.sepWidth);
+	}
+	// xlogin.allowRootLogin:	true
+	if ((value.addr = get_xlogin_resource(rdb, "allowRootLogin"))) {
+		getXrmBool(value.addr, &resources.allowRootLogin);
+	}
+	// xlogin.allowNullPasswd:	false
+	if ((value.addr = get_xlogin_resource(rdb, "allowNullPasswd"))) {
+		getXrmBool(value.addr, &resources.allowNullPasswd);
+	}
+	// xlogin.echoPasswd:		true
+	if ((value.addr = get_xlogin_resource(rdb, "echoPasswd"))) {
+		getXrmBool(value.addr, &resources.echoPasswd);
+	}
+	// xlogin.echoPasswdChar:	*
+	if ((value.addr = get_xlogin_resource(rdb, "echoPasswdChar"))) {
+		getXrmString(value.addr, &resources.echoPasswdChar);
+	}
+	// xlogin.borderWidth:		3
+	if ((value.addr = get_xlogin_resource(rdb, "borderWidth"))) {
+		getXrmUint(value.addr, &resources.borderWidth);
+	}
+
+	// xlogin.login.translations
+
+	// Chooser.geometry:		700x500
+	// Chooser.allowShellResize:	false
+	// Chooser.viewport.forceBars:	true
+	// Chooser.label.font:		*-new-century-schoolbook-bold-i-normal-*-240-*
+	// Chooser.label.label:		XDMCP Host Menu from CLIENTHOST
+	// Chooser.list.font:		*-*-medium-r-normal-*-*-230-*-*-c-*-iso8859-1
+	// Chooser.command.font:	*-new-century-schoolbook-bold-r-normal-*-180-*
+
 	if ((value.addr = get_resource(rdb, "Chooser.x"))) {
-		options.xposition = strtod(value.addr, NULL);
+		getXrmDouble(value.addr, &options.xposition);
 	}
 	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
-		options.yposition = strtod(value.addr, NULL);
+		getXrmDouble(value.addr, &options.yposition);
 	}
 	if ((value.addr = get_resource(rdb, "debug"))) {
-		options.debug = strtoul(value.addr, NULL, 0);
+		getXrmInt(value.addr, &options.debug);
 	}
 	if ((value.addr = get_resource(rdb, "banner"))) {
-		free(options.banner);
-		options.banner = strndup(value.addr, PATH_MAX);
+		getXrmString(value.addr, &options.banner);
 	}
 	if ((value.addr = get_resource(rdb, "splash"))) {
-		free(options.splash);
-		options.splash = strndup(value.addr, PATH_MAX);
+		getXrmString(value.addr, &options.splash);
 	}
 	if ((value.addr = get_resource(rdb, "welcome"))) {
-		free(options.welcome);
-		options.welcome = strndup(value.addr, 256);
+		getXrmString(value.addr, &options.welcome);
 	}
 	if ((value.addr = get_resource(rdb, "charset"))) {
-		free(options.charset);
-		options.charset = strndup(value.addr, 64);
+		getXrmString(value.addr, &options.charset);
 	}
 	if ((value.addr = get_resource(rdb, "language"))) {
-		free(options.language);
-		options.language = strndup(value.addr, 64);
+		getXrmString(value.addr, &options.language);
 	}
 	if ((value.addr = get_resource(rdb, "theme.icon"))) {
-		free(options.icon_theme);
-		options.icon_theme = strndup(value.addr, 64);
+		getXrmString(value.addr, &options.icon_theme);
 	}
 	if ((value.addr = get_resource(rdb, "theme.name"))) {
-		free(options.gtk2_theme);
-		options.gtk2_theme = strndup(value.addr, 64);
+		getXrmString(value.addr, &options.gtk2_theme);
 	}
 	if ((value.addr = get_resource(rdb, "theme.cursor"))) {
-		free(options.curs_theme);
-		options.curs_theme = strndup(value.addr, 64);
+		getXrmString(value.addr, &options.curs_theme);
 	}
 	if ((value.addr = get_resource(rdb, "theme.xde"))) {
-		options.usexde = !strncasecmp(value.addr, "true", value.size) ? True : False;
+		getXrmBool(value.addr, &options.usexde);
 	}
 	if ((value.addr = get_resource(rdb, "side"))) {
-		if (!strncasecmp(value.addr, "left", value.size))
+		if (!strncasecmp(value.addr, "left", strlen(value.addr)))
 			options.side = LogoSideLeft;
-		else if (!strncasecmp(value.addr, "top", value.size))
+		else if (!strncasecmp(value.addr, "top", strlen(value.addr)))
 			options.side = LogoSideTop;
-		else if (!strncasecmp(value.addr, "right", value.size))
+		else if (!strncasecmp(value.addr, "right", strlen(value.addr)))
 			options.side = LogoSideRight;
-		else if (!strncasecmp(value.addr, "bottom", value.size))
+		else if (!strncasecmp(value.addr, "bottom", strlen(value.addr)))
 			options.side = LogoSideBottom;
 		else
 			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
 	}
 #ifndef DO_XLOCKING
 	if ((value.addr = get_resource(rdb, "user.default"))) {
-		free(options.username);
-		options.username = strndup(value.addr, 32);
+		getXrmString(value.addr, &options.username);
 	}
 	if ((value.addr = get_resource(rdb, "autologin"))) {
-		/* TODO */
+		// getXrmBool(value.addr, &options.autologin);
 	}
 #endif
 	if ((value.addr = get_resource(rdb, "vendor"))) {
-		free(options.vendor);
-		options.vendor = strdup(value.addr);
+		getXrmString(value.addr, &options.vendor);
 	}
 	if ((value.addr = get_resource(rdb, "prefix"))) {
-		free(options.prefix);
-		options.prefix = strdup(value.addr);
+		getXrmString(value.addr, &options.prefix);
 	}
 	if ((value.addr = get_resource(rdb, "login.permit"))) {
-		if (!strncasecmp(value.addr, "true", value.size))
-			/* TODO */ ;
-		else
-			/* TODO */ ;
+		// getXrmBool(value.addr, &options.permitlogin);
 	}
 	if ((value.addr = get_resource(rdb, "login.remote"))) {
-		if (!strncasecmp(value.addr, "true", value.size))
-			/* TODO */ ;
-		else
-			/* TODO */ ;
+		// getXrmBool(value.addr, &options.remotelogin);
 	}
-	if ((value.addr = get_resource(rdb, "login.chooser"))) {
-		options.xsession = !strncasecmp(value.addr, "true", value.size) ? True : False;
+	if ((value.addr = get_resource(rdb, "xsession.chooser"))) {
+		getXrmBool(value.addr, &options.xsession);
 	}
 	if ((value.addr = get_resource(rdb, "xsession.execute"))) {
-		if (!strncasecmp(value.addr, "true", value.size))
-			/* TODO */ ;
-		else
-			/* TODO */ ;
+		// getXrmBool(value.addr, &options.execute);
 	}
 	if ((value.addr = get_resource(rdb, "xsession.default"))) {
-		free(options.choice);
-		options.choice = strndup(value.addr, 64);
+		getXrmString(value.addr, &options.choice);
 	}
 	if ((value.addr = get_resource(rdb, "setbg"))) {
-		options.setbg = !strncasecmp(value.addr, "true", value.size) ? True : False;
+		getXrmBool(value.addr, &options.setbg);
 	}
 	if ((value.addr = get_resource(rdb, "transparent"))) {
-		options.transparent = !strncasecmp(value.addr, "true", value.size) ? True : False;
+		getXrmBool(value.addr, &options.transparent);
 	}
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);
@@ -3671,6 +3985,18 @@ set_default_language(void)
 	defaults.charset = strdup(nl_langinfo(CODESET));
 }
 
+#ifdef DO_XCHOOSER
+void
+set_default_address(void)
+{
+	XdmcpReallocARRAY8(&defaults.clientAddress, sizeof(struct in6_addr));
+	*(struct in6_addr *) defaults.clientAddress.data = (struct in6_addr) IN6ADDR_LOOPBACK_INIT;
+	defaults.connectionType = FamilyInternet6;
+	defaults.clientScope = SocketScopeLoopback;
+	defaults.isLocal = True;
+}
+#endif				/* DO_XCHOOSER */
+
 #if 0
 void
 set_default_session(void)
@@ -3785,6 +4111,9 @@ set_defaults(int argc, char *argv[])
 	set_default_splash();
 	set_default_welcome();
 	set_default_language();
+#ifdef DO_XCHOOSER
+	set_default_address();
+#endif				/* DO_XCHOOSER */
 #if 0
 	set_default_session();
 #endif
@@ -3948,6 +4277,197 @@ get_default_language(void)
 	}
 }
 
+#ifdef DO_XCHOOSER
+SocketScope
+GetScope(ARRAY8Ptr clientAddress, CARD16 connectionType)
+{
+	switch (connectionType) {
+	case FamilyLocal:
+		break;
+	case FamilyInternet:
+	{
+		in_addr_t addr = ntohl(*(in_addr_t *) clientAddress->data);
+
+		if (IN_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN_ORGLOCAL(addr))
+			return SocketScopePrivate;
+		return SocketScopeGlobal;
+	}
+	case FamilyInternet6:
+	{
+		struct in6_addr *addr = (typeof(addr)) clientAddress->data;
+
+		if (IN6_IS_ADDR_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN6_IS_ADDR_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN6_IS_ADDR_SITELOCAL(addr))
+			return SocketScopeSitelocal;
+		if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
+			in_addr_t ipv4 = ntohl(((uint32_t *) addr)[3]);
+
+			if (IN_LOOPBACK(ipv4))
+				return SocketScopeLoopback;
+			if (IN_LINKLOCAL(ipv4))
+				return SocketScopeLinklocal;
+			if (IN_ORGLOCAL(ipv4))
+				return SocketScopePrivate;
+			return SocketScopeGlobal;
+		}
+		return SocketScopeGlobal;
+	}
+	default:
+		break;
+	}
+	return SocketScopeLoopback;
+}
+
+Bool
+TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
+{
+	sa_family_t family;
+	struct ifaddrs *ifa, *ifas = NULL;
+
+	switch (connectionType) {
+	case FamilyLocal:
+		family = AF_UNIX;
+		return True;
+	case FamilyInternet:
+		if (ntohl((*(in_addr_t *) clientAddress->data)) == INADDR_LOOPBACK)
+			return True;
+		family = AF_INET;
+		break;
+	case FamilyInternet6:
+		if (IN6_IS_ADDR_LOOPBACK(clientAddress->data))
+			return True;
+		family = AF_INET6;
+		break;
+	default:
+		family = AF_UNSPEC;
+		return False;
+	}
+	if (getifaddrs(&ifas) == 0) {
+		for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
+			struct sockaddr *ifa_addr;
+
+			if (!(ifa_addr = ifa->ifa_addr)) {
+				EPRINTF("interface %s has no address\n", ifa->ifa_name);
+				continue;
+			}
+			if (ifa_addr->sa_family != family) {
+				DPRINTF("interface %s has wrong family\n", ifa->ifa_name);
+				continue;
+			}
+			switch (family) {
+			case AF_INET:
+			{
+				struct sockaddr_in *sin = (typeof(sin)) ifa_addr;
+
+				if (!memcmp(&sin->sin_addr, clientAddress->data, 4)) {
+					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					freeifaddrs(ifas);
+					return True;
+				}
+
+				break;
+			}
+			case AF_INET6:
+			{
+				struct sockaddr_in6 *sin6 = (typeof(sin6)) ifa_addr;
+
+				if (!memcmp(&sin6->sin6_addr, clientAddress->data, 16)) {
+					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					freeifaddrs(ifas);
+					return True;
+				}
+				break;
+			}
+			}
+		}
+		freeifaddrs(ifas);
+	}
+	return False;
+}
+
+void
+get_default_address(void)
+{
+	switch (options.clientAddress.length) {
+	case 0:
+		options.clientAddress = defaults.clientAddress;
+		options.connectionType = defaults.connectionType;
+		options.clientScope = defaults.clientScope;
+		options.clientIface = defaults.clientIface;
+		options.isLocal = defaults.isLocal;
+		break;
+	case 4:
+	case 8:
+		if (options.connectionType != FamilyInternet) {
+			EPRINTF("Mismatch in connectionType %d != %d\n",
+				FamilyInternet, options.connectionType);
+			exit(EXIT_SYNTAXERR);
+		}
+		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
+		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		switch (options.clientAddress.length) {
+		case 4:
+			options.clientIface = defaults.clientIface;
+			break;
+		case 8:
+			memmove(&options.clientIface, options.clientAddress.data + 4, 4);
+			break;
+		}
+		switch (options.clientScope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			if (!options.clientIface) {
+				EPRINTF("link or site local address with no interface\n");
+				exit(EXIT_SYNTAXERR);
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	case 16:
+	case 20:
+		if (options.connectionType != FamilyInternet6) {
+			EPRINTF("Mismatch in connectionType %d != %d\n",
+				FamilyInternet, options.connectionType);
+			exit(EXIT_SYNTAXERR);
+		}
+		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
+		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		switch (options.clientAddress.length) {
+		case 16:
+			options.clientIface = defaults.clientIface;
+			break;
+		case 20:
+			memmove(&options.clientIface, options.clientAddress.data + 16, 4);
+			break;
+		}
+		switch (options.clientScope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			if (!options.clientIface) {
+				EPRINTF("link or site local address with no interface\n");
+				exit(EXIT_SYNTAXERR);
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		EPRINTF("Invalid client address length %d\n", options.clientAddress.length);
+		exit(EXIT_SYNTAXERR);
+	}
+}
+#endif				/* DO_XCHOOSER */
+
 void
 get_default_session(void)
 {
@@ -4002,12 +4522,44 @@ get_defaults(int argc, char *argv[])
 	get_default_splash();
 	get_default_welcome();
 	get_default_language();
+#ifdef DO_XCHOOSER
+	get_default_address();
+#endif				/* DO_XCHOOSER */
 	get_default_session();
 	get_default_choice();
 #ifdef DO_XLOCKING
 	get_default_username();
 #endif
 }
+
+#ifdef DO_XCHOOSER
+Bool
+HexToARRAY8(ARRAY8 *array, char *hex)
+{
+	short len;
+	CARD8 *o, b;
+	char *p, c;
+
+	len = strlen(hex);
+	if (len & 0x01)
+		return False;
+	len >>= 1;
+	XdmcpReallocARRAY8(array, len);
+	for (p = hex, o = array->data; *p; p += 2, o++) {
+		c = tolower(p[0]);
+		if (!isxdigit(c))
+			return False;
+		b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+		b <<= 4;
+		c = tolower(p[1]);
+		if (!isxdigit(c))
+			return False;
+		b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+		*o = b;
+	}
+	return True;
+}
+#endif
 
 int
 main(int argc, char *argv[])
@@ -4028,32 +4580,32 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-			{"prompt",	required_argument,	NULL, 'p'},
-			{"banner",	required_argument,	NULL, 'b'},
-			{"splash",	required_argument,	NULL, 'S'},
-			{"side",	required_argument,	NULL, 's'},
-			{"noask",	no_argument,		NULL, 'n'},
-			{"charset",	required_argument,	NULL, '1'},
-			{"language",	required_argument,	NULL, '2'},
-			{"icons",	required_argument,	NULL, 'i'},
-			{"theme",	required_argument,	NULL, 't'},
-			{"xde-theme",	no_argument,		NULL, 'x'},
-			{"timeout",	required_argument,	NULL, 'T'},
-			{"vendor",	required_argument,	NULL, '5'},
-			{"default",	required_argument,	NULL, '6'},
-			{"setbg",	no_argument,		NULL, '8'},
-			{"transparent",	no_argument,		NULL, '9'},
+			{"prompt",	    required_argument,	NULL, 'p'},
+			{"banner",	    required_argument,	NULL, 'b'},
+			{"splash",	    required_argument,	NULL, 'S'},
+			{"side",	    required_argument,	NULL, 's'},
+			{"noask",	    no_argument,	NULL, 'n'},
+			{"charset",	    required_argument,	NULL, '1'},
+			{"language",	    required_argument,	NULL, '2'},
+			{"icons",	    required_argument,	NULL, 'i'},
+			{"theme",	    required_argument,	NULL, 't'},
+			{"xde-theme",	    no_argument,	NULL, 'x'},
+			{"timeout",	    required_argument,	NULL, 'T'},
+			{"vendor",	    required_argument,	NULL, '5'},
+			{"default",	    required_argument,	NULL, '6'},
+			{"setbg",	    no_argument,	NULL, '8'},
+			{"transparent",	    no_argument,	NULL, '9'},
 
-			{"clientId",	required_argument,	NULL, '3'},
-			{"restore",	required_argument,	NULL, '4'},
+			{"clientId",	    required_argument,	NULL, '3'},
+			{"restore",	    required_argument,	NULL, '4'},
 
-			{"dry-run",	no_argument,		NULL, 'N'},
-			{"debug",	optional_argument,	NULL, 'D'},
-			{"verbose",	optional_argument,	NULL, 'v'},
-			{"help",	no_argument,		NULL, 'h'},
-			{"version",	no_argument,		NULL, 'V'},
-			{"copying",	no_argument,		NULL, 'C'},
-			{"?",		no_argument,		NULL, 'H'},
+			{"dry-run",	    no_argument,	NULL, 'N'},
+			{"debug",	    optional_argument,	NULL, 'D'},
+			{"verbose",	    optional_argument,	NULL, 'v'},
+			{"help",	    no_argument,	NULL, 'h'},
+			{"version",	    no_argument,	NULL, 'V'},
+			{"copying",	    no_argument,	NULL, 'C'},
+			{"?",		    no_argument,	NULL, 'H'},
 			{ 0, }
 		};
 		/* *INDENT-ON* */
@@ -4071,10 +4623,65 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
+#ifdef DO_XCHOOSER
+		case 'x':	/* -xdmaddress HEXBYTES */
+			if (options.xdmAddress.length)
+				goto bad_option;
+			if (!HexToARRAY8(&options.xdmAddress, optarg))
+				goto bad_option;
+			break;
+		case 'c':	/* -clientaddress HEXBYTES */
+			if (options.clientAddress.length)
+				goto bad_option;
+			if (!HexToARRAY8(&options.clientAddress, optarg))
+				goto bad_option;
+			break;
+		case 't':	/* -connectionType TYPE */
+			if (!strcmp(optarg, "FamilyInternet") || atoi(optarg) == FamilyInternet)
+				options.connectionType = FamilyInternet;
+			else if (!strcmp(optarg, "FamilyInternet6")
+				 || atoi(optarg) == FamilyInternet6)
+				options.connectionType = FamilyInternet6;
+			else
+				goto bad_option;
+			break;
+		case 'w':	/* -w, --welcome WELCOME */
+			free(options.welcome);
+			options.welcome = strndup(optarg, 256);
+			break;
+#else				/* DO_XCHOOSER */
 		case 'p':	/* -p, --prompt PROMPT */
 			free(options.welcome);
-			options.welcome = strdup(optarg);
+			options.welcome = strndup(optarg, 256);
 			break;
+#endif				/* DO_XCHOOSER */
+
+#ifdef DO_XLOCKING
+		case 'r':	/* -r, --replace */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandReplace;
+			options.command = CommandReplace;
+			options.replace = True;
+			break;
+		case 'q':	/* -q, --quit */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandQuit;
+			options.command = CommandQuit;
+			options.replace = True;
+			break;
+		case 'l':	/* -l, --lock */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandLock;
+			options.command = CommandLock;
+			break;
+#endif				/* DO_XLOCKING */
+
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
 			options.banner = strdup(optarg);

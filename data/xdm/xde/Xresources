@@ -270,8 +270,8 @@ Chooser*list.font:			-*-*-medium-r-normal-*-*-230-*-*-c-*-iso8859-1
 !Chooser*Command.font:			-xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1
 Chooser*Command.font:			*-new century schoolbook-bold-r-normal-*-180-*
 
-XDE-XChooser*x:				0.27
-XDE-XChooser*y:				0.27
+XDE-XChooser*x:				0.30
+XDE-XChooser*y:				0.20
 XDE-XChooser*debug:			1
 XDE-XChooser*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XChooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
@@ -286,14 +286,25 @@ XDE-XChooser*vendor:			unexicon
 XDE-XChooser*prefix:			unexicon-
 XDE-XChooser*login.permit:		true
 XDE-XChooser*login.remote:		false
-XDE-XChooser*xsession.chooser:		false
+XDE-XChooser*xsession.chooser:		true
 XDE-XChooser*xsession.execute:		false
 XDE-XChooser*xsession.default:		adwm
 XDE-XChooser*setbg:			true
-XDE-XChooser*transparent:		true
+XDE-XChooser*transparent:		false
 
-XDE-XLogin*x:				0.27
-XDE-XLogin*y:				0.27
+XDE-XChooser.greetFace:			Verdata:size=16:bold
+XDE-XChooser.greetColor:		#ffffff
+XDE-XChooser.promptFace:		Verdana:size=16:bold
+XDE-XChooser.promptColor:		#f5f4fd
+XDE-XChooser.inputFace:			Verdana:size=12
+XDE-XChooser.inputColor:		#000404
+XDE-XChooser.inputFgColor:		#000000
+XDE-XChooser.inputBgColor:		#ffffff
+XDE-XChooser.failFace:			Verdana:size=16
+XDE-XChooser.failColor:			red
+
+XDE-XLogin*x:				0.30
+XDE-XLogin*y:				0.20
 XDE-XLogin*debug:			1
 XDE-XLogin*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XLogin*splash:			/usr/share/xde/images/unexicon-splash.jpg
@@ -308,14 +319,25 @@ XDE-XLogin*vendor:			unexicon
 XDE-XLogin*prefix:			unexicon-
 XDE-XLogin*login.permit:		true
 XDE-XLogin*login.remote:		false
-XDE-XLogin*xsession.chooser:		false
+XDE-XLogin*xsession.chooser:		true
 XDE-XLogin*xsession.execute:		false
 XDE-XLogin*xsession.default:		adwm
 XDE-XLogin*setbg:			true
-XDE-XLogin*transparent:			true
+XDE-XLogin*transparent:			false
 
-XDE-XLock*x:				0.27
-XDE-XLock*y:				0.27
+XDE-XLogin.greetFace:			Verdata:size=16:bold
+XDE-XLogin.greetColor:			#ffffff
+XDE-XLogin.promptFace:			Verdana:size=16:bold
+XDE-XLogin.promptColor:			#f5f4fd
+XDE-XLogin.inputFace:			Verdana:size=12
+XDE-XLogin.inputColor:			#000404
+XDE-XLogin.inputFgColor:		#000000
+XDE-XLogin.inputBgColor:		#ffffff
+XDE-XLogin.failFace:			Verdana:size=16
+XDE-XLogin.failColor:			red
+
+XDE-XLock*Chooser.x:			0.30
+XDE-XLock*Chooser.y:			0.20
 XDE-XLock*debug:			1
 XDE-XLock*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XLock*splash:			/usr/share/xde/images/unexicon-splash.jpg
@@ -330,7 +352,7 @@ XDE-XLock*vendor:			unexicon
 XDE-XLock*prefix:			unexicon-
 XDE-XLock*login.permit:			true
 XDE-XLock*login.remote:			false
-XDE-XLock*xsession.chooser:		false
+XDE-XLock*xsession.chooser:		true
 XDE-XLock*xsession.execute:		false
 XDE-XLock*xsession.default:		adwm
 XDE-XLock*setbg:			true
