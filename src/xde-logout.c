@@ -985,6 +985,8 @@ test_lock_screen_program()
 	return;
 }
 
+static Bool isLocal(void);
+
 void
 test_login_functions()
 {
@@ -1002,6 +1004,10 @@ test_login_functions()
 	} else if (ret < 0) {
 		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusUnknown;
 		DPRINTF("%s: mutisession: unknown\n", seat);
+	}
+	if (action_can[LOGOUT_ACTION_SWITCHUSER] != AvailStatusNa && !isLocal()) {
+		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusNa;
+		DPRINTF("session not local\n");
 	}
 }
 
@@ -1048,6 +1054,24 @@ free_string(gpointer data, GClosure *unused)
 	free(data);
 }
 
+static int
+comparevts(const void *a, const void *b)
+{
+	const char * const *sa = a;
+	const char * const *sb = b;
+	unsigned int vta = 0;
+	unsigned int vtb = 0;
+
+	sd_session_get_vt(*sa, &vta);
+	sd_session_get_vt(*sb, &vtb);
+	DPRINTF("comparing session %s(vt%u) and %s(vt%u)", *sa, vta, *sb, vtb);
+	if (vta < vtb)
+		return -1;
+	if (vta > vtb)
+		return 1;
+	return 0;
+}
+
 GtkWidget *
 get_user_menu(void)
 {
@@ -1055,6 +1079,10 @@ get_user_menu(void)
 	char **sessions = NULL, **s;
 	GtkWidget *menu = NULL;
 	gboolean gotone = FALSE;
+	Bool islocal;
+	int count;
+
+	islocal = isLocal();
 
 	seat = getenv("XDG_SEAT") ? : "seat0";
 	sess = getenv("XDG_SESSION_ID");
@@ -1067,20 +1095,26 @@ get_user_menu(void)
 		return (NULL);
 	}
 	menu = gtk_menu_new();
+	for (s = sessions, count = 0; s && *s; s++, count++) ;
+	if (count) {
+		DPRINTF("sorting vts\n");
+		qsort(sessions, count, sizeof(char *), comparevts);
+	}
 	for (s = sessions; s && *s; free(*s), s++) {
 		char *type = NULL, *klass = NULL, *user = NULL, *host = NULL,
 		    *tty = NULL, *disp = NULL;
 		unsigned int vtnr = 0;
 		uid_t uid = -1;
+		Bool isactive = False;
 
 		DPRINTF("%s(%s): considering session\n", seat, *s);
 		if (sess && !strcmp(*s, sess)) {
 			DPRINTF("%s(%s): cannot switch to own session\n", seat, *s);
-			continue;
+			isactive = True;
 		}
 		if (sd_session_is_active(*s)) {
 			DPRINTF("%s(%s): cannot switch to active session\n", seat, *s);
-			continue;
+			isactive = True;
 		}
 		sd_session_get_vt(*s, &vtnr);
 		if (vtnr == 0) {
@@ -1135,12 +1169,16 @@ get_user_menu(void)
 				      G_CALLBACK(on_switch_session),
 				      strdup(*s), free_string, G_CONNECT_AFTER);
 		gtk_widget_show(item);
-		gotone = TRUE;
+		if (islocal && !isactive) {
+			gtk_widget_set_sensitive(item, TRUE);
+			gotone = TRUE;
+		} else
+			gtk_widget_set_sensitive(item, FALSE);
 	}
 	free(sessions);
 	if (gotone)
 		return (menu);
-	g_object_unref(G_OBJECT(menu));
+	g_object_unref(menu);
 	return (NULL);
 }
 
@@ -1156,7 +1194,7 @@ get_user_menu(void)
   * When these coniditions are satistifed, the use is like sitting at a physical
   * seat of the computer and could have access to the pwoer button anyway.
   */
-Bool
+static Bool
 isLocal(void)
 {
 	Display *dpy = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
@@ -1318,81 +1356,92 @@ void
 test_power_functions()
 {
 	GError *err = NULL;
-	gchar *value = NULL;
 	DBusGConnection *bus;
 	DBusGProxy *proxy;
+	gchar *value = NULL;
 	gboolean ok;
+	Bool islocal;
+
+	islocal = isLocal();
 
 	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
 		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
-	proxy = dbus_g_proxy_new_for_name(bus,
-					  "org.freedesktop.login1",
-					  "/org/freedesktop/login1",
-					  "org.freedesktop.login1.Manager");
-	if (!proxy) {
-		EPRINTF("cannot create DBUS proxy\n");
+	if (!(proxy = dbus_g_proxy_new_for_name(bus,
+						"org.freedesktop.login1",
+						"/org/freedesktop/login1",
+						"org.freedesktop.login1.Manager"))) {
+		EPRINTF("could not create DBUS proxy\n");
 		return;
 	}
-	value = NULL;
 	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !err) {
 		DPRINTF("CanPowerOff status is %s\n", value);
-		action_can[LOGOUT_ACTION_POWEROFF] = status_of_string(value);
+		if (islocal)
+			action_can[LOGOUT_ACTION_POWEROFF] = status_of_string(value);
 		g_free(value);
 		value = NULL;
 	} else {
 		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
+
 	ok = dbus_g_proxy_call(proxy, "CanReboot",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !err) {
 		DPRINTF("CanReboot status is %s\n", value);
-		action_can[LOGOUT_ACTION_REBOOT] = status_of_string(value);
+		if (islocal)
+			action_can[LOGOUT_ACTION_REBOOT] = status_of_string(value);
 		g_free(value);
 		value = NULL;
 	} else {
 		EPRINTF("CanReboot call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
+
 	ok = dbus_g_proxy_call(proxy, "CanSuspend",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !err) {
 		DPRINTF("CanSuspend status is %s\n", value);
-		action_can[LOGOUT_ACTION_SUSPEND] = status_of_string(value);
+		if (islocal)
+			action_can[LOGOUT_ACTION_SUSPEND] = status_of_string(value);
 		g_free(value);
 		value = NULL;
 	} else {
 		EPRINTF("CanSuspend call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
+
 	ok = dbus_g_proxy_call(proxy, "CanHibernate",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !err) {
 		DPRINTF("CanHibernate status is %s\n", value);
-		action_can[LOGOUT_ACTION_HIBERNATE] = status_of_string(value);
+		if (islocal)
+			action_can[LOGOUT_ACTION_HIBERNATE] = status_of_string(value);
 		g_free(value);
 		value = NULL;
 	} else {
 		EPRINTF("CanHibernate call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
+
 	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
 	if (ok && !err) {
 		DPRINTF("CanHybridSleep status is %s\n", value);
-		action_can[LOGOUT_ACTION_HYBRIDSLEEP] = status_of_string(value);
+		if (islocal)
+			action_can[LOGOUT_ACTION_HYBRIDSLEEP] = status_of_string(value);
 		g_free(value);
 		value = NULL;
 	} else {
 		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
-	g_object_unref(G_OBJECT(proxy));
+
+	g_object_unref(proxy);
 }
 
 /** @brief test availability of user functions
@@ -1741,8 +1790,12 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	gdk_window_focus(win, GDK_CURRENT_TIME);
 	if (gdk_keyboard_grab(win, TRUE, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab keyboard!\n");
+	else
+		DPRINTF("Grabbed keyboard\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
+	else
+		DPRINTF("Grabbed pointer\n");
 #if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
 	grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
 #endif
@@ -2637,14 +2690,6 @@ startup(int argc, char *argv[])
 }
 
 static void
-do_run(int argc, char *argv[])
-{
-	startup(argc, argv);
-	top = GetWindow();
-	gtk_main();
-}
-
-static void
 xdeSetProperties(SmcConn smcConn, SmPointer data)
 {
 	char userID[20];
@@ -3051,13 +3096,15 @@ init_smclient(void)
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
 }
 
-void
-run_logout(int argc, char *argv[])
+static void
+do_run(int argc, char *argv[])
 {
 	int i;
 
 	/* initialize session managerment functions */
 	init_smclient();
+
+	startup(argc, argv);
 
 	/* determine which functions are available */
 	test_login_functions();
@@ -3071,37 +3118,38 @@ run_logout(int argc, char *argv[])
 		for (i = 0; i < LOGOUT_ACTION_COUNT; i++) {
 			switch (action_can[i]) {
 			case AvailStatusUndef:
-				button_tips[i] = g_strdup_printf("\nFunction undefined."
-								 "\nCan value was %s",
+				button_tips[i] = g_strdup_printf("Function undefined.\n"
+								 "Can value was %s",
 								 "(undefined)");
 				break;
 			case AvailStatusUnknown:
-				button_tips[i] = g_strdup_printf("\nFunction unknown."
-								 "\nCan value was %s", "(unknown)");
+				button_tips[i] = g_strdup_printf("Function unknown.\n"
+								 "Can value was %s", "(unknown)");
 				break;
 			case AvailStatusNa:
-				button_tips[i] = g_strdup_printf("\nFunction not available."
-								 "\nCan value was %s", "na");
+				button_tips[i] = g_strdup_printf("Function not available.\n"
+								 "Can value was %s", "na");
 				break;
 			case AvailStatusNo:
-				button_tips[i] = g_strdup_printf("\n%s"
-								 "\nCan value was %s",
+				button_tips[i] = g_strdup_printf("%s\n"
+								 "Can value was %s",
 								 button_tips[i], "no");
 				break;
 			case AvailStatusChallenge:
-				button_tips[i] = g_strdup_printf("\n%s"
-								 "\nCan value was %s",
+				button_tips[i] = g_strdup_printf("%s\n"
+								 "Can value was %s",
 								 button_tips[i], "challenge");
 				break;
 			case AvailStatusYes:
-				button_tips[i] = g_strdup_printf("\n%s"
-								 "\nCan value was %s",
+				button_tips[i] = g_strdup_printf("%s\n"
+								 "Can value was %s",
 								 button_tips[i], "yes");
 				break;
 			}
 		}
 	}
-	do_run(argc, argv);
+	top = GetWindow();
+	gtk_main();
 	if (logout_actions[action_result])
 		(*logout_actions[action_result]) ();
 	else {
@@ -5158,7 +5206,7 @@ main(int argc, char *argv[])
 	default:
 	case CommandDefault:
 		DPRINTF("%s: running logout\n", argv[0]);
-		run_logout(argc, argv);
+		do_run(argc, argv);
 		break;
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);

@@ -2470,7 +2470,7 @@ on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column
   * When these coniditions are satistifed, the use is like sitting at a physical
   * seat of the computer and could have access to the pwoer button anyway.
   */
-Bool
+static Bool
 isLocal(void)
 {
 	Display *dpy = GDK_DISPLAY_XDISPLAY(gdk_display_get_default());
@@ -2798,9 +2798,12 @@ append_power_actions(GtkMenu *menu)
 	gboolean ok;
 	GtkWidget *submenu, *power, *imag, *item;
 	gboolean gotone = FALSE;
+	Bool islocal;
 
 	if (!menu)
 		return;
+
+	islocal = isLocal();
 
 	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
 		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
@@ -2831,7 +2834,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
 				      G_CALLBACK(on_poweroff), value, free_value, G_CONNECT_AFTER);
-		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
+		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
 		} else
@@ -2853,7 +2856,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
 				      G_CALLBACK(on_reboot), value, free_value, G_CONNECT_AFTER);
-		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
+		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
 		} else
@@ -2875,7 +2878,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
 				      G_CALLBACK(on_suspend), value, free_value, G_CONNECT_AFTER);
-		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
+		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
 		} else
@@ -2897,7 +2900,7 @@ append_power_actions(GtkMenu *menu)
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
 				      G_CALLBACK(on_hibernate), value, free_value, G_CONNECT_AFTER);
-		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
+		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
 		} else
@@ -2920,7 +2923,7 @@ append_power_actions(GtkMenu *menu)
 		g_signal_connect_data(G_OBJECT(item), "activate",
 				      G_CALLBACK(on_hybridsleep),
 				      value, free_value, G_CONNECT_AFTER);
-		if (!strcmp(value, "yes") || !strcmp(value, "challenge")) {
+		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
 		} else
@@ -2991,6 +2994,24 @@ free_string(gpointer data, GClosure *unused)
 	free(data);
 }
 
+static int
+comparevts(const void *a, const void *b)
+{
+	const char * const *sa = a;
+	const char * const *sb = b;
+	unsigned int vta = 0;
+	unsigned int vtb = 0;
+
+	sd_session_get_vt(*sa, &vta);
+	sd_session_get_vt(*sb, &vtb);
+	DPRINTF("comparing session %s(vt%u) and %s(vt%u)", *sa, vta, *sb, vtb);
+	if (vta < vtb)
+		return -1;
+	if (vta > vtb)
+		return 1;
+	return 0;
+}
+
 /** @brief add a switch users submenu to the actions menu
   */
 static void
@@ -3000,9 +3021,13 @@ append_switch_users(GtkMenu *menu)
 	char **sessions = NULL, **s;
 	GtkWidget *submenu, *jumpto;
 	gboolean gotone = FALSE;
+	Bool islocal;
+	int count;
 
 	if (!menu)
 		return;
+
+	islocal = isLocal();
 
 	jumpto = gtk_image_menu_item_new_with_label(GTK_STOCK_JUMP_TO);
 	gtk_image_menu_item_set_use_stock(GTK_IMAGE_MENU_ITEM(jumpto), TRUE);
@@ -3020,20 +3045,27 @@ append_switch_users(GtkMenu *menu)
 		EPRINTF("%s: cannot get sessions\n", seat);
 		return;
 	}
+	/* sort by VT number */
+	for (s = sessions, count = 0; s && *s; s++, count++) ;
+	if (count) {
+		DPRINTF("sorting vts\n");
+		qsort(sessions, count, sizeof(char *), comparevts);
+	}
 	for (s = sessions; s && *s; free(*s), s++) {
 		char *type = NULL, *klass = NULL, *user = NULL, *host = NULL,
 		    *tty = NULL, *disp = NULL;
 		unsigned int vtnr = 0;
 		uid_t uid = -1;
+		Bool isactive = False;
 
 		DPRINTF("%s(%s): considering session\n", seat, *s);
 		if (sess && !strcmp(*s, sess)) {
 			DPRINTF("%s(%s): cannot switch to own session\n", seat, *s);
-			continue;
+			isactive = True;
 		}
 		if (sd_session_is_active(*s)) {
 			DPRINTF("%s(%s): cannot switch to active session\n", seat, *s);
-			continue;
+			isactive = True;
 		}
 		sd_session_get_vt(*s, &vtnr);
 		if (vtnr == 0) {
@@ -3088,7 +3120,11 @@ append_switch_users(GtkMenu *menu)
 				      G_CALLBACK(on_switch_session),
 				      strdup(*s), free_string, G_CONNECT_AFTER);
 		gtk_widget_show(item);
-		gotone = TRUE;
+		if (islocal && !isactive) {
+			gtk_widget_set_sensitive(item, TRUE);
+			gotone = TRUE;
+		} else
+			gtk_widget_set_sensitive(item, FALSE);
 	}
 	free(sessions);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(jumpto), submenu);
