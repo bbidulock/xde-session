@@ -2181,9 +2181,6 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		xscr->nmon = nmon;
 
 	/* always realign center alignment widgets */
-	GtkAllocation alloc = { 0, };
-	if (ebox)
-		gtk_widget_get_allocation(ebox, &alloc);
 	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
 		float xrel, yrel;
 
