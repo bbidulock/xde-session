@@ -1743,6 +1743,8 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	} else {
 		gdk_cairo_set_source_window(cr, r, 0, 0);
 		cairo_paint(cr);
+	}
+	if (options.source & BackgroundSourceRoot) {
 		/* only fade out root window contents */
 		GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
 		gdk_cairo_set_source_color(cr, &color);
@@ -2014,6 +2016,23 @@ get_source(XdeScreen *xscr)
 				options.splash = NULL;
 			}
 		}
+		if (xscr->pixbuf) {
+			if (!xscr->pixmap) {
+				xscr->pixmap =
+				    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height,
+						   -1);
+				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+				render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
+				update_source(xscr);
+			}
+			return;
+		}
+	}
+	if (options.source & BackgroundSourceRoot) {
+		if (!xscr->pixbuf)
+			xscr->pixbuf = gdk_pixbuf_get_from_drawable(NULL, GDK_DRAWABLE(root),
+								    cmap, 0, 0, 0, 0, xscr->width,
+								    xscr->height);
 		if (xscr->pixbuf) {
 			if (!xscr->pixmap) {
 				xscr->pixmap =

@@ -1376,6 +1376,8 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	} else {
 		gdk_cairo_set_source_window(cr, r, 0, 0);
 		cairo_paint(cr);
+	}
+	if (options.source & BackgroundSourceRoot) {
 		/* only fade out root window contents */
 		GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0, };
 		gdk_cairo_set_source_color(cr, &color);
@@ -1423,8 +1425,12 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	gdk_window_focus(win, GDK_CURRENT_TIME);
 	if (gdk_keyboard_grab(win, TRUE, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab keyboard!\n");
+	else
+		DPRINTF("Grabbed keyboard\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
+	else
+		DPRINTF("Grabbed pointer\n");
 #if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
 	grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
 #endif
@@ -1655,6 +1661,23 @@ get_source(XdeScreen *xscr)
 			return;
 		}
 	}
+	if (options.source & BackgroundSourceRoot) {
+		if (!xscr->pixbuf)
+			xscr->pixbuf = gdk_pixbuf_get_from_drawable(NULL, GDK_DRAWABLE(root),
+								    cmap, 0, 0, 0, 0, xscr->width,
+								    xscr->height);
+		if (xscr->pixbuf) {
+			if (!xscr->pixmap) {
+				xscr->pixmap =
+				    gdk_pixmap_new(GDK_DRAWABLE(root), xscr->width, xscr->height,
+						   -1);
+				gdk_drawable_set_colormap(GDK_DRAWABLE(xscr->pixmap), cmap);
+				render_pixbuf_for_scr(xscr->pixbuf, xscr->pixmap, xscr);
+				update_source(xscr);
+			}
+			return;
+		}
+	}
 }
 
 static void
@@ -1810,9 +1833,6 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		xscr->nmon = nmon;
 
 	/* always realign center alignment widgets */
-	GtkAllocation alloc = { 0, };
-	if (ebox)
-		gtk_widget_get_allocation(ebox, &alloc);
 	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
 		float xrel, yrel;
 
