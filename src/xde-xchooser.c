@@ -4859,7 +4859,7 @@ General options:\n\
         /* *INDENT-ON* */
 }
 
-char *
+const char *
 get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 		const char *resource)
 {
@@ -4870,40 +4870,56 @@ get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 
 	snprintf(name, sizeof(name), "%s.%s", res_name, resource);
 	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
-	if (XrmGetResource(xrdb, name, clas, &type, &value))
+	if (XrmGetResource(xrdb, name, clas, &type, &value)) {
 		if (value.addr && *(char *) value.addr) {
 			DPRINTF("%s:\t\t%s\n", clas, value.addr);
-			return (char *) value.addr;
-		}
+			return (const char *) value.addr;
+		} else
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+	} else
+		DPRINTF("%s:\t\t%s\n", clas, "ERROR!");
 	return (NULL);
 }
 
-char *
-get_resource(XrmDatabase xrdb, const char *resource)
+const char *
+get_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
 {
-	return get_nc_resource(xrdb, RESNAME, RESCLAS, resource);
-}
+	const char *value;
 
-char *
-get_xlogin_resource(XrmDatabase xrdb, const char *resource)
-{
-	return get_nc_resource(xrdb, "xlogin.Login", "Xlogin.Login", resource);
-}
-
-char *
-get_any_resource(XrmDatabase xrdb, const char *resource)
-{
-	char *value;
-
-	if (!(value = get_resource(xrdb, resource)))
-		value = get_xlogin_resource(xrdb, resource);
+	if (!(value = get_nc_resource(xrdb, RESNAME, RESCLAS, resource)))
+		value = dflt;
 	return (value);
 }
 
-char *
-get_chooser_resource(XrmDatabase xrdb, const char *resource)
+const char *
+get_xlogin_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
 {
-	return get_nc_resource(xrdb, "chooser", "Chooser", resource);
+	const char *value;
+
+	if (!(value = get_nc_resource(xrdb, "xlogin.Login", "Xlogin.Login", resource)))
+		value = dflt;
+	return (value);
+}
+
+const char *
+get_any_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_resource(xrdb, resource, NULL)))
+		if (!(value = get_xlogin_resource(xrdb, resource, NULL)))
+			value = dflt;
+	return (value);
+}
+
+const char *
+get_chooser_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_nc_resource(xrdb, "chooser", "Chooser", resource)))
+		value = dflt;
+	return (value);
 }
 
 gboolean
@@ -4995,8 +5011,7 @@ get_resources(int argc, char *argv[])
 {
 	Display *dpy;
 	XrmDatabase rdb;
-	char *type = NULL;
-	XrmValue value = { 0, NULL };
+	const char *val;
 	XTextProperty xtp;
 	Window root;
 	Atom atom;
@@ -5026,186 +5041,185 @@ get_resources(int argc, char *argv[])
 		XCloseDisplay(dpy);
 		return;
 	}
-	(void) type;
-	(void) value;
-	if ((value.addr = get_xlogin_resource(rdb, "width"))) {
-		if (strchr(value.addr, '%')) {
+	if ((val = get_resource(rdb, "debug", "0"))) {
+		getXrmInt(val, &options.debug);
+	}
+	if ((val = get_xlogin_resource(rdb, "width", NULL))) {
+		if (strchr(val, '%')) {
 			char *endptr = NULL;
-			float width = strtod(value.addr, &endptr);
+			float width = strtod(val, &endptr);
 
-			if (endptr != value.addr && *endptr == '%' && width > 0) {
+			if (endptr != val && *endptr == '%' && width > 0) {
 				options.width =
 				    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
 				if (options.width < 0.20 * DisplayWidth(dpy, 0))
 					options.width = -1;
 			}
 		} else {
-			options.width = strtoul(value.addr, NULL, 0);
+			options.width = strtoul(val, NULL, 0);
 			if (options.width <= 0)
 				options.width = -1;
 		}
 	}
-	if ((value.addr = get_xlogin_resource(rdb, "height"))) {
-		if (strchr(value.addr, '%')) {
+	if ((val = get_xlogin_resource(rdb, "height", NULL))) {
+		if (strchr(val, '%')) {
 			char *endptr = NULL;
-			float height = strtod(value.addr, &endptr);
+			float height = strtod(val, &endptr);
 
-			if (endptr != value.addr && *endptr == '%' && height > 0) {
+			if (endptr != val && *endptr == '%' && height > 0) {
 				options.height =
 				    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
 				if (options.height < 0.20 * DisplayHeight(dpy, 0))
 					options.height = -1;
 			}
 		} else {
-			options.height = strtoul(value.addr, NULL, 0);
+			options.height = strtoul(val, NULL, 0);
 			if (options.height <= 0)
 				options.height = -1;
 		}
 	}
-	if ((value.addr = get_xlogin_resource(rdb, "x"))) {
+	if ((val = get_xlogin_resource(rdb, "x", NULL))) {
 		options.xposition =
-		    (float) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+		    (float) strtoul(val, NULL, 0) / DisplayWidth(dpy, 0);
 		if (options.xposition < 0)
 			options.xposition = 0;
 		if (options.xposition > DisplayWidth(dpy, 0))
 			options.xposition = 1.0;
 	}
-	if ((value.addr = get_xlogin_resource(rdb, "y"))) {
+	if ((val = get_xlogin_resource(rdb, "y", NULL))) {
 		options.yposition =
-		    (float) strtoul(value.addr, NULL, 0) / DisplayWidth(dpy, 0);
+		    (float) strtoul(val, NULL, 0) / DisplayWidth(dpy, 0);
 		if (options.yposition < 0)
 			options.yposition = 0;
 		if (options.yposition > DisplayWidth(dpy, 0))
 			options.yposition = 1.0;
 	}
 	// xlogin.foreground:		grey20
-	if ((value.addr = get_xlogin_resource(rdb, "foreground"))) {
-		getXrmColor(value.addr, &resources.foreground);
+	if ((val = get_xlogin_resource(rdb, "foreground", NULL))) {
+		getXrmColor(val, &resources.foreground);
 	}
 	// xlogin.background:		LightSteelBlue3
-	if ((value.addr = get_xlogin_resource(rdb, "background"))) {
-		getXrmColor(value.addr, &resources.background);
+	if ((val = get_xlogin_resource(rdb, "background", NULL))) {
+		getXrmColor(val, &resources.background);
 	}
 	// xlogin.face:			Sans-12:bold
 	// xlogin.font:
-	if ((value.addr = get_any_resource(rdb, "face"))) {
-		getXrmFont(value.addr, &resources.face);
+	if ((val = get_any_resource(rdb, "face", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.face);
 	}
 	// xlogin.greeting:		Welcome to CLIENTHOST
-	if ((value.addr = get_xlogin_resource(rdb, "greeting"))) {
-		getXrmString(value.addr, &resources.greeting);
-		getXrmString(value.addr, &options.welcome);
+	if ((val = get_xlogin_resource(rdb, "greeting", NULL))) {
+		getXrmString(val, &resources.greeting);
+		getXrmString(val, &options.welcome);
 	}
 	// xlogin.unsecureGreeting:	This is an unsecure session
-	if ((value.addr = get_xlogin_resource(rdb, "unsecureGreeting"))) {
-		getXrmString(value.addr, &resources.unsecureGreeting);
+	if ((val = get_xlogin_resource(rdb, "unsecureGreeting", NULL))) {
+		getXrmString(val, &resources.unsecureGreeting);
 	}
 	// xlogin.greetFace:		Sans-12:bold
 	// xlogin.greetFont:
-	if ((value.addr = get_any_resource(rdb, "greetFace"))) {
-		getXrmFont(value.addr, &resources.greetFace);
+	if ((val = get_any_resource(rdb, "greetFace", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.greetFace);
 	}
 	// xlogin.greetColor:		grey20
-	if ((value.addr = get_any_resource(rdb, "greetColor"))) {
-		getXrmColor(value.addr, &resources.greetColor);
+	if ((val = get_any_resource(rdb, "greetColor", "grey20"))) {
+		getXrmColor(val, &resources.greetColor);
 	}
 	// xlogin.namePrompt:		Username:
-	getXrmString("Username: ", &resources.namePrompt);
-	if ((value.addr = get_xlogin_resource(rdb, "namePrompt"))) {
-		getXrmString(value.addr, &resources.namePrompt);
+	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username: "))) {
+		getXrmString(val, &resources.namePrompt);
 	}
 	// xlogin.passwdPrompt:		Password:
-	getXrmString("Password: ", &resources.passwdPrompt);
-	if ((value.addr = get_xlogin_resource(rdb, "passwdPrompt"))) {
-		getXrmString(value.addr, &resources.passwdPrompt);
+	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password: "))) {
+		getXrmString(val, &resources.passwdPrompt);
 	}
 	// xlogin.promptFace:		Sans-12:bold
 	// xlogin.promptFont:
-	if ((value.addr = get_any_resource(rdb, "promptFace"))) {
-		getXrmFont(value.addr, &resources.promptFace);
+	if ((val = get_any_resource(rdb, "promptFace", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.promptFace);
 	}
 	// xlogin.promptColor:		grey20
-	if ((value.addr = get_any_resource(rdb, "promptColor"))) {
-		getXrmColor(value.addr, &resources.promptColor);
+	if ((val = get_any_resource(rdb, "promptColor", "grey20"))) {
+		getXrmColor(val, &resources.promptColor);
 	}
-	if ((value.addr = get_any_resource(rdb, "inputFace"))) {
-		getXrmFont(value.addr, &resources.inputFace);
+	if ((val = get_any_resource(rdb, "inputFace", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.inputFace);
 	}
-	if ((value.addr = get_any_resource(rdb, "inputColor"))) {
-		getXrmColor(value.addr, &resources.inputColor);
+	if ((val = get_any_resource(rdb, "inputColor", "grey20"))) {
+		getXrmColor(val, &resources.inputColor);
 	}
 	// xlogin.changePasswdMessage:	Password Change Required
-	if ((value.addr = get_xlogin_resource(rdb, "changePasswdMessage"))) {
-		getXrmString(value.addr, &resources.changePasswdMessage);
+	if ((val = get_xlogin_resource(rdb, "changePasswdMessage", "Password Change Required"))) {
+		getXrmString(val, &resources.changePasswdMessage);
 	}
 	// xlogin.fail:			Login incorrect!
-	if ((value.addr = get_xlogin_resource(rdb, "fail"))) {
-		getXrmString(value.addr, &resources.fail);
+	if ((val = get_xlogin_resource(rdb, "fail", "Login incorrect!"))) {
+		getXrmString(val, &resources.fail);
 	}
 	// xlogin.failFace:		Sans-12:bold
 	// xlogin.failFont:
-	if ((value.addr = get_any_resource(rdb, "failFace"))) {
-		getXrmFont(value.addr, &resources.failFace);
+	if ((val = get_any_resource(rdb, "failFace", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.failFace);
 	}
 	// xlogin.failColor:		red
-	if ((value.addr = get_any_resource(rdb, "failColor"))) {
-		getXrmColor(value.addr, &resources.failColor);
+	if ((val = get_any_resource(rdb, "failColor", "red"))) {
+		getXrmColor(val, &resources.failColor);
 	}
 	// xlogin.failTimeout:		10
-	if ((value.addr = get_xlogin_resource(rdb, "failTimeout"))) {
-		getXrmUint(value.addr, &resources.failTimeout);
+	if ((val = get_xlogin_resource(rdb, "failTimeout", "10"))) {
+		getXrmUint(val, &resources.failTimeout);
 	}
 	// xlogin.logoFileName:		/etc/X11/xdm/xde/banner.png
-	if ((value.addr = get_xlogin_resource(rdb, "logoFileName"))) {
-		getXrmString(value.addr, &resources.logoFileName);
+	if ((val = get_xlogin_resource(rdb, "logoFileName", "/etc/X11/xdm/xde/banner.png"))) {
+		getXrmString(val, &resources.logoFileName);
 	}
 	// xlogin.logoPadding:		8
-	if ((value.addr = get_xlogin_resource(rdb, "logoPadding"))) {
-		getXrmUint(value.addr, &resources.logoPadding);
+	if ((val = get_xlogin_resource(rdb, "logoPadding", "8"))) {
+		getXrmUint(val, &resources.logoPadding);
 	}
 	// xlogin.useShape:		true
-	if ((value.addr = get_xlogin_resource(rdb, "useShape"))) {
-		getXrmBool(value.addr, &resources.useShape);
+	if ((val = get_xlogin_resource(rdb, "useShape", "true"))) {
+		getXrmBool(val, &resources.useShape);
 	}
 	// xlogin.hiColor:		grey80
-	if ((value.addr = get_xlogin_resource(rdb, "hiColor"))) {
-		getXrmColor(value.addr, &resources.hiColor);
+	if ((val = get_xlogin_resource(rdb, "hiColor", "grey80"))) {
+		getXrmColor(val, &resources.hiColor);
 	}
 	// xlogin.shdColor:		grey20
-	if ((value.addr = get_xlogin_resource(rdb, "shdColor"))) {
-		getXrmColor(value.addr, &resources.shdColor);
+	if ((val = get_xlogin_resource(rdb, "shdColor", "grey20"))) {
+		getXrmColor(val, &resources.shdColor);
 	}
 	// xlogin.frameWidth:		2
-	if ((value.addr = get_xlogin_resource(rdb, "frameWidth"))) {
-		getXrmUint(value.addr, &resources.frameWidth);
+	if ((val = get_xlogin_resource(rdb, "frameWidth", "2"))) {
+		getXrmUint(val, &resources.frameWidth);
 	}
 	// xlogin.innerFrameWidth:	2
-	if ((value.addr = get_xlogin_resource(rdb, "innerFrameWidth"))) {
-		getXrmUint(value.addr, &resources.innerFrameWidth);
+	if ((val = get_xlogin_resource(rdb, "innerFrameWidth", "2"))) {
+		getXrmUint(val, &resources.innerFrameWidth);
 	}
 	// xlogin.sepWidth:		2
-	if ((value.addr = get_xlogin_resource(rdb, "sepWidth"))) {
-		getXrmUint(value.addr, &resources.sepWidth);
+	if ((val = get_xlogin_resource(rdb, "sepWidth", "2"))) {
+		getXrmUint(val, &resources.sepWidth);
 	}
 	// xlogin.allowRootLogin:	true
-	if ((value.addr = get_xlogin_resource(rdb, "allowRootLogin"))) {
-		getXrmBool(value.addr, &resources.allowRootLogin);
+	if ((val = get_xlogin_resource(rdb, "allowRootLogin", "true"))) {
+		getXrmBool(val, &resources.allowRootLogin);
 	}
 	// xlogin.allowNullPasswd:	false
-	if ((value.addr = get_xlogin_resource(rdb, "allowNullPasswd"))) {
-		getXrmBool(value.addr, &resources.allowNullPasswd);
+	if ((val = get_xlogin_resource(rdb, "allowNullPasswd", "false"))) {
+		getXrmBool(val, &resources.allowNullPasswd);
 	}
 	// xlogin.echoPasswd:		true
-	if ((value.addr = get_xlogin_resource(rdb, "echoPasswd"))) {
-		getXrmBool(value.addr, &resources.echoPasswd);
+	if ((val = get_xlogin_resource(rdb, "echoPasswd", "true"))) {
+		getXrmBool(val, &resources.echoPasswd);
 	}
 	// xlogin.echoPasswdChar:	*
-	if ((value.addr = get_xlogin_resource(rdb, "echoPasswdChar"))) {
-		getXrmString(value.addr, &resources.echoPasswdChar);
+	if ((val = get_xlogin_resource(rdb, "echoPasswdChar", "*"))) {
+		getXrmString(val, &resources.echoPasswdChar);
 	}
 	// xlogin.borderWidth:		3
-	if ((value.addr = get_xlogin_resource(rdb, "borderWidth"))) {
-		getXrmUint(value.addr, &resources.borderWidth);
+	if ((val = get_xlogin_resource(rdb, "borderWidth", "3"))) {
+		getXrmUint(val, &resources.borderWidth);
 	}
 
 	// xlogin.login.translations
@@ -5218,88 +5232,85 @@ get_resources(int argc, char *argv[])
 	// Chooser.list.font:		*-*-medium-r-normal-*-*-230-*-*-c-*-iso8859-1
 	// Chooser.command.font:	*-new-century-schoolbook-bold-r-normal-*-180-*
 
-	if ((value.addr = get_resource(rdb, "Chooser.x"))) {
-		getXrmFloat(value.addr, &options.xposition);
+	if ((val = get_resource(rdb, "Chooser.x", NULL))) {
+		getXrmFloat(val, &options.xposition);
 	}
-	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
-		getXrmFloat(value.addr, &options.yposition);
+	if ((val = get_resource(rdb, "Chooser.y", NULL))) {
+		getXrmFloat(val, &options.yposition);
 	}
-	if ((value.addr = get_resource(rdb, "debug"))) {
-		getXrmInt(value.addr, &options.debug);
+	if ((val = get_resource(rdb, "banner", NULL))) {
+		getXrmString(val, &options.banner);
 	}
-	if ((value.addr = get_resource(rdb, "banner"))) {
-		getXrmString(value.addr, &options.banner);
+	if ((val = get_resource(rdb, "splash", NULL))) {
+		getXrmString(val, &options.splash);
 	}
-	if ((value.addr = get_resource(rdb, "splash"))) {
-		getXrmString(value.addr, &options.splash);
+	if ((val = get_resource(rdb, "welcome", NULL))) {
+		getXrmString(val, &options.welcome);
 	}
-	if ((value.addr = get_resource(rdb, "welcome"))) {
-		getXrmString(value.addr, &options.welcome);
+	if ((val = get_resource(rdb, "charset", NULL))) {
+		getXrmString(val, &options.charset);
 	}
-	if ((value.addr = get_resource(rdb, "charset"))) {
-		getXrmString(value.addr, &options.charset);
+	if ((val = get_resource(rdb, "language", NULL))) {
+		getXrmString(val, &options.language);
 	}
-	if ((value.addr = get_resource(rdb, "language"))) {
-		getXrmString(value.addr, &options.language);
+	if ((val = get_resource(rdb, "theme.icon", NULL))) {
+		getXrmString(val, &options.icon_theme);
 	}
-	if ((value.addr = get_resource(rdb, "theme.icon"))) {
-		getXrmString(value.addr, &options.icon_theme);
+	if ((val = get_resource(rdb, "theme.name", NULL))) {
+		getXrmString(val, &options.gtk2_theme);
 	}
-	if ((value.addr = get_resource(rdb, "theme.name"))) {
-		getXrmString(value.addr, &options.gtk2_theme);
+	if ((val = get_resource(rdb, "theme.cursor", NULL))) {
+		getXrmString(val, &options.curs_theme);
 	}
-	if ((value.addr = get_resource(rdb, "theme.cursor"))) {
-		getXrmString(value.addr, &options.curs_theme);
+	if ((val = get_resource(rdb, "theme.xde", NULL))) {
+		getXrmBool(val, &options.usexde);
 	}
-	if ((value.addr = get_resource(rdb, "theme.xde"))) {
-		getXrmBool(value.addr, &options.usexde);
-	}
-	if ((value.addr = get_resource(rdb, "side"))) {
-		if (!strncasecmp(value.addr, "left", strlen(value.addr)))
+	if ((val = get_resource(rdb, "side", NULL))) {
+		if (!strncasecmp(val, "left", strlen(val)))
 			options.side = LogoSideLeft;
-		else if (!strncasecmp(value.addr, "top", strlen(value.addr)))
+		else if (!strncasecmp(val, "top", strlen(val)))
 			options.side = LogoSideTop;
-		else if (!strncasecmp(value.addr, "right", strlen(value.addr)))
+		else if (!strncasecmp(val, "right", strlen(val)))
 			options.side = LogoSideRight;
-		else if (!strncasecmp(value.addr, "bottom", strlen(value.addr)))
+		else if (!strncasecmp(val, "bottom", strlen(val)))
 			options.side = LogoSideBottom;
 		else
-			EPRINTF("invalid value for XDE-XChooser*side: %s\n", (char *) value.addr);
+			EPRINTF("invalid value for XDE-XChooser*side: %s\n", val);
 	}
 	if (getuid() == 0) {
-		if ((value.addr = get_resource(rdb, "user.default"))) {
-			getXrmString(value.addr, &options.username);
+		if ((val = get_resource(rdb, "user.default", NULL))) {
+			getXrmString(val, &options.username);
 		}
-		if ((value.addr = get_resource(rdb, "autologin"))) {
-			// getXrmBool(value.addr, &options.autologin);
+		if ((val = get_resource(rdb, "autologin", NULL))) {
+			// getXrmBool(val, &options.autologin);
 		}
 	}
-	if ((value.addr = get_resource(rdb, "vendor"))) {
-		getXrmString(value.addr, &options.vendor);
+	if ((val = get_resource(rdb, "vendor", NULL))) {
+		getXrmString(val, &options.vendor);
 	}
-	if ((value.addr = get_resource(rdb, "prefix"))) {
-		getXrmString(value.addr, &options.prefix);
+	if ((val = get_resource(rdb, "prefix", NULL))) {
+		getXrmString(val, &options.prefix);
 	}
-	if ((value.addr = get_resource(rdb, "login.permit"))) {
-		// getXrmBool(value.addr, &options.permitlogin);
+	if ((val = get_resource(rdb, "login.permit", NULL))) {
+		// getXrmBool(val, &options.permitlogin);
 	}
-	if ((value.addr = get_resource(rdb, "login.remote"))) {
-		// getXrmBool(value.addr, &options.remotelogin);
+	if ((val = get_resource(rdb, "login.remote", NULL))) {
+		// getXrmBool(val, &options.remotelogin);
 	}
-	if ((value.addr = get_resource(rdb, "xsession.chooser"))) {
-		getXrmBool(value.addr, &options.xsession);
+	if ((val = get_resource(rdb, "xsession.chooser", NULL))) {
+		getXrmBool(val, &options.xsession);
 	}
-	if ((value.addr = get_resource(rdb, "xsession.execute"))) {
-		// getXrmBool(value.addr, &options.execute);
+	if ((val = get_resource(rdb, "xsession.execute", NULL))) {
+		// getXrmBool(val, &options.execute);
 	}
-	if ((value.addr = get_resource(rdb, "xsession.default"))) {
-		getXrmString(value.addr, &options.choice);
+	if ((val = get_resource(rdb, "xsession.default", NULL))) {
+		getXrmString(val, &options.choice);
 	}
-	if ((value.addr = get_resource(rdb, "setbg"))) {
-		getXrmBool(value.addr, &options.setbg);
+	if ((val = get_resource(rdb, "setbg", NULL))) {
+		getXrmBool(val, &options.setbg);
 	}
-	if ((value.addr = get_resource(rdb, "transparent"))) {
-		getXrmBool(value.addr, &options.transparent);
+	if ((val = get_resource(rdb, "transparent", NULL))) {
+		getXrmBool(val, &options.transparent);
 	}
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);

@@ -390,6 +390,10 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/images/unexicon-banner.png \
 	share/xde/images/unexicon-splash.jpg
 
+nobase_dist_xdgdata_DATA += \
+	share/X11/app-defaults/XDE-XLock \
+	share/X11/app-defaults/XDE-Logout
+
 nobase_dist_xdmconf_DATA = \
 	xdm/xde/background.jpg \
 	xdm/xde/logo.xpm \

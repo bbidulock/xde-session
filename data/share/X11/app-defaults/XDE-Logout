@@ -1,0 +1,36 @@
+!!!!
+! XDE-Logout: Class resource for xde-logout
+!!!!
+XDE-Logout*x:				0.5
+XDE-Logout*y:				0.5
+XDE-Logout*debug:			0
+XDE-Logout*banner:			/usr/share/xde/images/unexicon-banner.png
+XDE-Logout*splash:			/usr/share/xde/images/unexicon-splash.jpg
+XDE-Logout*welcome:			Welcome to CLIENTHOST!
+XDE-Logout*theme.icon:			gnome-brave
+!XDE-Logout*theme.name:			Squared-blue
+XDE-Logout*theme.xde:			false
+XDE-Logout*side:			left
+XDE-Logout*user.default:		unexicon
+XDE-Logout*autologin:			false
+XDE-Logout*vendor:			unexicon
+XDE-Logout*prefix:			unexicon-
+XDE-Logout*login.permit:		true
+XDE-Logout*login.remote:		false
+XDE-Logout*xsession.chooser:		true
+XDE-Logout*xsession.execute:		false
+XDE-Logout*xsession.default:		adwm
+XDE-Logout*setbg:			true
+XDE-Logout*transparent:			false
+
+XDE-Logout.greetFace:			Liberation Sans:size=16
+XDE-Logout.greetColor:			#ffffff
+XDE-Logout.promptFace:			Liberation Sans:size=16
+XDE-Logout.promptColor:			#f5f4fd
+XDE-Logout.inputFace:			Liberation Sans:size=12
+XDE-Logout.inputColor:			#000404
+XDE-Logout.inputFgColor:		#000000
+XDE-Logout.inputBgColor:		#ffffff
+XDE-Logout.failFace:			size=16
+XDE-Logout.failColor:			red
+
