@@ -2887,6 +2887,8 @@ static void
 do_chooser(int argc, char *argv[])
 {
 	const char *file;
+	char *out;
+	int i;
 
 	if (!(file = choose(argc, argv))) {
 		DPRINTF("Logging out...\n");
@@ -2894,7 +2896,11 @@ do_chooser(int argc, char *argv[])
 		return;
 	}
 	DPRINTF("Launching session %s...\n", options.current);
-	fprintf(stdout, options.current);
+	out = strdup(options.current);
+	for (i = 0; i < strlen(out); i++)
+		out[i] = tolower(out[i]);
+	fprintf(stdout, out);
+	free(out);
 	create_session(options.current, file);
 }
 
