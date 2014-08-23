@@ -2543,7 +2543,7 @@ GetPane(GtkWidget *cont)
 	gtk_container_add(GTK_CONTAINER(ebox), v);
 
 	GtkWidget *l_greet = gtk_label_new(NULL);
-	gtk_label_set_text(GTK_LABEL(l_greet), options.welcome);
+	gtk_label_set_markup(GTK_LABEL(l_greet), options.welcome);
 	gtk_misc_set_alignment(GTK_MISC(l_greet), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l_greet), 3, 3);
 	switch (options.side) {
@@ -2559,19 +2559,21 @@ GetPane(GtkWidget *cont)
 	}
 	if ((style = gtk_widget_get_modifier_style(l_greet))) {
 		style->font_desc = pango_font_description_copy(resources.greetFace);
-		if (resources.greetColor) {
-			int i;
+		if (options.transparent) {
+			if (resources.greetColor) {
+				int i;
 
-			for (i = 0; i < 5; i++) {
-				style->text[i] = *resources.greetColor;
-				style->color_flags[i] |= GTK_RC_TEXT;
-				style->fg[i] = *resources.greetColor;
-				style->color_flags[i] |= GTK_RC_FG;
-				// style->base[i] = *resources.greetColor;
-				// style->color_flags[i] |= GTK_RC_BASE;
-			}
-		} else
-			DPRINTF("No resources.greetColor!\n");
+				for (i = 0; i < 5; i++) {
+					style->text[i] = *resources.greetColor;
+					style->color_flags[i] |= GTK_RC_TEXT;
+					style->fg[i] = *resources.greetColor;
+					style->color_flags[i] |= GTK_RC_FG;
+					// style->base[i] = *resources.greetColor;
+					// style->color_flags[i] |= GTK_RC_BASE;
+				}
+			} else
+				DPRINTF("No resources.greetColor!\n");
+		}
 		gtk_widget_modify_style(l_greet, style);
 	}
 
@@ -3690,11 +3692,14 @@ get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 
 	snprintf(name, sizeof(name), "%s.%s", res_name, resource);
 	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
-	if (XrmGetResource(xrdb, name, clas, &type, &value))
+	if (XrmGetResource(xrdb, name, clas, &type, &value)) {
 		if (value.addr && *(char *) value.addr) {
 			DPRINTF("%s:\t\t%s\n", clas, value.addr);
 			return (char *) value.addr;
-		}
+		} else
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+	} else
+		DPRINTF("%s:\t\t%s\n", clas, "ERROR!");
 	return (NULL);
 }
 
@@ -3848,6 +3853,9 @@ get_resources(int argc, char *argv[])
 	}
 	(void) type;
 	(void) value;
+	if ((value.addr = get_resource(rdb, "debug"))) {
+		getXrmInt(value.addr, &options.debug);
+	}
 	if ((value.addr = get_xlogin_resource(rdb, "width"))) {
 		if (strchr(value.addr, '%')) {
 			char *endptr = NULL;
@@ -3911,11 +3919,13 @@ get_resources(int argc, char *argv[])
 	if ((value.addr = get_any_resource(rdb, "face"))) {
 		getXrmFont(value.addr, &resources.face);
 	}
+#if 0
 	// xlogin.greeting:		Welcome to CLIENTHOST
 	if ((value.addr = get_xlogin_resource(rdb, "greeting"))) {
 		getXrmString(value.addr, &resources.greeting);
 		getXrmString(value.addr, &options.welcome);
 	}
+#endif
 	// xlogin.unsecureGreeting:	This is an unsecure session
 	if ((value.addr = get_xlogin_resource(rdb, "unsecureGreeting"))) {
 		getXrmString(value.addr, &resources.unsecureGreeting);
@@ -4044,18 +4054,17 @@ get_resources(int argc, char *argv[])
 	if ((value.addr = get_resource(rdb, "Chooser.y"))) {
 		getXrmFloat(value.addr, &options.yposition);
 	}
-	if ((value.addr = get_resource(rdb, "debug"))) {
-		getXrmInt(value.addr, &options.debug);
-	}
 	if ((value.addr = get_resource(rdb, "banner"))) {
 		getXrmString(value.addr, &options.banner);
 	}
 	if ((value.addr = get_resource(rdb, "splash"))) {
 		getXrmString(value.addr, &options.splash);
 	}
+#if 0
 	if ((value.addr = get_resource(rdb, "welcome"))) {
 		getXrmString(value.addr, &options.welcome);
 	}
+#endif
 	if ((value.addr = get_resource(rdb, "charset"))) {
 		getXrmString(value.addr, &options.charset);
 	}

@@ -4045,19 +4045,21 @@ GetPanel(void)
 	gtk_table_attach_defaults(GTK_TABLE(login), l_uname, 0, 1, 0, 1);
 	if ((style = gtk_widget_get_modifier_style(l_uname))) {
 		style->font_desc = pango_font_description_copy(resources.promptFace);
-		if (resources.promptColor) {
-			int i;
+		if (options.transparent) {
+			if (resources.promptColor) {
+				int i;
 
-			for (i = 0; i < 5; i++) {
-				style->text[i] = *resources.promptColor;
-				style->color_flags[i] |= GTK_RC_TEXT;
-				style->fg[i] = *resources.promptColor;
-				style->color_flags[i] |= GTK_RC_FG;
-				// style->base[i] = *resources.promptColor;
-				// style->color_flags[i] |= GTK_RC_BASE;
-			}
-		} else
-			DPRINTF("No resources.promptColor!\n");
+				for (i = 0; i < 5; i++) {
+					style->text[i] = *resources.promptColor;
+					style->color_flags[i] |= GTK_RC_TEXT;
+					style->fg[i] = *resources.promptColor;
+					style->color_flags[i] |= GTK_RC_FG;
+					// style->base[i] = *resources.promptColor;
+					// style->color_flags[i] |= GTK_RC_BASE;
+				}
+			} else
+				DPRINTF("No resources.promptColor!\n");
+		}
 		gtk_widget_modify_style(l_uname, style);
 	}
 
@@ -4079,19 +4081,21 @@ GetPanel(void)
 	gtk_table_attach_defaults(GTK_TABLE(login), l_pword, 0, 1, 1, 2);
 	if ((style = gtk_widget_get_modifier_style(l_pword))) {
 		style->font_desc = pango_font_description_copy(resources.promptFace);
-		if (resources.promptColor) {
-			int i;
+		if (options.transparent) {
+			if (resources.promptColor) {
+				int i;
 
-			for (i = 0; i < 5; i++) {
-				style->text[i] = *resources.promptColor;
-				style->color_flags[i] |= GTK_RC_TEXT;
-				style->fg[i] = *resources.promptColor;
-				style->color_flags[i] |= GTK_RC_FG;
-				// style->base[i] = *resources.promptColor;
-				// style->color_flags[i] |= GTK_RC_BASE;
-			}
-		} else
-			DPRINTF("No resources.promptColor!\n");
+				for (i = 0; i < 5; i++) {
+					style->text[i] = *resources.promptColor;
+					style->color_flags[i] |= GTK_RC_TEXT;
+					style->fg[i] = *resources.promptColor;
+					style->color_flags[i] |= GTK_RC_FG;
+					// style->base[i] = *resources.promptColor;
+					// style->color_flags[i] |= GTK_RC_BASE;
+				}
+			} else
+				DPRINTF("No resources.promptColor!\n");
+		}
 		gtk_widget_modify_style(l_pword, style);
 	}
 
@@ -4205,19 +4209,21 @@ GetPanel(void)
 	gtk_table_attach_defaults(GTK_TABLE(login), xsess, 0, 1, 2, 3);
 	if ((style = gtk_widget_get_modifier_style(xsess))) {
 		style->font_desc = pango_font_description_copy(resources.promptFace);
-		if (resources.promptColor) {
-			int i;
+		if (options.transparent) {
+			if (resources.promptColor) {
+				int i;
 
-			for (i = 0; i < 5; i++) {
-				style->text[i] = *resources.promptColor;
-				style->color_flags[i] |= GTK_RC_TEXT;
-				style->fg[i] = *resources.promptColor;
-				style->color_flags[i] |= GTK_RC_FG;
-				// style->base[i] = *resources.promptColor;
-				// style->color_flags[i] |= GTK_RC_BASE;
-			}
-		} else
-			DPRINTF("No resources.promptColor!\n");
+				for (i = 0; i < 5; i++) {
+					style->text[i] = *resources.promptColor;
+					style->color_flags[i] |= GTK_RC_TEXT;
+					style->fg[i] = *resources.promptColor;
+					style->color_flags[i] |= GTK_RC_FG;
+					// style->base[i] = *resources.promptColor;
+					// style->color_flags[i] |= GTK_RC_BASE;
+				}
+			} else
+				DPRINTF("No resources.promptColor!\n");
+		}
 		gtk_widget_modify_style(xsess, style);
 	}
 
@@ -4390,19 +4396,21 @@ GetPane(GtkWidget *cont)
 	}
 	if ((style = gtk_widget_get_modifier_style(l_greet))) {
 		style->font_desc = pango_font_description_copy(resources.greetFace);
-		if (resources.greetColor) {
-			int i;
+		if (options.transparent) {
+			if (resources.greetColor) {
+				int i;
 
-			for (i = 0; i < 5; i++) {
-				style->text[i] = *resources.greetColor;
-				style->color_flags[i] |= GTK_RC_TEXT;
-				style->fg[i] = *resources.greetColor;
-				style->color_flags[i] |= GTK_RC_FG;
-				// style->base[i] = *resources.greetColor;
-				// style->color_flags[i] |= GTK_RC_BASE;
-			}
-		} else
-			DPRINTF("No resources.greetColor!\n");
+				for (i = 0; i < 5; i++) {
+					style->text[i] = *resources.greetColor;
+					style->color_flags[i] |= GTK_RC_TEXT;
+					style->fg[i] = *resources.greetColor;
+					style->color_flags[i] |= GTK_RC_FG;
+					// style->base[i] = *resources.greetColor;
+					// style->color_flags[i] |= GTK_RC_BASE;
+				}
+			} else
+				DPRINTF("No resources.greetColor!\n");
+		}
 		gtk_widget_modify_style(l_greet, style);
 	}
 

@@ -292,15 +292,15 @@ XDE-XChooser*xsession.default:		adwm
 XDE-XChooser*setbg:			true
 XDE-XChooser*transparent:		false
 
-XDE-XChooser.greetFace:			Verdata:size=16:bold
+XDE-XChooser.greetFace:			Liberation Sans:size=16:bold
 XDE-XChooser.greetColor:		#ffffff
-XDE-XChooser.promptFace:		Verdana:size=16:bold
+XDE-XChooser.promptFace:		Liberation Sans:size=16:bold
 XDE-XChooser.promptColor:		#f5f4fd
-XDE-XChooser.inputFace:			Verdana:size=12
+XDE-XChooser.inputFace:			Liberation Sans:size=12
 XDE-XChooser.inputColor:		#000404
 XDE-XChooser.inputFgColor:		#000000
 XDE-XChooser.inputBgColor:		#ffffff
-XDE-XChooser.failFace:			Verdana:size=16
+XDE-XChooser.failFace:			Liberation Sans:size=16
 XDE-XChooser.failColor:			red
 
 XDE-XLogin*x:				0.30
@@ -323,17 +323,17 @@ XDE-XLogin*xsession.chooser:		true
 XDE-XLogin*xsession.execute:		false
 XDE-XLogin*xsession.default:		adwm
 XDE-XLogin*setbg:			true
-XDE-XLogin*transparent:			false
+XDE-XLogin*transparent:			true
 
-XDE-XLogin.greetFace:			Verdata:size=16:bold
+XDE-XLogin.greetFace:			Liberation Sans:size=16:bold
 XDE-XLogin.greetColor:			#ffffff
-XDE-XLogin.promptFace:			Verdana:size=16:bold
+XDE-XLogin.promptFace:			Liberation Sans:size=16:bold
 XDE-XLogin.promptColor:			#f5f4fd
-XDE-XLogin.inputFace:			Verdana:size=12
+XDE-XLogin.inputFace:			Liberation Sans:size=12
 XDE-XLogin.inputColor:			#000404
 XDE-XLogin.inputFgColor:		#000000
 XDE-XLogin.inputBgColor:		#ffffff
-XDE-XLogin.failFace:			Verdana:size=16
+XDE-XLogin.failFace:			Liberation Sans:size=16
 XDE-XLogin.failColor:			red
 
 XDE-XLock*Chooser.x:			0.30
@@ -358,14 +358,47 @@ XDE-XLock*xsession.default:		adwm
 XDE-XLock*setbg:			true
 XDE-XLock*transparent:			true
 
-XDE-XLock.greetFace:			Verdata:size=16:bold
+XDE-XLock.greetFace:			Liberation Sans:size=16:bold
 XDE-XLock.greetColor:			#ffffff
-XDE-XLock.promptFace:			Verdana:size=16:bold
+XDE-XLock.promptFace:			Liberation Sans:size=16:bold
 XDE-XLock.promptColor:			#f5f4fd
-XDE-XLock.inputFace:			Verdana:size=12
+XDE-XLock.inputFace:			Liberation Sans:size=12
 XDE-XLock.inputColor:			#000404
 XDE-XLock.inputFgColor:			#000000
 XDE-XLock.inputBgColor:			#ffffff
-XDE-XLock.failFace:			Verdana:size=16
+XDE-XLock.failFace:			Liberation Sans:size=16
 XDE-XLock.failColor:			red
+
+XDE-Logout*x:				0.5
+XDE-Logout*y:				0.5
+XDE-Logout*debug:			0
+XDE-Logout*banner:			/usr/share/xde/images/unexicon-banner.png
+XDE-Logout*splash:			/usr/share/xde/images/unexicon-splash.jpg
+XDE-Logout*welcome:			Welcome to CLIENTHOST!
+XDE-Logout*theme.icon:			gnome-brave
+!XDE-Logout*theme.name:			Squared-blue
+XDE-Logout*theme.xde:			false
+XDE-Logout*side:			left
+XDE-Logout*user.default:		unexicon
+XDE-Logout*autologin:			false
+XDE-Logout*vendor:			unexicon
+XDE-Logout*prefix:			unexicon-
+XDE-Logout*login.permit:		true
+XDE-Logout*login.remote:		false
+XDE-Logout*xsession.chooser:		true
+XDE-Logout*xsession.execute:		false
+XDE-Logout*xsession.default:		adwm
+XDE-Logout*setbg:			true
+XDE-Logout*transparent:			false
+
+XDE-Logout.greetFace:			Liberation Sans:size=16
+XDE-Logout.greetColor:			#ffffff
+XDE-Logout.promptFace:			Liberation Sans:size=16
+XDE-Logout.promptColor:			#f5f4fd
+XDE-Logout.inputFace:			Liberation Sans:size=12
+XDE-Logout.inputColor:			#000404
+XDE-Logout.inputFgColor:		#000000
+XDE-Logout.inputBgColor:		#ffffff
+XDE-Logout.failFace:			size=16
+XDE-Logout.failColor:			red
 
