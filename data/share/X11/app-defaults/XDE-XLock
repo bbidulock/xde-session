@@ -3,7 +3,7 @@
 !!!!
 XDE-XLock*Chooser.x:			0.30
 XDE-XLock*Chooser.y:			0.20
-XDE-XLock*debug:			1
+XDE-XLock*debug:			0
 XDE-XLock*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XLock*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-XLock*welcome:			Welcome to CLIENTHOST!

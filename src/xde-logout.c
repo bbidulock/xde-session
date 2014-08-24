@@ -166,6 +166,8 @@ static char **saveArgv;
 #   define RESTITL "XDMCP Greeter"
 #endif
 
+#define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
+
 typedef enum _LogoSide {
 	LogoSideLeft,
 	LogoSideTop,
@@ -2269,7 +2271,7 @@ on_size_changed(GdkScreen *scrn, gpointer data)
 /** @brief get a covering window for a screen
   */
 void
-GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
+GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn, Bool noshow)
 {
 	GtkWidget *wind;
 	GtkWindow *w;
@@ -2337,8 +2339,8 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
 	redo_source(xscr);
-	gtk_widget_show_all(wind);
-
+	if (!noshow)
+		gtk_widget_show_all(wind);
 	gtk_widget_realize(wind);
 	GdkWindow *win = gtk_widget_get_window(wind);
 
@@ -2419,7 +2421,7 @@ reparse(Display *dpy, Window root)
 /** @brief get a covering window for each screen
   */
 void
-GetScreens(void)
+GetScreens(Bool noshow)
 {
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
@@ -2429,7 +2431,7 @@ GetScreens(void)
 	screens = calloc(nscr, sizeof(*screens));
 
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
-		GetScreen(xscr, s, gdk_display_get_screen(disp, s));
+		GetScreen(xscr, s, gdk_display_get_screen(disp, s), noshow);
 
 	GdkScreen *scrn = gdk_display_get_default_screen(disp);
 	GdkWindow *root = gdk_screen_get_root_window(scrn);
@@ -2641,7 +2643,7 @@ GetPane(GtkWidget *cont)
 }
 
 GtkWidget *
-GetWindow(void)
+GetWindow(Bool noshow)
 {
 	GdkDisplay *disp = gdk_display_get_default();
 	GdkScreen *scrn = NULL;
@@ -2649,7 +2651,7 @@ GetWindow(void)
 	XdeMonitor *xmon;
 	gint x = 0, y = 0;
 
-	GetScreens();
+	GetScreens(noshow);
 
 	gdk_display_get_pointer(disp, &scrn, &x, &y, NULL);
 	if (!scrn)
@@ -2663,9 +2665,11 @@ GetWindow(void)
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
 
-	gtk_widget_grab_default(buttons[LOGOUT_ACTION_LOGOUT]);
-	gtk_widget_grab_focus(buttons[LOGOUT_ACTION_LOGOUT]);
-	grabbed_window(xscr->wind, NULL);
+	if (!noshow) {
+		gtk_widget_grab_default(buttons[LOGOUT_ACTION_LOGOUT]);
+		gtk_widget_grab_focus(buttons[LOGOUT_ACTION_LOGOUT]);
+		grabbed_window(xscr->wind, NULL);
+	}
 	return xscr->wind;
 }
 
@@ -2703,6 +2707,78 @@ startup(int argc, char *argv[])
 	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
 	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+}
+
+void
+ShowScreen(XdeScreen *xscr)
+{
+	if (xscr->wind) {
+		gtk_widget_show_now(GTK_WIDGET(xscr->wind));
+#if 0
+		if (options.username) {
+			gtk_widget_set_sensitive(user, FALSE);
+			gtk_widget_set_sensitive(pass, TRUE);
+			gtk_widget_set_sensitive(buttons[0], TRUE);
+			gtk_widget_set_sensitive(buttons[3], FALSE);
+			gtk_widget_grab_default(GTK_WIDGET(pass));
+			gtk_widget_grab_focus(GTK_WIDGET(pass));
+		} else {
+			gtk_widget_set_sensitive(user, TRUE);
+			gtk_widget_set_sensitive(pass, FALSE);
+			gtk_widget_set_sensitive(buttons[0], TRUE);
+			gtk_widget_set_sensitive(buttons[3], FALSE);
+			gtk_widget_grab_default(GTK_WIDGET(user));
+			gtk_widget_grab_focus(GTK_WIDGET(user));
+		}
+#else
+		gtk_widget_grab_default(buttons[LOGOUT_ACTION_LOGOUT]);
+		gtk_widget_grab_focus(buttons[LOGOUT_ACTION_LOGOUT]);
+#endif
+		grabbed_window(GTK_WIDGET(xscr->wind), NULL);
+	}
+}
+
+void
+ShowScreens(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	int s, nscr = gdk_display_get_n_screens(disp);
+	XdeScreen *xscr;
+
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
+		ShowScreen(xscr);
+}
+
+void
+ShowWindow(void)
+{
+	ShowScreens();
+}
+
+void
+HideScreen(XdeScreen *xscr)
+{
+	if (xscr->wind) {
+		ungrabbed_window(GTK_WIDGET(xscr->wind));
+		gtk_widget_hide(GTK_WIDGET(xscr->wind));
+	}
+}
+
+void
+HideScreens(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	int s, nscr = gdk_display_get_n_screens(disp);
+	XdeScreen *xscr;
+
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
+		HideScreen(xscr);
+}
+
+void
+HideWindow(void)
+{
+	HideScreens();
 }
 
 static void
@@ -3164,7 +3240,7 @@ do_run(int argc, char *argv[])
 			}
 		}
 	}
-	top = GetWindow();
+	top = GetWindow(False);
 	gtk_main();
 	if (logout_actions[action_result])
 		(*logout_actions[action_result]) ();

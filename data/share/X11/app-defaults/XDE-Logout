@@ -6,7 +6,7 @@ XDE-Logout*y:				0.5
 XDE-Logout*debug:			0
 XDE-Logout*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-Logout*splash:			/usr/share/xde/images/unexicon-splash.jpg
-XDE-Logout*welcome:			Welcome to CLIENTHOST!
+!XDE-Logout*welcome:			Welcome to CLIENTHOST!
 XDE-Logout*theme.icon:			gnome-brave
 !XDE-Logout*theme.name:			Squared-blue
 XDE-Logout*theme.xde:			false
@@ -20,7 +20,7 @@ XDE-Logout*login.remote:		false
 XDE-Logout*xsession.chooser:		true
 XDE-Logout*xsession.execute:		false
 XDE-Logout*xsession.default:		adwm
-XDE-Logout*setbg:			true
+XDE-Logout*setbg:			false
 XDE-Logout*transparent:			false
 
 XDE-Logout.greetFace:			Liberation Sans:size=16

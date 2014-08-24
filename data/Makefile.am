@@ -391,8 +391,9 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/images/unexicon-splash.jpg
 
 nobase_dist_xdgdata_DATA += \
-	share/X11/app-defaults/XDE-XLock \
-	share/X11/app-defaults/XDE-Logout
+	share/X11/app-defaults/XDE-Chooser \
+	share/X11/app-defaults/XDE-Logout \
+	share/X11/app-defaults/XDE-XLock
 
 nobase_dist_xdmconf_DATA = \
 	xdm/xde/background.jpg \

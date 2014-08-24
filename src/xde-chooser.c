@@ -91,6 +91,9 @@
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#ifdef VNC_SUPPORTED
+#include <X11/extensions/Xvnc.h>
+#endif
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
@@ -162,6 +165,8 @@ static char **saveArgv;
 #   define RESCLAS "XDE-XLogin"
 #   define RESTITL "XDMCP Greeter"
 #endif
+
+#define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
 
 typedef enum _LogoSide {
 	LogoSideLeft,
@@ -1389,10 +1394,10 @@ gboolean
 on_grab_broken(GtkWidget *window, GdkEvent *event, gpointer data)
 {
 	GdkEventGrabBroken *ev = (typeof(ev)) event;
-	EPRINTF("Grab broken!\n");
-	EPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
-	EPRINTF("Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
-	EPRINTF("Grab broken by %s\n", ev->grab_window ? "this application" : "other");
+	DPRINTF("Grab broken!\n");
+	DPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
+	DPRINTF("Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
+	DPRINTF("Grab broken by %s\n", ev->grab_window ? "this application" : "other");
 	return TRUE; /* propagate */
 }
 
@@ -1430,7 +1435,8 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	else
 		DPRINTF("Grabbed pointer\n");
 #if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
-	grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
+	if (!grab_broken_handler)
+		grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
 #endif
 }
 
@@ -1450,7 +1456,6 @@ ungrabbed_window(GtkWidget *window)
 		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
 		grab_broken_handler = 0;
 	}
-	g_signal_connect(G_OBJECT(window), "grab-broken-event", NULL, NULL);
 #endif
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
@@ -1902,7 +1907,7 @@ on_size_changed(GdkScreen *scrn, gpointer data)
 /** @brief get a covering window for a screen
   */
 void
-GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
+GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn, Bool noshow)
 {
 	GtkWidget *wind;
 	GtkWindow *w;
@@ -1970,8 +1975,8 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn)
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
 	redo_source(xscr);
-	gtk_widget_show_all(wind);
-
+	if (!noshow)
+		gtk_widget_show_all(wind);
 	gtk_widget_realize(wind);
 	GdkWindow *win = gtk_widget_get_window(wind);
 
@@ -2032,7 +2037,7 @@ reparse(Display *dpy, Window root)
 /** @brief get a covering window for each screen
   */
 void
-GetScreens(void)
+GetScreens(Bool noshow)
 {
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
@@ -2042,7 +2047,7 @@ GetScreens(void)
 	screens = calloc(nscr, sizeof(*screens));
 
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
-		GetScreen(xscr, s, gdk_display_get_screen(disp, s));
+		GetScreen(xscr, s, gdk_display_get_screen(disp, s), noshow);
 
 	GdkScreen *scrn = gdk_display_get_default_screen(disp);
 	GdkWindow *root = gdk_screen_get_root_window(scrn);
@@ -2256,19 +2261,21 @@ GetPane(GtkWidget *cont)
 	}
 	if ((style = gtk_widget_get_modifier_style(l_greet))) {
 		style->font_desc = pango_font_description_copy(resources.greetFace);
-		if (resources.greetColor) {
-			int i;
+		if (options.transparent) {
+			if (resources.greetColor) {
+				int i;
 
-			for (i = 0; i < 5; i++) {
-				style->text[i] = *resources.greetColor;
-				style->color_flags[i] |= GTK_RC_TEXT;
-				style->fg[i] = *resources.greetColor;
-				style->color_flags[i] |= GTK_RC_FG;
-				// style->base[i] = *resources.greetColor;
-				// style->color_flags[i] |= GTK_RC_BASE;
-			}
-		} else
-			DPRINTF("No resources.greetColor!\n");
+				for (i = 0; i < 5; i++) {
+					style->text[i] = *resources.greetColor;
+					style->color_flags[i] |= GTK_RC_TEXT;
+					style->fg[i] = *resources.greetColor;
+					style->color_flags[i] |= GTK_RC_FG;
+					// style->base[i] = *resources.greetColor;
+					// style->color_flags[i] |= GTK_RC_BASE;
+				}
+			} else
+				DPRINTF("No resources.greetColor!\n");
+		}
 		gtk_widget_modify_style(l_greet, style);
 	}
 
@@ -2319,7 +2326,7 @@ GetPane(GtkWidget *cont)
 }
 
 GtkWidget *
-GetWindow(void)
+GetWindow(Bool noshow)
 {
 	GdkDisplay *disp = gdk_display_get_default();
 	GdkScreen *scrn = NULL;
@@ -2327,7 +2334,7 @@ GetWindow(void)
 	XdeMonitor *xmon;
 	gint x = 0, y = 0;
 
-	GetScreens();
+	GetScreens(noshow);
 
 	gdk_display_get_pointer(disp, &scrn, &x, &y, NULL);
 	if (!scrn)
@@ -2349,8 +2356,10 @@ GetWindow(void)
 		gtk_widget_set_sensitive(pass, TRUE);
 		gtk_widget_set_sensitive(buttons[0], TRUE);
 		gtk_widget_set_sensitive(buttons[3], FALSE);
-		gtk_widget_grab_default(GTK_WIDGET(pass));
-		gtk_widget_grab_focus(GTK_WIDGET(pass));
+		if (!noshow) {
+			gtk_widget_grab_default(GTK_WIDGET(pass));
+			gtk_widget_grab_focus(GTK_WIDGET(pass));
+		}
 	} else {
 		gtk_entry_set_text(GTK_ENTRY(user), "");
 		gtk_entry_set_text(GTK_ENTRY(pass), "");
@@ -2358,8 +2367,10 @@ GetWindow(void)
 		gtk_widget_set_sensitive(pass, FALSE);
 		gtk_widget_set_sensitive(buttons[0], TRUE);
 		gtk_widget_set_sensitive(buttons[3], FALSE);
-		gtk_widget_grab_default(GTK_WIDGET(user));
-		gtk_widget_grab_focus(GTK_WIDGET(user));
+		if (!noshow) {
+			gtk_widget_grab_default(GTK_WIDGET(user));
+			gtk_widget_grab_focus(GTK_WIDGET(user));
+		}
 	}
 
 #else
@@ -2382,7 +2393,8 @@ GetWindow(void)
 	gtk_widget_grab_default(sess);
 	gtk_widget_grab_focus(sess);
 #endif
-	grabbed_window(xscr->wind, NULL);
+	if (!noshow)
+		grabbed_window(xscr->wind, NULL);
 	return xscr->wind;
 }
 
@@ -2422,11 +2434,80 @@ startup(int argc, char *argv[])
 	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 }
 
+void
+ShowScreen(XdeScreen *xscr)
+{
+	if (xscr->wind) {
+		gtk_widget_show_now(GTK_WIDGET(xscr->wind));
+#if 0
+		if (options.username) {
+			gtk_widget_set_sensitive(user, FALSE);
+			gtk_widget_set_sensitive(pass, TRUE);
+			gtk_widget_set_sensitive(buttons[0], TRUE);
+			gtk_widget_set_sensitive(buttons[3], FALSE);
+			gtk_widget_grab_default(GTK_WIDGET(pass));
+			gtk_widget_grab_focus(GTK_WIDGET(pass));
+		} else {
+			gtk_widget_set_sensitive(user, TRUE);
+			gtk_widget_set_sensitive(pass, FALSE);
+			gtk_widget_set_sensitive(buttons[0], TRUE);
+			gtk_widget_set_sensitive(buttons[3], FALSE);
+			gtk_widget_grab_default(GTK_WIDGET(user));
+			gtk_widget_grab_focus(GTK_WIDGET(user));
+		}
+#endif
+		grabbed_window(GTK_WIDGET(xscr->wind), NULL);
+	}
+}
+
+void
+ShowScreens(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	int s, nscr = gdk_display_get_n_screens(disp);
+	XdeScreen *xscr;
+
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
+		ShowScreen(xscr);
+}
+
+void
+ShowWindow(void)
+{
+	ShowScreens();
+}
+
+void
+HideScreen(XdeScreen *xscr)
+{
+	if (xscr->wind) {
+		ungrabbed_window(GTK_WIDGET(xscr->wind));
+		gtk_widget_hide(GTK_WIDGET(xscr->wind));
+	}
+}
+
+void
+HideScreens(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	int s, nscr = gdk_display_get_n_screens(disp);
+	XdeScreen *xscr;
+
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++)
+		HideScreen(xscr);
+}
+
+void
+HideWindow(void)
+{
+	HideScreens();
+}
+
 static void
 do_run(int argc, char *argv[])
 {
 	startup(argc, argv);
-	top = GetWindow();
+	top = GetWindow(False);
 	gtk_main();
 }
 
@@ -3296,6 +3377,7 @@ get_resources(int argc, char *argv[])
 		XCloseDisplay(dpy);
 		return;
 	}
+	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	if ((val = get_resource(rdb, "debug", "0"))) {
 		getXrmInt(val, &options.debug);
 	}
@@ -4091,13 +4173,14 @@ get_default_choice(void)
 	}
 }
 
-#ifdef DO_XLOCKING
 void
 get_default_username(void)
 {
 	struct passwd *pw;
 
 	if (options.username)
+		return;
+	if (getuid() == 0)
 		return;
 
 	if (!(pw = getpwuid(getuid()))) {
@@ -4107,7 +4190,6 @@ get_default_username(void)
 	free(options.username);
 	options.username = strdup(pw->pw_name);
 }
-#endif				/* DO_XLOCKING */
 
 void
 get_defaults(int argc, char *argv[])
@@ -4119,9 +4201,7 @@ get_defaults(int argc, char *argv[])
 	get_default_language();
 	get_default_session();
 	get_default_choice();
-#ifdef DO_XLOCKING
 	get_default_username();
-#endif
 }
 
 int

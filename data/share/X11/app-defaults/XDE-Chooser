@@ -1,0 +1,36 @@
+!!!!
+! XDE-Chooser: Class resource for xde-logout
+!!!!
+XDE-Chooser*x:				0.5
+XDE-Chooser*y:				0.5
+XDE-Chooser*debug:			0
+XDE-Chooser*banner:			/usr/share/xde/images/unexicon-banner.png
+XDE-Chooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
+!XDE-Chooser*welcome:			Welcome to CLIENTHOST!
+XDE-Chooser*theme.icon:			gnome-brave
+!XDE-Chooser*theme.name:		Squared-blue
+XDE-Chooser*theme.xde:			false
+XDE-Chooser*side:			left
+XDE-Chooser*user.default:		unexicon
+XDE-Chooser*autologin:			false
+XDE-Chooser*vendor:			unexicon
+XDE-Chooser*prefix:			unexicon-
+XDE-Chooser*login.permit:		true
+XDE-Chooser*login.remote:		false
+XDE-Chooser*xsession.chooser:		true
+XDE-Chooser*xsession.execute:		false
+XDE-Chooser*xsession.default:		adwm
+XDE-Chooser*setbg:			true
+XDE-Chooser*transparent:		false
+
+XDE-Chooser.greetFace:			Liberation Sans:size=16
+XDE-Chooser.greetColor:			#ffffff
+XDE-Chooser.promptFace:			Liberation Sans:size=16
+XDE-Chooser.promptColor:		#f5f4fd
+XDE-Chooser.inputFace:			Liberation Sans:size=12
+XDE-Chooser.inputColor:			#000404
+XDE-Chooser.inputFgColor:		#000000
+XDE-Chooser.inputBgColor:		#ffffff
+XDE-Chooser.failFace:			size=16
+XDE-Chooser.failColor:			red
+
