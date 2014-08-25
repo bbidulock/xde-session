@@ -526,6 +526,36 @@ typedef struct {
 XdeScreen *screens;
 
 #ifdef DO_XLOCKING
+const char *
+show_state(int state)
+{
+	switch (state) {
+	case ScreenSaverOff:
+		return ("Off");
+	case ScreenSaverOn:
+		return ("On");
+	case ScreenSaverDisabled:
+		return ("Disabled");
+	default:
+		return ("(unknown)");
+	}
+}
+
+const char *
+show_kind(int kind)
+{
+	switch (kind) {
+	case ScreenSaverBlanked:
+		return ("Blanked");
+	case ScreenSaverInternal:
+		return ("Internal");
+	case ScreenSaverExternal:
+		return ("External");
+	default:
+		return ("(unknown)");
+	}
+}
+
 void
 setup_screensaver(void)
 {
@@ -550,15 +580,24 @@ setup_screensaver(void)
 	if (!(present = XScreenSaverQueryExtension(dpy, &xssEventBase, &xssErrorBase))) {
 		DPRINTF("MIT-SCREEN-SAVER extension not present\n");
 		return;
+	} else {
+		DPRINTF("xssEventBase = %d\n", xssEventBase);
+		DPRINTF("xssErrorBase = %d\n", xssErrorBase);
 	}
 	if (!(status = XScreenSaverQueryVersion(dpy, &xssMajorVersion, &xssMinorVersion))) {
 		DPRINTF("cannot query MIT-SCREEN-SAVER version\n");
 		return;
+	} else {
+		DPRINTF("xssMajorVersion = %d\n", xssMajorVersion);
+		DPRINTF("xssMinorVersion = %d\n", xssMinorVersion);
 	}
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
 		GdkScreen *scrn = gdk_display_get_screen(disp, s);
 		XSetWindowAttributes xwa;
 		unsigned long mask = 0;
+
+		(void) xwa;
+		(void) scrn;
 
 		mask |= CWBackPixmap;
 		xwa.background_pixmap = None;
@@ -590,8 +629,18 @@ setup_screensaver(void)
 		xwa.cursor = None;
 
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
+		if (True || options.debug > 1) {
+			fprintf(stderr, "Before:\n");
+			fprintf(stderr, "\twindow:\t\t0x%08lx\n", xscr->info.window);
+			fprintf(stderr, "\tstate:\t\t%s\n", show_state(xscr->info.state));
+			fprintf(stderr, "\tkind:\t\t%s\n", show_kind(xscr->info.kind));
+			fprintf(stderr, "\ttil_or_since:\t%lu\n", xscr->info.til_or_since);
+			fprintf(stderr, "\tidle:\t\t%lu\n", xscr->info.idle);
+			fprintf(stderr, "\teventMask:\t0x%08lx\n", xscr->info.eventMask);
+		}
 		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
 					ScreenSaverNotifyMask | ScreenSaverCycleMask);
+#if 0
 		XScreenSaverSetAttributes(dpy, RootWindow(dpy, s), 0, 0,
 					  gdk_screen_get_width(scrn),
 					  gdk_screen_get_height(scrn),
@@ -601,6 +650,18 @@ setup_screensaver(void)
 		Window w = GDK_WINDOW_XID(win);
 
 		XScreenSaverRegister(dpy, s, w, XA_WINDOW);
+#endif
+
+		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
+		if (True || options.debug > 1) {
+			fprintf(stderr, "After:\n");
+			fprintf(stderr, "\twindow:\t\t0x%08lx\n", xscr->info.window);
+			fprintf(stderr, "\tstate:\t\t%s\n", show_state(xscr->info.state));
+			fprintf(stderr, "\tkind:\t\t%s\n", show_kind(xscr->info.kind));
+			fprintf(stderr, "\ttil_or_since:\t%lu\n", xscr->info.til_or_since);
+			fprintf(stderr, "\tidle:\t\t%lu\n", xscr->info.idle);
+			fprintf(stderr, "\teventMask:\t0x%08lx\n", xscr->info.eventMask);
+		}
 
 	}
 }
@@ -612,7 +673,7 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 
 	DPRINT();
 
-	if (options.debug > 1) {
+	if (True || options.debug > 1) {
 		fprintf(stderr, "==> XScreenSaverNotify:\n");
 		fprintf(stderr, "    --> send_event = %s\n", showBool(ev->send_event));
 		fprintf(stderr, "    --> window = 0x%lx\n", ev->window);
@@ -781,8 +842,51 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 		exit(EXIT_FAILURE);
 	}
 	switch (xev->type) {
+	case KeyPress:
+	case KeyRelease:
+	case ButtonPress:
+	case ButtonRelease:
+	case MotionNotify:
+	case EnterNotify:
+	case LeaveNotify:
+	case FocusIn:
+	case FocusOut:
+	case KeymapNotify:
+	case Expose:
+	case GraphicsExpose:
+	case NoExpose:
+	case VisibilityNotify:
+	case CreateNotify:
+	case DestroyNotify:
+	case UnmapNotify:
+	case MapNotify:
+	case MapRequest:
+	case ReparentNotify:
+	case ConfigureNotify:
+	case ConfigureRequest:
+	case GravityNotify:
+	case ResizeRequest:
+	case CirculateNotify:
+	case CirculateRequest:
+		break;
 	case PropertyNotify:
 		return event_handler_PropertyNotify(dpy, xev, xscr);
+	case SelectionClear:
+	case SelectionRequest:
+	case SelectionNotify:
+	case ColormapNotify:
+	case ClientMessage:
+	case MappingNotify:
+	case GenericEvent:
+		break;
+	default:
+#ifdef DO_XLOCKING
+		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify)
+			return handle_XScreenSaverNotify(dpy, xev);
+		else
+			EPRINTF("unknown event type %d\n", xev->type);
+#endif				/* DO_XLOCKING */
+		break;
 	}
 	return GDK_FILTER_CONTINUE;
 }
@@ -4745,6 +4849,9 @@ do_run(int argc, char *argv[])
 
 	startup(argc, argv);
 	top = GetWindow(True);
+#ifdef DO_XLOCKING
+	setup_screensaver();
+#endif
 #ifdef DO_XCHOOSER
 	InitXDMCP(argv, argc);
 #endif
