@@ -17,6 +17,7 @@ if ! which $prog >/dev/null 2>&1; then
 	exit 1
 fi
 vers=${2:-${XDE_WM_VERSION:-$($XDE_WM_TYPE -v|awk '/JWM/{print$2;exit}'|sed 's,v,,' 2>/dev/null)}} || vers="2.2.0"
+[ -n "$vers" ] || vers="2.2.0"
 sdir=${XDE_WM_CONFIG_SDIR:-/usr/share/$name}
 home="$HOME/.$name"
 priv="$XDG_CONFIG_HOME/$name"

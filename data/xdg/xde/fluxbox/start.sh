@@ -17,6 +17,7 @@ if ! which $prog >/dev/null 2>&1; then
 	exit 1
 fi
 vers=${2:-${XDE_WM_VERSION:-$(LANG= $prog -version 2>/dev/null|awk '/Fluxbox/{print$2;exit}')}} || vers="1.3.5"
+[ -n "$vers" ] || vers="1.3.5"
 sdir=${XDE_WM_CONFIG_SDIR:-/usr/share/$name}
 home="$HOME/.$name"
 priv="$XDG_CONFIG_HOME/$name"

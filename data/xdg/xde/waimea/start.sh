@@ -17,6 +17,7 @@ if ! which $prog >/dev/null 2>&1; then
 	exit 1
 fi
 vers=${2:-${XDE_WM_VERSION:-$(LANG= $prog --version 2>/dev/null|awk '/waimea/{print$2;exit}')}} || vers="0.70.2"
+[ -n "$vers" ] || vers="0.70.2"
 sdir=${XDE_WM_CONFIG_SDIR:-/usr/share/$name}
 home="$HOME/.$name"
 priv="$XDG_CONFIG_HOME/$name"
@@ -45,8 +46,8 @@ done
 #   --usage                  Display brief usage message
 #   --help                   Show this help message
 #   --version                Output version information and exit
-
-Report bugs to <david@waimea.org>.
+#
+# Report bugs to <david@waimea.org>.
 
 xde-setwm -N $name -p $$ -r $vers -c $prog --rcfile "$priv/config" || :
 

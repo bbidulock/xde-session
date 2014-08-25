@@ -17,6 +17,7 @@ if ! which $prog >/dev/null 2>&1; then
 	exit 1
 fi
 vers=${2:-${XDE_WM_VERSION:-$(LANG= $prog -V 2>/dev/null|awk '/VTWM/{print$NF;exit}')}} || vers="5.5.0"
+[ -n "$vers" ] || vers="5.5.0"
 sdir=${XDE_WM_CONFIG_SDIR:-/usr/share/$name}
 home="$HOME/.$name"
 priv="$XDG_CONFIG_HOME/$name"

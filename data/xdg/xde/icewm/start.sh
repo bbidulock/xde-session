@@ -16,7 +16,8 @@ if ! which $prog >/dev/null 2>&1; then
 	echo "ERROR: cannot find usable $prog program" >&2
 	exit 1
 fi
-vers=${2:-${XDE_WM_VERSION:-$(LANG= $prog --version 2>/dev/null|awk '/IcewWM/{print$2;exit}')}} || vers="0.70.2"
+vers=${2:-${XDE_WM_VERSION:-$(LANG= $prog --version 2>/dev/null|awk '/IceWM/{print$2;exit}')}} || vers="1.3.8"
+[ -n "$vers" ] || vers="1.3.8"
 sdir=${XDE_WM_CONFIG_SDIR:-/usr/share/$name}
 home="$HOME/.$name"
 priv="$XDG_CONFIG_HOME/$name"
@@ -57,8 +58,8 @@ done
 #   DISPLAY=NAME        Name of the X server to use, depends on Xlib by default.
 #   MAIL=URL            Location of your mailbox. If the schema is omitted
 #                       the local "file" schema is assumed.
-
-Visit http://www.icewm.org/ for report bugs, support requests, comments...
+#
+# Visit http://www.icewm.org/ for report bugs, support requests, comments...
 
 
 export ICEWM_PRIVCFG="$priv"
