@@ -57,7 +57,87 @@ screen when it first opens the display as well as choices.
 Query
 ~~~~~
 
+Logind Notes
+------------
 
+For good systemd and desktop interworking consider responding
+to the following signals:
+
+1. org.freedesktop.login1.Manager.SessionNew(so): no special action
+   required.
+
+2. org.freedesktop.login1.Manager.SessionRemoved(so): no special action
+   required.
+
+3. org.freedesktop.login1.Manager.UserNew(uo): no special action
+   required.
+
+4. org.freedesktop.login1.Manager.UserRemoved(uo): no special action
+   required.
+
+5. org.freedesktop.login1.Manager.SeatNew(so): when we decide to support
+   multi-seat, have xdm start up a new login process for the seat
+   (however, this might also be possible using autovt).
+
+6. org.freedesktop.login1.Manager.SeatRemoved(so): when we decide to
+   support multi-seat, have xdm shut down the login process for a seat
+   (however, this might also be possible using autovt).
+
+7. org.freedesktop.login1.Manager.PrepareForShutdown(b): the session
+   manager should listen for this signal and initiate a session shutdown
+   (with user interaction when the active session, without otherwise).
+
+8. org.freedesktop.login1.Manager.PrepareForSleep(b): the session
+   manager should listen for this signal and initiate a session
+   checkpoint (with user interact when the active session, without
+   otherwise).
+
+9. org.freedesktop.login1.Session.PauseDevice(uus): no special action
+   required.
+
+10. org.freedesktop.login1.Session.ResumeDevice(uuh): no special action
+    required.
+
+11. org.freedesktop.login1.Session.Lock(): the session manager or screen
+    locker should listen to this signal for its own session and lock the
+    screen when the signal appears.
+
+12. org.freedesktop.login1.Session.Unlock(): the session manager or
+    screen locker should liset to this signal for its own session and
+    unlock the screen when the signal appears.
+
+13. org.freedesktop.DBus.Properties.PropertiesChanged(sa{sv}as): can be
+    used to check particularly the org.freedesktop.login1.Session.Active
+    property.
+
+Session methods:
+
+1. org.freedesktop.login1.Session.SetIdleHint(b:): the session manager
+   or screen locker should listen for screen saver events on the display
+   and set the idle hint when the screen saver activates and reset it
+   when the screen saver deactivates.
+
+2. org.freedesktop.login1.Session.TakeControl(b:): xdm should attempt to
+   take control of the session when logging in.
+
+3. org.freedesktop.login1.Session.ReleaseControl(): no special action
+   required.
+
+Seat methods:
+
+1. org.freedesktop.login1.Seat.ActivateSession(s:):
+
+2. org.freedesktop.login1.Seat.SwitchTo(u:):
+
+3. org.freedesktop.login1.Seat.SwitchToNext():
+
+4. org.freedesktop.login1.Seat.SwitchToPrevious():
+
+The program should be able to determine the seat and active sesssion
+from the environment variables XDG_SEAT and XDG_SESSION_ID; however, the
+synchronous logind interface can determine this easily as well.   Also,
+there is the org.freedesktop.login1.Seat.ActiveSession(so) property and
+org.freedesktop.login1.Session.Active(b) property.
 
 
 # vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:
