@@ -20,7 +20,7 @@ XDE-XLock*login.remote:			false
 XDE-XLock*xsession.chooser:		false
 XDE-XLock*xsession.execute:		false
 XDE-XLock*xsession.default:		adwm
-XDE-XLock*setbg:			true
+XDE-XLock*setbg:			false
 XDE-XLock*transparent:			true
 
 XDE-XLock.greetFace:			Liberation Sans:size=16:bold
