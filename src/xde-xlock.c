@@ -526,6 +526,13 @@ typedef struct {
 XdeScreen *screens;
 
 #ifdef DO_XLOCKING
+typedef struct {
+	int xfd;
+	Display *dpy;
+} XdeDisplay;
+
+XdeDisplay display;
+
 const char *
 show_state(int state)
 {
@@ -559,9 +566,8 @@ show_kind(int kind)
 void
 setup_screensaver(void)
 {
-	GdkDisplay *disp = gdk_display_get_default();
-	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
-	int s, nscr = gdk_display_get_n_screens(disp);
+	Display *dpy = display.dpy;
+	int s, nscr = ScreenCount(dpy);
 	char **list, **ext;
 	int n, next = 0;
 	Bool gotext = False;
@@ -592,42 +598,6 @@ setup_screensaver(void)
 		DPRINTF("xssMinorVersion = %d\n", xssMinorVersion);
 	}
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
-		GdkScreen *scrn = gdk_display_get_screen(disp, s);
-		XSetWindowAttributes xwa;
-		unsigned long mask = 0;
-
-		(void) xwa;
-		(void) scrn;
-
-		mask |= CWBackPixmap;
-		xwa.background_pixmap = None;
-		mask |= CWBackPixel;
-		xwa.background_pixel = BlackPixel(dpy, s);
-		mask |= CWBorderPixmap;
-		xwa.border_pixmap = None;
-		mask |= CWBorderPixel;
-		xwa.border_pixel = BlackPixel(dpy, s);
-		mask |= CWBitGravity;
-		xwa.bit_gravity = 0;
-		mask |= CWWinGravity;
-		xwa.win_gravity = NorthWestGravity;
-		mask |= CWBackingStore;
-		xwa.backing_store = NotUseful;
-		mask |= CWBackingPlanes;
-		xwa.backing_pixel = 0;
-		mask |= CWSaveUnder;
-		xwa.save_under = True;
-		mask |= CWEventMask;
-		xwa.event_mask = NoEventMask;
-		mask |= CWDontPropagate;
-		xwa.do_not_propagate_mask = NoEventMask;
-		mask |= CWOverrideRedirect;
-		xwa.override_redirect = True;
-		mask |= CWColormap;
-		xwa.colormap = DefaultColormap(dpy, s);
-		mask |= CWCursor;
-		xwa.cursor = None;
-
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
 		if (True || options.debug > 1) {
 			fprintf(stderr, "Before:\n");
@@ -640,18 +610,6 @@ setup_screensaver(void)
 		}
 		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
 					ScreenSaverNotifyMask | ScreenSaverCycleMask);
-#if 0
-		XScreenSaverSetAttributes(dpy, RootWindow(dpy, s), 0, 0,
-					  gdk_screen_get_width(scrn),
-					  gdk_screen_get_height(scrn),
-					  0, DefaultDepth(dpy, s), InputOutput,
-					  DefaultVisual(dpy, s), mask, &xwa);
-		GdkWindow *win = gtk_widget_get_window(xscr->wind);
-		Window w = GDK_WINDOW_XID(win);
-
-		XScreenSaverRegister(dpy, s, w, XA_WINDOW);
-#endif
-
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
 		if (True || options.debug > 1) {
 			fprintf(stderr, "After:\n");
@@ -662,9 +620,10 @@ setup_screensaver(void)
 			fprintf(stderr, "\tidle:\t\t%lu\n", xscr->info.idle);
 			fprintf(stderr, "\teventMask:\t0x%08lx\n", xscr->info.eventMask);
 		}
-
 	}
 }
+
+static void LockScreen(void);
 
 GdkFilterReturn
 handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
@@ -673,7 +632,7 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 
 	DPRINT();
 
-	if (True || options.debug > 1) {
+	if (options.debug > 1) {
 		fprintf(stderr, "==> XScreenSaverNotify:\n");
 		fprintf(stderr, "    --> send_event = %s\n", showBool(ev->send_event));
 		fprintf(stderr, "    --> window = 0x%lx\n", ev->window);
@@ -683,6 +642,16 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		fprintf(stderr, "    --> forced = %s\n", showBool(ev->forced));
 		fprintf(stderr, "    --> time = %lu\n", ev->time);
 		fprintf(stderr, "<== XScreenSaverNotify:\n");
+	}
+	switch (ev->state) {
+	case ScreenSaverCycle:
+	case ScreenSaverDisabled:
+	case ScreenSaverOn:
+	default:
+		break;
+	case ScreenSaverOff:
+		LockScreen();
+		break;
 	}
 	return G_SOURCE_CONTINUE;
 }
@@ -842,49 +811,13 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 		exit(EXIT_FAILURE);
 	}
 	switch (xev->type) {
-	case KeyPress:
-	case KeyRelease:
-	case ButtonPress:
-	case ButtonRelease:
-	case MotionNotify:
-	case EnterNotify:
-	case LeaveNotify:
-	case FocusIn:
-	case FocusOut:
-	case KeymapNotify:
-	case Expose:
-	case GraphicsExpose:
-	case NoExpose:
-	case VisibilityNotify:
-	case CreateNotify:
-	case DestroyNotify:
-	case UnmapNotify:
-	case MapNotify:
-	case MapRequest:
-	case ReparentNotify:
-	case ConfigureNotify:
-	case ConfigureRequest:
-	case GravityNotify:
-	case ResizeRequest:
-	case CirculateNotify:
-	case CirculateRequest:
-		break;
 	case PropertyNotify:
 		return event_handler_PropertyNotify(dpy, xev, xscr);
-	case SelectionClear:
-	case SelectionRequest:
-	case SelectionNotify:
-	case ColormapNotify:
-	case ClientMessage:
-	case MappingNotify:
-	case GenericEvent:
-		break;
 	default:
 #ifdef DO_XLOCKING
 		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify)
 			return handle_XScreenSaverNotify(dpy, xev);
-		else
-			EPRINTF("unknown event type %d\n", xev->type);
+		EPRINTF("unknown event type %d\n", xev->type);
 #endif				/* DO_XLOCKING */
 		break;
 	}
@@ -940,7 +873,7 @@ static GdkFilterReturn
 client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 {
 	XEvent *xev = (typeof(xev)) xevent;
-	Display *dpy = (typeof(dpy)) data;
+	Display *dpy = xev->xany.display;
 
 	DPRINT();
 	switch (xev->type) {
@@ -4662,6 +4595,88 @@ GetWindow(Bool noshow)
 	return xscr->wind;
 }
 
+#ifdef DO_XLOCKING
+Bool shutting_down;
+
+void
+handle_event(Display *dpy, XEvent *xev)
+{
+	DPRINTF("got event %d\n", xev->type);
+	switch (xev->type) {
+	case KeyPress:
+	case KeyRelease:
+	case ButtonPress:
+	case ButtonRelease:
+	case MotionNotify:
+	case EnterNotify:
+	case LeaveNotify:
+	case FocusIn:
+	case FocusOut:
+	case KeymapNotify:
+	case Expose:
+	case GraphicsExpose:
+	case NoExpose:
+	case VisibilityNotify:
+	case CreateNotify:
+	case DestroyNotify:
+	case UnmapNotify:
+	case MapNotify:
+	case MapRequest:
+	case ReparentNotify:
+	case ConfigureNotify:
+	case ConfigureRequest:
+	case GravityNotify:
+	case ResizeRequest:
+	case CirculateNotify:
+	case CirculateRequest:
+	case PropertyNotify:
+	case SelectionClear:
+	case SelectionRequest:
+	case SelectionNotify:
+	case ColormapNotify:
+	case ClientMessage:
+	case MappingNotify:
+	case GenericEvent:
+		break;
+	default:
+#ifdef DO_XLOCKING
+		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify) 
+			handle_XScreenSaverNotify(dpy, xev);
+		else
+			EPRINTF("unknown event type %d\n", xev->type);
+#endif
+		break;
+	}
+}
+
+void
+handle_events(void)
+{
+	XEvent ev;
+
+	XSync(display.dpy, False);
+	while (XPending(display.dpy) && !shutting_down) {
+		XNextEvent(display.dpy, &ev);
+		handle_event(display.dpy, &ev);
+	}
+}
+
+gboolean
+on_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
+{
+	if (cond & (G_IO_NVAL|G_IO_HUP|G_IO_ERR)) {
+		EPRINTF("poll failed: %s %s %s\n",
+				(cond & G_IO_NVAL) ? "NVAL" : "",
+				(cond & G_IO_HUP) ? "HUP" : "",
+				(cond & G_IO_ERR) ? "ERR" : "");
+		exit(EXIT_FAILURE);
+	} else if (cond & (G_IO_IN | G_IO_PRI)) {
+		handle_events();
+	}
+	return TRUE; /* keep event source */
+}
+#endif				/* DO_XLOCKING */
+
 static void
 startup(int argc, char *argv[])
 {
@@ -4696,6 +4711,18 @@ startup(int argc, char *argv[])
 	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
 	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+
+#ifdef DO_XLOCKING
+	if (!(display.dpy = XOpenDisplay(NULL))) {
+		EPRINTF("cannot open display\n");
+		exit(EXIT_FAILURE);
+	}
+	display.xfd = ConnectionNumber(display.dpy);
+	GIOChannel *chan = g_io_channel_unix_new(display.xfd);
+	guint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
+
+	g_io_add_watch(chan, mask, on_watch, NULL);
+#endif				/* DO_XLOCKING */
 }
 
 void
@@ -4825,6 +4852,18 @@ authenticate(void)
 static void
 LockScreen(void)
 {
+	if (lock_state == LockStateLocked) {
+		DPRINTF("already locked!\n");
+		return;
+	}
+	ShowWindow();
+	lock_state = LockStateLocked;
+	gtk_main_quit();
+}
+
+static void
+RelockScreen(void)
+{
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
@@ -4836,6 +4875,10 @@ LockScreen(void)
 static void
 UnlockScreen(void)
 {
+	if (lock_state == LockStateUnlocked) {
+		EPRINTF("already unlocked!\n");
+		return;
+	}
 	HideWindow();
 	lock_state = LockStateUnlocked;
 	gtk_main();
@@ -4859,7 +4902,7 @@ do_run(int argc, char *argv[])
 	for (;;) {
 		status = authenticate();
 		if (login_result == LoginResultLogout) {
-			LockScreen();
+			RelockScreen();
 			continue;
 		}
 		switch (status) {
@@ -4868,7 +4911,7 @@ do_run(int argc, char *argv[])
 		case PAM_CRED_INSUFFICIENT:
 		case PAM_MAXTRIES:
 		default:
-			LockScreen();
+			RelockScreen();
 			continue;
 		case PAM_SUCCESS:
 			UnlockScreen();

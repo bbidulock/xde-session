@@ -530,6 +530,8 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	switch (xev->type) {
 	case PropertyNotify:
 		return event_handler_PropertyNotify(dpy, xev, xscr);
+	default:
+		break;
 	}
 	return GDK_FILTER_CONTINUE;
 }
