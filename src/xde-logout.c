@@ -1267,46 +1267,58 @@ isLocal(void)
 		}
 	}
 #ifdef VNC_SUPPORTED
-	{
+	do {
 		int xvncEventBase = 0;
 		int xvncErrorBase = 0;
+		int n, next = 0, len = 0, value = 0;
+		char **list, **ext, *parm = NULL;
+		Bool present = False;
 
-		if (XVncExtQueryExtension(dpy, &xvncEventBase, &xvncErrorBase)) {
-			char *parm = NULL;
-			int len = 0;
-			int value = 0;
-
-			if (XVncExtGetParam(dpy, "DisconnectClients", &parm, &len) && parm) {
-				value = atoi(parm);
-				XFree(parm);
-				parm = NULL;
-			}
-			if (!value)
-				return False;
-			value = 0;
-			if (XVncExtGetParam(dpy, "NeverShared", &parm, &len) && parm) {
-				value = atoi(parm);
-				XFree(parm);
-				parm = NULL;
-			}
-			value = 0;
-			if (XVncExtGetParam(dpy, "rfbport", &parm, &len) && parm) {
-				value = !atoi(parm);
-				XFree(parm);
-				parm = NULL;
-			}
-			if (!value)
-				return False;
-			value = 0;
-			if (XVncExtGetParam(dpy, "SecurityTypes", &parm, &len) && parm) {
-				value = !strcmp(parm, "None");
-				XFree(parm);
-				parm = NULL;
-			}
-			if (!value)
-				return False;
+		if ((list = XListExtensions(dpy, &next)) && next)
+			for (n = 0, ext = list; n < next; n++, ext++)
+				if (!strncmp(*ext, "VNC-EXTENSION", strlen(*ext)))
+					present = True;
+		if (!present) {
+			DPRINTF("no VNC-EXTENSION extension\n");
+			break;
 		}
-	}
+		present = XVncExtQueryExtension(dpy, &xvncEventBase, &xvncErrorBase);
+		if (!present) {
+			DPRINTF("VNC-EXTENSION not present\n");
+			break;
+		}
+		if (XVncExtGetParam(dpy, "DisconnectClients", &parm, &len) && parm) {
+			value = atoi(parm);
+			XFree(parm);
+			parm = NULL;
+		}
+		if (!value)
+			return False;
+		value = 0;
+		if (XVncExtGetParam(dpy, "NeverShared", &parm, &len) && parm) {
+			value = atoi(parm);
+			XFree(parm);
+			parm = NULL;
+		}
+		if (!value)
+			return False;
+		value = 0;
+		if (XVncExtGetParam(dpy, "rfbport", &parm, &len) && parm) {
+			value = !atoi(parm);
+			XFree(parm);
+			parm = NULL;
+		}
+		if (!value)
+			return False;
+		value = 0;
+		if (XVncExtGetParam(dpy, "SecurityTypes", &parm, &len) && parm) {
+			value = !strcmp(parm, "None");
+			XFree(parm);
+			parm = NULL;
+		}
+		if (!value)
+			return False;
+	} while (0);
 #endif
 	return True;
 }
