@@ -214,6 +214,7 @@ typedef enum {
 	CommandReplace,			/* replace any running instance */
 	CommandLock,			/* ask running instance to lock */
 	CommandQuit,			/* ask running instance to quit */
+	CommandUnlock,			/* ask running instance to unlock */
 } CommandType;
 
 enum {
@@ -440,6 +441,13 @@ typedef enum {
 } LockState;
 
 LockState lock_state = LockStateLocked;
+
+typedef enum {
+	LockCommandLock,
+	LockCommandUnlock,
+	LockCommandQuit,
+} LockCommand;
+
 #endif				/* DO_XLOCKING */
 
 typedef enum {
@@ -451,6 +459,7 @@ LoginResult login_result;
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
+Atom _XA_XDE_XLOCK_COMMAND;
 Atom _XA_XROOTPMAP_ID;
 Atom _XA_ESETROOT_PMAP_ID;
 
@@ -599,7 +608,7 @@ setup_screensaver(void)
 	}
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
-		if (True || options.debug > 1) {
+		if (options.debug > 1) {
 			fprintf(stderr, "Before:\n");
 			fprintf(stderr, "\twindow:\t\t0x%08lx\n", xscr->info.window);
 			fprintf(stderr, "\tstate:\t\t%s\n", show_state(xscr->info.state));
@@ -611,7 +620,7 @@ setup_screensaver(void)
 		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
 					ScreenSaverNotifyMask | ScreenSaverCycleMask);
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
-		if (True || options.debug > 1) {
+		if (options.debug > 1) {
 			fprintf(stderr, "After:\n");
 			fprintf(stderr, "\twindow:\t\t0x%08lx\n", xscr->info.window);
 			fprintf(stderr, "\tstate:\t\t%s\n", show_state(xscr->info.state));
@@ -757,6 +766,9 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
+static void UnlockScreen();
+static void LockScreen();
+
 static GdkFilterReturn
 event_handler_ClientMessage(Display *dpy, XEvent *xev)
 {
@@ -795,6 +807,20 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 		reparse(dpy, xev->xclient.window);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
+	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
+		switch (xev->xclient.data.l[0]) {
+		case LockCommandLock:
+			LockScreen();
+			return GDK_FILTER_REMOVE;
+		case LockCommandUnlock:
+			UnlockScreen();
+			return GDK_FILTER_REMOVE;
+		case LockCommandQuit:
+			exit(EXIT_SUCCESS);
+		default:
+			break;
+		}
+	}
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
@@ -817,7 +843,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 #ifdef DO_XLOCKING
 		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify)
 			return handle_XScreenSaverNotify(dpy, xev);
-		EPRINTF("unknown event type %d\n", xev->type);
+		DPRINTF("unknown event type %d\n", xev->type);
 #endif				/* DO_XLOCKING */
 		break;
 	}
@@ -863,8 +889,12 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	switch (xev->type) {
 	case SelectionClear:
 		return event_handler_SelectionClear(dpy, xev, xscr);
+	case ClientMessage:
+		break;
+	default:
+		EPRINTF("wrong message type for handler %d\n", xev->type);
+		break;
 	}
-	EPRINTF("wrong message type for handler %d\n", xev->type);
 	return GDK_FILTER_CONTINUE;
 }
 #endif
@@ -2677,7 +2707,9 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
+			DPRINTF("running main loop...\n");
 			gtk_main();
+			DPRINTF("...running main loop\n");
 			if (login_result == LoginResultLogout)
 				return (PAM_CONV_ERR);
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(user)));
@@ -2697,7 +2729,9 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
+			DPRINTF("running main loop...\n");
 			gtk_main();
+			DPRINTF("...running main loop\n");
 			if (login_result == LoginResultLogout)
 				return (PAM_CONV_ERR);
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(pass)));
@@ -4719,6 +4753,9 @@ startup(int argc, char *argv[])
 	atom = gdk_atom_intern_static_string("_GTK_READ_RCFILES");
 	_XA_GTK_READ_RCFILES = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+	atom = gdk_atom_intern_static_string("_XDE_XLOCK_COMMAND");
+	_XA_XDE_XLOCK_COMMAND = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
 	atom = gdk_atom_intern_static_string("_XROOTPMAP_ID");
 	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
@@ -4747,6 +4784,7 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, TRUE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			DPRINTF("grabbing password entry widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
 		} else {
@@ -4754,6 +4792,7 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, FALSE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			DPRINTF("grabbing username entry widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 		}
@@ -4851,7 +4890,9 @@ authenticate(void)
 			EPRINTF("Unexpected pam error\n");
 			goto done;
 		}
+		DPRINTF("running main loop...\n");
 		gtk_main();
+		DPRINTF("...running main loop\n");
 		if (login_result == LoginResultLogout)
 			break;
 	}
@@ -4881,7 +4922,9 @@ RelockScreen(void)
 
 	XForceScreenSaver(dpy, ScreenSaverActive);
 	lock_state = LockStateLocked;
+	DPRINTF("running main loop...\n");
 	gtk_main();
+	DPRINTF("...running main loop\n");
 }
 
 static void
@@ -4893,7 +4936,9 @@ UnlockScreen(void)
 	}
 	HideWindow();
 	lock_state = LockStateUnlocked;
+	DPRINTF("running main loop...\n");
 	gtk_main();
+	DPRINTF("...running main loop\n");
 }
 #endif				/* DO_XLOCKING */
 
@@ -4910,27 +4955,36 @@ do_run(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	InitXDMCP(argv, argc);
 #endif
-	ShowWindow();
+	if (options.command != CommandLock)
+		UnlockScreen();
 	for (;;) {
+		DPRINT();
+		ShowWindow();
+		DPRINT();
 		status = authenticate();
+		DPRINT();
 		if (login_result == LoginResultLogout) {
 			RelockScreen();
 			continue;
 		}
+		DPRINT();
 		switch (status) {
 		case PAM_ABORT:
 			break;
 		case PAM_CRED_INSUFFICIENT:
 		case PAM_MAXTRIES:
 		default:
+			DPRINT();
 			RelockScreen();
 			continue;
 		case PAM_SUCCESS:
+			DPRINT();
 			UnlockScreen();
 			continue;
 		}
 		break;
 	}
+	DPRINT();
 }
 
 #ifdef DO_XLOCKING
@@ -4955,7 +5009,125 @@ do_quit(int argc, char *argv[])
 static void
 do_lock(int argc, char *argv[])
 {
-	startup(argc, argv);
+	Display *dpy;
+	int s, nscr;
+	char selection[32] = { 0, };
+	Bool found = False;
+
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
+		exit(EXIT_FAILURE);
+	}
+	nscr = ScreenCount(dpy);
+	for (s = 0; s < nscr; s++) {
+		Window owner;
+		XEvent ev;
+		Atom atom;
+
+		snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
+		atom = XInternAtom(dpy, selection, True);
+		if (!atom) {
+			DPRINTF("No '%s' atom on display\n", selection);
+			continue;
+		}
+		owner = XGetSelectionOwner(dpy, atom);
+		if (!owner) {
+			DPRINTF("No '%s' owner on display\n", selection);
+			continue;
+		}
+		atom = XInternAtom(dpy, "_XDE_XLOCK_COMMAND", False);
+		if (!atom) {
+			EPRINTF("Could not assign atom _XDE_XLOCK_COMMAND\n");
+			continue;
+		}
+		found = True;
+
+		ev.xclient.type = ClientMessage;
+		ev.xclient.serial = 0;
+		ev.xclient.send_event = False;
+		ev.xclient.display = dpy;
+		ev.xclient.window = owner;
+		ev.xclient.message_type = atom;
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = LockCommandLock;
+		ev.xclient.data.l[1] = 0;
+		ev.xclient.data.l[2] = 0;
+		ev.xclient.data.l[3] = 0;
+		ev.xclient.data.l[4] = 0;
+
+		XSendEvent(dpy, owner, False, StructureNotifyMask, &ev);
+		XFlush(dpy);
+	}
+	XSync(dpy, True);
+	XCloseDisplay(dpy);
+	if (!found) {
+		DPRINTF("no background instance found\n");
+		options.replace = True;
+		if (fork() == 0)
+			do_run(argc, argv);
+	}
+}
+
+/** @brief ask running background locker to unlock (or just quit)
+  */
+static void
+do_unlock(int argc, char *argv[])
+{
+	Display *dpy;
+	int s, nscr;
+	char selection[32] = { 0, };
+	Bool found = False;
+
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
+		exit(EXIT_FAILURE);
+	}
+	nscr = ScreenCount(dpy);
+	for (s = 0; s < nscr; s++) {
+		Window owner;
+		XEvent ev;
+		Atom atom;
+
+		snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
+		atom = XInternAtom(dpy, selection, True);
+		if (!atom) {
+			DPRINTF("No '%s' atom on display\n", selection);
+			continue;
+		}
+		owner = XGetSelectionOwner(dpy, atom);
+		if (!owner) {
+			DPRINTF("No '%s' owner on display\n", selection);
+			continue;
+		}
+		atom = XInternAtom(dpy, "_XDE_XLOCK_COMMAND", False);
+		if (!atom) {
+			EPRINTF("Could not assign atom _XDE_XLOCK_COMMAND\n");
+			continue;
+		}
+		found = True;
+
+		ev.xclient.type = ClientMessage;
+		ev.xclient.serial = 0;
+		ev.xclient.send_event = False;
+		ev.xclient.display = dpy;
+		ev.xclient.window = owner;
+		ev.xclient.message_type = atom;
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = LockCommandUnlock;
+		ev.xclient.data.l[1] = 0;
+		ev.xclient.data.l[2] = 0;
+		ev.xclient.data.l[3] = 0;
+		ev.xclient.data.l[4] = 0;
+
+		XSendEvent(dpy, owner, False, StructureNotifyMask, &ev);
+		XFlush(dpy);
+	}
+	XSync(dpy, True);
+	XCloseDisplay(dpy);
+	if (!found) {
+		EPRINTF("no background instance found\n");
+		exit(EXIT_FAILURE);
+	}
 }
 #endif				/* DO_XLOCKING */
 
@@ -6420,6 +6592,7 @@ main(int argc, char *argv[])
 #ifdef DO_XLOCKING
 			{"replace",	    no_argument,	NULL, 'r'},
 			{"lock",	    no_argument,	NULL, 'l'},
+			{"unlock",	    no_argument,	NULL, 'U'},
 			{"quit",	    no_argument,	NULL, 'q'},
 #endif					/* DO_XLOCKING */
 
@@ -6451,10 +6624,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "rlqb:S:s:p:i:T:unD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "rlUqb:S:s:p:i:T:unD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "rlqb:S:s:p:i:T:unDvhVCH?");
+		c = getopt(argc, argv, "rlUqb:S:s:p:i:T:unDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -6690,6 +6863,10 @@ main(int argc, char *argv[])
 	case CommandLock:
 		DPRINTF("%s: running lock\n", argv[0]);
 		do_lock(argc, argv);
+		break;
+	case CommandUnlock:
+		DPRINTF("%s: running unlock\n", argv[0]);
+		do_unlock(argc, argv);
 		break;
 #endif				/* DO_XLOCKING */
 	case CommandHelp:
