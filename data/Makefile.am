@@ -42,7 +42,8 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/autostart/wmweather+.desktop \
 	xdg/xde/autostart/xde-input.desktop \
 	xdg/xde/autostart/xde-panel.desktop \
-	xdg/xde/autostart/xde-setbg.desktop
+	xdg/xde/autostart/xde-setbg.desktop \
+	xdg/xde/autostart/xde-xlock.desktop
 
 nobase_dist_xdgconf_DATA += \
 	xdg/xde/compton/compton.conf \
@@ -307,6 +308,9 @@ AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = \
 	xdg/xde/waimea/start.sh
 
 nobase_dist_xdgdata_DATA = \
+	share/applications/xde-xlock.desktop
+
+nobase_dist_xdgdata_DATA += \
 	share/xde/xsessions/2bwm.desktop \
 	share/xde/xsessions/adwm.desktop \
 	share/xde/xsessions/aewm.desktop \
