@@ -12,6 +12,8 @@ main(int argc, char *argv[])
 	char **p;
 	int i, n;
 
+	setlocale(LC_ALL, "");
+
 	sd_get_seats(&seats);
 	fprintf(stdout, "Seats:\n");
 	for (p = seats; p && *p; p++) {

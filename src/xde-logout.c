@@ -239,8 +239,8 @@ typedef struct {
 	Bool transparent;
 	int width;
 	int height;
-	float xposition;
-	float yposition;
+	double xposition;
+	double yposition;
 	Bool setstyle;
 } Options;
 
@@ -2213,11 +2213,11 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 
 	/* always realign center alignment widgets */
 	for (m = 0, mon = xscr->mons; m < nmon; m++, mon++) {
-		float xrel, yrel;
+		double xrel, yrel;
 
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-		xrel = (float) (mon->geom.x + mon->geom.width * options.xposition) / (float) xscr->width;
-		yrel = (float) (mon->geom.x + mon->geom.height * options.yposition) / (float) xscr->height;
+		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
+		yrel = (double) (mon->geom.x + mon->geom.height * options.yposition) / (double) xscr->height;
 		if (!mon->align) {
 			mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 			gtk_container_add(GTK_CONTAINER(w), mon->align);
@@ -2341,12 +2341,12 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn, Bool noshow)
 	xscr->nmon = gdk_screen_get_n_monitors(scrn);
 	xscr->mons = calloc(xscr->nmon, sizeof(*xscr->mons));
 	for (m = 0, mon = xscr->mons; m < xscr->nmon; m++, mon++) {
-		float xrel, yrel;
+		double xrel, yrel;
 
 		mon->index = m;
 		gdk_screen_get_monitor_geometry(scrn, m, &mon->geom);
-		xrel = (float) (mon->geom.x + mon->geom.width * options.xposition) / (float) xscr->width;
-		yrel = (float) (mon->geom.x + mon->geom.height * options.yposition) / (float) xscr->height;
+		xrel = (double) (mon->geom.x + mon->geom.width * options.xposition) / (double) xscr->width;
+		yrel = (double) (mon->geom.x + mon->geom.height * options.yposition) / (double) xscr->height;
 		mon->align = gtk_alignment_new(xrel, yrel, 0, 0);
 		gtk_container_add(GTK_CONTAINER(w), mon->align);
 	}
@@ -3899,9 +3899,17 @@ getXrmUint(const char *val, unsigned int *integer)
 }
 
 gboolean
-getXrmFloat(const char *val, float *floating)
+getXrmDouble(const char *val, double *floating)
 {
-	*floating = strtod(val, NULL);
+	const struct lconv *lc = localeconv();
+	char radix, *copy = strdup(val);
+
+	if ((radix = lc->decimal_point[0]) != '.' && strchr(copy, '.'))
+		*strchr(copy, '.') = radix;
+
+	*floating = strtod(copy, NULL);
+	DPRINTF("Got decimal value %s, translates to %f\n", val, *floating);
+	free(copy);
 	return TRUE;
 }
 
@@ -3974,7 +3982,7 @@ get_resources(int argc, char *argv[])
 	if ((val = get_xlogin_resource(rdb, "width", NULL))) {
 		if (strchr(val, '%')) {
 			char *endptr = NULL;
-			float width = strtod(val, &endptr);
+			double width = strtod(val, &endptr);
 
 			if (endptr != val && *endptr == '%' && width > 0) {
 				options.width =
@@ -3991,7 +3999,7 @@ get_resources(int argc, char *argv[])
 	if ((val = get_xlogin_resource(rdb, "height", NULL))) {
 		if (strchr(val, '%')) {
 			char *endptr = NULL;
-			float height = strtod(val, &endptr);
+			double height = strtod(val, &endptr);
 
 			if (endptr != val && *endptr == '%' && height > 0) {
 				options.height =
@@ -4007,7 +4015,7 @@ get_resources(int argc, char *argv[])
 	}
 	if ((val = get_xlogin_resource(rdb, "x", NULL))) {
 		options.xposition =
-		    (float) strtoul(val, NULL, 0) / DisplayWidth(dpy, 0);
+		    (double) strtoul(val, NULL, 0) / DisplayWidth(dpy, 0);
 		if (options.xposition < 0)
 			options.xposition = 0;
 		if (options.xposition > DisplayWidth(dpy, 0))
@@ -4015,7 +4023,7 @@ get_resources(int argc, char *argv[])
 	}
 	if ((val = get_xlogin_resource(rdb, "y", NULL))) {
 		options.yposition =
-		    (float) strtoul(val, NULL, 0) / DisplayWidth(dpy, 0);
+		    (double) strtoul(val, NULL, 0) / DisplayWidth(dpy, 0);
 		if (options.yposition < 0)
 			options.yposition = 0;
 		if (options.yposition > DisplayWidth(dpy, 0))
@@ -4162,10 +4170,10 @@ get_resources(int argc, char *argv[])
 	// Chooser.command.font:	*-new-century-schoolbook-bold-r-normal-*-180-*
 
 	if ((val = get_resource(rdb, "Chooser.x", NULL))) {
-		getXrmFloat(val, &options.xposition);
+		getXrmDouble(val, &options.xposition);
 	}
 	if ((val = get_resource(rdb, "Chooser.y", NULL))) {
-		getXrmFloat(val, &options.yposition);
+		getXrmDouble(val, &options.yposition);
 	}
 	if ((val = get_resource(rdb, "banner", NULL))) {
 		getXrmString(val, &options.banner);
@@ -5060,6 +5068,8 @@ main(int argc, char *argv[])
 
 	saveArgc = argc;
 	saveArgv = argv;
+
+	setlocale(LC_ALL, "");
 
 	set_defaults(argc, argv);
 

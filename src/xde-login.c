@@ -646,6 +646,8 @@ main(int argc, char *argv[])
 	Command command = CommandDefault;
 	struct passwd *pw;
 
+	setlocale(LC_ALL, "");
+
 	set_defaults();
 
 	while (1) {

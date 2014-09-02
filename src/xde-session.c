@@ -1496,6 +1496,8 @@ General options:\n\
 int
 main(int argc, char *argv[])
 {
+	setlocale(LC_ALL, "");
+
 	while(1) {
 		int c, val;
 #ifdef _GNU_SOURCE

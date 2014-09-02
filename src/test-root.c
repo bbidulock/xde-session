@@ -133,6 +133,8 @@ main(int argc, char *argv[])
 	uid_t uid, ruid, euid, suid;
 	int res;
 
+	setlocale(LC_ALL, "");
+
 	uid = getuid();
 	getresuid(&ruid, &euid, &suid);
 

@@ -1201,6 +1201,8 @@ set_defaults()
 int
 main(int argc, char *argv[])
 {
+	setlocale(LC_ALL, "");
+
 	set_defaults();
 
 	while (1) {

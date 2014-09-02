@@ -4456,6 +4456,8 @@ main(int argc, char *argv[])
 {
 	CommandType command = COMMAND_DEFAULT;
 
+	setlocale(LC_ALL, "");
+
 	set_defaults();
 
 	/* save these as globals for later use */
