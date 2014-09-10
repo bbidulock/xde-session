@@ -4,7 +4,7 @@ XDE_USE_XDG_HOME=1
 
 here=$(cd `dirname $0`;pwd)
 
-name=ctwm
+name=etwm
 files="version apps buttons config defaults getstyles keys rc rc.m4 setstyle winmenu"
 xtras=""
 clone="version apps buttons config defaults getstyles keys rc.m4 setstyle stylemenu winmenu"
@@ -23,7 +23,7 @@ if ! which $prog >/dev/null 2>&1; then
 	exit 1
 fi
 vers=${2:-${XDE_WM_VERSION:-$(LANG= $prog -version 2>/dev/null)}}
-[ -n "$vers" ] || vers="3.8.1"
+[ -n "$vers" ] || vers="3.8.3"
 rdir=${XDE_WM_CONFIG_RDIR:-$XDG_RUNTIME_DIR/$name}
 xdir=${XDE_WM_CONFIG_XDIR:-$XDG_CONFIG_HOME/$name}
 sdir=${XDE_WM_CONFIG_SDIR:-/usr/share/$name}
@@ -169,21 +169,21 @@ runscript() {
 }
 
 if [ ! -f "$priv/rc" -o "$priv/rc.m4" -nt "$priv/rc" ]; then
-	export CTWM_TYPE="$prog"
-	export CTWM_VERSION="$vers"
-	export CTWM_CONFIG_RDIR="$rdir"
-	export CTWM_CONFIG_XDIR="$xdir"
-	export CTWM_CONFIG_HOME="$priv"
-	export CTWM_CONFIG_SDIR="$sdir"
-	export CTWM_RCFILE="$priv/rc"
-	export CTWM_M4FILE="$priv/rc.m4"
+	export ETWM_TYPE="$prog"
+	export ETWM_VERSION="$vers"
+	export ETWM_CONFIG_RDIR="$rdir"
+	export ETWM_CONFIG_XDIR="$xdir"
+	export ETWM_CONFIG_HOME="$priv"
+	export ETWM_CONFIG_SDIR="$sdir"
+	export ETWM_RCFILE="$priv/rc"
+	export ETWM_M4FILE="$priv/rc.m4"
 
 	runscript "getstyles" "$prog" "$vers" "$priv/rc"
 	runscript "config"    "$prog" "$vers" "$priv/rc"
 fi
 
-makelink "$HOME" ".ctwmrc"    "$priv/rc"
-makelink "$HOME" ".ctwmrc.m4" "$priv/rc.m4"
+makelink "$HOME" ".etwmrc"    "$priv/rc"
+makelink "$HOME" ".etwmrc.m4" "$priv/rc.m4"
 
 exit 0
 

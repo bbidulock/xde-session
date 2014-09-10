@@ -63,10 +63,10 @@ Adwm*raise:A + Up, AC + a : S + r, AC + a : r
 Adwm*raiselower:A + Home, A + Left, AC + a : u
 Adwm*raisetiled:WS + r
 Adwm*reload:AC + p : Delete
-Adwm*resizedecx:AS + a = 3 0 -6 0, W + minus = 3 0 -6 0
-Adwm*resizedecy:AS + s = 0 3 0 -6, WS + minus = 0 3 0 -6
-Adwm*resizeincx:AC + a : Left = -3 0 6 0, AC + a : Right -3 0 6 0, AS + d = -3 0 6 0, W + equal = -3 0 6 0
-Adwm*resizeincy:AC + a : Down 0 -3 0 6, AC + a : Up = 0 -3 0 6, AS + w = 0 -3 0 6, WS + equal = 0 -3 0 6
+Adwm*resizedecx:AC + a : Left = 3 0 -6 0, AS + a = 3 0 -6 0, W + minus = 3 0 -6 0
+Adwm*resizedecy:AC + a : Down = 0 3 0 -6, AS + s = 0 3 0 -6, WS + minus = 0 3 0 -6
+Adwm*resizeincx:AC + a : Right -3 0 6 0, AS + d = -3 0 6 0, W + equal = -3 0 6 0
+Adwm*resizeincy:AC + a : Up = 0 -3 0 6, AS + w = 0 -3 0 6, WS + equal = 0 -3 0 6
 Adwm*restart:AC + p : Next, AC + p : Prior = twm, AS + q, WC + r
 Adwm*rmlasttag:AC + minus
 Adwm*rotateview:A + y

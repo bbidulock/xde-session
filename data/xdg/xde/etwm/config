@@ -1,0 +1,41 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export ETWM_TYPE=${1:-${ETWM_TYPE:-etwm}}
+if [ ! -x "`which $ETWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable $ETWM_TYPE program" >&2
+    exit 1;
+fi
+ETWM_VERSION=${2:-${ETWM_VERSION:-$($ETWM_TYPE -version 2>/dev/null)}} || ETWM_VERSION="3.8.1"
+export ETWM_VERSION
+export ETWM_CONFIG_HOME=${ETWM_CONFIG_HOME:-${HOME:-~}/.$ETWM_TYPE}
+export ETWM_CONFIG_SDIR=${ETWM_CONFIG_SDIR:-/usr/share/$ETWM_TYPE}
+export ETWM_RCFILE="${3:-${ETWM_RCFILE:-$ETWM_CONFIG_HOME/rc}}"
+
+m4file="$ETWM_CONFIG_HOME/rc.m4"
+[ -s "$m4file" ] || m4file="$ETWM_CONFIG_SDIR/rc.m4"
+[ -s "$m4file" ] || { echo "ERROR: missing file $m4file" >&2; exit 1; }
+
+USER=${LOGNAME:-$USER}
+HOME=${HOME:-~}
+
+WIDTH=$(xwininfo -root|grep 'Width:'|awk '{print$2}')
+HEIGHT=$(xwininfo -root|grep 'Height:'|awk '{print$2}')
+
+CLASS=$(xwininfo -root|grep 'Visual Class:'|awk '{print$3}')
+case "$CLASS" in
+(*Color)    COLOR='Yes' ;;
+(*)	    COLOR='No' ;;
+esac
+
+m4 -DUSER="$USER" -DHOME="$HOME" \
+   -DWIDTH="$WIDTH" -DHEIGHT="$HEIGHT" \
+   -DCLASS="$CLASS" -DCOLOR="$COLOR" \
+   -DTWM_TYPE="$ETWM_TYPE" -DTWM_VERSION="$ETWM_VERSION" \
+   "$m4file" >"$ETWM_CONFIG_HOME/rc"
+
+# vim: sw=4

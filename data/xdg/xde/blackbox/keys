@@ -22,45 +22,86 @@
   [end]
 
   [keybindings] (begin keybindings)
-    [NextWindow]  (Mod1-Tab)
-    [PrevWindow]  (Mod1-Shift-Tab)
-    [Execute]  (Mod1-F1) {uxterm}
-    [Execute]  (Mod1-F2) {fbrun}
+    [nextWindow]  (Mod1-Escape)
+    [nextWindow]  (Mod1-Tab)
+    [nextWindow]  (Mod4-Tab)
+    [nextWindow]  (Mod1-j)
+    [nextWindow]  (Mod4-j)
+
+    [prevWindow]  (Mod1-Shift-Escape)
+    [prevWindow]  (Mod1-Shift-Tab)
+    [prevWindow]  (Mod4-Shift-Tab)
+    [prevWindow]  (Mod1-k)
+    [prevWindow]  (Mod4-k)
+
+    [nextWindowOnAllWorkspaces]  (Mod1-Control-Tab)
+    [prevWindowOnAllWorkspaces]  (Mod1-Control-Shift-Tab)
+
+#   [nextWindowOfClass]  (Mod1-Above_Tab)
+#   [nextWindowOfClass]  (Mod1-F6)
+#   [nextWindowOfClass]  (Mod4-Above_Tab)
+
+#   [prevWindowOfClass]  (Mod1-Shift-Above_Tab)
+#   [prevWindowOfClass]  (Mod1-Shift-F6)
+#   [prevWindowOfClass]  (Mod4-Shift-Above_Tab)
+
+#   [nextWindowOfClassOnAllWorkspaces]  (Mod1-Control-Above_Tab)
+#   [prevWindowOfClassOnAllWorkspaces]  (Mod1-Control-Shift-Above_Tab)
+
+#   [nextWindowOnAllScreens]  (Mod1-Control-Escape)
+#   [prevWindowOnAllScreens]  (Mod1-Control-Shift-Escape)
+
+    [execute]  (Mod1-F1) {uxterm}
+    [execute]  (Mod1-F2) {xde-run}
 
 # brian's keybindings
-    [Execute]  (Mod1-Control-t) {roxterm --disable-sm}
-    [Execute]  (Mod1-Control-n) {roxterm --disable-sm --geometry=76x50}
-    [Execute]  (Mod1-Control-x) {uxterm -ls -geometry 76x50}
-    [Execute]  (Mod1-Control-v) {gvim -geometry 76x50}
+    [execute]  (Mod1-Control-t) {roxterm --disable-sm}
+    [execute]  (Mod1-Control-n) {roxterm --disable-sm --geometry=76x50}
+    [execute]  (Mod1-Control-x) {uxterm -ls -geometry 76x50}
+    [execute]  (Mod1-Control-v) {gvim -geometry 76x50}
+    [execute]  (Mod1-Control-r) {xde-run}
 #   [Reconfigure]  (Mod1-Control-r)
-    [Execute]  (Mod1-Control-s) {uxterm -ls -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-50-iso646.1991-irv -fb -schumacher-clean-medium-r-bold--8-80-75-75-c-50-iso646.1991-irv -geometry 127x97 -sl 15000}
-    [Execute]  (Mod1-Control-y) {uxterm -ls -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-60-iso646.1991-irv -fb -schumacher-clean-bold-r-normal--8-80-75-75-c-60-iso646.1991-irv -geometry 105x97 -sl 15000}
-    [Execute]  (Mod1-Control-l) {uxterm -ls -fn 6x13 -fb 6x13bold -geometry 100x60 -sl 15000}
-    [Execute]  (Mod1-Control-b) {uxterm -ls -fn 7x13 -fb 7x13bold -geometry  90x60 -sl 15000}
-    [Execute]  (Mod1-Control-h) {uxterm -ls -fn 9x15 -fb 9x15bold -geometry  70x54 -sl 15000}
+    [execute]  (Mod1-Control-s) {uxterm -ls -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-50-iso646.1991-irv -fb -schumacher-clean-medium-r-bold--8-80-75-75-c-50-iso646.1991-irv -geometry 127x97 -sl 15000}
+    [execute]  (Mod1-Control-y) {uxterm -ls -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-60-iso646.1991-irv -fb -schumacher-clean-bold-r-normal--8-80-75-75-c-60-iso646.1991-irv -geometry 105x97 -sl 15000}
+    [execute]  (Mod1-Control-l) {uxterm -ls -fn 6x13 -fb 6x13bold -geometry 100x60 -sl 15000}
+    [execute]  (Mod1-Control-b) {uxterm -ls -fn 7x13 -fb 7x13bold -geometry  90x60 -sl 15000}
+    [execute]  (Mod1-Control-h) {uxterm -ls -fn 9x15 -fb 9x15bold -geometry  70x54 -sl 15000}
 
 # from LXDE
-    [Execute]  (Mod4-m) {pcmanfm}
-    [Execute]  (Mod4-r) {lxpanelctl run}
-    [Execute]  (Control-Escape) {lxpanelctl menu}
+    [execute]  (Mod4-m) {pcmanfm}
+#   [execute]  (Mod4-r) {lxpanelctl run}
+    [execute]  (Mod4-r) {xde-run}
+#   [execute]  (Control-Escape) {lxpanelctl menu}
+    [execute]  (Control-Escape) {xdg-traymenu -p}
 
 # current window commands
-    [Close]  (Mod1-F4)
-    [Execute]  (Mod1-F5) {xrefresh}
+    [close]  (Mod1-F4)
+#   [close]  (Mod1-F5)
+    [execute]  (Mod1-F5) {xrefresh}
     [toggleShade]  (Mod1-F9)
+#   [toggleMaximizeFull]  (Mod1-F10)
     [toggleMaximizeVertical]  (Mod1-F10)
+    [toggleMaximizeVertical]  (Mod1-Shift-F10)
     [toggleMaximizeHorizontal]  (Mod1-F11)
     [toggleMaximizeFull]  (Mod1-F12)
+#   [toggleShade]  (Mod1-F12)
     [toggleMaximizeVertical]  (Control-Shift-Up)
     [toggleMaximizeHorizontal]  (Control-Shift-Right)
     [toggleMaximizeFull]  (Control-Shift-Left)
 
 # brian's current window commands
-    [Close]  (Mod1-q)
-#   [Minimize]  (Mod1-m)
+    [close]  (Mod1-q)
+    [close]  (Mod4-q)
+#   [iconify]  (Mod1-m)
 #   [toggleShade]  (Mod1-s)
-    [Raise]  (Mod1-Up)
-    [Lower]  (Mod1-Down)
+    [raise]  (Mod1-Up)
+    [lower]  (Mod1-Down)
+
+    [close]  (Mod4-x)
+    [close]  (Mod1-Shift-c)
+    [close]  (Mod4-Shift-c)
+    [close]  (Mod4-Shift-x)
+    [toggleMaximizeFull]  (Mod4-m)
 
 # from fluxbox
     [sendToWorkspace] (Mod4-F1) {1}
@@ -76,6 +117,32 @@
     [sendToWorkspace] (Mod4-F11) {11}
     [sendToWorkspace] (Mod4-F12) {12}
 
+    [sendToWorkspace] (Mod4-Shift-1) {1}
+    [sendToWorkspace] (Mod4-Shift-2) {2}
+    [sendToWorkspace] (Mod4-Shift-3) {3}
+    [sendToWorkspace] (Mod4-Shift-4) {4}
+    [sendToWorkspace] (Mod4-Shift-5) {5}
+    [sendToWorkspace] (Mod4-Shift-6) {6}
+    [sendToWorkspace] (Mod4-Shift-7) {7}
+    [sendToWorkspace] (Mod4-Shift-8) {8}
+    [sendToWorkspace] (Mod4-Shift-9) {9}
+    [sendToWorkspace] (Mod4-Shift-0) {10}
+    [sendToWorkspace] (Mod4-Shift-F1) {11}
+    [sendToWorkspace] (Mod4-Shift-F2) {12}
+    [sendToWorkspace] (Mod4-Shift-F3) {13}
+    [sendToWorkspace] (Mod4-Shift-F4) {14}
+    [sendToWorkspace] (Mod4-Shift-F5) {15}
+    [sendToWorkspace] (Mod4-Shift-F6) {16}
+    [sendToWorkspace] (Mod4-Shift-F7) {17}
+    [sendToWorkspace] (Mod4-Shift-F8) {18}
+    [sendToWorkspace] (Mod4-Shift-F9) {19}
+    [sendToWorkspace] (Mod4-Shift-F10) {20}
+    [sendToWorkspace] (Mod4-Shift-F11) {21}
+    [sendToWorkspace] (Mod4-Shift-F12) {22}
+
+    [sendToNextWorkspace] (Mod1-Shift-Right)
+    [sendToPrevWorkspace] (Mod1-Shift-Left)
+
     [chain] (Control-Mod1-W)
       [sendToWorkspace] (1) {1}
       [sendToWorkspace] (2) {2}
@@ -86,25 +153,69 @@
       [sendToWorkspace] (7) {7}
       [sendToWorkspace] (8) {8}
     [end]
-#   [Lower]  (Mod1-Down)
-#   [Raise]  (Mod1-Up)
+#   [lower]  (Mod1-Down)
+#   [raise]  (Mod1-Up)
 #   [toggleShade]  (Mod1-F9)
-#   [Close]  (Mod1-F4)
-    [Iconify]  (Mod1-m)
+#   [close]  (Mod1-F4)
+    [iconify]  (Mod1-m)
+    [iconify]  (Mod1-F9)
+    [iconify]  (Mod1-Shift-m)
+    [iconify]  (Mod4-i)
+    [iconify]  (Mod4-n)
+    [iconify]  (Mod4-w)
+
 #   [toggleMaximizeFull]  (Mod1-F12)
 #   [toggleMaximizeHorizontal]  (Mod1-F11)
 #   [toggleMaximizeVertical]  (Mod1-F10)
-    [toggleOmnipresent]  (Mod1-Control-S)
-    [resizeWindowWidth]  (Mod1-Control-Shift-Left) {-5}
-    [resizeWindowWidth]  (Mod1-Control-Shift-Right) {5}
-    [resizeWindowHeight]  (Mod1-Control-Shift-Up) {-5}
-    [resizeWindowHeight]  (Mod1-Control-Shift-Down) {5}
+    [toggleOmnipresent]  (Mod1-Control-s)
+
+#   [resizeWindowWidth]   (Mod1-Control-Shift-Left) {-5}
+#   [resizeWindowWidth]   (Mod1-Control-Shift-Right) {5}
+#   [resizeWindowHeight]  (Mod1-Control-Shift-Up) {-5}
+#   [resizeWindowHeight]  (Mod1-Control-Shift-Down) {5}
+
+    [resizeWindowWidth]   (Mod1-Shift-a) {-6}
+    [resizeWindowWidth]   (Mod1-Shift-d) {6}
+    [resizeWindowHeight]  (Mod1-Shift-s) {-6}
+    [resizeWindowHeight]  (Mod1-Shift-w) {6}
+
+    [resizeWindowWidth]   (Mod4-minus) {-6}
+    [resizeWindowWidth]   (Mod4-equal) {6}
+    [resizeWindowHeight]  (Mod4-Shift-minus) {-6}
+    [resizeWindowHeight]  (Mod4-Shift-equal) {6}
+
 #   [moveWindowUp]  (Mod1-Control-Up) {1}
 #   [moveWindowDown]  (Mod1-Control-Down) {1}
 #   [moveWindowLeft]  (Mod1-Control-Left) {1}
 #   [moveWindowRight]  (Mod1-Control-Right) {1}
-#   [NextWindow]  (Mod1-Tab)
-    [NextWindowOnAllWorkspaces]  (Mod1-Control-Tab)
+
+    [moveWindowUp]     (Mod4-Shift-bracketleft) {5}
+    [moveWindowDown]   (Mod4-Shift-bracketright) {5}
+    [moveWindowLeft]   (Mod4-bracketleft) {5}
+    [moveWindowRight]  (Mod4-bracketright) {5}
+
+    [chain] (Mod1-Control-a)
+        [raise]  (Shift-r)
+        [raise]  (r)
+        [lower]  (Shift-l)
+        [lower]  (l)
+        [toggleShade]  (s)
+        [toggleOmnipresent]  (a)
+        [chain]  (q)
+            [close]  (f)
+            [close]  (k)
+            [close]  (q)
+        [end]
+        [resizeWindowWidth]   (Left) {-6}
+        [resizeWindowWidth]   (Right) {6}
+        [resizeWindowHeight]  (Down) {-6}
+        [resizeWindowHeight]  (Up) {6}
+        [chain]  (m)
+            [toggleMaximizeFull]        (m)
+            [toggleMaximizeHorizontal]  (h)
+            [toggleMaximizeVertical]    (v)
+        [end]
+    [end]
 
 # from fluxbox
     [changeWorkspace]  (Control-F1) {1}
@@ -134,20 +245,86 @@
     [changeWorkspace]  (Mod1-6) {6}
     [changeWorkspace]  (Mod1-7) {7}
     [changeWorkspace]  (Mod1-8) {8}
+    [changeWorkspace]  (Mod1-9) {9}
+    [changeWorkspace]  (Mod1-0) {10}
+    [changeWorkspace]  (Mod1-bracketleft) {11}
+    [changeWorkspace]  (Mod1-bracketright) {12}
 
-    #[upWorkspace] (Mod1-Control-K)
-    #[downWorkspace] (Mod1-Control-J)
-    #[leftWorkspace] (Mod1-Control-H)
-    #[rightWorkspace] (Mod1-Control-L)
+    [upWorkspace]     (Mod1-Control-k)
+    [downWorkspace]   (Mod1-Control-j)
+    [leftWorkspace]   (Mod1-Control-h)
+    [rightWorkspace]  (Mod1-Control-l)
 
-    [showRootMenu] (Mod1-Control-Escape)
+    [changeWorkspace]  (Mod4-1) {1}
+    [changeWorkspace]  (Mod4-2) {2}
+    [changeWorkspace]  (Mod4-3) {3}
+    [changeWorkspace]  (Mod4-4) {4}
+    [changeWorkspace]  (Mod4-5) {5}
+    [changeWorkspace]  (Mod4-6) {6}
+    [changeWorkspace]  (Mod4-7) {7}
+    [changeWorkspace]  (Mod4-8) {8}
+    [changeWorkspace]  (Mod4-9) {9}
+    [changeWorkspace]  (Mod4-0) {10}
 
-#   [Execute]  (Mod1-F5) {xrefresh}
-#   [Execute]  (Mod1-F1) {gnome-terminal}
-    #[Execute]  (Mod4-E) {kfmclient openProfile filemanagement}
-    #[Execute]  (F20) {kfmclient openProfile filemanagement}
-    [Execute]  (Mod4-E) {nautilus ~}
-    [Execute]  (F20) {nautilus ~}
+    [upWorkspace]     (Mod4-Page_Up)
+    [downWorkspace]   (Mod4-Page_Down)
+    [leftWorkspace]   (Mod4-Home)
+    [rightWorkspace]  (Mod4-End)
+    [prevWorkspace]   (Mod4-Down)
+    [nextWorkspace]   (Mod4-Up)
+
+    [nextScreen]  (Mod1-period)
+    [nextScreen]  (Mod4-Next)
+    [nextScreen]  (Mod4-Control-j)
+    [nextScreen]  (Mod4-Shift-Right)
+
+    [prevScreen]  (Mod1-comma)
+    [prevScreen]  (Mod4-Prior)
+    [prevScreen]  (Mod4-Control-k)
+    [prevScreen]  (Mod4-Shift-Left)
+
+#   [showRootMenu] (Mod1-Control-Escape)
+    [showRootMenu] (Mod1-Control-m)
+    [showRootMenu] (F12)
+    [showRootMenu] (Mod4-p)
+
+    [showWorkspaceMenu] (F11)
+
+#   [execute]  (Mod1-F5) {xrefresh}
+#   [execute]  (Mod1-F1) {gnome-terminal}
+#   [execute]  (Mod4-E) {kfmclient openProfile filemanagement}
+#   [execute]  (F20) {kfmclient openProfile filemanagement}
+#   [execute]  (Mod4-E) {nautilus ~}
+    [execute]  (Mod4-e) {pcmanfm}
+#   [execute]  (F20) {nautilus ~}
+
+    [execute]  (Mod1-Print) {scrot -s}
+    [execute]  (Mod1-space) {xde-winmenu -w active -W center}
+    [execute]  (Mod1-x) {uxterm}
+    [execute]  (Mod1-Control-Delete) {xde-logout}
+    [execute]  (Mod1-Control-Return) {uxterm}
+    [execute]  (Mod1-Control-f) {pcmanfm}
+    [execute]  (Mod1-Control-w) {firefox}
+    [execute]  (Mod1-Shift-Return) {uxterm}
+    [execute]  (Shift-Escape) {xde-winmenu -w active -W center}
+    [execute]  (Mod4-s) {scrot}
+    [execute]  (Mod4-slash) {xde-findws}
+    [execute]  (Mod4-Shift-Delete) {xde-xlock -l}
+    [execute]  (Mod4-Shift-Return) {uxterm}
+    [execute]  (Mod4-Shift-s) {scrot -s}
+    [execute]  (Mod4-Shift-slash) {xde-namews}
+
+    [chain] (Mod1-Control-p)
+        [execute]  (d) {xde-run}
+    [end]
+
+    [chain] (Mod1-Control-e)
+        [execute]  (c) {xde-run}
+        [execute]  (e) {uxterm}
+        [execute]  (l) {xde-lock -l}
+        [execute]  (s) {scrot -s}
+    [end]
+
   [end] (end keybindings)
 [end] (end bbkeys configuration)
 

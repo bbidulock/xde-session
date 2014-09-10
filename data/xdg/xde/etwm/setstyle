@@ -1,0 +1,29 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+if [ $# -gt 1 ] ; then
+    ETWM_TYPE=${1:-${ETWM_TYPE:-etwm}}
+    styledir="$2"
+else
+    ETWM_TYPE=${ETWM_TYPE:-etwm}
+    styledir="$1"
+fi
+
+[ -n "$styledir" ] || { echo "ERROR" >&2; exit 1; }
+[ -d "$styledir" ] || { echo "ERROR" >&2; exit 1; }
+
+ETWM_CONFIG_HOME=${ETWM_CONFIG_HOME:-${HOME:-~}/.$ETWM_TYPE}
+
+[ -d "$ETWM_CONFIG_HOME" ] || mkdir -p "$ETWM_CONFIG_HOME"
+
+rm -f "$ETWM_CONFIG_HOME/stylerc"
+ln -s "$styledir/stylerc" "$ETWM_CONFIG_HOME/"
+
+exit 0
+
+# vim: sw=4
+

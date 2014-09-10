@@ -1,0 +1,1180 @@
+#!/usr/bin/m4
+##
+## twm configuration file
+##
+
+## included file /home/brian/.etwm/defaults
+#NoGrabServer
+RestartPreviousState
+#DecorateTransients
+
+#-----------#
+#-- FONTS --#
+#-----------#
+
+## included file /home/brian/.etwm/defaults
+
+TitleFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+ResizeFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+IconFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconManagerFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*"
+
+
+TitleFont       "-*-liberation sans-bold-r-normal-*-*-90-*-*-*-*-iso10646-1"
+ResizeFont      "-*-liberation sans-bold-r-normal-*-*-90-*-*-*-*-iso10646-1"
+IconManagerFont "-*-liberation sans-bold-r-normal-*-*-90-*-*-*-*-iso10646-1"
+MenuFont        "-*-liberation sans-medium-r-normal-*-*-90-*-*-*-*-iso10646-1"
+IconFont        "-*-liberation sans-medium-r-normal-*-*-90-*-*-*-*-iso10646-1"
+WorkSpaceFont   "-*-liberation sans-medium-r-normal-*-*-90-*-*-*-*-iso10646-1"
+
+#---------------#
+#-- VARIABLES --#
+#---------------#
+
+
+
+
+
+TitlePadding 0
+
+### BORDERS ###
+
+## Width of border around client window frames.
+BorderWidth 2
+
+## Use client border width instead of BorderWidth
+#ClientBorderWidth
+
+## The amount by which titlebuttons should be indented on all sides
+ButtonIndent 0
+
+## Distance between titlebar decorations and the window frame.
+FramePadding 0
+
+## Width of border surrounding icon windows.
+IconBorderWidth 2
+
+
+## The width in pixels of the border surrounding title buttons.
+TitleButtonBorderWidth 0
+
+## The distance between titlebar decorations and highlight area.
+TitlePadding 4
+
+## Do not use shadows on menus (faster)
+NoMenuShadows
+
+## Do not use backing store on menus.
+#NoBackingStore
+
+
+## Do not use default buttons on titlebars.
+NoDefaults
+
+IconDirectory "/usr/share/etwm/styles/Squared-blue/bitmaps"
+
+PixmapDirectory "/usr/share/etwm/styles/Squared-blue/pixmaps:/home/brian/.etwm/pixmaps:/usr/share/etwm/pixmaps:/usr/share/pixmaps"
+
+## Windows titles buttons
+
+
+
+LeftTitleButton "xpm:menu_pressed.xpm" = f.menu "windowops"
+LeftTitleButton "xpm:shade_pressed.xpm" = f.squeeze
+LeftTitleButton "xpm:stick_pressed.xpm" = f.occupyall
+LeftTitleButton "xpm:lhalf_pressed.xpm" = f.leftzoom
+
+RightTitleButton "xpm:rhalf_pressed.xpm" = f.rightzoom
+RightTitleButton "xpm:min_pressed.xpm" = f.iconify
+RightTitleButton "xpm:max_pressed.xpm" = f.fullzoom
+RightTitleButton "xpm:close_pressed.xpm" = f.deleteordestroy
+
+## Do not generate icons, ever (they are ugly anyway).
+IconifyByUnmapping
+
+## Do not highlight _any_ title bars (ugly stipple).
+NoTitleHighlight
+
+## Always decorate transitents.
+#DecorateTransients
+
+## Do not pass keys to applciation from titlebar.
+NoTitleFocus
+
+## Move opaque instead of outline.
+OpaqueMove
+
+## Maximum of screen size, in percent, for opaque move
+OpaqueMoveThreshold 100
+
+## Resize opaque instead of outline.
+OpaqueResize
+
+## Maximum of screen size, in percent, for opaque resize
+OpaqueResizeThreshold 100
+
+
+## Double click when moving within this time causes constrained move.
+ConstrainedMoveTime 500
+
+## Do not wait to cross window boundaries when resizing.
+AutoRelativeResize
+
+## Place windows randomly.
+RandomPlacement "on" "+22+22"
+
+## Honor program-requessted position. 
+#UsePPosition
+
+WarpUnmapped
+
+## ignore case in res_name and res_class comparisons
+NoCaseSensitive
+
+#NoIconManagers
+#NoRaiseOnMove
+#NoRaiseOnResize
+#NoRaiseOnWarp
+#NoRaiseOnDeiconify
+
+## Do not move windows off screen unless forced.
+DontMoveOff
+
+
+## Number of segments in animations of iconification.
+Zoom 128
+
+
+
+Cursors
+{
+	Frame	    "top_left_arrow"
+	Title	    "top_left_arrow"
+	Icon	    "top_left_arrow"
+	IconMgr	    "top_left_arrow"
+	Move	    "fleur"
+	Resize	    "fleur"
+	Menu	    "sb_left_arrow"
+	Button	    "hand2"
+	Wait	    "watch"
+	Select	    "dot"
+	Destroy	    "pirate"
+}
+
+## _MIT_PRIORITY_COLORS to save: all titlebar colors
+SaveColor {
+	"#5369a3"
+	"#161616"
+	"#c0c0c0"
+	"#e0e0e0"
+	"#373737"
+}
+
+## Enable the Workspacemanager
+ShowWorkSpaceManager
+
+## starts the Workspace manager in map mode
+StartInMapState
+
+## Geometry
+#WorkSpaceManagerGeometry        "360x60-0-0" 4
+
+## Workspace names and button colors
+## "name"     [{ bg-button [fg-button] [bg-root] [fg-root] [pixmap-root] }]
+WorkSpaces {
+	"1" {"rgb:0/6/6" "rgb:f/f/f"}
+	"2" {"rgb:4/4/6" "rgb:f/f/f"}
+	"3" {"rgb:6/4/4" "rgb:f/f/f"}
+	"4" {"rgb:6/6/6" "rgb:f/f/f"}
+	"5" {"rgb:0/4/4" "rgb:f/f/f"}
+	"6" {"rgb:2/2/4" "rgb:f/f/f"}
+	"7" {"rgb:4/2/2" "rgb:f/f/f"}
+	"8" {"rgb:4/4/4" "rgb:f/f/f"}
+}
+
+
+
+## included file /home/brian/.etwm/buttons
+MoveDelta 3
+## included file /home/brian/.etwm/apps
+### APPLICATION SPECIFIC ###
+
+## Windows to keep on top of others.
+AlwaysOnTop {
+}
+
+## Squeeze these using window gravity -- remove list for all
+AlwaysSqueezeToGravity {
+}
+
+## Automatically lower these windows when pointer leaves
+AutoLower {
+}
+
+## Automatically raise these windows when pointer enters and stays
+AutoRaise {
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+}
+
+## Automatically unsqueeze on focus and squeeze on loss of focus these windows
+AutoSqueeze {
+}
+
+## Window that are to be treated as icons (dockapps?)
+DontIconifyByUnmapping {
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+}
+
+## Unmap these windows by moving them offscreen -- dockapps?
+UnmapByMovingFarAway {
+}
+
+## Do not save these windows for session manager.
+DontSave {
+}
+
+## Do not set inactive state when invisible due to change in workspace.
+DontSetInactive {
+}
+
+## Windows that should never have their titles squeezed
+DontSqueezeTitle {
+}
+
+## How to squeeze specific window titles.
+# SqueezeTitle {
+#     # "name"   justification   num   denom
+# }
+
+## Do not generate icons for these clients.
+IconifyByUnmapping {
+}
+
+## Do not show these windows in the icon manager.
+IconManagerDontShow {
+	"xclock"
+	"xload"
+	"xbiff"
+	"xconsole"
+	"asmail"
+	"asclock"
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+	"Iconmanager"
+	"WorkSpaceManager"
+}
+
+## Show these windows in the icon manager.
+IconManagerShow {
+}
+
+## Do not show these windows in TwmIcons menu.
+IconMenuDontShow {
+}
+
+
+## Icons variable overrides client specified icons.
+ForceIcons
+
+## Specify specific icons for specific windows.
+Icons {
+##	"Resource"  "iconname"
+	"AudioCP"   "xpm:audio_editor.xpm"
+	"Xedit"	    "xpm:xedit.xpm"
+	"Xterm"	    "xpm:term.xpm"
+	"rxvt"	    "xpm:term.xpm"
+	"urxvt"	    "xpm:term.xpm"
+	"xconsole"  "xpm:display.xpm"
+	"unread"    "xpm:xrn.xpm"
+	"nothing"   "xpm:xrn.xpm"
+	"xrn"	    "xpm:xrn.xpm"
+	"Xarchie"   "xpm:xarchie.xpm"
+	"Xman"	    "xpm:xman.xpm"
+	"HPterm"    "xpm:hpterm.xpm"
+	"emacs"	    "xpm:emacs.xpm"
+	"Elm"	    "xpm:mailfull"
+	"Pine"	    "xpm:mailfull"
+	"Mutt"	    "xpm:mailfull"
+	"xarchie"   "xpm:xarchie.xpm"
+	"xgopher"   "xpm:xgopher.xpm"
+	"ghostview" "xpm:ghostview.xpm"
+	"netscape"  "xpm:netscape.xpm"
+	"bitchx"    "xpm:bitchx.xpm"
+	"xmms"	    "xpm:/usr/share/xmms/wmxmms.xpm"
+	"ssh"	    "xpm:openssh.xpm"
+}
+
+## Windows that should have titlebar when NoTitle has been set.
+MakeTitle {
+}
+
+## Windows that should not have borders.
+NoBorder {
+      # "name"
+	"WorkSpaceManager"
+	"xload"
+	"xclock"
+	"wmcpu"
+}
+
+## Windows that should not be highlighted when pointer enters.
+NoHighlight {
+}
+
+## Windows that should be moved opaquely.
+OpaqueMove {
+}
+
+## Windows that should not be moved opaquely.
+NoOpaqueMove {
+}
+
+## Windows that should be resized opaquely.
+OpaqueResize {
+}
+
+## Windows that should not be resized opaquely.
+NoOpaqueResize {
+}
+
+## Windows that should not have a title.
+NoTitle {
+      # "name"
+	"WorkSpaceManager"
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+	"XTerm Icon Manager"
+	"Virtual Desktop"
+	"xload"
+	"xclock"
+	"wmcpu"
+	"TWM Dock"
+}
+
+## Do not highlight borders on these windows
+NoHighlight {
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+	"VTWM Desktop"
+}
+
+## Windows that should not have title highlight.
+#NoTitleHighlight {
+#}
+
+## Window to disallow client requested restacking.
+NoStackMode {
+}
+
+## Windows that should be on specific workspaces.
+Occupy {
+        "xconsole"      { "0" }
+}
+
+## Windows that should be on all workspaces.
+OccupyAll {
+      # "name"
+	"xload"
+	"xbiff"
+	"asmail"
+	"asclock"
+	"Licq*"
+	"Psi"
+	"xclock"
+}
+
+## Windows that should be iconified by being unmapped without trying to
+#  map any icons.
+#IconifyByUnmapping {
+#}
+
+## Window that should be started iconified (regardless of WM_HINTS)
+StartIconified {
+}
+
+## Windows that should start squeezed.
+StartSqueezed {
+}
+
+## Warp cursor into these window when de-iconified
+WarpCursor {
+	"TWM Icon Manager"
+	"VTWM Icon Manager"
+}
+
+## Warp windows to current workspace on client map request.
+WarpOnDeIconify {
+}
+
+## Windows in the warp ring.
+WindowRing {
+}
+
+## Windows excluded from the warp ring.
+WindowRingExclude {
+}
+
+## Window box for groups of windows.
+WindowBox "TWM Dock" "800x64+0-0" {
+	"xload"
+	"xclock"
+	"wmcpu"
+}
+## Default geometries for some windows.
+WindowGeometries {
+  # "name" "wxh+x+y"
+	"TWM Dock"   "800x64+0-0"
+	"xload"  "64x64+0+0"
+	"xclock" "64x64+64+0"
+	"wmcpu"  "64x64+128+0"
+}
+
+
+## included file /home/brian/.etwm/keys
+
+## included file /home/brian/.etwm/winmenu
+DontMoveOff
+## Colors definitions
+Color {
+
+    # Default colors for sizing and information windows
+    DefaultForeground		"#c0c0c0"
+    DefaultBackground		"#161616"
+
+    # Menu Colors
+    MenuBackground		"#161616"
+    MenuForeground		"#c0c0c0"
+    MenuTitleBackground		"#5369a3"
+    MenuTitleForeground		"#e0e0e0"
+    MenuShadowColor		"#373737"
+
+
+    MapWindowBackground		"#5369a3" {
+    }
+    MapWindowForeground		"#e0e0e0" {
+    }
+
+## included file /home/brian/.etwm/apps
+    ## Hilighted window border color.
+    BorderColor			"#5369a3" {
+	#   "res_class"	"color"
+    }
+    ## Unhilighted window border Foreground.
+    BorderTileForeground	"#5369a3" {
+	#   "res_class"	"color"
+    }
+    ## Unhilighted window border Background.
+    BorderTileBackground	"#161616" {
+	#   "res_class"	"color"
+    }
+    ## Title Foreground for specific windows
+    TitleForeground		"#c0c0c0" {
+	#   "res_class"	"color"
+    }
+    ## Title Background for specific windows
+    TitleBackground		"#161616" {
+	#   "res_class"	"color"
+    }
+    ## Icon foreground color for specific clients
+    IconForeground		"#c0c0c0" {
+	#   "res_class"	"color"
+    }
+    ## Icon background for specific clients
+    IconBackground		"#161616" {
+	#   "res_class"	"color"
+    }
+    ## Icon border color for specific clients
+    IconBorderColor		"#5369a3" {
+	#   "res_class"	"color"
+    }
+    ## Foreground in icon manager for specific clients
+    IconManagerForeground	"#c0c0c0" {
+	#   "res_class"	"color"
+    }
+    ## Background in icon manager for specific clients
+    IconManagerBackground	"#161616" {
+	#   "res_class"	"color"
+    }
+    ## Highlight in icon manager for specific clients
+    IconManagerHighlight	"#5369a3" {
+	#   "res_class"	"color"
+    }
+
+}
+## Monochrome definitions
+Monochrome {
+## included file /home/brian/.etwm/apps
+}
+
+#---------------#
+#-- FUNCTIONS --#
+#---------------#
+## included file /home/brian/.etwm/defaults
+## Function to reconfigure the window manager
+Function "reconfig" { f.exec "/usr/share/etwm/config etwm 3.8.1" f.restart }
+## included file /home/brian/.etwm/buttons
+#
+# Define some useful functions for motion-based actions.
+#
+Function "move-or-lower" { f.move f.deltastop f.lower }
+Function "move-or-raise" { f.move f.deltastop f.raise }
+Function "move-or-iconify" { f.move f.deltastop f.iconify }
+## included file /home/brian/.etwm/keys
+Function "next-cycle-focus" { f.forwiconmgr f.raise }
+Function "prev-cycle-focus" { f.backiconmgr f.raise }
+Function "set-system-style-Airforce" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Airforce" f.function "reconfig" }
+Function "set-system-style-Archlinux" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Archlinux" f.function "reconfig" }
+Function "set-system-style-Atc" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Atc" f.function "reconfig" }
+Function "set-system-style-Aviation" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Aviation" f.function "reconfig" }
+Function "set-system-style-Blackbirds" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Blackbirds" f.function "reconfig" }
+Function "set-system-style-Circuits" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Circuits" f.function "reconfig" }
+Function "set-system-style-Classic" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Classic" f.function "reconfig" }
+Function "set-system-style-Default" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Default" f.function "reconfig" }
+Function "set-system-style-Dishes" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Dishes" f.function "reconfig" }
+Function "set-system-style-Pedestals" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Pedestals" f.function "reconfig" }
+Function "set-system-style-Penguins" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Penguins" f.function "reconfig" }
+Function "set-system-style-Radar" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Radar" f.function "reconfig" }
+Function "set-system-style-Squared-blue" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Squared-blue" f.function "reconfig" }
+Function "set-system-style-Squared-cadet" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Squared-cadet" f.function "reconfig" }
+Function "set-system-style-Squared-green" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Squared-green" f.function "reconfig" }
+Function "set-system-style-Squared-grey" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Squared-grey" f.function "reconfig" }
+Function "set-system-style-Telcom" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Telcom" f.function "reconfig" }
+Function "set-system-style-Towers" { f.exec "/home/brian/.etwm/setstyle etwm /usr/share/etwm/styles/Towers" f.function "reconfig" }
+
+#-------------#
+#-- BUTTONS --#
+#-------------#
+## included file /home/brian/.etwm/buttons
+#
+# Set some useful bindings.  Sort of uwm-ish, sort of simple-button-ish
+#
+#Button1 =	: root		: f.menu "Main"
+Button2 =       : root          : f.menu "TwmWindows"
+Button3 = 	: root		: f.menu "defops"
+
+Button1 = m	: window|icon	: f.function "move-or-lower"
+Button2 = m	: window|icon	: f.iconify
+Button3 = m	: icon		: f.function "move-or-raise"
+Button3 = m	: window	: f.resize
+
+Button1 =	: title		: f.function "move-or-raise"
+Button2 =	: title		: f.raiselower
+Button3 =	: title		: f.menu "windowops"
+
+Button1 =	: icon		: f.function "move-or-iconify"
+Button2 =	: icon		: f.iconify
+
+Button1 =	: iconmgr	: f.iconify
+Button2 =	: iconmgr	: f.iconify
+
+Button1 =	: frame		: f.move
+Button1 = m	: frame		: f.forcemove
+Button2 =	: frame		: f.raiselower
+Button3 =	: frame		: f.resize
+Button3 = m	: frame		: f.resize
+
+Button1 = m4	: frame|window|icon	: f.movepack
+Button1 = m4|c	: frame|window|icon	: f.movepush
+
+#--------------#
+#-- BINDINGS --#
+#--------------#
+## included file /home/brian/.etwm/keys
+"Tab"	    = m		: all		: f.function "next-cycle-focus"
+"Tab"	    = m | s	: all		: f.function "prev-cycle-focus"
+
+"F1"	    = m		: all		: f.exec "exec uxterm &"
+"F2"	    = m		: all		: f.exec "exec fbrun &"
+
+"XF86AudioRaiseVolume"	= : all		: f.exec "amixer sset Master,0 1+"
+"XF86AudioLowerVolume"	= : all		: f.exec "amixer sset Master,0 1-"
+"XF86AudioMut"		= : all		: f.exec "amixer sset Master,0 toggle"
+
+"Up"	    = c | s	: window	: f.zoom
+"Right"    = c | s	: window	: f.horizoom
+"Left"	    = c | s	: window	: f.fullzoom
+
+"Right"    = c | m4	: window	: f.changesize "right +10"
+"Left"	    = c | m4	: window	: f.changesize "right -10"
+"Up"	    = c | m4	: window	: f.changesize "bottom +10"
+"Down"	    = c | m4	: window	: f.changesize "bottom -10"
+"Right"    = c|s | m4	: window	: f.changesize "left +10"
+"Left"	    = c|s | m4	: window	: f.changesize "left -10"
+"Up"	    = c|s | m4	: window	: f.changesize "top +10"
+"Down"	    = c|s | m4	: window	: f.changesize "top -10"
+
+"Right"    = s | m4	: window	: f.fill "right"
+"Left"	    = s | m4	: window	: f.fill "left"
+"Up"	    = s | m4	: window	: f.fill "top"
+"Down"	    = s | m4	: window	: f.fill "bottom"
+
+"Right"    = m4	: window	: f.jumpright "1"
+"Left"	    = m4	: window	: f.jumpleft "1"
+"Up"	    = m4	: window	: f.jumpup "1"
+"Down"	    = m4	: window	: f.jumpdown "1"
+
+"t"	    = c | m	: all		: f.exec "exec roxterm --disable-sm &"
+"n"	    = c | m	: all		: f.exec "exec roxterm --geometry=90x70 &"
+"x"	    = c | m	: all		: f.exec "exec uxterm -geometry 90x70 &"
+"v"	    = c | m	: all		: f.exec "exec gvim -geometry 90x70 &"
+"r"	    = c | m	: all		: f.function "reconfig"
+"s"	    = c | m	: all		: f.exec "exec uxterm -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-50-iso646.1991-irv -fb -schumacher-clean-medium-r-bold--8-80-75-75-c-50-iso646.1991-irv -geometry 146x143 -sl 15000"
+"y"	    = c | m	: all		: f.exec "exec uxterm -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-60-iso646.1991-irv -fb -schumacher-clean-bold-r-normal--8-80-75-75-c-60-iso646.1991-irv -geometry 120x143 -sl 15000"
+"l"	    = c | m	: all		: f.exec "exec uxterm -fn 6x13 -fb 6x13bold -geometry 120x88 -sl 15000"
+"b"	    = c | m	: all		: f.exec "exec uxterm -fn 7x13 -fb 7x13bold -geometry 104x88 -sl 15000"
+"h"	    = c | m	: all		: f.exec "exec uxterm -fn 9x15 -fb 9x15bold -geometry  81x76 -sl 15000"
+"w"	    = c | m	: all		: f.exec "exec firefox &"
+"f"	    = c | m	: all		: f.exec "exec pcmanfm &"
+
+# for fun
+"m"	    = c | m4	: all		: f.menu "TwmWindows"
+
+# keys from LXDE
+"e"	    = m4	: all		: f.exec "exec pcmanfm &"
+"r"	    = m4	: all		: f.exec "exec lxpanelctrl run &"
+#"F1"	    = m		: all		: f.exec "exec lxpanelctrl run &"
+"Escape"   = c		: all		: f.exec "exec lxpanelctrl menu &"
+
+# current window commands
+"F4"	    = m		: window|icon	: f.deleteordestroy
+"F5"	    = m		: window|icon	: f.destroy
+"F9"	    = m		: window|icon	: f.iconify
+"F10"	    = m		: window	: f.zoom
+"F11"	    = m		: window	: f.fullzoom
+
+"m"	    = m		: window|icon	: f.iconify
+"q"	    = m		: window|icon	: f.deleteordestroy
+#"s"	    = m		: window	: f.squeeze
+"Up"	    = m		: window	: f.raise
+"Down"	    = m		: window	: f.lower
+"Space"    = m		: window|icon	: f.menu "windowops"
+
+# m4 is the windows key
+"F4"	    = m4	: window|icon	: f.deleteordestroy
+"F5"	    = m4	: window|icon	: f.destroy
+"F9"	    = m4	: window|icon	: f.iconify
+"F10"	    = m4	: window	: f.zoom
+"F11"	    = m4	: window	: f.fullzoom
+
+"m"	    = m4	: window|icon	: f.iconify
+"q"	    = m4	: window|icon	: f.deleteordestroy
+#"s"	    = m4	: window	: f.squeeze
+"Up"	    = m4	: window	: f.raise
+"Down"	    = m4	: window	: f.lower
+"Space"    = m4	: window|icon	: f.menu "windowops"
+
+# exit twm
+"Delete"   = c | m	: all		: f.quit
+
+# send the current dinwo to previous/next workspace
+"Left"	    = m4	: window	: f.movetoprevworkspace
+"Right"    = m4	: window	: f.movetonextworkspace
+
+# send the current window and follow it to previous/next workspace
+"Left"	    = m4 | c	: window	: f.movetoprevworkspaceandfollow
+"Right"    = m4 | c	: window	: f.movetonextworkspaceandfollow
+
+# change to previous/next workspace
+"Left"	    = c | m	: all		: f.leftworkspace
+"Right"    = c | m	: all		: f.rightworkspace
+"Up"	    = c | m	: all		: f.upworkspace
+"Down"     = c | m	: all		: f.downworkspace
+
+# change to a specific workspace
+"F1"	    = c		: all		: f.gotoworkspace "1"
+"F2"	    = c		: all		: f.gotoworkspace "2"
+"F3"	    = c		: all		: f.gotoworkspace "3"
+"F4"	    = c		: all		: f.gotoworkspace "4"
+"F5"	    = c		: all		: f.gotoworkspace "5"
+"F6"	    = c		: all		: f.gotoworkspace "6"
+"F7"	    = c		: all		: f.gotoworkspace "7"
+"F8"	    = c		: all		: f.gotoworkspace "8"
+"F9"	    = c		: all		: f.gotoworkspace "9"
+"F10"	    = c		: all		: f.gotoworkspace "10"
+"F11"	    = c		: all		: f.gotoworkspace "11"
+"F12"	    = c		: all		: f.gotoworkspace "12"
+
+"1"	    = m		: all		: f.gotoworkspace "1"
+"2"	    = m		: all		: f.gotoworkspace "2"
+"3"	    = m		: all		: f.gotoworkspace "3"
+"4"	    = m		: all		: f.gotoworkspace "4"
+"5"	    = m		: all		: f.gotoworkspace "5"
+"6"	    = m		: all		: f.gotoworkspace "6"
+"7"	    = m		: all		: f.gotoworkspace "7"
+"8"	    = m		: all		: f.gotoworkspace "8"
+"9"	    = m		: all		: f.gotoworkspace "9"
+"0"	    = m		: all		: f.gotoworkspace "10"
+
+
+#-----------#
+#-- MENUS --#
+#-----------#
+Menu "twmstyles" ("#e0e0e0":"#5369a3")
+{
+    "System Styles"		f.title
+    "Airforce"		f.function "set-system-style-Airforce"
+    "Archlinux"		f.function "set-system-style-Archlinux"
+    "Atc"		f.function "set-system-style-Atc"
+    "Aviation"		f.function "set-system-style-Aviation"
+    "Blackbirds"		f.function "set-system-style-Blackbirds"
+    "Circuits"		f.function "set-system-style-Circuits"
+    "Classic"		f.function "set-system-style-Classic"
+    "Default"		f.function "set-system-style-Default"
+    "Dishes"		f.function "set-system-style-Dishes"
+    "Pedestals"		f.function "set-system-style-Pedestals"
+    "Penguins"		f.function "set-system-style-Penguins"
+    "Radar"		f.function "set-system-style-Radar"
+    "Squared-blue"		f.function "set-system-style-Squared-blue"
+    "Squared-cadet"		f.function "set-system-style-Squared-cadet"
+    "Squared-green"		f.function "set-system-style-Squared-green"
+    "Squared-grey"		f.function "set-system-style-Squared-grey"
+    "Telcom"		f.function "set-system-style-Telcom"
+    "Towers"		f.function "set-system-style-Towers"
+    "User Styles"		f.title
+}
+## included file /home/brian/.etwm/winmenu
+menu "zoomops" ("#e0e0e0":"#5369a3")
+{
+    "Zoom Ops"			f.title
+    "Full zoom"			f.fullzoom
+    "Horizontal zoom"		f.horizoom
+    ""				f.separator
+    "Vertical zoom"		f.zoom
+    "Top zoom"			f.topzoom
+    "Bottom zoom"		f.bottomzoom
+    "Left zoom"			f.leftzoom
+    "Right zoom"		f.rightzoom
+    ""				f.separator
+    "Left expand"		f.fill "left"
+    "Right expand"		f.fill "right"
+    "Top expand"		f.fill "top"
+    "Bottom expand"		f.fill "bottom"
+}
+
+menu "moveops" ("#e0e0e0":"#5369a3")
+{
+    "Move Ops"			f.title
+    "Move"			f.move
+    "Forced Move"		f.forcemove
+
+    ""				f.separator
+    "Left pack"			f.pack "left"
+    "Right pack"		f.pack "right"
+    "Top pack"			f.pack "top"
+    "Bottom pack"		f.pack "bottom"
+
+}
+
+menu "windowops" ("#e0e0e0":"#5369a3")
+{
+    "Window Ops"		f.title
+    "(De)Iconify"		f.iconify
+    "Refresh"			f.winrefresh
+    "Info..."			f.identify
+    "Resize"			f.resize
+    "Zoom"			f.menu "zoomops"
+    "Move"			f.menu "moveops"
+    "(No)AutoRaise"		f.autoraise
+    "(No)AutoLower"		f.autolower
+    "Circle Up"			f.circleup
+    "Circle Down"		f.circledown
+    "Lower"			f.lower
+    "Raise"			f.raise
+    "Raise/Lower"		f.raiselower
+    "(Un)Focus"			f.focus
+    "Save"			f.saveyourself
+    "Close"			f.delete
+    "Kill"			f.destroy
+}
+## included file /home/brian/.etwm/menu
+
+Menu "Archlinux" ("#e0e0e0":"#5369a3")
+{
+    "Archlinux"                       f.title
+    "AUR"                             f.exec "exec xdg-open https://aur.archlinux.org &"
+    "Bugs"                            f.exec "exec xdg-open https://bugs.archlinux.org &"
+    "Developers"                      f.exec "exec xdg-open http://www.archlinux.org/developers/ &"
+    "Documentation"                   f.exec "exec xdg-open https://wiki.archlinux.org/index.php/Official_Arch_Linux_Install_Guide &"
+    "Donate"                          f.exec "exec xdg-open http://www.archlinux.org/donate/ &"
+    "Forum"                           f.exec "exec xdg-open https://bbs.archlinux.org &"
+    "Homepage"                        f.exec "exec xdg-open http://www.archlinux.org &"
+    "SVN"                             f.exec "exec xdg-open http://projects.archlinux.org/svntogit/ &"
+    "Schwag"                          f.exec "exec xdg-open http://www.zazzle.com/archlinux/ &"
+    "Wiki"                            f.exec "exec xdg-open https://wiki.archlinux.org &"
+}
+
+Menu "Accessories" ("#e0e0e0":"#5369a3")
+{
+    "Accessories"                     f.title
+    "7-Zip FM"                        f.exec "exec 7zFM &"
+    "AllTray 0.7.5.1dev"              f.exec "exec alltray -a &"
+    "Application Finder"              f.exec "exec xfce4-appfinder &"
+    "BlackBox Pager"                  f.exec "exec /usr/bin/bbpager &"
+    "Calculator"                      f.exec "exec ede-calc &"
+    "EDE Tips"                        f.exec "exec ede-tip &"
+    "FOX Calculator"                  f.exec "exec calculator &"
+    "FOX Text Editor"                 f.exec "exec adie &"
+    "File Manager PCManFM"            f.exec "exec pcmanfm &"
+    "Font Viewer"                     f.exec "exec gnome-font-viewer &"
+    "Gtk VNC Viewer"                  f.exec "exec /usr/bin/gvncviewer &"
+    "Gxmessage"                       f.exec "exec gxmessage &"
+    "LXTerminal"                      f.exec "exec lxterminal &"
+    "MacSlow's Cairo-Clock"           f.exec "exec cairo-clock &"
+    "Mount-gtk"                       f.exec "exec mount-gtk &"
+    "Pacman Express"                  f.exec "exec /opt/pacmanexpress/ssx /opt/pacmanexpress/pacmanexpress &"
+    "Root Terminal"                   f.exec "exec gksu -l gnome-terminal &"
+    "Vi IMproved"                     f.exec "exec gvim -f &"
+    "X11 Terminal"                    f.exec "exec xterm -fn 9x15 &"
+    "Xarchiver"                       f.exec "exec xarchiver &"
+    "Xcalc Calculator"                f.exec "exec xcalc &"
+    "Xfi"                             f.exec "exec xfi &"
+    "Xfp"                             f.exec "exec xfp &"
+    "Xfv"                             f.exec "exec xfv &"
+    "Xfw"                             f.exec "exec xfw &"
+    "compton"                         f.exec "exec compton &"
+}
+
+Menu "Games" ("#e0e0e0":"#5369a3")
+{
+    "Games"                           f.title
+    "XGalaga"                         f.exec "exec xgalaga &"
+    "aafire"                          f.exec "exec aafire &"
+}
+
+Menu "Graphics" ("#e0e0e0":"#5369a3")
+{
+    "Graphics"                        f.title
+    "Blender"                         f.exec "exec blender &"
+    "Feh"                             f.exec "exec feh &"
+    "G3DViewer"                       f.exec "exec g3dviewer &"
+    "GNU Image Manipulation Program"  f.exec "exec gimp-2.8 &"
+    "GQview"                          f.exec "exec gqview -r &"
+    "GV"                              f.exec "exec gv &"
+    "Gaw Gtk Analog Wave viewer"      f.exec "exec gaw &"
+    "Geeqie"                          f.exec "exec geeqie -r &"
+    "Image Viewer"                    f.exec "exec ede-image-view &"
+    "Image Viewer"                    f.exec "exec gpicview &"
+    "Inkscape"                        f.exec "exec inkscape &"
+    "Konstruktor"                     f.exec "exec konstruktor &"
+    "LibreOffice Draw"                f.exec "exec libreoffice --draw &"
+    "Stopmotion"                      f.exec "exec /usr/bin/stopmotion &"
+    "Wings3D"                         f.exec "exec wings3d &"
+    "xfig"                            f.exec "exec /usr/bin/xfig &"
+    "xzgv"                            f.exec "exec xzgv &"
+}
+
+Menu "Internet" ("#e0e0e0":"#5369a3")
+{
+    "Internet"                        f.title
+    "Avahi SSH Server Browser"        f.exec "exec /usr/bin/bssh &"
+    "Avahi VNC Server Browser"        f.exec "exec /usr/bin/bvnc &"
+    "DHCP Client Daemon Applet"       f.exec "exec /usr/bin/dhcpcd-gtk &"
+    "Ekiga Softphone"                 f.exec "exec ekiga &"
+    "Ettercap"                        f.exec "exec ettercap-pkexec -G &"
+    "Firefox"                         f.exec "exec /usr/lib/firefox/firefox &"
+    "Links"                           f.exec "exec xlinks -g &"
+    "OpenNX Connection Wizard"        f.exec "exec /usr/bin/opennx --wizard &"
+    "OpenNX Session Administrator"    f.exec "exec /usr/bin/opennx --admin &"
+    "OpenNX client"                   f.exec "exec /usr/bin/opennx &"
+    "Remmina Remote Desktop Client"   f.exec "exec remmina &"
+    "X11VNC Server"                   f.exec "exec x11vnc -gui tray=setpass -rfbport PROMPT -bg -o %/home/brian/.x11vnc.log.%VNCDISPLAY &"
+    "Zenmap"                          f.exec "exec zenmap &"
+    "Zenmap (as root)"                f.exec "exec /usr/share/zenmap/su-to-zenmap.sh &"
+}
+
+Menu "Office" ("#e0e0e0":"#5369a3")
+{
+    "Office"                          f.title
+    "Adobe Reader 9"                  f.exec "exec /opt/Adobe/Reader9/bin/acroread &"
+    "GV"                              f.exec "exec gv &"
+    "LibreOffice Base"                f.exec "exec libreoffice --base &"
+    "LibreOffice Calc"                f.exec "exec libreoffice --calc &"
+    "LibreOffice Draw"                f.exec "exec libreoffice --draw &"
+    "LibreOffice Impress"             f.exec "exec libreoffice --impress &"
+    "LibreOffice Writer"              f.exec "exec libreoffice --writer &"
+    "RAKT PDF Viewer"                 f.exec "exec raktpdf &"
+    "Xpdf"                            f.exec "exec xpdf &"
+    "Zathura"                         f.exec "exec zathura &"
+    "apvlv"                           f.exec "exec apvlv &"
+}
+
+Menu "Programming" ("#e0e0e0":"#5369a3")
+{
+    "Programming"                     f.title
+    "CMake"                           f.exec "exec cmake-gui &"
+    "Eeschema"                        f.exec "exec eeschema &"
+    "FLUID"                           f.exec "exec fluid &"
+    "GNU Octave"                      f.exec "exec xterm -T \"GNU Octave\" -e /usr/bin/octave &"
+    "KiCad"                           f.exec "exec kicad &"
+    "Qt4 Assistant "                  f.exec "exec assistant-qt4 &"
+    "Qt4 Designer"                    f.exec "exec designer-qt4 &"
+    "Qt4 Linguist "                   f.exec "exec linguist-qt4 &"
+    "Qt4 QDbusViewer "                f.exec "exec qdbusviewer-qt4 &"
+    "Vi IMproved"                     f.exec "exec gvim -f &"
+}
+
+Menu "Science & Math" ("#e0e0e0":"#5369a3")
+{
+    "Science & Math"                  f.title
+    "GNU Octave"                      f.exec "exec xterm -T \"GNU Octave\" -e /usr/bin/octave &"
+    "GSpiceUI"                        f.exec "exec gspiceui &"
+}
+
+Menu "Sound & Video" ("#e0e0e0":"#5369a3")
+{
+    "Sound & Video"                   f.title
+    "Alsaplayer"                      f.exec "exec alsaplayer &"
+    "Audacious"                       f.exec "exec audacious &"
+    "Audacious2"                      f.exec "exec audacious2 &"
+    "Audio Mixer"                     f.exec "exec xfce4-mixer &"
+    "Consonance"                      f.exec "exec consonance &"
+    "FFADO Mixer"                     f.exec "exec ffado-mixer &"
+    "GTK sound mixer"                 f.exec "exec /usr/bin/aumix &"
+    "Goggles Music Manager"           f.exec "exec gogglesmm &"
+    "Guayadeque Music Player"         f.exec "exec guayadeque &"
+    "Music Player"                    f.exec "exec lxmusic &"
+    "PNMixer"                         f.exec "exec pnmixer &"
+    "Qt V4L2 test Utility"            f.exec "exec qv4l2 &"
+    "SimpleBurn"                      f.exec "exec simpleburn &"
+    "Stopmotion"                      f.exec "exec /usr/bin/stopmotion &"
+    "Videos"                          f.exec "exec totem &"
+    "Xfburn"                          f.exec "exec xfburn &"
+}
+
+Menu "System Tools" ("#e0e0e0":"#5369a3")
+{
+    "System Tools"                    f.title
+    "Avahi Zeroconf Browser"          f.exec "exec /usr/bin/avahi-discover &"
+    "Bulk Rename"                     f.exec "exec /usr/lib/Thunar/ThunarBulkRename &"
+    "Cairo Composite Manager"         f.exec "exec cairo-compmgr &"
+    "Conky Status Display"            f.exec "exec conky &"
+    "DHCP Client Daemon Applet"       f.exec "exec /usr/bin/dhcpcd-gtk &"
+    "Fluxbox Panel"                   f.exec "exec fbpanel &"
+    "Fluxbox Tray Menu."              f.exec "exec /usr/bin/ftmenu &"
+    "Fluxbox XKB Switcher"            f.exec "exec fbxkb &"
+    "GSmartControl"                   f.exec "exec /usr/bin/gsmartcontrol &"
+    "Htop"                            f.exec "exec xterm -T \"Htop\" -e htop &"
+    "LSHW"                            f.exec "exec /usr/sbin/gtk-lshw &"
+    "LXDE Panel"                      f.exec "exec lxpanel &"
+    "Lock Screen"                     f.exec "exec slock &"
+    "Manage Printing"                 f.exec "exec /usr/bin/xdg-open http://localhost:631/ &"
+    "Nepomuk Backup"                  f.exec "exec nepomukbackup &"
+    "Nepomuk Cleaner"                 f.exec "exec nepomukcleaner &"
+    "Pango Viewer"                    f.exec "exec pango-view -t \"Hello world!\" &"
+    "PathFinder"                      f.exec "exec PathFinder &"
+    "ROX Filer"                       f.exec "exec rox &"
+    "ROXTerm"                         f.exec "exec roxterm &"
+    "Run Command"                     f.exec "exec xde-run &"
+    "Run Command"                     f.exec "exec gmrun &"
+    "Run Command"                     f.exec "exec fbrun &"
+    "Services"                        f.exec "exec systemadm &"
+    "Software Update"                 f.exec "exec gpk-update-viewer &"
+    "Task Manager"                    f.exec "exec lxtask &"
+    "Terminal"                        f.exec "exec gnome-terminal &"
+    "Thunar File Manager"             f.exec "exec thunar &"
+    "UXTerm"                          f.exec "exec uxterm &"
+    "Unclutter"                       f.exec "exec /usr/bin/unclutter &"
+    "Vifm"                            f.exec "exec xterm -T \"Vifm\" -e vifm &"
+    "Wireshark"                       f.exec "exec wireshark &"
+    "XDE Panel"                       f.exec "exec xde-panel &"
+    "XTerm"                           f.exec "exec xterm &"
+    "Xfce Terminal"                   f.exec "exec xfce4-terminal &"
+    "Xfe"                             f.exec "exec xfe &"
+    "dconf Editor"                    f.exec "exec dconf-editor &"
+    "urxvt"                           f.exec "exec urxvt &"
+    "urxvt (client)"                  f.exec "exec urxvtc &"
+    "urxvt (tabbed)"                  f.exec "exec urxvt-tabbed &"
+}
+
+Menu "X11 Tools" ("#e0e0e0":"#5369a3")
+{
+    "X11 Tools"                       f.title
+    "Openbox Window Properties"       f.exec "exec obxprop|gxmessage -name obxprop -geometry 400x400 -font 'Liberation Mono 8' -title 'X Window Properties' -file - &"
+    "X Clock"                         f.exec "exec xclock -geometry 164x164 &"
+    "X Display Atoms"                 f.exec "exec xlsatoms | gxmessage -name xlsatoms -geometry 400x400 -font 'Liberation Mono 8' -title 'X Display Atoms' -file - &"
+    "X Display Clients"               f.exec "exec xlsclients -a -l | gxmessage -name xlsclients -geometry 400x400 -font 'Liberation Mono 8' -title 'X Display Clients' -file - &"
+    "X Display Properties"            f.exec "exec xdpyinfo|gxmessage -name xdpyinfo -geometry 450x450 -font 'Liberation Mono 8' -title 'X Display Properties' -file - &"
+    "X Display Refresh"               f.exec "exec xrefresh &"
+    "X Events"                        f.exec "exec xterm -T 'X Events' -e xev &"
+    "X Font Select"                   f.exec "exec xfontsel &"
+    "X Input"                         f.exec "exec xinput|gxmessage -name xinput -font 'Liberation Mono 8' -title 'X Input Information' -file - &"
+    "X Keyboard LEDs"                 f.exec "exec xkbvleds &"
+    "X Keyboard State"                f.exec "exec xkbwatch &"
+    "X Kill"                          f.exec "exec xkill &"
+    "X Mod Key Mapping"               f.exec "exec xmodmap|gxmessage -name xmodmap -font 'Liberation Mono 8' -title 'X Mod Key Information' -file - &"
+    "X RandR"                         f.exec "exec xrandr|gxmessage -name xrandr -font 'Liberation Mono 8' -title 'X Window Properties' -file - &"
+    "X Resource Editor"               f.exec "exec editres &"
+    "X Resource Top"                  f.exec "exec xterm -T \"X Resource Top\" -e xrestop &"
+    "X Settings"                      f.exec "exec xset -q|gxmessage -name xset -geometry 600x420 -wrap -font 'Liberation Mono 8' -title 'X Settings' -file - &"
+    "X Video Information"             f.exec "exec xvinfo|gxmessage -name xvinfo -font 'Liberation Mono 8' -title 'X Video Information' -file - &"
+    "X Window Dump"                   f.exec "exec bash -c \"set -e; xwd>`zenity --entry --text Filename`\" &"
+    "X Window Dump Display"           f.exec "exec bash -c \"set -e; xwd>`zenity --entry --text Filename`\" &"
+    "X Window Information"            f.exec "exec xwininfo -root -all -frame|gxmessage -name xwininfo -geometry 750x500 -font 'Liberation Mono 8' -title 'X Windows' -file - &"
+    "X Window Properties"             f.exec "exec xprop|gxmessage -name xprop -geometry 400x400 -font 'Liberation Mono 8' -title 'X Window Properties' -file - &"
+}
+
+Menu "Dock Apps" ("#e0e0e0":"#5369a3")
+{
+    "Dock Apps"                       f.title
+    "Alarm Clock Dock App"            f.exec "exec wmclockmon &"
+    "Alsa Mixer"                      f.exec "exec AlsaMixer.app &"
+    "Analog and Digital Clock"        f.exec "exec wmtime &"
+    "Audio Mixer"                     f.exec "exec wmmixer -w &"
+    "Battery Dock App"                f.exec "exec wmbattery &"
+    "Binary Clock Dock App"           f.exec "exec wmBinClock &"
+    "Blob Dock App"                   f.exec "exec wmblob &"
+    "Bubble Monitor"                  f.exec "exec bubblemon &"
+    "CPU Load Dock App"               f.exec "exec wmcpuload &"
+    "CPU Load Dock App (bars)"        f.exec "exec wmcpu &"
+    "Calculator Dock App"             f.exec "exec wmcalc &"
+    "Calendar Clock Dock App"         f.exec "exec wmCalClock &"
+    "Calendar Clock Keyboard Dock App"  f.exec "exec wmCalClockKbd &"
+    "Clock Dock App"                  f.exec "exec lal &"
+    "Core CPU Load"                   f.exec "exec wmcore &"
+    "Launcher Dock App"               f.exec "exec wmappl &"
+    "Monitoring Dock App"             f.exec "exec allin1 &"
+    "Network Device Monitor"          f.exec "exec wmnd &"
+    "Network Monitor"                 f.exec "exec wmnet &"
+    "System Monitor"                  f.exec "exec wmsysmon &"
+    "Timer Dock App"                  f.exec "exec wmtimer &"
+    "Trash Can Dock App"              f.exec "exec wmtrash &"
+    "Weather Monitor Dock App"        f.exec "exec wmWeather &"
+    "Wifi Monitor"                    f.exec "exec wmwave &"
+    "Wifi Monitor (LED)"              f.exec "exec wmwifi &"
+}
+
+Menu "Other" ("#e0e0e0":"#5369a3")
+{
+    "Other"                           f.title
+    "About EDE"                       f.exec "exec ede-about &"
+    "E16"                             f.exec "exec e16 &"
+    "Font Viewer"                     f.exec "exec gfontview &"
+    "Help"                            f.exec "exec ede-help &"
+    "Retrovol sound mixer"            f.exec "exec /usr/bin/retrovol &"
+    "Run Program..."                  f.exec "exec ede-launch &"
+    "Screen Lock"                     f.exec "exec ede-screen-lock &"
+    "Simple Tray XKB Indicator"       f.exec "exec sbxkb &"
+    "TigerVNC viewer"                 f.exec "exec /usr/bin/vncviewer &"
+    "gEDA Attribute Editor"           f.exec "exec gattrib &"
+    "gEDA Schematic Editor"           f.exec "exec gschem &"
+}
+
+Menu "Preferences" ("#e0e0e0":"#5369a3")
+{
+    "Preferences"                     f.title
+    "Adobe Flash Player"              f.exec "exec flash-player-properties &"
+    "Configure EDE"                   f.exec "exec ede-conf &"
+    "Customize Look and Feel"         f.exec "exec lxappearance &"
+    "Desktop Preferences"             f.exec "exec pcmanfm --desktop-pref &"
+    "FOX Desktop Setup"               f.exec "exec ControlPanel &"
+    "File Manager"                    f.exec "exec thunar-settings &"
+    "Firewall Builder"                f.exec "exec fwbuilder &"
+    "Gtk Theme Switch 2"              f.exec "exec gtk-theme-switch2 &"
+    "Gtk2 Change Theme"               f.exec "exec gtk-chtheme &"
+    "Gtk2 Preferences"                f.exec "exec gtk2_prefs &"
+    "Keyboard Settings"               f.exec "exec lxkb_config &"
+    "Keyboard and Mouse"              f.exec "exec xde-input -editor &"
+    "LXDE Panel Settings"             f.exec "exec lxpanelctl config &"
+    "Monitor Settings"                f.exec "exec lxrandr &"
+    "Network Connections"             f.exec "exec nm-connection-editor &"
+    "Openbox Configuration Manager"   f.exec "exec obconf &"
+    "Packages"                        f.exec "exec gpk-application &"
+    "Panel tint2"                     f.exec "exec tint2conf &"
+    "Pop-Up Notifications"            f.exec "exec /usr/bin/notification-properties &"
+    "Preferred Applications"          f.exec "exec libfm-pref-apps &"
+    "Preferred Applications"          f.exec "exec ede-preferred-applications &"
+    "Print Settings"                  f.exec "exec system-config-printer &"
+    "Removable Drives and Media"      f.exec "exec thunar-volman-settings &"
+}
+
+Menu "managers" ("#e0e0e0":"#5369a3")
+{
+    "Window Managers"                 f.title
+    "2bwm"                            f.exec "exec 2bwm &"
+    "AEWM"                            f.exec "exec aewm &"
+    "Awesome"                         f.exec "exec /usr/bin/awesome &"
+    "Blackbox"                        f.exec "exec blackbox &"
+    "E16"                             f.exec "exec /usr/share/e16/misc/starte16 &"
+    "E16 GNOME2"                      f.exec "exec /usr/share/e16/misc/starte16-gnome &"
+    "E16-KDE"                         f.exec "exec /usr/share/e16/misc/starte16-kde &"
+    "EDE"                             f.exec "exec /usr/bin/startede &"
+    "failsafewm"                      f.exec "exec failsafewm &"
+    "Fluxbox"                         f.exec "exec startfluxbox &"
+    "FLWM"                            f.exec "exec flwm &"
+    "Fvwm"                            f.exec "exec fvwm2 &"
+    "FVWM-Crystal"                    f.exec "exec fvwm-crystal &"
+    "icewm"                           f.exec "exec icewm &"
+    "Jwm"                             f.exec "exec /usr/bin/jwm &"
+    "LXDE"                            f.exec "exec startlxde &"
+    "MetaCity"                        f.exec "exec metacity &"
+    "MWM"                             f.exec "exec mwm &"
+    "Openbox"                         f.exec "exec openbox-session &"
+    "Pekwm"                           f.exec "exec pekwm &"
+    "spectrwm"                        f.exec "exec spectrwm &"
+    "TWM"                             f.exec "exec twm &"
+    "VTWM"                            f.exec "exec vtwm &"
+    "Waimea"                          f.exec "exec waimea &"
+    "WindowMaker"                     f.exec "exec wmaker &"
+    "windwm"                          f.exec "exec wind &"
+    "Xfce Session"                    f.exec "exec startxfce4 &"
+    "yeahwm"                          f.exec "exec yeahwm &"
+    ""                                f.separator
+    "Restart"                         f.restart
+    "Quit"                            f.quit
+}
+
+Menu "twmmenu" ("#e0e0e0":"#5369a3")
+{
+    "TWM Menu"                        f.title
+    "Icons List"                      f.menu "TwmIcons"
+    "Window List"                     f.menu "TwmWindows"
+    "Window Operations"               f.menu "windowops"
+    "Styles"                          f.menu "twmstyles"
+    "Window Managers"                 f.menu "managers"
+    "Hide Icon Manager"               f.hideiconmgr
+    "Show Icon Manager"               f.showiconmgr
+    "Hide Workspace Manager"          f.hideworkspacemgr
+    "Show Workspace Manager"          f.showworkspacemgr
+    "Refresh"                         f.refresh
+    "Restart"                         f.restart
+}
+
+Menu "defops" ("#e0e0e0":"#5369a3")
+{
+    "Twm"                             f.title
+    "--------> pin <--------"         f.pin
+    "1) Web Browser"                  f.exec "exec firefox &"
+    "2) File Manager"                 f.exec "exec pcmanfm &"
+    "3) Text Editor"                  f.exec "exec gvim -f &"
+    "4) Terminal"                     f.exec "exec roxterm &"
+    "5) Run Command"                  f.exec "exec xde-run &"
+    ""                                f.separator
+    "Archlinux"                       f.menu "Archlinux"
+    "Accessories"                     f.menu "Accessories"
+    "Games"                           f.menu "Games"
+    "Graphics"                        f.menu "Graphics"
+    "Internet"                        f.menu "Internet"
+    "Office"                          f.menu "Office"
+    "Programming"                     f.menu "Programming"
+    "Science & Math"                  f.menu "Science & Math"
+    "Sound & Video"                   f.menu "Sound & Video"
+    "System Tools"                    f.menu "System Tools"
+    ""                                f.separator
+    "X11 Tools"                       f.menu "X11 Tools"
+    "Dock Apps"                       f.menu "Dock Apps"
+    "Other"                           f.menu "Other"
+    ""                                f.separator
+    "Preferences"                     f.menu "Preferences"
+    ""                                f.separator
+    "TWM Menu"                        f.menu "twmmenu"
+    ""                                f.separator
+    "Refresh"                         f.refresh
+    "Reconfigure"                     f.function "reconfig"
+    "Restart"                         f.restart
+    "Exit"                            f.quit
+}
+

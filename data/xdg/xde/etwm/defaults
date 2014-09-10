@@ -1,0 +1,19 @@
+divert(PROLOGUE)
+`##' included file SINCLUDE
+#NoGrabServer
+RestartPreviousState
+#DecorateTransients
+divert(FONTS)
+`##' included file SINCLUDE
+ifelse(TWM_TYPE,`vtwm',`DefaultFont "sans-10"')
+TitleFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+ResizeFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+MenuFont "-adobe-helvetica-bold-r-normal--*-120-*-*-*-*-*-*"
+IconFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*-*-*-*"
+IconManagerFont "-adobe-helvetica-bold-r-normal--*-100-*-*-*"
+divert(FUNCTIONS)dnl
+`##' included file SINCLUDE
+`##' Function to reconfigure the window manager
+Function "reconfig" { f.exec "TWM_CONFIG_SDIR/config TWM_TYPE TWM_VERSION" f.restart }
+divert(-1)dnl
+dnl vim: set ft=m4:

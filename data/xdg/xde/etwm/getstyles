@@ -1,0 +1,58 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export ETWM_TYPE=${1:-${ETWM_TYPE:-etwm}}
+if [ ! -x "`which $ETWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable etwm program" >&2
+    exit 1;
+fi
+export ETWM_CONFIG_HOME=${ETWM_CONFIG_HOME:-${HOME:-~}/.$ETWM_TYPE}
+export ETWM_CONFIG_SDIR=${ETWM_CONFIG_SDIR:-/usr/share/$ETWM_TYPE}
+
+getstyles() {
+    setstyle="$here/setstyle"
+    [ -x "$setstyle" ] || setstyle="$ETWM_CONFIG_HOME/setstyle"
+    [ -x "$setstyle" ] || setstyle="$ETWM_CONFIG_SDIR/setstyle"
+    [ -x "$setstyle" ] || { echo "ERROR: missing setstyle program" >&2; exit 1; }
+    setstyle=$(echo "$setstyle"|sed "s,$ETWM_CONFIG_HOME,TWM_CONFIG_HOME,;s,$ETWM_CONFIG_SDIR,TWM_CONFIG_SDIR,")
+
+    echo "divert(FUNCTIONS)dnl"
+    echo "divert(MENUS)dnl"
+
+    echo "Menu \"twmstyles\" twm_MenuColor"
+    echo "{"
+
+    echo -e "    \"System Styles\"\t\tf.title"
+    find -L "$ETWM_CONFIG_SDIR/styles" -name stylerc 2>/dev/null | sort | while read f
+    do
+	styledir=$(echo "$f"|sed 's,/stylerc$,,;s,'"$ETWM_CONFIG_SDIR"',TWM_CONFIG_SDIR,')
+	style=$(echo "$styledir"|sed 's,^.*/,,')
+	echo "divert(FUNCTIONS)dnl"
+	echo "Function \"set-system-style-$style\" { f.exec \"$setstyle TWM_TYPE $styledir\" f.function \"reconfig\" }"
+	echo "divert(MENUS)dnl"
+	echo -e "    \"$style\"\t\tf.function \"set-system-style-$style\""
+    done
+
+    echo -e "    \"User Styles\"\t\tf.title"
+    find -L "$ETWM_CONFIG_HOME/styles" -name stylerc 2>/dev/null | sort | while read f
+    do
+	styledir=$(echo "$f"|sed 's,/stylerc$,,;s,'"$ETWM_CONFIG_HOME"',TWM_CONFIG_HOME,')
+	style=$(echo "$styledir"|sed 's,^.*/,,')
+	echo "divert(FUNCTIONS)dnl"
+	echo "Function \"set-user-style-$style\" { f.exec \"$setstyle TWM_TYPE $styledir\" f.function \"reconfig\" }"
+	echo "divert(MENUS)dnl"
+	echo -e "    \"$style\"\t\tf.function \"set-user-style-$style\""
+    done
+
+    echo "}"
+    echo "divert(-1)"
+    echo "dnl vim: ft=m4"
+}
+
+getstyles >"$ETWM_CONFIG_HOME/stylemenu"
+
+# vim: sw=4

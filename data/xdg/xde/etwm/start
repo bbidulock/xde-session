@@ -1,0 +1,63 @@
+#!/bin/bash
+
+prog=$0
+here=$(echo $prog|sed 's,/[^/]*$,,')
+here=`(cd "$here"; pwd)`
+prog=$(echo "$prog"|sed 's,^.*/,,')
+
+export ETWM_TYPE=${1:-${ETWM_TYPE:-etwm}}
+if [ ! -x "`which $ETWM_TYPE 2>/dev/null`" ]; then
+    echo "ERROR: cannot find usable etwm program" >&2
+    exit 1;
+fi
+if [ -z "$ETWM_VERSION" ]; then
+    if $ETWM_TYPE -version >/dev/null 2>&1; then
+	ETWM_VERSION=$($ETWM_TYPE -version 2>/dev/null)
+    else
+	ETWM_VERSION='3.8.1'
+    fi
+fi
+export ETWM_VERSION=${2:-$ETWM_VERSION}
+export ETWM_CONFIG_HOME=${ETWM_CONFIG_HOME:-${HOME:-~}/.$ETWM_TYPE}
+export ETWM_CONFIG_SDIR=${ETWM_CONFIG_SDIR:-/usr/share/$ETWM_TYPE}
+
+[ -d "$ETWM_CONFIG_HOME" ] || mkdir -p "$ETWM_CONFIG_HOME"
+if [ -s "$ETWM_CONFIG_SDIR/version" ]; then
+    if [ ! -s "$ETWM_CONFIG_HOME/version" -o ! diff "$ETWM_CONFIG_SDIR/version" "$ETWM_CONFIG_HOME/version" ] ; then
+	for file in apps defaults keys menu stylemenu version winmenu; do
+	    if [ ! -f "$ETWM_CONFIG_SDIR/$file" -o ! diff "$ETWM_CONFIG_SDIR/$file" "$ETWM_CONFIG_HOME/$file" ] ; then
+		[ ! -f "$ETWM_CONFIG_HOME/$file" ] || /bin/mv -f "$ETWM_CONFIG_HOME/$file" "$ETWM_CONFIG_HOME/$file.bak"
+		cat "$ETWM_CONFIG_SDIR/$file" \
+		    | sed -r 's,\$HOME\>,'"${HOME:-~}"',g' \
+		    >"$ETWM_CONFIG_HOME/$file"
+	    fi
+	done
+    fi
+fi
+
+if [ -x "`which xde-menugen 2>/dev/null`" ]; then
+    xde-menugen --format $ETWM_TYPE >"$ETWM_CONFIG_HOME/menu"
+fi
+
+config="$here/config"
+[ -x "$config" ] || config="$ETWM_CONFIG_HOME/config"
+[ -x "$config" ] || config="$ETWM_CONFIG_SDIR/config"
+[ -x "$config" ] && $config
+
+getstyles="$here/getstyles"
+[ -x "$getstyles" ] || getstyles="$ETWM_CONFIG_HOME/getstyles"
+[ -x "$getstyles" ] || getstyles="$ETWM_CONFIG_SDIR/getstyles"
+[ -x "$getstyles" ] && $getstyles
+
+export ETWM_RCFILE="${HOME:-~}/.${ETWM_TYPE}rc"
+
+if [ -L "$ETWM_RCFILE" ]; then
+    /bin/rm -f "$ETWM_RCFILE"
+elif [ -s  "$ETWM_RCFILE" ]; then
+    /bin/mv -f "${ETWM_RCFILE}" "${ETWM_RCFILE}.bak"
+fi
+/bin/ln -sf "$ETWM_CONFIG_HOME/rc.m4" "$ETWM_RCFILE"
+
+exec $ETWM_TYPE
+
+# vim: sw=4

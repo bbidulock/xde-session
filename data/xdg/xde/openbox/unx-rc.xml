@@ -15,7 +15,7 @@
     <underMouse>no</underMouse>
   </focus>
   <theme>
-    <name>Airforce</name>
+    <name>Penguins</name>
     <titlelayout>DSNLIMC</titlelayout>
     <keepBorder>yes</keepBorder>
     <animateIconify>yes</animateIconify>
@@ -90,7 +90,7 @@
     <direction>Vertical</direction>
     <floatingX>0</floatingX>
     <floatingY>0</floatingY>
-    <autoHide>no</autoHide>
+    <autoHide>yes</autoHide>
     <hideDelay>300</hideDelay>
     <moveButton>A-Left</moveButton>
     <noStrut>no</noStrut>
@@ -98,80 +98,1543 @@
   </dock>
   <keyboard>
     <chainQuitKey>C-g</chainQuitKey>
-    <keybind key="A-F10">
-      <action name="MaximizeFull"/>
-    </keybind>
-    <keybind key="A-F5">
-      <action name="UnmaximizeFull"/>
-    </keybind>
-    <keybind key="A-F12">
-      <action name="ToggleShade"/>
-    </keybind>
-    <keybind key="C-A-Left">
-      <action name="DesktopLeft">
-        <wrap>no</wrap>
+    <keybind key="F11">
+      <action name="ShowMenu">
+	<menu>client-list-combined-menu</menu>
       </action>
     </keybind>
-    <keybind key="C-A-Right">
-      <action name="DesktopRight">
-        <wrap>no</wrap>
+    <keybind key="A-C-m">
+      <action name="ShowMenu">
+	<menu>root-menu</menu>
       </action>
     </keybind>
-    <keybind key="C-A-Up">
-      <action name="DesktopUp">
-        <wrap>no</wrap>
+    <keybind key="C-Escape">
+      <action name="ShowMenu">
+	<menu>root-menu</menu>
       </action>
     </keybind>
-    <keybind key="C-A-Down">
-      <action name="DesktopDown">
-        <wrap>no</wrap>
+    <keybind key="F12">
+      <action name="ShowMenu">
+	<menu>root-menu</menu>
       </action>
     </keybind>
-    <keybind key="S-A-Left">
-      <action name="SendToDesktopLeft">
-        <wrap>no</wrap>
+    <keybind key="W-p">
+      <action name="ShowMenu">
+	<menu>root-menu</menu>
       </action>
     </keybind>
-    <keybind key="S-A-Right">
-      <action name="SendToDesktopRight">
-        <wrap>no</wrap>
+    <keybind key="S-Escape">
+      <action name="ShowMenu">
+	<menu>client-menu</menu>
       </action>
     </keybind>
-    <keybind key="S-A-Up">
-      <action name="SendToDesktopUp">
-        <wrap>no</wrap>
+    <keybind key="A-space">
+      <action name="ShowMenu">
+	<menu>client-menu</menu>
       </action>
     </keybind>
-    <keybind key="S-A-Down">
-      <action name="SendToDesktopDown">
-        <wrap>no</wrap>
+    <keybind key="A-Escape">
+      <action name="NextWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
       </action>
     </keybind>
-    <keybind key="C-A-d">
+    <keybind key="A-Tab">
+      <action name="NextWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="A-j">
+      <action name="NextWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="W-Tab">
+      <action name="NextWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="W-j">
+      <action name="NextWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="A-k">
+      <action name="PreviousWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="A-S-Escape">
+      <action name="PreviousWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="A-S-Tab">
+      <action name="PreviousWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="W-k">
+      <action name="PreviousWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="W-S-Tab">
+      <action name="PreviousWindow">
+	<allDesktops>no</allDesktops>
+	<panels>no</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus, Raise, Unshade</finalactions>
+      </action>
+    </keybind>
+    <keybind key="A-C-Escape">
+      <action name="NextWindow">
+	<allDesktops>no</allDesktops>
+	<panels>yes</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus</finalactions>
+      </action>
+    </keybind>
+    <keybind key="A-C-S-Escape">
+      <action name="PreviousWindow">
+	<allDesktops>no</allDesktops>
+	<panels>yes</panels>
+	<desktops>no</desktops>
+	<linear>yes</linear>
+	<interactive>yes</interactive>
+	<finalactions>Focus</finalactions>
+      </action>
+    </keybind>
+    <keybind key="A-1">
+      <action name="GoToDesktop">
+	<to>1</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F1">
+      <action name="GoToDesktop">
+	<to>1</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-1">
+      <action name="GoToDesktop">
+	<to>1</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-bracketleft">
+      <action name="GoToDesktop">
+	<to>11</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F11">
+      <action name="GoToDesktop">
+	<to>11</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-bracketright">
+      <action name="GoToDesktop">
+	<to>12</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F12">
+      <action name="GoToDesktop">
+	<to>12</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-2">
+      <action name="GoToDesktop">
+	<to>2</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F2">
+      <action name="GoToDesktop">
+	<to>2</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-2">
+      <action name="GoToDesktop">
+	<to>2</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-3">
+      <action name="GoToDesktop">
+	<to>3</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F3">
+      <action name="GoToDesktop">
+	<to>3</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-3">
+      <action name="GoToDesktop">
+	<to>3</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-4">
+      <action name="GoToDesktop">
+	<to>4</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F4">
+      <action name="GoToDesktop">
+	<to>4</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-4">
+      <action name="GoToDesktop">
+	<to>4</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-5">
+      <action name="GoToDesktop">
+	<to>5</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F5">
+      <action name="GoToDesktop">
+	<to>5</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-5">
+      <action name="GoToDesktop">
+	<to>5</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-6">
+      <action name="GoToDesktop">
+	<to>6</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F6">
+      <action name="GoToDesktop">
+	<to>6</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-6">
+      <action name="GoToDesktop">
+	<to>6</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-7">
+      <action name="GoToDesktop">
+	<to>7</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F7">
+      <action name="GoToDesktop">
+	<to>7</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-7">
+      <action name="GoToDesktop">
+	<to>7</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-8">
+      <action name="GoToDesktop">
+	<to>8</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F8">
+      <action name="GoToDesktop">
+	<to>8</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-8">
+      <action name="GoToDesktop">
+	<to>8</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-9">
+      <action name="GoToDesktop">
+	<to>9</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F9">
+      <action name="GoToDesktop">
+	<to>9</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-9">
+      <action name="GoToDesktop">
+	<to>9</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-0">
+      <action name="GoToDesktop">
+	<to>10</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="C-F10">
+      <action name="GoToDesktop">
+	<to>10</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-0">
+      <action name="GoToDesktop">
+	<to>10</to>
+	<wrap>no</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-Down">
+      <action name="GoToDesktop">
+	<to>down</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-j">
+      <action name="GoToDesktop">
+	<to>down</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-Page_Down">
+      <action name="GoToDesktop">
+	<to>down</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-Escape">
+      <action name="GoToDesktop">
+	<to>last</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-S-Up">
+      <action name="GoToDesktop">
+	<to>last</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-h">
+      <action name="GoToDesktop">
+	<to>left</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-Home">
+      <action name="GoToDesktop">
+	<to>left</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-Right">
+      <action name="GoToDesktop">
+	<to>next</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-Up">
+      <action name="GoToDesktop">
+	<to>next</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-Left">
+      <action name="GoToDesktop">
+	<to>previous</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-Down">
+      <action name="GoToDesktop">
+	<to>previous</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-l">
+      <action name="GoToDesktop">
+	<to>right</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-End">
+      <action name="GoToDesktop">
+	<to>right</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-Up">
+      <action name="GoToDesktop">
+	<to>up</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-k">
+      <action name="GoToDesktop">
+	<to>up</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="W-Page_up">
+      <action name="GoToDesktop">
+	<to>up</to>
+	<wrap>yes</wrap>
+      </action>
+    </keybind>
+    <keybind key="A-C-equal">
+      <action name="AddDesktop">
+	<where>last</where>
+      </action>
+    </keybind>
+    <keybind key="A-C-minus">
+      <action name="RemoveDesktop">
+	<where>last</where>
+      </action>
+    </keybind>
+    <keybind key="A-C-d">
       <action name="ToggleShowDesktop"/>
+    </keybind>
+    <keybind key="W-d">
+      <action name="ToggleShowDesktop"/>
+    </keybind>
+    <keybind key="A-b">
+      <action name="ToggleDockAutohide"/>
+    </keybind>
+    <keybind key="A-C-space">
+      <action name="ToggleDockAutohide"/>
+    </keybind>
+    <keybind key="W-S-b">
+      <action name="ToggleDockAutohide"/>
+    </keybind>
+    <keybind key="W-b">
+      <action name="ToggleDockAutohide"/>
+    </keybind>
+    <keybind key="A-S-q">
+      <action name="Restart"/>
+    </keybind>
+    <keybind key="W-C-r">
+      <action name="Restart"/>
+    </keybind>
+    <keybind key="A-C-q">
+      <action name="Exit">
+	<prompt>no</prompt>
+      </action>
+    </keybind>
+    <keybind key="W-S-q">
+      <action name="Exit">
+	<prompt>no</prompt>
+      </action>
+    </keybind>
+    <keybind key="A-Up">
+      <action name="Raise"/>
+    </keybind>
+    <keybind key="A-Down">
+      <action name="Lower"/>
+    </keybind>
+    <keybind key="A-Home">
+      <action name="RaiseLower"/>
+    </keybind>
+    <keybind key="A-F9">
+      <action name="Iconify"/>
+    </keybind>
+    <keybind key="A-S-m">
+      <action name="Iconify"/>
+    </keybind>
+    <keybind key="W-i">
+      <action name="Iconify"/>
+    </keybind>
+    <keybind key="W-n">
+      <action name="Iconify"/>
+    </keybind>
+    <keybind key="W-w">
+      <action name="Iconify"/>
     </keybind>
     <keybind key="A-F4">
       <action name="Close"/>
     </keybind>
-    <keybind key="A-Tab">
-      <action name="NextWindow"/>
+    <keybind key="A-F5">
+      <action name="Close"/>
     </keybind>
-    <keybind key="A-S-Tab">
-      <action name="PreviousWindow"/>
+    <keybind key="A-q">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="A-S-c">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="W-q">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="W-x">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="W-S-c">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="W-S-x">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="A-F12">
+      <action name="ToggleShade"/>
+    </keybind>
+    <keybind key="A-s">
+      <action name="ToggleShade"/>
+    </keybind>
+    <keybind key="A-C-s">
+      <action name="ToggleOmnipresent"/>
+    </keybind>
+    <keybind key="A-F10">
+      <action name="ToggleMaximize">
+	<direction>both</direction>
+      </action>
+    </keybind>
+    <keybind key="C-S-Left">
+      <action name="ToggleMaximize">
+	<direction>both</direction>
+      </action>
+    </keybind>
+    <keybind key="W-m">
+      <action name="ToggleMaximize">
+	<direction>both</direction>
+      </action>
+    </keybind>
+    <keybind key="C-S-Right">
+      <action name="ToggleMaximize">
+	<direction>horizontal</direction>
+      </action>
+    </keybind>
+    <keybind key="A-S-F10">
+      <action name="ToggleMaximize">
+	<direction>vertical</direction>
+      </action>
+    </keybind>
+    <keybind key="C-S-Up">
+      <action name="ToggleMaximize">
+	<direction>vertical</direction>
+      </action>
+    </keybind>
+    <keybind key="A-F5">
+      <action name="Unmaximize">
+	<direction>both</direction>
+      </action>
+    </keybind>
+    <keybind key="W-C-n">
+      <action name="Unmaximize">
+	<direction>both</direction>
+      </action>
+    </keybind>
+    <keybind key="A-F11">
+      <action name="ToggleFullscreen"/>
+    </keybind>
+    <keybind key="W-f">
+      <action name="ToggleFullscreen"/>
+    </keybind>
+    <keybind key="A-d">
+      <action name="ToggleDecorations"/>
+    </keybind>
+    <keybind key="W-F1">
+      <action name="SendToDesktop">
+	<to>1</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-1">
+      <action name="SendToDesktop">
+	<to>1</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F11">
+      <action name="SendToDesktop">
+	<to>11</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F1">
+      <action name="SendToDesktop">
+	<to>11</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F12">
+      <action name="SendToDesktop">
+	<to>12</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F2">
+      <action name="SendToDesktop">
+	<to>12</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F3">
+      <action name="SendToDesktop">
+	<to>13</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F4">
+      <action name="SendToDesktop">
+	<to>14</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F5">
+      <action name="SendToDesktop">
+	<to>15</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F6">
+      <action name="SendToDesktop">
+	<to>16</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F7">
+      <action name="SendToDesktop">
+	<to>17</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F8">
+      <action name="SendToDesktop">
+	<to>18</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F9">
+      <action name="SendToDesktop">
+	<to>19</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F10">
+      <action name="SendToDesktop">
+	<to>20</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F2">
+      <action name="SendToDesktop">
+	<to>2</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-2">
+      <action name="SendToDesktop">
+	<to>2</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F11">
+      <action name="SendToDesktop">
+	<to>21</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-F12">
+      <action name="SendToDesktop">
+	<to>22</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F3">
+      <action name="SendToDesktop">
+	<to>3</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-3">
+      <action name="SendToDesktop">
+	<to>3</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F4">
+      <action name="SendToDesktop">
+	<to>4</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-4">
+      <action name="SendToDesktop">
+	<to>4</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F5">
+      <action name="SendToDesktop">
+	<to>5</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-5">
+      <action name="SendToDesktop">
+	<to>5</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F6">
+      <action name="SendToDesktop">
+	<to>6</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-6">
+      <action name="SendToDesktop">
+	<to>6</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F7">
+      <action name="SendToDesktop">
+	<to>7</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-7">
+      <action name="SendToDesktop">
+	<to>7</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F8">
+      <action name="SendToDesktop">
+	<to>8</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-8">
+      <action name="SendToDesktop">
+	<to>8</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F9">
+      <action name="SendToDesktop">
+	<to>9</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-9">
+      <action name="SendToDesktop">
+	<to>9</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-F10">
+      <action name="SendToDesktop">
+	<to>10</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-0">
+      <action name="SendToDesktop">
+	<to>10</to>
+	<wrap>no</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="A-S-Down">
+      <action name="SendToDesktop">
+	<to>down</to>
+	<wrap>yes</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="A-S-Left">
+      <action name="SendToDesktop">
+	<to>left</to>
+	<wrap>yes</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="A-S-Right">
+      <action name="SendToDesktop">
+	<to>right</to>
+	<wrap>yes</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="A-S-Up">
+      <action name="SendToDesktop">
+	<to>up</to>
+	<wrap>yes</wrap>
+	<follow>no</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F1">
+      <action name="SendToDesktop">
+	<to>1</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F2">
+      <action name="SendToDesktop">
+	<to>2</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F3">
+      <action name="SendToDesktop">
+	<to>3</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F4">
+      <action name="SendToDesktop">
+	<to>4</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F5">
+      <action name="SendToDesktop">
+	<to>5</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F6">
+      <action name="SendToDesktop">
+	<to>6</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F7">
+      <action name="SendToDesktop">
+	<to>7</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F8">
+      <action name="SendToDesktop">
+	<to>8</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F9">
+      <action name="SendToDesktop">
+	<to>9</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F10">
+      <action name="SendToDesktop">
+	<to>10</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F11">
+      <action name="SendToDesktop">
+	<to>11</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-F12">
+      <action name="SendToDesktop">
+	<to>12</to>
+	<wrap>no</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="A-C-S-Down">
+      <action name="SendToDesktop">
+	<to>down</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-Down">
+      <action name="SendToDesktop">
+	<to>down</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-Page_Down">
+      <action name="SendToDesktop">
+	<to>down</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-Home">
+      <action name="SendToDesktop">
+	<to>left</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="A-C-S-Right">
+      <action name="SendToDesktop">
+	<to>next</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-a">
+      <action name="SendToDesktop">
+	<to>next</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-Right">
+      <action name="SendToDesktop">
+	<to>next</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="A-C-S-Left">
+      <action name="SendToDesktop">
+	<to>previous</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-Left">
+      <action name="SendToDesktop">
+	<to>previous</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-Down">
+      <action name="SendToDesktop">
+	<to>previous</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-End">
+      <action name="SendToDesktop">
+	<to>right</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="A-C-S-Up">
+      <action name="SendToDesktop">
+	<to>up</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-C-Up">
+      <action name="SendToDesktop">
+	<to>up</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-Page_Up">
+      <action name="SendToDesktop">
+	<to>up</to>
+	<wrap>yes</wrap>
+	<follow>yes</follow>
+      </action>
     </keybind>
     <keybind key="A-F7">
+      <action name="Move"/>
+    </keybind>
+    <keybind key="W-S-m">
       <action name="Move"/>
     </keybind>
     <keybind key="A-F8">
       <action name="Resize"/>
     </keybind>
-    <keybind key="A-F9">
-      <action name="Iconify"/>
-    </keybind>
-    <keybind key="A-space">
-      <action name="ShowMenu">
-        <menu>client-menu</menu>
+    <keybind key="W-S-bracketright">
+      <action name="MoveRelative">
+	<x>0</x>
+	<y>5</y>
       </action>
+    </keybind>
+    <keybind key="W-bracketleft">
+      <action name="MoveRelative">
+	<x>-5</x>
+	<y>0</y>
+      </action>
+    </keybind>
+    <keybind key="W-bracketright">
+      <action name="MoveRelative">
+	<x>5</x>
+	<y>0</y>
+      </action>
+    </keybind>
+    <keybind key="W-S-bracketleft">
+      <action name="MoveRelative">
+	<x>0</x>
+	<y>-5</y>
+      </action>
+    </keybind>
+    <keybind key="A-S-a">
+      <action name="ResizeRelative">
+	<left>-3</left>
+	<right>-3</right>
+	<top>0</top>
+	<bottom>0</bottom>
+      </action>
+    </keybind>
+    <keybind key="W-minus">
+      <action name="ResizeRelative">
+	<left>-3</left>
+	<right>-3</right>
+	<top>0</top>
+	<bottom>0</bottom>
+      </action>
+    </keybind>
+    <keybind key="A-S-s">
+      <action name="ResizeRelative">
+	<left>0</left>
+	<right>0</right>
+	<top>-3</top>
+	<bottom>-3</bottom>
+      </action>
+    </keybind>
+    <keybind key="W-S-minus">
+      <action name="ResizeRelative">
+	<left>0</left>
+	<right>0</right>
+	<top>-3</top>
+	<bottom>-3</bottom>
+      </action>
+    </keybind>
+    <keybind key="A-S-d">
+      <action name="ResizeRelative">
+	<left>3</left>
+	<right>3</right>
+	<top>0</top>
+	<bottom>0</bottom>
+      </action>
+    </keybind>
+    <keybind key="W-equal">
+      <action name="ResizeRelative">
+	<left>3</left>
+	<right>3</right>
+	<top>0</top>
+	<bottom>0</bottom>
+      </action>
+    </keybind>
+    <keybind key="A-S-w">
+      <action name="ResizeRelative">
+	<left>0</left>
+	<right>0</right>
+	<top>3</top>
+	<bottom>3</bottom>
+      </action>
+    </keybind>
+    <keybind key="W-S-equal">
+      <action name="ResizeRelative">
+	<left>0</left>
+	<right>0</right>
+	<top>3</top>
+	<bottom>3</bottom>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_6">
+      <action name="MoveToEdge">
+	<direction>east</direction>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_8">
+      <action name="MoveToEdge">
+	<direction>north</direction>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_2">
+      <action name="MoveToEdge">
+	<direction>south</direction>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_4">
+      <action name="MoveToEdge">
+	<direction>west</direction>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_5">
+      <action name="MoveResizeTo">
+	<x>center</x>
+	<y>center</y>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_9">
+      <action name="MoveResizeTo">
+	<x>-0</x>
+	<y>0</y>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_7">
+      <action name="MoveResizeTo">
+	<x>0</x>
+	<y>0</y>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_3">
+      <action name="MoveResizeTo">
+	<x>-0</x>
+	<y>-0</y>
+      </action>
+    </keybind>
+    <keybind key="A-C-KP_1">
+      <action name="MoveResizeTo">
+	<x>0</x>
+	<y>-0</y>
+      </action>
+    </keybind>
+    <keybind key="A-Right">
+      <action name="ToggleAlwaysOnTop"/>
+    </keybind>
+    <keybind key="A-Left">
+      <action name="ToggleAlwaysOnBottom"/>
+    </keybind>
+    <keybind key="A-F1">
+      <action name="Execute">
+	<command>uxterm</command>
+      </action>
+    </keybind>
+    <keybind key="A-F2">
+      <action name="Execute">
+	<command>xde-run</command>
+      </action>
+    </keybind>
+    <keybind key="A-Print">
+      <action name="Execute">
+	<command>scrot -s</command>
+      </action>
+    </keybind>
+    <keybind key="A-x">
+      <action name="Execute">
+	<command>uxterm</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-Delete">
+      <action name="Execute">
+	<command>xde-logout</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-Return">
+      <action name="Execute">
+	<command>uxterm</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-f">
+      <action name="Execute">
+	<command>pcmanfm</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-n">
+      <action name="Execute">
+	<command>uxterm</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-r">
+      <action name="Execute">
+	<command>xde-run</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-t">
+      <action name="Execute">
+	<command>roxterm</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-v">
+      <action name="Execute">
+	<command>gvim</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-w">
+      <action name="Execute">
+	<command>firefox</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-x">
+      <action name="Execute">
+	<command>uxterm</command>
+      </action>
+    </keybind>
+    <keybind key="A-S-Return">
+      <action name="Execute">
+	<command>uxterm</command>
+      </action>
+    </keybind>
+    <keybind key="W-e">
+      <action name="Execute">
+	<command>pcmanfm</command>
+      </action>
+    </keybind>
+    <keybind key="W-r">
+      <action name="Execute">
+	<command>xde-run</command>
+      </action>
+    </keybind>
+    <keybind key="W-s">
+      <action name="Execute">
+	<command>scrot</command>
+      </action>
+    </keybind>
+    <keybind key="W-slash">
+      <action name="Execute">
+	<command>xde-findws</command>
+      </action>
+    </keybind>
+    <keybind key="W-S-Delete">
+      <action name="Execute">
+	<command>xde-xlock -l</command>
+      </action>
+    </keybind>
+    <keybind key="W-S-Return">
+      <action name="Execute">
+	<command>uxterm</command>
+      </action>
+    </keybind>
+    <keybind key="W-S-s">
+      <action name="Execute">
+	<command>scrot</command>
+      </action>
+    </keybind>
+    <keybind key="W-S-slash">
+      <action name="Execute">
+	<command>xde-namews</command>
+      </action>
+    </keybind>
+    <keybind key="A-C-a">
+      <keybind key="S-r">
+	<action name="Raise"/>
+      </keybind>
+      <keybind key="r">
+	<action name="Raise"/>
+      </keybind>
+      <keybind key="S-l">
+	<action name="Lower"/>
+      </keybind>
+      <keybind key="l">
+	<action name="Lower"/>
+      </keybind>
+      <keybind key="u">
+	<action name="RaiseLower"/>
+      </keybind>
+      <keybind key="q">
+	<keybind key="f">
+	  <action name="Close"/>
+	</keybind>
+	<keybind key="k">
+	  <action name="Close"/>
+	</keybind>
+	<keybind key="q">
+	  <action name="Close"/>
+	</keybind>
+      </keybind>
+      <keybind key="s">
+	<action name="ToggleShade"/>
+      </keybind>
+      <keybind key="a">
+	<action name="ToggleOmnipresent"/>
+      </keybind>
+      <keybind key="m">
+	<keybind key="m">
+	  <action name="ToggleMaximize">
+	    <direction>both</direction>
+	  </action>
+	</keybind>
+	<keybind key="h">
+	  <action name="ToggleMaximize">
+	    <direction>horizontal</direction>
+	  </action>
+	</keybind>
+	<keybind key="v">
+	  <action name="ToggleMaximize">
+	    <direction>vertical</direction>
+	  </action>
+	</keybind>
+      </keybind>
+      <keybind key="f">
+	<action name="ToggleFullscreen"/>
+      </keybind>
+      <keybind key="Return">
+	<action name="Resize"/>
+      </keybind>
+      <keybind key="Left">
+	<action name="ResizeRelative">
+	  <left>-3</left>
+	  <right>-3</right>
+	  <top>0</top>
+	  <bottom>0</bottom>
+	</action>
+      </keybind>
+      <keybind key="Right">
+	<action name="ResizeRelative">
+	  <left>3</left>
+	  <right>3</right>
+	  <top>0</top>
+	  <bottom>0</bottom>
+	</action>
+      </keybind>
+      <keybind key="Down">
+	<action name="ResizeRelative">
+	  <left>0</left>
+	  <right>0</right>
+	  <top>-3</top>
+	  <bottom>-3</bottom>
+	</action>
+      </keybind>
+      <keybind key="Up">
+	<action name="ResizeRelative">
+	  <left>0</left>
+	  <right>0</right>
+	  <top>3</top>
+	  <bottom>3</bottom>
+	</action>
+      </keybind>
+      <keybind key="o">
+	<action name="ToggleAlwaysOnTop"/>
+      </keybind>
+      <keybind key="b">
+	<action name="ToggleAlwaysOnBottom"/>
+      </keybind>
+    </keybind>
+    <keybind key="A-C-e">
+      <keybind key="c">
+	<action name="Execute">
+	  <command>xde-run</command>
+	</action>
+      </keybind>
+      <keybind key="e">
+	<action name="Execute">
+	  <command>uxterm</command>
+	</action>
+      </keybind>
+      <keybind key="l">
+	<action name="Execute">
+	  <command>xde-xlock -l</command>
+	</action>
+      </keybind>
+      <keybind key="s">
+	<action name="Execute">
+	  <command>scrot -s</command>
+	</action>
+      </keybind>
+    </keybind>
+    <keybind key="A-C-c">
+      <keybind key="h">
+	<action name="MoveResizeTo">
+	  <x>center</x>
+	  <y>center</y>
+	</action>
+      </keybind>
+      <keybind key="s">
+	<action name="MoveResizeTo">
+	  <x>center</x>
+	  <y>center</y>
+	</action>
+      </keybind>
+      <keybind key="d">
+	<action name="MoveToEdge">
+	  <direction>east</direction>
+	</action>
+      </keybind>
+      <keybind key="l">
+	<action name="MoveToEdge">
+	  <direction>east</direction>
+	</action>
+      </keybind>
+      <keybind key="w">
+	<action name="MoveToEdge">
+	  <direction>north</direction>
+	</action>
+      </keybind>
+      <keybind key="y">
+	<action name="MoveToEdge">
+	  <direction>north</direction>
+	</action>
+      </keybind>
+      <keybind key="e">
+	<action name="MoveResizeTo">
+	  <x>-0</x>
+	  <y>0</y>
+	</action>
+      </keybind>
+      <keybind key="p">
+	<action name="MoveResizeTo">
+	  <x>-0</x>
+	  <y>0</y>
+	</action>
+      </keybind>
+      <keybind key="q">
+	<action name="MoveResizeTo">
+	  <x>0</x>
+	  <y>0</y>
+	</action>
+      </keybind>
+      <keybind key="b">
+	<action name="MoveToEdge">
+	  <direction>south</direction>
+	</action>
+      </keybind>
+      <keybind key="x">
+	<action name="MoveToEdge">
+	  <direction>south</direction>
+	</action>
+      </keybind>
+      <keybind key="c">
+	<action name="MoveResizeTo">
+	  <x>-0</x>
+	  <y>-0</y>
+	</action>
+      </keybind>
+      <keybind key="m">
+	<action name="MoveResizeTo">
+	  <x>0</x>
+	  <y>-0</y>
+	</action>
+      </keybind>
+      <keybind key="a">
+	<action name="MoveToEdge">
+	  <direction>west</direction>
+	</action>
+      </keybind>
+    </keybind>
+    <keybind key="A-C-p">
+      <keybind key="h">
+	<action name="ToggleDockAutohide"/>
+      </keybind>
+      <keybind key="Delete">
+	<action name="Reconfigure"/>
+      </keybind>
+      <keybind key="Next">
+	<action name="Restart"/>
+      </keybind>
+      <keybind key="Prior">
+	<action name="Restart">
+	  <command>twm</command>
+	</action>
+      </keybind>
+      <keybind key="End">
+	<action name="Exit">
+	  <prompt>no</prompt>
+	</action>
+      </keybind>
+      <keybind key="d">
+	<action name="Execute">
+	  <command>xde-run</command>
+	</action>
+      </keybind>
     </keybind>
   </keyboard>
   <mouse>

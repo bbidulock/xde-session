@@ -4,12 +4,12 @@ XDE_USE_XDG_HOME=1
 
 here=$(cd `dirname $0`;pwd)
 
-name=ctwm
-files="version apps buttons config defaults getstyles keys rc rc.m4 setstyle winmenu"
+name=openbox
+files="version rc.xml"
 xtras=""
-clone="version apps buttons config defaults getstyles keys rc.m4 setstyle stylemenu winmenu"
-udirs="pixmaps styles"
-menus="menu stylemenu"
+clone="version"
+udirs=""
+menus="menu.xml"
 
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
@@ -22,15 +22,15 @@ if ! which $prog >/dev/null 2>&1; then
 	echo "ERROR: cannot find usable $prog program" >&2
 	exit 1
 fi
-vers=${2:-${XDE_WM_VERSION:-$(LANG= $prog -version 2>/dev/null)}}
-[ -n "$vers" ] || vers="3.8.1"
+vers=${2:-${XDE_WM_VERSION:-$(LANG= $prog --version 2>/dev/null|awk '/Openbox/{print$2;exit}')}}
+[ -n "$vers" ] || vers="3.5.2"
 rdir=${XDE_WM_CONFIG_RDIR:-$XDG_RUNTIME_DIR/$name}
 xdir=${XDE_WM_CONFIG_XDIR:-$XDG_CONFIG_HOME/$name}
 sdir=${XDE_WM_CONFIG_SDIR:-/usr/share/$name}
 home="$HOME/.$name"
 priv="$rdir"
 [ -d "$XDG_RUNTIME_DIR"  ] || priv="$xdir"
-[ -n "$XDE_USE_XDG_HOME" ] || priv="$home"
+[ -n "$XDE_USE_XDG_HOME" ] || priv="$xdir"
 
 export XDE_WM_TYPE="$name"
 export XDE_WM_VERSION="$vers"
@@ -149,9 +149,9 @@ if [ -s "$here/version" ]; then
 	if [ "$generate" = "true" ]; then
 		desktop=$(echo "$name"|sed -e 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/')
 		if which xdg-menugen >/dev/null 2>&1; then
-			xdg-menugen --format "$name" --desktop "$desktop" -launch -o "$priv/menu" &
+			xdg-menugen --format "${name}3" --desktop "$desktop" -launch -o "$priv/menu.xml" &
 		elif which xde-menugen >/dev/null 2>&1; then
-			xde-menugen --format "$name" --desktop "$desktop" -launch -o "$priv/menu" &
+			xde-menugen --format "${name}3" --desktop "$desktop" -launch -o "$priv/menu.xml" &
 		fi
 	fi
 fi
@@ -167,23 +167,6 @@ runscript() {
 	[ -x "$script" ] || script="$sdir/$name"
 	[ -x "$script" ] && $script $@
 }
-
-if [ ! -f "$priv/rc" -o "$priv/rc.m4" -nt "$priv/rc" ]; then
-	export CTWM_TYPE="$prog"
-	export CTWM_VERSION="$vers"
-	export CTWM_CONFIG_RDIR="$rdir"
-	export CTWM_CONFIG_XDIR="$xdir"
-	export CTWM_CONFIG_HOME="$priv"
-	export CTWM_CONFIG_SDIR="$sdir"
-	export CTWM_RCFILE="$priv/rc"
-	export CTWM_M4FILE="$priv/rc.m4"
-
-	runscript "getstyles" "$prog" "$vers" "$priv/rc"
-	runscript "config"    "$prog" "$vers" "$priv/rc"
-fi
-
-makelink "$HOME" ".ctwmrc"    "$priv/rc"
-makelink "$HOME" ".ctwmrc.m4" "$priv/rc.m4"
 
 exit 0
 

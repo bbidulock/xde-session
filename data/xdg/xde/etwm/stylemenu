@@ -1,0 +1,29 @@
+divert(FUNCTIONS)dnl
+divert(MENUS)dnl
+Menu "twmstyles" twm_MenuColor
+{
+    "System Styles"		f.title
+divert(FUNCTIONS)dnl
+Function "set-system-style-Classic" { f.exec "TWM_CONFIG_SDIR/setstyle TWM_TYPE TWM_CONFIG_SDIR/styles/Classic" f.function "reconfig" }
+divert(MENUS)dnl
+    "Classic"		f.function "set-system-style-Classic"
+divert(FUNCTIONS)dnl
+Function "set-system-style-Squared-blue" { f.exec "TWM_CONFIG_SDIR/setstyle TWM_TYPE TWM_CONFIG_SDIR/styles/Squared-blue" f.function "reconfig" }
+divert(MENUS)dnl
+    "Squared-blue"		f.function "set-system-style-Squared-blue"
+divert(FUNCTIONS)dnl
+Function "set-system-style-Squared-cadet" { f.exec "TWM_CONFIG_SDIR/setstyle TWM_TYPE TWM_CONFIG_SDIR/styles/Squared-cadet" f.function "reconfig" }
+divert(MENUS)dnl
+    "Squared-cadet"		f.function "set-system-style-Squared-cadet"
+divert(FUNCTIONS)dnl
+Function "set-system-style-Squared-green" { f.exec "TWM_CONFIG_SDIR/setstyle TWM_TYPE TWM_CONFIG_SDIR/styles/Squared-green" f.function "reconfig" }
+divert(MENUS)dnl
+    "Squared-green"		f.function "set-system-style-Squared-green"
+divert(FUNCTIONS)dnl
+Function "set-system-style-Squared-grey" { f.exec "TWM_CONFIG_SDIR/setstyle TWM_TYPE TWM_CONFIG_SDIR/styles/Squared-grey" f.function "reconfig" }
+divert(MENUS)dnl
+    "Squared-grey"		f.function "set-system-style-Squared-grey"
+    "User Styles"		f.title
+}
+divert(-1)
+dnl vim: ft=m4
