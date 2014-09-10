@@ -4,38 +4,38 @@
 INCLUDE = "vars"
 
 WindowMenu = "Window Menu" {
-	Entry = "(Un)Stick" { Icon = "/usr/share/pekwm/icons/window-stick.xpm"; Actions = "Toggle Sticky" }
-	Entry = "(Un)Shade" { Icon = "/usr/share/pekwm/icons/window-shade.xpm"; Actions = "Toggle Shaded" }
-	Entry = "Iconify" { Icon = "/usr/share/pekwm/icons/window-minimize.xpm"; Actions = "Set Iconified" }
-	Entry = "Command ..." { Icon = "/usr/share/pekwm/icons/window-command.xpm"; Actions = "ShowCmdDialog" }
+	Entry = "(Un)Stick"	{ Icon = "window-stick.xpm"; Actions = "Toggle Sticky" }
+	Entry = "(Un)Shade"	{ Icon = "window-shade.xpm"; Actions = "Toggle Shaded" }
+	Entry = "Iconify"	{ Icon = "window-minimize.xpm"; Actions = "Set Iconified" }
+	Entry = "Command ..."	{ Icon = "window-command.xpm"; Actions = "ShowCmdDialog" }
 
-	Submenu = "Maximize" { Icon = "/usr/share/pekwm/icons/window-maximize.xpm"
-		Entry = "Toggle Full" { Icon = "/usr/share/pekwm/icons/window-maximize-b.xpm"; Actions = "Toggle Maximized True True" }
-		Entry = "Toggle Horizontal" { Icon = "/usr/share/pekwm/icons/window-maximize-h.xpm"; Actions = "Toggle Maximized True False" }
-		Entry = "Toggle Vertical" { Icon = "/usr/share/pekwm/icons/window-maximize-v.xpm"; Actions = "Toggle Maximized False True" }
+	Submenu = "Maximize"	{ Icon = "window-maximize.xpm"
+		Entry = "Toggle Full"		{ Icon = "window-maximize-b.xpm"; Actions = "Toggle Maximized True True" }
+		Entry = "Toggle Horizontal"	{ Icon = "window-maximize-h.xpm"; Actions = "Toggle Maximized True False" }
+		Entry = "Toggle Vertical"	{ Icon = "window-maximize-v.xpm"; Actions = "Toggle Maximized False True" }
 	}
-	Submenu = "Fill" { Icon = "/usr/share/pekwm/icons/window-maximize.xpm"; 
-		Entry = "Full" { Icon = "/usr/share/pekwm/icons/window-maximize-b.xpm"; Actions = "MaxFill True True" }
-		Entry = "Horizontal" { Icon = "/usr/share/pekwm/icons/window-maximize-h.xpm"; Actions = "MaxFill True False" }
-		Entry = "Vertical" { Icon = "/usr/share/pekwm/icons/window-maximize-v.xpm"; Actions = "MaxFill False True" }
+	Submenu = "Fill"	{ Icon = "window-maximize.xpm"; 
+		Entry = "Full"			{ Icon = "window-maximize-b.xpm"; Actions = "MaxFill True True" }
+		Entry = "Horizontal"		{ Icon = "window-maximize-h.xpm"; Actions = "MaxFill True False" }
+		Entry = "Vertical"		{ Icon = "window-maximize-v.xpm"; Actions = "MaxFill False True" }
 	}
-	Submenu = "Stacking" { Icon = "/usr/share/pekwm/icons/window-raise.xpm";
-		Entry = "Raise" { Icon = "/usr/share/pekwm/icons/window-raise.xpm"; Actions = "Raise" }
-		Entry = "Lower" { Icon = "/usr/share/pekwm/icons/window-lower.xpm"; Actions = "Lower" }
-		Entry = "Toggle Always On Top" { Icon = "/usr/share/pekwm/icons/window-above.xpm"; Actions = "Toggle AlwaysOnTop" }
-		Entry = "Toggle Always Below" { Icon = "/usr/share/pekwm/icons/window-below.xpm"; Actions = "Toggle AlwaysBelow" }
+	Submenu = "Stacking"	{ Icon = "window-raise.xpm";
+		Entry = "Raise"			{ Icon = "window-raise.xpm"; Actions = "Raise" }
+		Entry = "Lower"			{ Icon = "window-lower.xpm"; Actions = "Lower" }
+		Entry = "Toggle Always On Top"	{ Icon = "window-above.xpm"; Actions = "Toggle AlwaysOnTop" }
+		Entry = "Toggle Always Below"	{ Icon = "window-below.xpm"; Actions = "Toggle AlwaysBelow" }
 	}
-	Submenu = "Decorations" { Icon = "/usr/share/pekwm/icons/window-maximize.xpm";
-		Entry = "Toggle Decorations" { Icon = "/usr/share/pekwm/icons/window-maximize.xpm"; Actions = "Toggle DecorBorder; Toggle DecorTitlebar" }
-		Entry = "Toggle Borders" { Icon = "/usr/share/pekwm/icons/window-border.xpm"; Actions = "Toggle DecorBorder" }
-		Entry = "Toggle Titlebar" { Icon = "/usr/share/pekwm/icons/window-titlebar.xpm"; Actions = "Toggle DecorTitlebar" }
+	Submenu = "Decorations"	{ Icon = "window-maximize.xpm";
+		Entry = "Toggle Decorations"	{ Icon = "window-maximize.xpm"; Actions = "Toggle DecorBorder; Toggle DecorTitlebar" }
+		Entry = "Toggle Borders"	{ Icon = "window-border.xpm"; Actions = "Toggle DecorBorder" }
+		Entry = "Toggle Titlebar"	{ Icon = "window-titlebar.xpm"; Actions = "Toggle DecorTitlebar" }
 	}
-	Submenu = "Skip" { Icon = "/usr/share/pekwm/icons/window-menu.xpm";
-		Entry = "Toggle showing this frame in menus" { Icon = "/usr/share/pekwm/icons/window-menu.xpm"; Actions = "Toggle Skip Menus" }
-		Entry = "Toggle including this frame in focus toggle" { Icon = "/usr/share/pekwm/icons/window-focus.xpm"; Actions = "Toggle Skip FocusToggle" }
-		Entry = "Toggle if this frame snaps to other windows" { Icon = "/usr/share/pekwm/icons/window-snap.xpm"; Actions = "Toggle Skip Snap" }
+	Submenu = "Skip"	{ Icon = "window-menu.xpm";
+		Entry = "Toggle showing this frame in menus"		{ Icon = "window-menu.xpm"; Actions = "Toggle Skip Menus" }
+		Entry = "Toggle including this frame in focus toggle"	{ Icon = "window-focus.xpm"; Actions = "Toggle Skip FocusToggle" }
+		Entry = "Toggle if this frame snaps to other windows"	{ Icon = "window-snap.xpm"; Actions = "Toggle Skip Snap" }
 	}
-	SubMenu = "Send To" { Icon = "/usr/share/pekwm/icons/window-sendto.xpm"
+	SubMenu = "Send To" { Icon = "window-sendto.xpm"
 		# Create sendto menu once per pekwm config reload. The fast way that
 		# will work for most if not all users.
 		COMMAND = "$_PEKWM_SCRIPT_PATH/pekwm_ws_menu.sh send"
@@ -46,24 +46,24 @@ WindowMenu = "Window Menu" {
 		# Entry = "" { Actions = "Dynamic $_PEKWM_SCRIPT_PATH/pekwm_ws_menu.sh send dynamic" }
 	}
 	Separator {}
-	Entry = "Close" { Icon = "/usr/share/pekwm/icons/window-close.xpm"; Actions = "Close" }
-	Submenu = "Kill" { Icon = "/usr/share/pekwm/icons/window-kill.xpm"
-		Entry = "Kill application" { Icon = "/usr/share/pekwm/icons/window-kill.xpm"; Actions = "Kill" }
+	Entry = "Close"		{ Icon = "window-close.xpm"; Actions = "Close" }
+	Submenu = "Kill"	{ Icon = "window-kill.xpm"
+		Entry = "Kill application"	{ Icon = "window-kill.xpm"; Actions = "Kill" }
 	}
 }
 
 LayoutMenu = "Layout" {
-	Entry = "Smart" { Actions = "SetLayouter Smart" }
-	Entry = "Mouse Not Under" { Actions = "SetLayouter MouseNotUnder" }
-	Entry = "Mouse Centered" { Actions = "SetLayouter MouseCentered" }
-	Entry = "Mouse Top Left" { Actions = "SetLayouter MouseTopLeft" }
+	Entry = "Smart"			{ Actions = "SetLayouter Smart" }
+	Entry = "Mouse Not Under"	{ Actions = "SetLayouter MouseNotUnder" }
+	Entry = "Mouse Centered"	{ Actions = "SetLayouter MouseCentered" }
+	Entry = "Mouse Top Left"	{ Actions = "SetLayouter MouseTopLeft" }
 	Separator {}
-	Entry = "Layout Horizontal" { Actions = "SetLayouter TILE_Horizontal" }
-	Entry = "Layout Vertical" { Actions = "SetLayouter TILE_Vertical" }
-	Entry = "Layout Dwindle" { Actions = "SetLayouter TILE_Dwindle" }
-	Entry = "Layout Stacked" { Actions = "SetLayouter TILE_Stacked" }
-	Entry = "Layout Center One" { Actions = "SetLayouter TILE_CenterOne" }
-	Entry = "Layout Boxed" { Actions = "SetLayouter TILE_Boxed" }
-	Entry = "Layout Fib" { Actions = "SetLayouter TILE_Fib" }
+	Entry = "Layout Horizontal"	{ Actions = "SetLayouter TILE_Horizontal" }
+	Entry = "Layout Vertical"	{ Actions = "SetLayouter TILE_Vertical" }
+	Entry = "Layout Dwindle"	{ Actions = "SetLayouter TILE_Dwindle" }
+	Entry = "Layout Stacked"	{ Actions = "SetLayouter TILE_Stacked" }
+	Entry = "Layout Center One"	{ Actions = "SetLayouter TILE_CenterOne" }
+	Entry = "Layout Boxed"		{ Actions = "SetLayouter TILE_Boxed" }
+	Entry = "Layout Fib"		{ Actions = "SetLayouter TILE_Fib" }
 }
 

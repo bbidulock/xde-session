@@ -7,312 +7,500 @@ Global {
 # Adding your own frequently used actions is easy -
 # just copy it over from CHAINS and edit the keypress!
 	# Moving in frames
-	KeyPress = "Mod1 Tab" { Actions = "NextFrame EndRaise" }
-	KeyPress = "Mod1 Shift Tab" { Actions = "PrevFrame EndRaise" }
-	KeyPress = "Mod1 Ctrl Tab" { Actions = "NextFrameMRU EndRaise" }
-	KeyPress = "Mod1 Ctrl Shift Tab" { Actions = "PrevFrameMRU EndRaise" }
-	KeyPress = "Mod4 Tab" { Actions = "ActivateClientRel 1" }
-	KeyPress = "Mod4 Shift Tab" { Actions = "ActivateClientRel -1" }
-	KeyPress = "Mod4 Ctrl Right" { Actions = "MoveClientRel 1" }
-	KeyPress = "Mod4 Ctrl Left" { Actions = "MoveClientRel -1" }
-	KeyPress = "Mod4 Left" { Actions = "FocusDirectional Left" }
-	KeyPress = "Mod4 Right" { Actions = "FocusDirectional Right" }
-	KeyPress = "Mod4 Up" { Actions = "FocusDirectional Up" }
-	KeyPress = "Mod4 Down" { Actions = "FocusDirectional Down" }
+	KeyPress = "Mod1 Tab"			{ Actions = "NextFrame AlwaysRaise" }
+	KeyPress = "Mod1 Shift Tab"		{ Actions = "PrevFrame AlwaysRaise" }
+	KeyPress = "Mod1 Ctrl Tab"		{ Actions = "NextFrameMRU EndRaise" }
+	KeyPress = "Mod1 Ctrl Shift Tab"	{ Actions = "PrevFrameMRU EndRaise" }
+	KeyPress = "Mod1 J"			{ Actions = "NextFrame EndRaise False" }
+	KeyPress = "Mod1 K"			{ Actions = "PrevFrame EndRaise False" }
+	KeyPress = "Mod4 J"			{ Actions = "NextFrame EndRaise False" }
+	KeyPress = "Mod4 K"			{ Actions = "PrevFrame EndRaise False" }
+	KeyPress = "Mod1 Escape"		{ Actions = "NextFrameMRU AlwaysRaise True" }
+	KeyPress = "Mod1 Shift Escape"		{ Actions = "PrevFrameMRU AlwaysRaise True" }
+	KeyPress = "Mod4 Tab"			{ Actions = "ActivateClientRel 1" }
+	KeyPress = "Mod4 Shift Tab"		{ Actions = "ActivateClientRel -1" }
+	KeyPress = "Mod4 Ctrl Right"		{ Actions = "MoveClientRel 1" }
+	KeyPress = "Mod4 Ctrl Left"		{ Actions = "MoveClientRel -1" }
+	KeyPress = "Mod4 Left"			{ Actions = "FocusDirectional Left" }
+	KeyPress = "Mod4 Right"			{ Actions = "FocusDirectional Right" }
+	KeyPress = "Mod4 Up"			{ Actions = "FocusDirectional Up" }
+	KeyPress = "Mod4 Down"			{ Actions = "FocusDirectional Down" }
 	# Moving in workspaces
-	KeyPress = "Ctrl Mod1 Left" { Actions = "GotoWorkspace Left" }
-	KeyPress = "Ctrl Mod1 Right" { Actions = "GotoWorkspace Right" }
-	KeyPress = "Ctrl Mod1 Up" { Actions = "GotoWorkspace Up" }
-	KeyPress = "Ctrl Mod1 Down" { Actions = "GotoWorkspace Down" }
-	KeyPress = "Mod4 1" { Actions = "GotoWorkspace 1" }
-	KeyPress = "Mod4 2" { Actions = "GotoWorkspace 2" }
-	KeyPress = "Mod4 3" { Actions = "GotoWorkspace 3" }
-	KeyPress = "Mod4 4" { Actions = "GotoWorkspace 4" }
-	KeyPress = "Mod4 5" { Actions = "GotoWorkspace 5" }
-	KeyPress = "Mod4 6" { Actions = "GotoWorkspace 6" }
-	KeyPress = "Mod4 7" { Actions = "GotoWorkspace 7" }
-	KeyPress = "Mod4 8" { Actions = "GotoWorkspace 8" }
-	KeyPress = "Mod4 9" { Actions = "GotoWorkspace 9" }
-	KeyPress = "Ctrl Mod1 Shift Left" { Actions = "SendToWorkspace Next; GoToWorkspace Next" }
-	KeyPress = "Ctrl Mod1 Shift Right" { Actions = "SendToWorkspace Prev; GoToWorkspace Prev" }
-	KeyPress = "Ctrl Mod1 Shift Up" { Actions = "SendToWorkspace NextV; GoToWorkspace NextV" }
-	KeyPress = "Ctrl Mod1 Shift Down" { Actions = "SendToWorkspace PrevV; GoToWorkspace PrevV" }
-	KeyPress = "Mod4 F1" { Actions = "SendToWorkspace 1" }
-	KeyPress = "Mod4 F2" { Actions = "SendToWorkspace 2" }
-	KeyPress = "Mod4 F3" { Actions = "SendToWorkspace 3" }
-	KeyPress = "Mod4 F4" { Actions = "SendToWorkspace 4" }
-	KeyPress = "Mod4 F5" { Actions = "SendToWorkspace 5" }
-	KeyPress = "Mod4 F6" { Actions = "SendToWorkspace 6" }
-	KeyPress = "Mod4 F7" { Actions = "SendToWorkspace 7" }
-	KeyPress = "Mod4 F8" { Actions = "SendToWorkspace 8" }
-	KeyPress = "Mod4 F9" { Actions = "SendToWorkspace 9" }
+	KeyPress = "Mod1 Ctrl Left"		{ Actions = "GotoWorkspace Prev" }
+	KeyPress = "Mod1 Ctrl Right"		{ Actions = "GotoWorkspace Next" }
+	KeyPress = "Mod1 Ctrl Up"		{ Actions = "GotoWorkspace PrevV" }
+	KeyPress = "Mod1 Ctrl Down"		{ Actions = "GotoWorkspace NextV" }
+	KeyPress = "Mod1 Ctrl H"		{ Actions = "GotoWorkspace Left" }
+	KeyPress = "Mod1 Ctrl J"		{ Actions = "GotoWorkspace NextV" }
+	KeyPress = "Mod1 Ctrl K"		{ Actions = "GotoWorkspace PrevV" }
+	KeyPress = "Mod1 Ctrl L"		{ Actions = "GotoWorkspace Right" }
+	KeyPress = "Mod4 Home"			{ Actions = "GotoWorkspace Left" }
+	KeyPress = "Mod4 End"			{ Actions = "GotoWorkspace Right" }
+	KeyPress = "Mod4 Page_Up"		{ Actions = "GotoWorkspace PrevV" }
+	KeyPress = "Mod4 Page_Down"		{ Actions = "GotoWorkspace NextV" }
+	KeyPress = "Mod4 Escape"		{ Actions = "GotoWorkspace Last" }
+	KeyPress = "Mod4 Shift Up"		{ Actions = "GotoWorkspace Last" }
+	KeyPress = "Mod4 1"			{ Actions = "GotoWorkspace 1" }
+	KeyPress = "Mod4 2"			{ Actions = "GotoWorkspace 2" }
+	KeyPress = "Mod4 3"			{ Actions = "GotoWorkspace 3" }
+	KeyPress = "Mod4 4"			{ Actions = "GotoWorkspace 4" }
+	KeyPress = "Mod4 5"			{ Actions = "GotoWorkspace 5" }
+	KeyPress = "Mod4 6"			{ Actions = "GotoWorkspace 6" }
+	KeyPress = "Mod4 7"			{ Actions = "GotoWorkspace 7" }
+	KeyPress = "Mod4 8"			{ Actions = "GotoWorkspace 8" }
+	KeyPress = "Mod4 9"			{ Actions = "GotoWorkspace 9" }
+	KeyPress = "Mod4 0"			{ Actions = "GotoWorkspace 10" }
+	KeyPress = "Ctrl F1"			{ Actions = "GotoWorkspace 1" }
+	KeyPress = "Ctrl F2"			{ Actions = "GotoWorkspace 2" }
+	KeyPress = "Ctrl F3"			{ Actions = "GotoWorkspace 3" }
+	KeyPress = "Ctrl F4"			{ Actions = "GotoWorkspace 4" }
+	KeyPress = "Ctrl F5"			{ Actions = "GotoWorkspace 5" }
+	KeyPress = "Ctrl F6"			{ Actions = "GotoWorkspace 6" }
+	KeyPress = "Ctrl F7"			{ Actions = "GotoWorkspace 7" }
+	KeyPress = "Ctrl F8"			{ Actions = "GotoWorkspace 8" }
+	KeyPress = "Ctrl F9"			{ Actions = "GotoWorkspace 9" }
+	KeyPress = "Ctrl F10"			{ Actions = "GotoWorkspace 10" }
+	KeyPress = "Ctrl F11"			{ Actions = "GotoWorkspace 11" }
+	KeyPress = "Ctrl F12"			{ Actions = "GotoWorkspace 12" }
+	KeyPress = "Mod1 1"			{ Actions = "GotoWorkspace 1" }
+	KeyPress = "Mod1 2"			{ Actions = "GotoWorkspace 2" }
+	KeyPress = "Mod1 3"			{ Actions = "GotoWorkspace 3" }
+	KeyPress = "Mod1 4"			{ Actions = "GotoWorkspace 4" }
+	KeyPress = "Mod1 5"			{ Actions = "GotoWorkspace 5" }
+	KeyPress = "Mod1 6"			{ Actions = "GotoWorkspace 6" }
+	KeyPress = "Mod1 7"			{ Actions = "GotoWorkspace 7" }
+	KeyPress = "Mod1 8"			{ Actions = "GotoWorkspace 8" }
+	KeyPress = "Mod1 9"			{ Actions = "GotoWorkspace 9" }
+	KeyPress = "Mod1 0"			{ Actions = "GotoWorkspace 10" }
+	KeyPress = "Mod1 bracketleft"		{ Actions = "GotoWorkspace 11" }
+	KeyPress = "Mod1 bracketright"		{ Actions = "GotoWorkspace 12" }
+	KeyPress = "Mod1 Shift Left"		{ Actions = "SendToWorkspace Left" }
+	KeyPress = "Mod1 Shift Right"		{ Actions = "SendToWorkspace Right" }
+	KeyPress = "Mod1 Shift Up"		{ Actions = "SendToWorkspace PrevV" }
+	KeyPress = "Mod1 Shift Down"		{ Actions = "SendToWorkspace NextV" }
+	KeyPress = "Mod4 F1"			{ Actions = "SendToWorkspace 1" }
+	KeyPress = "Mod4 F2"			{ Actions = "SendToWorkspace 2" }
+	KeyPress = "Mod4 F3"			{ Actions = "SendToWorkspace 3" }
+	KeyPress = "Mod4 F4"			{ Actions = "SendToWorkspace 4" }
+	KeyPress = "Mod4 F5"			{ Actions = "SendToWorkspace 5" }
+	KeyPress = "Mod4 F6"			{ Actions = "SendToWorkspace 6" }
+	KeyPress = "Mod4 F7"			{ Actions = "SendToWorkspace 7" }
+	KeyPress = "Mod4 F8"			{ Actions = "SendToWorkspace 8" }
+	KeyPress = "Mod4 F9"			{ Actions = "SendToWorkspace 9" }
+	KeyPress = "Mod4 F10"			{ Actions = "SendToWorkspace 10" }
+	KeyPress = "Mod4 F11"			{ Actions = "SendToWorkspace 11" }
+	KeyPress = "Mod4 F12"			{ Actions = "SendToWorkspace 12" }
+	KeyPress = "Mod4 Shift 1"		{ Actions = "SendToWorkspace 1" }
+	KeyPress = "Mod4 Shift 2"		{ Actions = "SendToWorkspace 2" }
+	KeyPress = "Mod4 Shift 3"		{ Actions = "SendToWorkspace 3" }
+	KeyPress = "Mod4 Shift 4"		{ Actions = "SendToWorkspace 4" }
+	KeyPress = "Mod4 Shift 5"		{ Actions = "SendToWorkspace 5" }
+	KeyPress = "Mod4 Shift 6"		{ Actions = "SendToWorkspace 6" }
+	KeyPress = "Mod4 Shift 7"		{ Actions = "SendToWorkspace 7" }
+	KeyPress = "Mod4 Shift 8"		{ Actions = "SendToWorkspace 8" }
+	KeyPress = "Mod4 Shift 9"		{ Actions = "SendToWorkspace 9" }
+	KeyPress = "Mod4 Shift 0"		{ Actions = "SendToWorkspace 10" }
+	KeyPress = "Mod4 Shift F1"		{ Actions = "SendToWorkspace 11" }
+	KeyPress = "Mod4 Shift F2"		{ Actions = "SendToWorkspace 12" }
+	KeyPress = "Mod4 Shift F3"		{ Actions = "SendToWorkspace 13" }
+	KeyPress = "Mod4 Shift F4"		{ Actions = "SendToWorkspace 14" }
+	KeyPress = "Mod4 Shift F5"		{ Actions = "SendToWorkspace 15" }
+	KeyPress = "Mod4 Shift F6"		{ Actions = "SendToWorkspace 16" }
+	KeyPress = "Mod4 Shift F7"		{ Actions = "SendToWorkspace 17" }
+	KeyPress = "Mod4 Shift F8"		{ Actions = "SendToWorkspace 18" }
+	KeyPress = "Mod4 Shift F9"		{ Actions = "SendToWorkspace 19" }
+	KeyPress = "Mod4 Shift F10"		{ Actions = "SendToWorkspace 20" }
+	KeyPress = "Mod4 Shift F11"		{ Actions = "SendToWorkspace 21" }
+	KeyPress = "Mod4 Shift F12"		{ Actions = "SendToWorkspace 22" }
+	KeyPress = "Mod1 Ctrl Shift Down"	{ Actions = "SendToWorkspace NextV; GoToWorkspace NextV" }
+	KeyPress = "Mod1 Ctrl Shift Left"	{ Actions = "SendToWorkspace Prev; GoToWorkspace Prev" }
+	KeyPress = "Mod1 Ctrl Shift Right"	{ Actions = "SendToWorkspace Next; GoToWorkspace Next" }
+	KeyPress = "Mod1 Ctrl Shift Up"		{ Actions = "SendToWorkspace PrevV; GoToWorkspace PrevV" }
+	KeyPress = "Mod4 Shift Down"		{ Actions = "SendToWorkspace Prev; GotoWorkspace Prev" }
+	KeyPress = "Mod4 Shift End"		{ Actions = "SendToWorkspace Right; GotoWorkspace Right" }
+	KeyPress = "Mod4 Shift Home"		{ Actions = "SendToWorkspace Left; GotoWorkspace Left" }
+	KeyPress = "Mod4 Shift Page_Down"	{ Actions = "SendToWorkspace NextV; GotoWorkspace NextV" }
+	KeyPress = "Mod4 Shift Page_Up"		{ Actions = "SendToWorkspace PrevV; GotoWorkspace PrevV" }
+	KeyPress = "Mod4 Ctrl Down"		{ Actions = "SendToWorkspace NextV; GotoWorkspace NextV" }
+	KeyPress = "Mod4 Ctrl Up"		{ Actions = "SendToWorkspace PrevV; GotoWorkspace PrevV" }
+	KeyPress = "Mod1 Ctrl F1"		{ Actions = "SendToWorkspace 1; GotoWorkspace 1" }
+	KeyPress = "Mod1 Ctrl F2"		{ Actions = "SendToWorkspace 2; GotoWorkspace 2" }
+	KeyPress = "Mod1 Ctrl F3"		{ Actions = "SendToWorkspace 3; GotoWorkspace 3" }
+	KeyPress = "Mod1 Ctrl F4"		{ Actions = "SendToWorkspace 4; GotoWorkspace 4" }
+	KeyPress = "Mod1 Ctrl F5"		{ Actions = "SendToWorkspace 5; GotoWorkspace 5" }
+	KeyPress = "Mod1 Ctrl F6"		{ Actions = "SendToWorkspace 6; GotoWorkspace 6" }
+	KeyPress = "Mod1 Ctrl F7"		{ Actions = "SendToWorkspace 7; GotoWorkspace 7" }
+	KeyPress = "Mod1 Ctrl F8"		{ Actions = "SendToWorkspace 8; GotoWorkspace 8" }
+	KeyPress = "Mod1 Ctrl F9"		{ Actions = "SendToWorkspace 9; GotoWorkspace 9" }
+	KeyPress = "Mod1 Ctrl F10"		{ Actions = "SendToWorkspace 10; GotoWorkspace 10" }
+	KeyPress = "Mod1 Ctrl F11"		{ Actions = "SendToWorkspace 11; GotoWorkspace 11" }
+	KeyPress = "Mod1 Ctrl F12"		{ Actions = "SendToWorkspace 12; GotoWorkspace 12" }
+	# Moving across heads
+	KeyPress = "Mod4 Shift KP_1"		{ Actions = "MoveToHead 1" }
+	KeyPress = "Mod4 Shift KP_2"		{ Actions = "MoveToHead 2" }
+	KeyPress = "Mod4 Shift KP_3"		{ Actions = "MoveToHead 3" }
+	KeyPress = "Mod4 Shift KP_4"		{ Actions = "MoveToHead 4" }
+	KeyPress = "Mod4 Shift KP_5"		{ Actions = "MoveToHead 5" }
+	KeyPress = "Mod4 Shift KP_6"		{ Actions = "MoveToHead 6" }
+	KeyPress = "Mod4 Shift KP_7"		{ Actions = "MoveToHead 7" }
+	KeyPress = "Mod4 Shift KP_8"		{ Actions = "MoveToHead 8" }
+	KeyPress = "Mod4 Shift KP_9"		{ Actions = "MoveToHead 9" }
+	KeyPress = "Mod4 Shift KP_0"		{ Actions = "MoveToHead 10" }
 	# Simple window management
-	KeyPress = "Mod4 M" { Actions = "Toggle Maximized True True" }
-	KeyPress = "Mod4 G" { Actions = "Maxfill True True" }
-	KeyPress = "Mod4 F" { Actions = "Toggle FullScreen" }
-	KeyPress = "Mod4 Return" { Actions = "MoveResize" }
-	KeyPress = "Mod4 Q" { Actions = "Close" }
-	KeyPress = "Mod4 S" { Actions = "Toggle Shaded" }
-	KeyPress = "Mod4 I" { Actions = "Toggle Iconified" }
+	KeyPress = "Ctrl Shift Left"		{ Actions = "Toggle Maximized True True" }
+	KeyPress = "Ctrl Shift Right"		{ Actions = "Toggle Maximized True False" }
+	KeyPress = "Ctrl Shift Up"		{ Actions = "Toggle Maximized False True" }
+	KeyPress = "Ctrl Shift Down"		{ Actions = "MaxFill True True" }
+	KeyPress = "Mod1 Ctrl S"		{ Actions = "Toggle Sticky" }
+	KeyPress = "Mod1 D"			{ Actions = "Toggle DecorBorder; Toggle DecorTitlebar" }
+	KeyPress = "Mod4 M"			{ Actions = "Toggle Maximized True True" }
+	KeyPress = "Mod4 Ctrl N"		{ Actions = "UnSet Maximized True True" }
+	KeyPress = "Mod4 G"			{ Actions = "Maxfill True True" }
+	KeyPress = "Mod4 F"			{ Actions = "Toggle FullScreen" }
+	KeyPress = "Mod4 Return"		{ Actions = "MoveResize" }
+	KeyPress = "Mod1 Q"			{ Actions = "Close" }
+	KeyPress = "Mod4 Q"			{ Actions = "Close" }
+	KeyPress = "Mod1 Shift C"		{ Actions = "Close" }
+	KeyPress = "Mod4 Shift C"		{ Actions = "Close" }
+	KeyPress = "Mod1 Shift X"		{ Actions = "Kill" }
+	KeyPress = "Mod4 Shift X"		{ Actions = "Kill" }
+	KeyPress = "Mod1 S"			{ Actions = "Toggle Shaded" }
+	KeyPress = "Mod4 S"			{ Actions = "Toggle Shaded" }
+	KeyPress = "Mod4 N"			{ Actions = "Toggle Iconified" }
+	KeyPress = "Mod4 I"			{ Actions = "Toggle Iconified" }
+	KeyPress = "Mod1 Shift M"		{ Actions = "Toggle Iconified" }
+	KeyPress = "Mod1 Up"			{ Actions = "Raise" }
+	KeyPress = "Mod1 Down"			{ Actions = "Lower" }
+	KeyPress = "Mod1 Left"			{ Actions = "Toggle AlwaysBelow" }
+	KeyPress = "Mod1 Right"			{ Actions = "Toggle AlwaysOnTop" }
+	# primary function keys
+	KeyPress = "Mod1 F1"			{ Actions = "Exec uxterm &" }
+	KeyPress = "Mod1 F2"			{ Actions = "Exec xde-run &" }
+	KeyPress = "Mod1 F4"			{ Actions = "Close" }
+	KeyPress = "Mod1 F5"			{ Actions = "Kill" }
+	KeyPress = "Mod1 F5"			{ Actions = "UnSet Maximized True True" }
+	KeyPress = "Mod1 F7"			{ Actions = "MoveResize" }
+	KeyPress = "Mod1 F8"			{ Actions = "MoveResize" }
+	KeyPress = "Mod1 F9"			{ Actions = "Toggle Iconified" }
+	KeyPress = "Mod1 F10"			{ Actions = "Toggle Maximized True True" }
+	KeyPress = "Mod1 Shift F10"		{ Actions = "Toggle Maximized False True" }
+	KeyPress = "Mod1 F11"			{ Actions = "Toggle Fullscreen" }
+	KeyPress = "Mod1 F12"			{ Actions = "Toggle Shaded" }
+	# moving and resizing
+	KeyPress = "Mod1 Ctrl KP_1"		{ Actions = "MoveToEdge BottomLeft" }
+	KeyPress = "Mod1 Ctrl KP_2"		{ Actions = "MoveToEdge BottomEdge" }
+	KeyPress = "Mod1 Ctrl KP_3"		{ Actions = "MoveToEdge BottomRight" }
+	KeyPress = "Mod1 Ctrl KP_4"		{ Actions = "MoveToEdge LeftEdge" }
+	KeyPress = "Mod1 Ctrl KP_5"		{ Actions = "MoveToEdge Center" }
+	KeyPress = "Mod1 Ctrl KP_6"		{ Actions = "MoveToEdge RightEdge" }
+	KeyPress = "Mod1 Ctrl KP_7"		{ Actions = "MoveToEdge TopLeft" }
+	KeyPress = "Mod1 Ctrl KP_8"		{ Actions = "MoveToEdge TopEdge" }
+	KeyPress = "Mod1 Ctrl KP_9"		{ Actions = "MoveToEdge TopRight" }
+	KeyPress = "Mod4 Shift M"		{ Actions = "MoveResize" }
+	KeyPress = "Mod4 Shift bracketleft"	{ Actions = "MoveVertical 5" }
+	KeyPress = "Mod4 Shift bracketright"	{ Actions = "MoveVertical -5" }
+	KeyPress = "Mod4 bracketleft"		{ Actions = "MoveHorizontal -5" }
+	KeyPress = "Mod4 bracketright"		{ Actions = "MoveHorizontal 5" }
+	KeyPress = "Mod1 Shift A"		{ Actions = "ResizeHorizontal -6" }
+	KeyPress = "Mod1 Shift D"		{ Actions = "ResizeHorizontal 6" }
+	KeyPress = "Mod1 Shift S"		{ Actions = "ResizeVertical -6" }
+	KeyPress = "Mod1 Shift W"		{ Actions = "ResizeVertical 6" }
+	KeyPress = "Mod4 Shift equal"		{ Actions = "ResizeVertical 6" }
+	KeyPress = "Mod4 Shift minus"		{ Actions = "ResizeVertical -6" }
+	KeyPress = "Mod4 equal"			{ Actions = "ResizeHorizontal 6" }
+	KeyPress = "Mod4 minus"			{ Actions = "ResizeHorizontal -6" }
 	# Marking
-	KeyPress = "Mod4 Z" { Actions = "Toggle Marked" }
-	KeyPress = "Mod4 A" { Actions = "AttachMarked" }
+	KeyPress = "Mod4 Z"			{ Actions = "Toggle Marked" }
+	KeyPress = "Mod4 A"			{ Actions = "AttachMarked" }
 	# Tagging
-	KeyPress = "Mod4 T" { Actions = "Toggle Tagged False" }
+	KeyPress = "Mod4 T"			{ Actions = "Toggle Tagged False" }
 	# Menus
-	KeyPress = "Mod4 R" { Actions = "ShowMenu Root" }
-	KeyPress = "Mod4 W" { Actions = "ShowMenu Window" }
-	KeyPress = "Mod4 L" { Actions = "ShowMenu Goto" }
-	KeyPress = "Mod4 C" { Actions = "ShowMenu GotoClient" }
-	KeyPress = "Mod4 Shift I" { Actions = "ShowMenu Icon" }
-	KeyPress = "Mod4 X" { Actions = "HideAllMenus" }
+#	KeyPress = "Mod4 R"			{ Actions = "ShowMenu Root" }
+	KeyPress = "Mod4 R"			{ Actions = "Exec xde-run &" }
+	KeyPress = "Mod4 P"			{ Actions = "ShowMenu Root" }
+	KeyPress = "Ctrl Escape"		{ Actions = "ShowMenu Root" }
+	KeyPress = "F12"			{ Actions = "ShowMenu Root" }
+#	KeyPress = "Mod1 Ctrl M"		{ Actions = "ShowMenu Root" }
+	KeyPress = "Mod4 W"			{ Actions = "ShowMenu Window" }
+	KeyPress = "Shift Escape"		{ Actions = "ShowMenu Window" }
+	KeyPress = "Mod1 space"			{ Actions = "ShowMenu Window" }
+	KeyPress = "Mod4 L"			{ Actions = "ShowMenu Goto" }
+	KeyPress = "F11"			{ Actions = "ShowMenu Goto" }
+	KeyPress = "Mod4 C"			{ Actions = "ShowMenu GotoClient" }
+	KeyPress = "Mod4 Shift I"		{ Actions = "ShowMenu Icon" }
+	KeyPress = "Mod4 X"			{ Actions = "HideAllMenus" }
 	# External Commands
-	KeyPress = "Mod1 Print" { Actions = "Exec $_PEKWM_SCRIPT_PATH/pekwm_screenshot.sh" }
-	KeyPress = "Mod4 E" { Actions = "Exec $TERM" }
+#	KeyPress = "Mod1 Print"			{ Actions = "Exec scrot -s &" }
+	KeyPress = "Mod1 Print"			{ Actions = "Exec $_PEKWM_SCRIPT_PATH/pekwm_screenshot.sh" }
+#	KeyPress = "Mod4 E"			{ Actions = "Exec roxterm &" }
+	KeyPress = "Mod4 E"			{ Actions = "Exec pcmanfm &" }
+#	KeyPress = "Mod1 Ctrl F"		{ Actions = "Exec pcmanfm &" }
+	KeyPress = "Mod1 Ctrl N"		{ Actions = "Exec uxterm &" }
+	KeyPress = "Mod1 Ctrl R"		{ Actions = "Exec xde-run &" }
+	KeyPress = "Mod1 Ctrl Return"		{ Actions = "Exec uxterm &" }
+#	KeyPress = "Mod1 Ctrl T"		{ Actions = "Exec roxterm &" }
+	KeyPress = "Mod1 Ctrl V"		{ Actions = "Exec gvim &" }
+	KeyPress = "Mod1 Ctrl W"		{ Actions = "Exec firefox &" }
+	KeyPress = "Mod1 Ctrl X"		{ Actions = "Exec uxterm &" }
+	KeyPress = "Mod1 Shift Return"		{ Actions = "Exec uxterm &" }
+	KeyPress = "Mod1 X"			{ Actions = "Exec uxterm &" }
+	KeyPress = "Mod4 Shift Delete"		{ Actions = "Exec xde-lock -l &" }
+	KeyPress = "Mod4 Shift Return"		{ Actions = "Exec uxterm &" }
+	KeyPress = "Mod4 Shift S"		{ Actions = "Exec scrot -s &" }
+	KeyPress = "Mod4 Shift slash"		{ Actions = "Exec xde-namews &" }
+	KeyPress = "Mod4 slash"			{ Actions = "Exec xde-findws &" }
 	# Pekwm control
-	KeyPress = "Ctrl Mod1 Delete" { Actions = "Reload" }
-	KeyPress = "Mod4 D" { Actions = "ShowCmdDialog" }
-	KeyPress = "Mod4 V" { Actions = "ShowSearchDialog" }
-	KeyPress = "Mod4 H" { Actions = "Toggle HarbourHidden" }
+	KeyPress = "Mod1 Ctrl Q"		{ Actions = "Exit" }
+	KeyPress = "Mod4 Shift Q"		{ Actions = "Exit" }
+#	KeyPress = "Mod1 Ctrl Delete"		{ Actions = "Reload" }
+	KeyPress = "Mod1 Ctrl Delete"		{ Actions = "Exec xde-logout &" }
+	KeyPress = "Mod1 Shift Q"		{ Actions = "Restart" }
+	KeyPress = "Mod4 Ctrl R"		{ Actions = "Restart" }
+	KeyPress = "Mod4 D"			{ Actions = "ShowCmdDialog" }
+	KeyPress = "Mod4 V"			{ Actions = "ShowSearchDialog" }
+	KeyPress = "Mod4 H"			{ Actions = "Toggle HarbourHidden" }
+	KeyPress = "Mod1 B"			{ Actions = "Toggle HarbourHidden" }
+	KeyPress = "Mod1 Ctrl space"		{ Actions = "Toggle HarbourHidden" }
+	KeyPress = "Mod4 Shift B"		{ Actions = "Toggle HarbourHidden" }
 
 # - - ----------------------------------------------- - -
 # CHAINS. These give you access to just about everything.
 	# Move to Corner
-	Chain = "Ctrl Mod1 C" {
-		KeyPress = "Q" { Actions = "MoveToEdge TopLeft" }
-		KeyPress = "Y" { Actions = "MoveToEdge TopCenterEdge" }
-		KeyPress = "W" { Actions = "MoveToEdge TopCenterEdge" }
-		KeyPress = "Shift Y" { Actions = "MoveToEdge TopEdge" }
-		KeyPress = "Shift W" { Actions = "MoveToEdge TopEdge" }
-		KeyPress = "P" { Actions = "MoveToEdge TopRight" }
-		KeyPress = "E" { Actions = "MoveToEdge TopRight" }
-		KeyPress = "A" { Actions = "MoveToEdge LeftCenterEdge" }
-		KeyPress = "Shift A" { Actions = "MoveToEdge LeftEdge" }
-		KeyPress = "L" { Actions = "MoveToEdge RightCenterEdge" }
-		KeyPress = "D" { Actions = "MoveToEdge RightCenterEdge" }
-		KeyPress = "Shift L" { Actions = "MoveToEdge RightEdge" }
-		KeyPress = "Shift D" { Actions = "MoveToEdge RightEdge" }
-		KeyPress = "Z" { Actions = "MoveToEdge BottomLeft" }
-		KeyPress = "B" { Actions = "MoveToEdge BottomCenterEdge" }
-		KeyPress = "X" { Actions = "MoveToEdge BottomCenterEdge" }
-		KeyPress = "Shift B" { Actions = "MoveToEdge BottomEdge" }
-		KeyPress = "Shift X" { Actions = "MoveToEdge BottomEdge" }
-		KeyPress = "M" { Actions = "MoveToEdge BottomRight" }
-		KeyPress = "C" { Actions = "MoveToEdge BottomRight" }
-		KeyPress = "H" { Actions = "MoveToEdge Center" }
-		KeyPress = "S" { Actions = "MoveToEdge Center" }
+	Chain = "Mod1 Ctrl C" {
+		KeyPress = "Q"		{ Actions = "MoveToEdge TopLeft" }
+		KeyPress = "Y"		{ Actions = "MoveToEdge TopCenterEdge" }
+		KeyPress = "W"		{ Actions = "MoveToEdge TopCenterEdge" }
+		KeyPress = "Shift Y"	{ Actions = "MoveToEdge TopEdge" }
+		KeyPress = "Shift W"	{ Actions = "MoveToEdge TopEdge" }
+		KeyPress = "P"		{ Actions = "MoveToEdge TopRight" }
+		KeyPress = "E"		{ Actions = "MoveToEdge TopRight" }
+		KeyPress = "A"		{ Actions = "MoveToEdge LeftCenterEdge" }
+		KeyPress = "Shift A"	{ Actions = "MoveToEdge LeftEdge" }
+		KeyPress = "L"		{ Actions = "MoveToEdge RightCenterEdge" }
+		KeyPress = "D"		{ Actions = "MoveToEdge RightCenterEdge" }
+		KeyPress = "Shift L"	{ Actions = "MoveToEdge RightEdge" }
+		KeyPress = "Shift D"	{ Actions = "MoveToEdge RightEdge" }
+		KeyPress = "Z"		{ Actions = "MoveToEdge BottomLeft" }
+		KeyPress = "B"		{ Actions = "MoveToEdge BottomCenterEdge" }
+		KeyPress = "X"		{ Actions = "MoveToEdge BottomCenterEdge" }
+		KeyPress = "Shift B"	{ Actions = "MoveToEdge BottomEdge" }
+		KeyPress = "Shift X"	{ Actions = "MoveToEdge BottomEdge" }
+		KeyPress = "M"		{ Actions = "MoveToEdge BottomRight" }
+		KeyPress = "C"		{ Actions = "MoveToEdge BottomRight" }
+		KeyPress = "H"		{ Actions = "MoveToEdge Center" }
+		KeyPress = "S"		{ Actions = "MoveToEdge Center" }
 	}
 	# Menus
-	Chain = "Ctrl Mod1 M" {
-		KeyPress = "R" { Actions = "ShowMenu Root" }
-		KeyPress = "W" { Actions = "ShowMenu Window" }
-		KeyPress = "I" { Actions = "ShowMenu Icon" }
-		KeyPress = "G" { Actions = "ShowMenu Goto" }
-		KeyPress = "C" { Actions = "ShowMenu GotoClient" }
-		KeyPress = "D" { Actions = "ShowMenu Decor" }
-		KeyPress = "A" { Actions = "ShowMenu AttachClientInFrame" }
-		KeyPress = "F" { Actions = "ShowMenu AttachFrameInFrame" }
-		Keypress = "Shift A" { Actions = "ShowMenu AttachClient" }
-		Keypress = "Shift F" { Actions = "ShowMenu AttachFrame" }
-		KeyPress = "X" { Actions = "HideAllMenus" }
+	Chain = "Mod1 Ctrl M" {
+		KeyPress = "R"		{ Actions = "ShowMenu Root" }
+		KeyPress = "W"		{ Actions = "ShowMenu Window" }
+		KeyPress = "I"		{ Actions = "ShowMenu Icon" }
+		KeyPress = "G"		{ Actions = "ShowMenu Goto" }
+		KeyPress = "C"		{ Actions = "ShowMenu GotoClient" }
+		KeyPress = "D"		{ Actions = "ShowMenu Decor" }
+		KeyPress = "A"		{ Actions = "ShowMenu AttachClientInFrame" }
+		KeyPress = "F"		{ Actions = "ShowMenu AttachFrameInFrame" }
+		Keypress = "Shift A"	{ Actions = "ShowMenu AttachClient" }
+		Keypress = "Shift F"	{ Actions = "ShowMenu AttachFrame" }
+		KeyPress = "X"		{ Actions = "HideAllMenus" }
 	}
 	# Grouping
-	Chain = "Ctrl Mod1 T" {
-		KeyPress = "T" { Actions = "Toggle Tagged False" }
-		KeyPress = "B" { Actions = "Toggle Tagged True" }
-		KeyPress = "C" { Actions = "Unset Tagged" }
-		KeyPress = "G" { Actions = "Toggle GlobalGrouping" }
-		KeyPress = "M" { Actions = "Toggle Marked" }
-		KeyPress = "A" { Actions = "AttachMarked" }
-		KeyPress = "D" { Actions = "Detach" }
-		Keypress = "P" { Actions = "AttachClientInNextFrame" }
-		KeyPress = "O" { Actions = "AttachClientInPrevFrame" }
-		Keypress = "I" { Actions = "AttachFrameInNextFrame" }
-		KeyPress = "U" { Actions = "AttachFrameInPrevFrame" }
+	Chain = "Mod1 Ctrl T" {
+		KeyPress = "T"		{ Actions = "Toggle Tagged False" }
+		KeyPress = "B"		{ Actions = "Toggle Tagged True" }
+		KeyPress = "C"		{ Actions = "Unset Tagged" }
+		KeyPress = "G"		{ Actions = "Toggle GlobalGrouping" }
+		KeyPress = "M"		{ Actions = "Toggle Marked" }
+		KeyPress = "A"		{ Actions = "AttachMarked" }
+		KeyPress = "D"		{ Actions = "Detach" }
+		Keypress = "P"		{ Actions = "AttachClientInNextFrame" }
+		KeyPress = "O"		{ Actions = "AttachClientInPrevFrame" }
+		Keypress = "I"		{ Actions = "AttachFrameInNextFrame" }
+		KeyPress = "U"		{ Actions = "AttachFrameInPrevFrame" }
 	}
 	# Decor Toggles
-	Chain = "Ctrl Mod1 D" {
-		KeyPress = "B" { Actions = "Toggle DecorBorder" }
-		KeyPress = "T" { Actions = "Toggle DecorTitlebar" }
-		KeyPress = "D" { Actions = "Toggle DecorBorder; Toggle DecorTitlebar" }
+	Chain = "Mod1 Ctrl D" {
+		KeyPress = "B"		{ Actions = "Toggle DecorBorder" }
+		KeyPress = "T"		{ Actions = "Toggle DecorTitlebar" }
+		KeyPress = "D"		{ Actions = "Toggle DecorBorder; Toggle DecorTitlebar" }
 	}
 	# Window Actions
-	Chain = "Ctrl Mod1 A" {
+	Chain = "Mod1 Ctrl A" {
 		Chain = "G" {
-			KeyPress = "G" { Actions = "MaxFill True True" }
-			KeyPress = "V" { Actions = "MaxFill False True" }
-			KeyPress = "H" { Actions = "MaxFill True False" }
+			KeyPress = "G"	{ Actions = "MaxFill True True" }
+			KeyPress = "V"	{ Actions = "MaxFill False True" }
+			KeyPress = "H"	{ Actions = "MaxFill True False" }
 		}
 		Chain = "M" {
-			KeyPress = "M" { Actions = "Toggle Maximized True True" }
-			KeyPress = "V" { Actions = "Toggle Maximized False True" }
-			KeyPress = "H" { Actions = "Toggle Maximized True False" }
+			KeyPress = "M"	{ Actions = "Toggle Maximized True True" }
+			KeyPress = "V"	{ Actions = "Toggle Maximized False True" }
+			KeyPress = "H"	{ Actions = "Toggle Maximized True False" }
 		}
 		Chain = "Q" {
-			KeyPress = "Q" { Actions = "Close" }
-			KeyPress = "F" { Actions = "CloseFrame" }
-			KeyPress = "K" { Actions = "Kill" }
+			KeyPress = "Q"	{ Actions = "Close" }
+			KeyPress = "F"	{ Actions = "CloseFrame" }
+			KeyPress = "K"	{ Actions = "Kill" }
 		}
-		KeyPress = "S" { Actions = "Toggle Shaded" }
-		KeyPress = "A" { Actions = "Toggle Sticky" }
-		KeyPress = "O" { Actions = "Toggle AlwaysOnTop" }
-		KeyPress = "B" { Actions = "Toggle AlwaysBelow" }
-		KeyPress = "I" { Actions = "Set Iconified" }
-		KeyPress = "R" { Actions = "Raise" }
-		KeyPress = "Shift R" { Actions = "Raise True" }
-		KeyPress = "L" { Actions = "Lower" }
-		KeyPress = "Shift L" { Actions = "Lower True" }
-		KeyPress = "X" { Actions = "ActivateOrRaise" }
-		KeyPress = "Return" { Actions = "MoveResize" }
-		KeyPress = "F" { Actions = "Toggle Fullscreen" }
-		KeyPress = "Left" { Actions = "GrowDirection Left" }
-		KeyPress = "Right" { Actions = "GrowDirection Right" }
-		KeyPress = "Up" { Actions = "GrowDirection Up" }
-		KeyPress = "Down" { Actions = "GrowDirection Down" }
+		KeyPress = "S"		{ Actions = "Toggle Shaded" }
+		KeyPress = "A"		{ Actions = "Toggle Sticky" }
+		KeyPress = "O"		{ Actions = "Toggle AlwaysOnTop" }
+		KeyPress = "B"		{ Actions = "Toggle AlwaysBelow" }
+		KeyPress = "I"		{ Actions = "Set Iconified" }
+		KeyPress = "R"		{ Actions = "Raise" }
+		KeyPress = "Shift R"	{ Actions = "Raise True" }
+		KeyPress = "L"		{ Actions = "Lower" }
+		KeyPress = "Shift L"	{ Actions = "Lower True" }
+		KeyPress = "X"		{ Actions = "ActivateOrRaise" }
+		KeyPress = "Return"	{ Actions = "MoveResize" }
+		KeyPress = "F"		{ Actions = "Toggle Fullscreen" }
+		KeyPress = "Left"	{ Actions = "GrowDirection Left" }
+		KeyPress = "Right"	{ Actions = "GrowDirection Right" }
+		KeyPress = "Up"		{ Actions = "GrowDirection Up" }
+		KeyPress = "Down"	{ Actions = "GrowDirection Down" }
 	}
 	# Moving in Frames
-	Chain = "Ctrl Mod1 F" {
-		KeyPress = "P" { Actions = "NextFrame AlwaysRaise" }
-		KeyPress = "O" { Actions = "PrevFrame AlwaysRaise" }
-		KeyPress = "Shift P" { Actions = "NextFrameMRU EndRaise" }
-		KeyPress = "Shift O" { Actions = "PrevFrameMRU EndRaise" }
-		KeyPress = "I" { Actions = "ActivateClientRel 1" }
-		KeyPress = "U" { Actions = "ActivateClientRel -1" }
-		KeyPress = "Shift I" { Actions = "MoveClientRel 1" }
-		KeyPress = "Shift U" { Actions = "MoveClientRel -1" }
-		KeyPress = "Up" { Actions = "FocusDirectional Up" }
-		KeyPress = "Down" { Actions = "FocusDirectional Down" }
-		KeyPress = "Left" { Actions = "FocusDirectional Left" }
-		Keypress = "Right" { Actions = "FocusDirectional Right" }
-		KeyPress = "1" { Actions = "ActivateClientNum 1" }
-		KeyPress = "2" { Actions = "ActivateClientNum 2" }
-		KeyPress = "3" { Actions = "ActivateClientNum 3" }
-		KeyPress = "4" { Actions = "ActivateClientNum 4" }
-		KeyPress = "5" { Actions = "ActivateClientNum 5" }
-		KeyPress = "6" { Actions = "ActivateClientNum 6" }
-		KeyPress = "7" { Actions = "ActivateClientNum 7" }
-		KeyPress = "8" { Actions = "ActivateClientNum 8" }
-		KeyPress = "9" { Actions = "ActivateClientNum 9" }
-		KeyPress = "0" { Actions = "ActivateClientNum 10" }
-		KeyPress = "C" { Actions = "ShowCmdDialog GotoClientID " }
+	Chain = "Mod1 Ctrl F" {
+		KeyPress = "P"		{ Actions = "NextFrame AlwaysRaise" }
+		KeyPress = "O"		{ Actions = "PrevFrame AlwaysRaise" }
+		KeyPress = "Shift P"	{ Actions = "NextFrameMRU EndRaise" }
+		KeyPress = "Shift O"	{ Actions = "PrevFrameMRU EndRaise" }
+		KeyPress = "I"		{ Actions = "ActivateClientRel 1" }
+		KeyPress = "U"		{ Actions = "ActivateClientRel -1" }
+		KeyPress = "Shift I"	{ Actions = "MoveClientRel 1" }
+		KeyPress = "Shift U"	{ Actions = "MoveClientRel -1" }
+		KeyPress = "Up"		{ Actions = "FocusDirectional Up" }
+		KeyPress = "Down"	{ Actions = "FocusDirectional Down" }
+		KeyPress = "Left"	{ Actions = "FocusDirectional Left" }
+		Keypress = "Right"	{ Actions = "FocusDirectional Right" }
+		KeyPress = "1"		{ Actions = "ActivateClientNum 1" }
+		KeyPress = "2"		{ Actions = "ActivateClientNum 2" }
+		KeyPress = "3"		{ Actions = "ActivateClientNum 3" }
+		KeyPress = "4"		{ Actions = "ActivateClientNum 4" }
+		KeyPress = "5"		{ Actions = "ActivateClientNum 5" }
+		KeyPress = "6"		{ Actions = "ActivateClientNum 6" }
+		KeyPress = "7"		{ Actions = "ActivateClientNum 7" }
+		KeyPress = "8"		{ Actions = "ActivateClientNum 8" }
+		KeyPress = "9"		{ Actions = "ActivateClientNum 9" }
+		KeyPress = "0"		{ Actions = "ActivateClientNum 10" }
+		KeyPress = "C"		{ Actions = "ShowCmdDialog GotoClientID " }
 	}
-	# Workspaces
-	Chain = "Ctrl Mod1 W" {
-		KeyPress = "Right" { Actions = "GoToWorkspace Right" }
-		KeyPress = "Left" { Actions = "GoToWorkspace Left" }
-		KeyPress = "N" { Actions = "GoToWorkspace Next" }
-		KeyPress = "P" { Actions = "GoToWorkspace Prev" }
-		KeyPress = "1" { Actions = "GoToWorkspace 1" }
-		KeyPress = "2" { Actions = "GoToWorkspace 2" }
-		KeyPress = "3" { Actions = "GoToWorkspace 3" }
-		KeyPress = "4" { Actions = "GoToWorkspace 4" }
-		KeyPress = "5" { Actions = "GoToWorkspace 5" }
-		KeyPress = "6" { Actions = "GoToWorkspace 6" }
-		KeyPress = "7" { Actions = "GoToWorkspace 7" }
-		KeyPress = "8" { Actions = "GoToWorkspace 8" }
-		KeyPress = "9" { Actions = "GoToWorkspace 9" }
-		KeyPress = "Up" { Actions = "SendToWorkspace Next; GoToWorkspace Next" }
-		KeyPress = "Down" { Actions = "SendToWorkspace Prev; GoToWorkspace Prev" }
-		KeyPress = "F1" { Actions = "SendToWorkspace 1" }
-		KeyPress = "F2" { Actions = "SendToWorkspace 2" }
-		KeyPress = "F3" { Actions = "SendToWorkspace 3" }
-		KeyPress = "F4" { Actions = "SendToWorkspace 4" }
-		KeyPress = "F5" { Actions = "SendToWorkspace 5" }
-		KeyPress = "F6" { Actions = "SendToWorkspace 6" }
-		KeyPress = "F7" { Actions = "SendToWorkspace 7" }
-		KeyPress = "F8" { Actions = "SendToWorkspace 8" }
-		KeyPress = "F9" { Actions = "SendToWorkspace 9" }
-	}
+#	# Workspaces
+#	Chain = "Mod1 Ctrl W" {
+#		KeyPress = "Right"	{ Actions = "GoToWorkspace Right" }
+#		KeyPress = "Left"	{ Actions = "GoToWorkspace Left" }
+#		KeyPress = "N"		{ Actions = "GoToWorkspace Next" }
+#		KeyPress = "P"		{ Actions = "GoToWorkspace Prev" }
+#		KeyPress = "1"		{ Actions = "GoToWorkspace 1" }
+#		KeyPress = "2"		{ Actions = "GoToWorkspace 2" }
+#		KeyPress = "3"		{ Actions = "GoToWorkspace 3" }
+#		KeyPress = "4"		{ Actions = "GoToWorkspace 4" }
+#		KeyPress = "5"		{ Actions = "GoToWorkspace 5" }
+#		KeyPress = "6"		{ Actions = "GoToWorkspace 6" }
+#		KeyPress = "7"		{ Actions = "GoToWorkspace 7" }
+#		KeyPress = "8"		{ Actions = "GoToWorkspace 8" }
+#		KeyPress = "9"		{ Actions = "GoToWorkspace 9" }
+#		KeyPress = "Up"		{ Actions = "SendToWorkspace Next; GoToWorkspace Next" }
+#		KeyPress = "Down"	{ Actions = "SendToWorkspace Prev; GoToWorkspace Prev" }
+#		KeyPress = "F1"		{ Actions = "SendToWorkspace 1" }
+#		KeyPress = "F2"		{ Actions = "SendToWorkspace 2" }
+#		KeyPress = "F3"		{ Actions = "SendToWorkspace 3" }
+#		KeyPress = "F4"		{ Actions = "SendToWorkspace 4" }
+#		KeyPress = "F5"		{ Actions = "SendToWorkspace 5" }
+#		KeyPress = "F6"		{ Actions = "SendToWorkspace 6" }
+#		KeyPress = "F7"		{ Actions = "SendToWorkspace 7" }
+#		KeyPress = "F8"		{ Actions = "SendToWorkspace 8" }
+#		KeyPress = "F9"		{ Actions = "SendToWorkspace 9" }
+#	}
 	# External commands
-	Chain = "Ctrl Mod1 E" {
-		KeyPress = "E" { Actions = "Exec $TERM" }
-		KeyPress = "L" { Actions = "Exec xlock -mode blank &" }
-		KeyPress = "S" { Actions = "Exec scrot &" }
-		KeyPress = "C" { Actions = "ShowCmdDialog" }
+	Chain = "Mod1 Ctrl E" {
+		KeyPress = "E"		{ Actions = "Exec roxterm &" }
+		KeyPress = "L"		{ Actions = "Exec xlock -mode blank &" }
+		KeyPress = "S"		{ Actions = "Exec scrot &" }
+		KeyPress = "C"		{ Actions = "ShowCmdDialog" }
 	}
 	# Wm actions
-	Chain = "Ctrl Mod1 P" {
-		KeyPress = "Delete" { Actions = "Reload" }
-		KeyPress = "Next" { Actions = "Restart" }
-		KeyPress = "End" { Actions = "Exit" }
-		KeyPress = "Prior" { Actions = "RestartOther twm" }
-		KeyPress = "D" { Actions = "ShowCmdDialog" }
-		KeyPress = "H" { Actions = "Toggle HarbourHidden" }
+	Chain = "Mod1 Ctrl P" {
+		KeyPress = "Delete"	{ Actions = "Reload" }
+		KeyPress = "Next"	{ Actions = "Restart" }
+		KeyPress = "End"	{ Actions = "Exit" }
+		KeyPress = "Prior"	{ Actions = "RestartOther twm" }
+		KeyPress = "D"		{ Actions = "ShowCmdDialog" }
+		KeyPress = "H"		{ Actions = "Toggle HarbourHidden" }
 	}
-	# Skipping
-	Chain = "Ctrl Mod1 S" {
-		Keypress = "M" { Actions = "Toggle Skip Menus" }
-		Keypress = "F" { Actions = "Toggle Skip FocusToggle" }
-		Keypress = "S" { Actions = "Toggle Skip Snap" }
-	}
+#	# Skipping
+#	Chain = "Mod1 Ctrl S" {
+#		Keypress = "M"		{ Actions = "Toggle Skip Menus" }
+#		Keypress = "F"		{ Actions = "Toggle Skip FocusToggle" }
+#		Keypress = "S"		{ Actions = "Toggle Skip Snap" }
+#	}
 
     KeyPress = "Mod4 Space" { Actions = "SetPlacementOption SwitchGeometry 1" }
 }
 
 # Keys when MoveResize is active
 MoveResize {
-	KeyPress = "Left" { Actions = "MoveHorizontal -10" }
-	KeyPress = "Right" { Actions = "MoveHorizontal 10" }
-	KeyPress = "Up" { Actions = "MoveVertical -10" }
-	KeyPress = "Down" { Actions = "MoveVertical 10" }
-	Keypress = "Shift Left" { Actions = "MoveHorizontal -1" }
-	Keypress = "Shift Right" { Actions = "MoveHorizontal 1" }
-	Keypress = "Shift Up" { Actions = "MoveVertical -1" }
-	Keypress = "Shift Down" { Actions = "MoveVertical 1" }
-	Keypress = "Mod4 Left" { Actions = "ResizeHorizontal -10" }
-	Keypress = "Mod4 Right" { Actions = "ResizeHorizontal 10" }
-	Keypress = "Mod4 Up" { Actions = "ResizeVertical -10" }
-	Keypress = "Mod4 Down" { Actions = "ResizeVertical 10" }
-	Keypress = "Mod1 Left" { Actions = "ResizeHorizontal -10" }
-	Keypress = "Mod1 Right" { Actions = "ResizeHorizontal 10" }
-	Keypress = "Mod1 Up" { Actions = "ResizeVertical -10" }
-	Keypress = "Mod1 Down" { Actions = "ResizeVertical 10" }
-	Keypress = "Shift Mod4 Left" { Actions = "ResizeHorizontal -1" }
-	Keypress = "Shift Mod4 Right" { Actions = "ResizeHorizontal 1" }
-	Keypress = "Shift Mod4 Up" { Actions = "ResizeVertical -1" }
-	Keypress = "Shift Mod4 Down" { Actions = "ResizeVertical 1" }
-	Keypress = "Shift Mod1 Left" { Actions = "ResizeHorizontal -1" }
-	Keypress = "Shift Mod1 Right" { Actions = "ResizeHorizontal 1" }
-	Keypress = "Shift Mod1 Up" { Actions = "ResizeVertical -1" }
-	Keypress = "Shift Mod1 Down" { Actions = "ResizeVertical 1" }
-	Keypress = "s" { Actions = "MoveSnap" }
-	Keypress = "Escape" { Actions = "Cancel" }
-	Keypress = "q" { Actions = "Cancel" }
-	Keypress = "Return" { Actions = "End" }
+	KeyPress = "Left"		{ Actions = "MoveHorizontal -10" }
+	KeyPress = "Right"		{ Actions = "MoveHorizontal 10" }
+	KeyPress = "Up"			{ Actions = "MoveVertical -10" }
+	KeyPress = "Down"		{ Actions = "MoveVertical 10" }
+	Keypress = "Shift Left"		{ Actions = "MoveHorizontal -1" }
+	Keypress = "Shift Right"	{ Actions = "MoveHorizontal 1" }
+	Keypress = "Shift Up"		{ Actions = "MoveVertical -1" }
+	Keypress = "Shift Down"		{ Actions = "MoveVertical 1" }
+	Keypress = "Mod4 Left"		{ Actions = "ResizeHorizontal -10" }
+	Keypress = "Mod4 Right"		{ Actions = "ResizeHorizontal 10" }
+	Keypress = "Mod4 Up"		{ Actions = "ResizeVertical -10" }
+	Keypress = "Mod4 Down"		{ Actions = "ResizeVertical 10" }
+	Keypress = "Mod1 Left"		{ Actions = "ResizeHorizontal -10" }
+	Keypress = "Mod1 Right"		{ Actions = "ResizeHorizontal 10" }
+	Keypress = "Mod1 Up"		{ Actions = "ResizeVertical -10" }
+	Keypress = "Mod1 Down"		{ Actions = "ResizeVertical 10" }
+	Keypress = "Mod4 Shift Left"	{ Actions = "ResizeHorizontal -1" }
+	Keypress = "Mod4 Shift Right"	{ Actions = "ResizeHorizontal 1" }
+	Keypress = "Mod4 Shift Up"	{ Actions = "ResizeVertical -1" }
+	Keypress = "Mod4 Shift Down"	{ Actions = "ResizeVertical 1" }
+	Keypress = "Mod1 Shift Left"	{ Actions = "ResizeHorizontal -1" }
+	Keypress = "Mod1 Shift Right"	{ Actions = "ResizeHorizontal 1" }
+	Keypress = "Mod1 Shift Up"	{ Actions = "ResizeVertical -1" }
+	Keypress = "Mod1 Shift Down"	{ Actions = "ResizeVertical 1" }
+	Keypress = "S"			{ Actions = "MoveSnap" }
+	Keypress = "Escape"		{ Actions = "Cancel" }
+	Keypress = "Q"			{ Actions = "Cancel" }
+	Keypress = "Return"		{ Actions = "End" }
 }
 
 # Keys for CmdDialog editing
 InputDialog {
-	KeyPress = "Left" { Actions = "CursPrev" }
-	KeyPress = "Right" { Actions = "CursNext" }
-	KeyPress = "Ctrl A" { Actions = "CursBegin" }
-	KeyPress = "Ctrl E" { Actions = "CursEnd" }
-	KeyPress = "BackSpace" { Actions = "Erase;CompleteAbort" }
-	KeyPress = "Ctrl K" { Actions = "ClearFromCursor" }
-	KeyPress = "Ctrl C" { Actions = "Clear" }
-	KeyPress = "Return" { Actions = "Exec" }
-	KeyPress = "Escape" { Actions = "Close" }
-	KeyPress = "Up" { Actions = "HistPrev" }
-	KeyPress = "Down" { Actions = "HistNext" }
-	KeyPress = "Ctrl P" { Actions = "HistPrev" }
-	KeyPress = "Ctrl N" { Actions = "HistNext" }
-        KeyPress = "Ctrl B" { Actions = "CursPrev" }
-        KeyPress = "Ctrl F" { Actions = "CursNext" }
-        KeyPress = "Tab" { Actions = "Complete" }
-	KeyPress = "Any Any" { Actions = "Insert" }
+	KeyPress = "Left"		{ Actions = "CursPrev" }
+	KeyPress = "Right"		{ Actions = "CursNext" }
+	KeyPress = "Ctrl A"		{ Actions = "CursBegin" }
+	KeyPress = "Ctrl E"		{ Actions = "CursEnd" }
+	KeyPress = "BackSpace"		{ Actions = "Erase;CompleteAbort" }
+	KeyPress = "Ctrl K"		{ Actions = "ClearFromCursor" }
+	KeyPress = "Ctrl C"		{ Actions = "Clear" }
+	KeyPress = "Return"		{ Actions = "Exec" }
+	KeyPress = "Escape"		{ Actions = "Close" }
+	KeyPress = "Up"			{ Actions = "HistPrev" }
+	KeyPress = "Down"		{ Actions = "HistNext" }
+	KeyPress = "Ctrl P"		{ Actions = "HistPrev" }
+	KeyPress = "Ctrl N"		{ Actions = "HistNext" }
+	KeyPress = "Ctrl B"		{ Actions = "CursPrev" }
+	KeyPress = "Ctrl F"		{ Actions = "CursNext" }
+	KeyPress = "Tab"		{ Actions = "Complete" }
+	KeyPress = "Any Any"		{ Actions = "Insert" }
 }
 
 # Keys working in menus
 Menu {
-	KeyPress = "Down" { Actions = "NextItem" }
-	KeyPress = "Up" { Actions = "PrevItem" }
-	KeyPress = "Ctrl N" { Actions = "NextItem" }
-	KeyPress = "Ctrl P" { Actions = "PrevItem" }
-	KeyPress = "Left" { Actions = "LeaveSubmenu" }
-	KeyPress = "Right" { Actions = "EnterSubmenu" }
-	KeyPress = "Return" { Actions = "Select" }
-	KeyPress = "space" { Actions = "Select" }
-	KeyPress = "Escape" { Actions = "Close" }
-	KeyPress = "Q" { Actions = "Close" }
+	KeyPress = "Down"		{ Actions = "NextItem" }
+	KeyPress = "Up"			{ Actions = "PrevItem" }
+	KeyPress = "Ctrl N"		{ Actions = "NextItem" }
+	KeyPress = "Ctrl P"		{ Actions = "PrevItem" }
+	KeyPress = "Left"		{ Actions = "LeaveSubmenu" }
+	KeyPress = "Right"		{ Actions = "EnterSubmenu" }
+	KeyPress = "Return"		{ Actions = "Select" }
+	KeyPress = "space"		{ Actions = "Select" }
+	KeyPress = "Escape"		{ Actions = "Close" }
+	KeyPress = "Q"			{ Actions = "Close" }
 }
 

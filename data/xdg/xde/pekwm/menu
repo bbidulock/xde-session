@@ -4,438 +4,430 @@
 INCLUDE = "vars"
 
 RootMenu = "Pekwm" {
-    Entry = "1) Web Browser" { Icon = "/usr/share/icons/gnome/16x16/apps/web-browser.png"; Actions = "Exec firefox" }
-    Entry = "2) File Manager" { Icon = "/usr/share/icons/gnome/16x16/apps/file-manager.png"; Actions = "Exec pcmanfm" }
-    Entry = "3) Text Editor" { Icon = "/usr/share/icons/gnome/16x16/apps/text-editor.png"; Actions = "Exec gvim -f" }
-    Entry = "4) Terminal" { Icon = "/usr/share/icons/gnome/16x16/apps/terminal.png"; Actions = "Exec roxterm" }
-    Entry = "5) Run Command" { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec xde-run" }
-    Separator {}
-    Submenu = "Archlinux" {
-        Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"
-            Entry = "AUR" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open https://aur.archlinux.org" }
-            Entry = "Bugs" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open https://bugs.archlinux.org" }
-            Entry = "Developers" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open http://www.archlinux.org/developers/" }
-            Entry = "Documentation" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open https://wiki.archlinux.org/index.php/Official_Arch_Linux_Install_Guide" }
-            Entry = "Donate" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open http://www.archlinux.org/donate/" }
-            Entry = "Forum" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open https://bbs.archlinux.org" }
-            Entry = "Homepage" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open http://www.archlinux.org" }
-            Entry = "SVN" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open http://projects.archlinux.org/svntogit/" }
-            Entry = "Schwag" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open http://www.zazzle.com/archlinux/" }
-            Entry = "Wiki" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-open https://wiki.archlinux.org" }
-    }
-    Submenu = "Accessories" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-accessories.png"
-            Entry = "7-Zip FM" { Icon = "/usr/share/icons/hicolor/32x32/apps/p7zip.png"; Actions = "Exec 7zFM" }
-            Entry = "AfterStep Terminal" { Icon = "/usr/share/icons/hicolor/22x22/apps/aterm.png"; Actions = "Exec aterm" }
-            Entry = "AllTray 0.7.5.1dev" { Icon = "/usr/share/pixmaps/alltray.png"; Actions = "Exec alltray -a" }
-            Entry = "Application Finder" { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-find.png"; Actions = "Exec xfce4-appfinder" }
-            Entry = "BlackBox Pager" { Icon = "/usr/share/icons/hicolor/16x16/apps/blackbox.png"; Actions = "Exec /usr/bin/bbpager" }
-            Entry = "Bvi" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Bvi" -e bvi" }
-            Entry = "Bvi Plus" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Bvi Plus" -e bviplus" }
-            Entry = "Calculator" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/empty.png"; Actions = "Exec ede-calc" }
-            Entry = "Desktop Search" { Icon = "/usr/share/icons/gnome/16x16/actions/system-search.png"; Actions = "Exec tracker-needle" }
-            Entry = "EDE Tips" { Icon = "/usr/share/icons/gnome/16x16/status/dialog-information.png"; Actions = "Exec ede-tip" }
-            Entry = "FLTK Editor" { Icon = "/usr/share/pixmaps/fltk-editor.xpm"; Actions = "Exec fltk-editor" }
-            Entry = "FOX Calculator" { Icon = "/usr/share/pixmaps/calculator.png"; Actions = "Exec calculator" }
-            Entry = "FOX Text Editor" { Icon = "/usr/share/icons/gnome/16x16/apps/accessories-text-editor.png"; Actions = "Exec adie" }
-            Entry = "File Manager PCManFM" { Icon = "/usr/share/icons/gnome/16x16/apps/system-file-manager.png"; Actions = "Exec pcmanfm" }
-            Entry = "Gtk VNC Viewer" { Icon = "/usr/share/icons/gnome/16x16/apps/gnome-remote-desktop.png"; Actions = "Exec /usr/bin/gvncviewer" }
-            Entry = "LXTerminal" { Icon = "/usr/share/pixmaps/lxterminal.png"; Actions = "Exec lxterminal" }
-            Entry = "MacSlow's Cairo-Clock" { Icon = "/usr/share/pixmaps/cairo-clock.png"; Actions = "Exec cairo-clock" }
-            Entry = "Mount-gtk" { Icon = "/usr/share/icons/gnome/16x16/devices/drive-removable-media.png"; Actions = "Exec mount-gtk" }
-            Entry = "Nano" { Icon = "/usr/share/icons/hicolor/22x22/apps/nano.png"; Actions = "Exec xterm -T "Nano" -e nano" }
-            Entry = "Pacman Express" { Icon = "/usr/share/pixmaps/pacmanexpress.png"; Actions = "Exec /opt/pacmanexpress/ssx /opt/pacmanexpress/pacmanexpress" }
-            Entry = "Root Terminal" { Icon = "/usr/share/pixmaps/gksu-root-terminal.png"; Actions = "Exec gksu -l gnome-terminal" }
-            Entry = "SpaceFM File Search" { Icon = "/usr/share/icons/hicolor/48x48/apps/spacefm-find.png"; Actions = "Exec spacefm --find-files" }
-            Entry = "VI" { Icon = "/usr/share/pixmaps/gvim.png"; Actions = "Exec xterm -T "VI" -e vi" }
-            Entry = "VIM" { Icon = "/usr/share/pixmaps/gvim.png"; Actions = "Exec xterm -T "VIM" -e vim" }
-            Entry = "Vi IMproved" { Icon = "/usr/share/pixmaps/gvim.png"; Actions = "Exec gvim -f" }
-            Entry = "X11 Terminal" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-terminal.png"; Actions = "Exec xterm -fn 9x15" }
-            Entry = "XTerm (Unicode)" { Icon = "/usr/share/pixmaps/xterm-color_32x32.xpm"; Actions = "Exec uxterm" }
-            Entry = "Xarchiver" { Icon = "/usr/share/icons/hicolor/16x16/apps/xarchiver.png"; Actions = "Exec xarchiver" }
-            Entry = "Xcalc Calculator" { Icon = "/usr/share/icons/gnome/16x16/apps/accessories-calculator.png"; Actions = "Exec xcalc" }
-            Entry = "Xedit" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xedit" }
-            Entry = "Xfburn" { Icon = "/usr/share/icons/gnome/16x16/devices/media-cdrom.png"; Actions = "Exec xfburn" }
-            Entry = "Xfi" { Icon = "/usr/share/pixmaps/xfi.png"; Actions = "Exec xfi" }
-            Entry = "Xfp" { Icon = "/usr/share/pixmaps/xfp.png"; Actions = "Exec xfp" }
-            Entry = "Xfv" { Icon = "/usr/share/pixmaps/xfv.png"; Actions = "Exec xfv" }
-            Entry = "Xfw" { Icon = "/usr/share/pixmaps/xfw.png"; Actions = "Exec xfw" }
-            Entry = "Zalc" { Icon = "/usr/share/pixmaps/zalc.png"; Actions = "Exec zalc" }
-            Entry = "xplanetFX" { Icon = "/usr/share/pixmaps/xplanetFX.svg"; Actions = "Exec xplanetFX --gui" }
-    }
-    Submenu = "Education" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-engineering.png"
-            Entry = "Calcoo" { Icon = "/usr/share/pixmaps/calcoo.png"; Actions = "Exec calcoo" }
-            Entry = "LibreOffice Math" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-math.png"; Actions = "Exec libreoffice --math" }
-            Entry = "Qucs" { Icon = "/usr/share/qucs/bitmaps/big.qucs.xpm"; Actions = "Exec qucs" }
-            Entry = "StarPlot Star Chart Viewer" { Icon = "/usr/share/pixmaps/starplot32x32.xpm"; Actions = "Exec starplot" }
-    }
-    Submenu = "Games" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-games.png"
-            Entry = "Block Attack!" { Icon = "/usr/share/icons/hicolor/32x32/apps/blocks.png"; Actions = "Exec blocks" }
-            Entry = "Checkers" { Icon = "/usr/share/icons/hicolor/32x32/apps/checkers.png"; Actions = "Exec checkers" }
-            Entry = "Chess" { Icon = "/usr/share/icons/hicolor/16x16/apps/gnome-chess.png"; Actions = "Exec gnome-chess" }
-            Entry = "Internet Chess Club" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Internet Chess Club" -e xboard -ics -icshost chessclub.com" }
-            Entry = "Sudoku" { Icon = "/usr/share/icons/hicolor/32x32/apps/sudoku.png"; Actions = "Exec sudoku" }
-            Entry = "XBill" { Icon = "/usr/share/xbill/pixmaps/wingdows.xpm"; Actions = "Exec xbill" }
-            Entry = "XGalaga" { Icon = "/usr/share/pixmaps/xgalaga.png"; Actions = "Exec xgalaga" }
-            Entry = "Xboard" { Icon = "/usr/share/icons/hicolor/scalable/apps/xboard.svg"; Actions = "Exec xboard" }
-            Entry = "Xboard" { Icon = "/usr/share/icons/hicolor/scalable/apps/xboard.svg"; Actions = "Exec xterm -T "Xboard" -e xboard -ics" }
-            Entry = "Xtetris" { Icon = "/usr/share/pixmaps/xtetris.png"; Actions = "Exec xtetris" }
-            Entry = "aafire" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec aafire" }
-            Entry = "cacafire" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec cacafire" }
-    }
-    Submenu = "Graphics" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-graphics.png"
-            Entry = "Blender" { Icon = "/usr/share/icons/hicolor/16x16/apps/blender.png"; Actions = "Exec blender" }
-            Entry = "Feh" { Icon = "/usr/share/feh/images/feh.png"; Actions = "Exec feh" }
-            Entry = "G3DViewer" { Icon = "/usr/share/pixmaps/g3dviewer.png"; Actions = "Exec g3dviewer" }
-            Entry = "GNU Image Manipulation Program" { Icon = "/usr/share/icons/hicolor/16x16/apps/gimp.png"; Actions = "Exec gimp-2.8" }
-            Entry = "GQview" { Icon = "/usr/share/pixmaps/gqview.png"; Actions = "Exec gqview -r" }
-            Entry = "GV" { Icon = "/usr/share/pixmaps/gv.png"; Actions = "Exec gv" }
-            Entry = "Gaw Gtk Analog Wave viewer" { Icon = "/usr/share/pixmaps/gaw.png"; Actions = "Exec gaw" }
-            Entry = "Geeqie" { Icon = "/usr/share/pixmaps/geeqie.png"; Actions = "Exec geeqie -r" }
-            Entry = "Image Viewer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec ede-image-view" }
-            Entry = "Image Viewer" { Icon = "/usr/share/icons/hicolor/48x48/apps/gpicview.png"; Actions = "Exec gpicview" }
-            Entry = "ImageMagick" { Icon = "/usr/share/icons/Mist/16x16/devices/display.png"; Actions = "Exec display logo:" }
-            Entry = "ImageMagick Image Viewer" { Icon = "/usr/share/pixmaps/imagic.png"; Actions = "Exec display" }
-            Entry = "Inkscape" { Icon = "/usr/share/icons/hicolor/16x16/apps/inkscape.png"; Actions = "Exec inkscape" }
-            Entry = "Konstruktor" { Icon = "/usr/share/icons/hicolor/16x16/apps/konstruktor.png"; Actions = "Exec konstruktor  -caption ""Konstruktor"" --icon konstruktor" }
-            Entry = "LibreOffice Draw" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-draw.png"; Actions = "Exec libreoffice --draw" }
-            Entry = "The GIMP" { Icon = "/usr/share/icons/hicolor/16x16/apps/gimp.png"; Actions = "Exec gimp" }
-            Entry = "Window Magnifier" { Icon = "/usr/share/WindowMaker/Icons/Magnify.xpm"; Actions = "Exec wmagnify" }
-            Entry = "Wings3D" { Icon = "/usr/share/pixmaps/wings3d.png"; Actions = "Exec wings3d" }
-            Entry = "X Window Snapshot" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xwd | xwud" }
-            Entry = "XPaint" { Icon = "/usr/share/pixmaps/XPaintIcon.xpm"; Actions = "Exec xpaint" }
-            Entry = "XV Image Viewer" { Icon = "/usr/share/pixmaps/xv.png"; Actions = "Exec xv" }
-            Entry = "Xfig" { Icon = "/usr/share/pixmaps/xfig.png"; Actions = "Exec xfig" }
-            Entry = "flPhoto" { Icon = "/usr/share/pixmaps/flphoto.png"; Actions = "Exec flphoto" }
-            Entry = "gThumb" { Icon = "/usr/share/icons/hicolor/16x16/apps/gthumb.png"; Actions = "Exec gthumb" }
-            Entry = "xzgv" { Icon = "/usr/share/pixmaps/xzgv.xpm"; Actions = "Exec xzgv" }
-    }
-    Submenu = "Internet" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-internet.png"
-            Entry = "Avahi SSH Server Browser" { Icon = "/usr/share/icons/gnome/16x16/devices/network-wired.png"; Actions = "Exec /usr/bin/bssh" }
-            Entry = "Avahi VNC Server Browser" { Icon = "/usr/share/icons/gnome/16x16/devices/network-wired.png"; Actions = "Exec /usr/bin/bvnc" }
-            Entry = "DHCP Client Daemon Applet" { Icon = "/usr/share/icons/gnome/16x16/status/network-transmit-receive.png"; Actions = "Exec dhcpcd-gtk" }
-            Entry = "ELinks" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/html.png"; Actions = "Exec xterm -T "ELinks" -e /usr/bin/elinks" }
-            Entry = "Ekiga Softphone" { Icon = "/usr/share/icons/hicolor/16x16/apps/ekiga.png"; Actions = "Exec ekiga" }
-            Entry = "Ettercap" { Icon = "/usr/share/pixmaps/ettercap.svg"; Actions = "Exec ettercap-pkexec -G" }
-            Entry = "Firefox" { Icon = "/usr/share/icons/hicolor/16x16/apps/firefox.png"; Actions = "Exec /usr/lib/firefox/firefox" }
-            Entry = "Firefox" { Icon = "/usr/share/icons/hicolor/16x16/apps/firefox.png"; Actions = "Exec firefox" }
-            Entry = "IP Telephony, VoIP and Video Conferencing" { Icon = "/usr/share/icons/hicolor/16x16/apps/ekiga.png"; Actions = "Exec ekiga" }
-            Entry = "Links" { Icon = "/usr/share/pixmaps/links_32x32.xpm"; Actions = "Exec xlinks -g" }
-            Entry = "Midori" { Icon = "/usr/share/icons/hicolor/16x16/apps/midori.png"; Actions = "Exec midori" }
-            Entry = "Midori Private Browsing" { Icon = "/usr/share/icons/hicolor/16x16/apps/midori.png"; Actions = "Exec midori --private" }
-            Entry = "Mutt" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Mutt" -e mutt" }
-            Entry = "OpenNX Connection Wizard" { Icon = "/usr/share/icons/hicolor/16x16/apps/opennx-wizard.png"; Actions = "Exec /usr/bin/opennx --wizard" }
-            Entry = "OpenNX Session Administrator" { Icon = "/usr/share/icons/hicolor/16x16/apps/opennx-admin.png"; Actions = "Exec /usr/bin/opennx --admin" }
-            Entry = "OpenNX client" { Icon = "/usr/share/icons/hicolor/16x16/apps/nx.png"; Actions = "Exec /usr/bin/opennx" }
-            Entry = "Remmina Remote Desktop Client" { Icon = "/usr/share/icons/hicolor/16x16/apps/remmina.png"; Actions = "Exec remmina" }
-            Entry = "Telnet" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Telnet" -e telnet" }
-            Entry = "Tightvnc" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Tightvnc" -e vncviewer" }
-            Entry = "Wireshark Network Analyzer" { Icon = "/usr/share/icons/hicolor/16x16/apps/wireshark.png"; Actions = "Exec wireshark" }
-            Entry = "X11VNC Server" { Icon = "/usr/share/icons/Mist/16x16/devices/computer.png"; Actions = "Exec x11vnc -gui tray=setpass -rfbport PROMPT -bg -o %HOME/.x11vnc.log.%VNCDISPLAY" }
-            Entry = "Xbiff" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xbiff" }
-            Entry = "Zenmap" { Icon = "/usr/share/zenmap/pixmaps/zenmap.png"; Actions = "Exec zenmap" }
-            Entry = "Zenmap (as root)" { Icon = "/usr/share/zenmap/pixmaps/zenmap.png"; Actions = "Exec /usr/share/zenmap/su-to-zenmap.sh" }
-            Entry = "wpa_gui" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec kdesu wpa_gui" }
-    }
-    Submenu = "Office" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-office.png"
-            Entry = "GV" { Icon = "/usr/share/pixmaps/gv.png"; Actions = "Exec gv" }
-            Entry = "GXditview" { Icon = "/usr/share/icons/hicolor/24x24/apps/postscript-viewer.png"; Actions = "Exec gxditview" }
-            Entry = "LibreOffice" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-startcenter.png"; Actions = "Exec libreoffice" }
-            Entry = "LibreOffice Base" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-base.png"; Actions = "Exec libreoffice --base" }
-            Entry = "LibreOffice Calc" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-calc.png"; Actions = "Exec libreoffice --calc" }
-            Entry = "LibreOffice Draw" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-draw.png"; Actions = "Exec libreoffice --draw" }
-            Entry = "LibreOffice Impress" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-impress.png"; Actions = "Exec libreoffice --impress" }
-            Entry = "LibreOffice Math" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-math.png"; Actions = "Exec libreoffice --math" }
-            Entry = "LibreOffice Writer" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-writer.png"; Actions = "Exec libreoffice --writer" }
-            Entry = "RAKT PDF Viewer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec raktpdf" }
-            Entry = "X PDF" { Icon = "/usr/share/pixmaps/xpdf.xpm"; Actions = "Exec xpdf" }
-            Entry = "XDvi" { Icon = "/usr/share/pixmaps/xdvi.png"; Actions = "Exec xdvi" }
-            Entry = "Xditview" { Icon = "/usr/share/icons/hicolor/24x24/apps/postscript-viewer.png"; Actions = "Exec xditview" }
-            Entry = "Zat" { Icon = "/usr/share/pixmaps/zat.png"; Actions = "Exec zat" }
-            Entry = "Zathura" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec zathura" }
-            Entry = "apvlv" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec apvlv" }
-    }
-    Submenu = "Programming" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-development.png"
-            Entry = "CMake" { Icon = "/usr/share/pixmaps/CMakeSetup32.png"; Actions = "Exec cmake-gui" }
-            Entry = "Eeschema" { Icon = "/usr/share/icons/hicolor/16x16/apps/eeschema.png"; Actions = "Exec eeschema" }
-            Entry = "FLUID" { Icon = "/usr/share/icons/hicolor/16x16/apps/fluid.png"; Actions = "Exec fluid" }
-            Entry = "KiCad" { Icon = "/usr/share/icons/hicolor/scalable/apps/kicad.svg"; Actions = "Exec kicad" }
-            Entry = "Qt Assistant" { Icon = "/usr/share/icons/hicolor/32x32/apps/assistant.png"; Actions = "Exec /usr/lib/qt/bin/assistant" }
-            Entry = "Qt Designer" { Icon = "/usr/share/icons/hicolor/128x128/apps/designer.png"; Actions = "Exec /usr/lib/qt/bin/designer" }
-            Entry = "Qt Linguist" { Icon = "/usr/share/icons/hicolor/16x16/apps/linguist.png"; Actions = "Exec /usr/lib/qt/bin/linguist" }
-            Entry = "Qt QDbusViewer" { Icon = "/usr/share/icons/hicolor/32x32/apps/qdbusviewer.png"; Actions = "Exec /usr/lib/qt/bin/qdbusviewer" }
-            Entry = "Qt3 Assistant" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec assistant" }
-            Entry = "Qt3 Linguist" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec linguist" }
-            Entry = "Qt4 Assistant" { Icon = "/usr/share/icons/hicolor/32x32/apps/assistant-qt4.png"; Actions = "Exec assistant-qt4" }
-            Entry = "Qt4 Designer" { Icon = "/usr/share/icons/hicolor/128x128/apps/designer.png"; Actions = "Exec designer-qt4" }
-            Entry = "Qt4 Designer" { Icon = "/usr/share/icons/hicolor/128x128/apps/designer-qt4.png"; Actions = "Exec designer-qt4" }
-            Entry = "Qt4 Linguist" { Icon = "/usr/share/icons/hicolor/16x16/apps/linguist-qt4.png"; Actions = "Exec linguist-qt4" }
-            Entry = "Qt4 Linguist" { Icon = "/usr/share/icons/hicolor/16x16/apps/linguist.png"; Actions = "Exec linguist-qt4" }
-            Entry = "Qt4 QDbusViewer" { Icon = "/usr/share/icons/hicolor/32x32/apps/qdbusviewer-qt4.png"; Actions = "Exec qdbusviewer-qt4" }
-            Entry = "Scratch" { Icon = "/usr/share/icons/hicolor/32x32/apps/scratch.png"; Actions = "Exec scratch" }
-            Entry = "Vi IMproved" { Icon = "/usr/share/pixmaps/gvim.png"; Actions = "Exec gvim -f" }
-    }
-    Submenu = "Science & Math" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-science.png"
-            Entry = "Bc" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Bc" -e bc" }
-            Entry = "Dc" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Dc" -e dc" }
-            Entry = "GNUplot" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "GNUplot" -e gnuplot" }
-            Entry = "GSpiceUI" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec gspiceui" }
-    }
-    Submenu = "Sound & Video" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-multimedia.png"
-            Entry = "ALSA Mixer" { Icon = "/usr/share/icons/gnome/16x16/apps/gnome-mixer.png"; Actions = "Exec xterm -T "ALSA Mixer" -e alsamixer" }
-            Entry = "Alsaplayer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec alsaplayer" }
-            Entry = "Audacious" { Icon = "/usr/share/icons/hicolor/scalable/apps/audacious.svg"; Actions = "Exec audacious" }
-            Entry = "Audacious (GTKui)" { Icon = "/usr/share/icons/hicolor/scalable/apps/audacious.svg"; Actions = "Exec audacious2 -i gtkui" }
-            Entry = "Audacious2" { Icon = "/usr/share/icons/hicolor/scalable/apps/audacious2.svg"; Actions = "Exec audacious2" }
-            Entry = "Audio Mixer" { Icon = "/usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png"; Actions = "Exec xfce4-mixer" }
-            Entry = "Aumix" { Icon = "/usr/share/aumix/aumix.xpm"; Actions = "Exec aumix" }
-            Entry = "Consonance" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec consonance" }
-            Entry = "FFADO Mixer" { Icon = "/usr/share/pixmaps/ffado.png"; Actions = "Exec ffado-mixer" }
-            Entry = "FlBurn" { Icon = "/usr/share/pixmaps/flburn.png"; Actions = "Exec flburn" }
-            Entry = "Flmusic" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec flmusic" }
-            Entry = "Goggles Music Manager" { Icon = "/usr/share/icons/hicolor/16x16/apps/gogglesmm.png"; Actions = "Exec gogglesmm" }
-            Entry = "Guayadeque Music Player" { Icon = "/usr/share/pixmaps/guayadeque.png"; Actions = "Exec guayadeque" }
-            Entry = "Music Player" { Icon = "/usr/share/pixmaps/lxmusic.png"; Actions = "Exec lxmusic" }
-            Entry = "Pragha" { Icon = "/usr/share/icons/hicolor/128x128/apps/pragha.png"; Actions = "Exec pragha" }
-            Entry = "Qt V4L2 test Utility" { Icon = "/usr/share/icons/hicolor/16x16/apps/qv4l2.png"; Actions = "Exec qv4l2" }
-            Entry = "SimpleBurn" { Icon = "/usr/share/pixmaps/simpleburn.png"; Actions = "Exec simpleburn" }
-            Entry = "Videos" { Icon = "/usr/share/icons/hicolor/16x16/apps/totem.png"; Actions = "Exec totem" }
-            Entry = "XMMS" { Icon = "/usr/share/pixmaps/xmms.png"; Actions = "Exec xmms" }
-            Entry = "Xfburn" { Icon = "/usr/share/icons/gnome/16x16/devices/media-cdrom.png"; Actions = "Exec xfburn" }
-            Entry = "moc-tray" { Icon = "/usr/share/pixmaps/moc-tray.png"; Actions = "Exec moc-tray" }
-    }
-    Submenu = "System Tools" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-system.png"
-            Entry = "Atop" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Atop" -e atop" }
-            Entry = "Avahi Zeroconf Browser" { Icon = "/usr/share/icons/gnome/16x16/devices/network-wired.png"; Actions = "Exec /usr/bin/avahi-discover" }
-            Entry = "Battery Status Icon" { Icon = "/usr/share/icons/gnome/16x16/devices/battery.png"; Actions = "Exec cbatticon" }
-            Entry = "Bluetooth Control" { Icon = "/usr/share/icons/hicolor/16x16/apps/bluetooth.png"; Actions = "Exec xterm -T "Bluetooth Control" -e bluetoothctl" }
-            Entry = "Bulk Rename" { Icon = "/usr/share/icons/hicolor/16x16/apps/Thunar.png"; Actions = "Exec /usr/lib/Thunar/ThunarBulkRename" }
-            Entry = "Cairo Composite Manager" { Icon = "/usr/share/pixmaps/cairo-compmgr/cairo-compmgr.png"; Actions = "Exec cairo-compmgr" }
-            Entry = "Conky Status Display" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec conky" }
-            Entry = "DHCP Client Daemon Applet" { Icon = "/usr/share/icons/gnome/16x16/status/network-transmit-receive.png"; Actions = "Exec dhcpcd-gtk" }
-            Entry = "Fluff" { Icon = "/usr/share/pixmaps/fluff.png"; Actions = "Exec fluff" }
-            Entry = "Fluxbox Tray Menu." { Icon = "/usr/share/icons/Mist/16x16/apps/start-here.png"; Actions = "Exec /usr/bin/ftmenu" }
-            Entry = "Fluxbox XKB Switcher" { Icon = "/usr/share/icons/gnome/16x16/devices/keyboard.png"; Actions = "Exec fbxkb" }
-            Entry = "GSmartControl" { Icon = "/usr/share/icons/hicolor/16x16/apps/gsmartcontrol.png"; Actions = "Exec /usr/bin/gsmartcontrol_polkit" }
-            Entry = "Htop" { Icon = "/usr/share/pixmaps/htop.png"; Actions = "Exec xterm -T "Htop" -e htop" }
-            Entry = "LSHW" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec /usr/sbin/gtk-lshw" }
-            Entry = "Lock Screen" { Icon = "/usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png"; Actions = "Exec slock" }
-            Entry = "Manage Printing" { Icon = "/usr/share/icons/hicolor/16x16/apps/cups.png"; Actions = "Exec /usr/bin/xdg-open http://localhost:631/" }
-            Entry = "New Login in a Window" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec gdmflexiserver --xnest" }
-            Entry = "Package Updater" { Icon = "/usr/share/icons/gnome/16x16/apps/system-software-update.png"; Actions = "Exec gpk-update-viewer" }
-            Entry = "Pango Viewer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec pango-view -t "Hello world!"" }
-            Entry = "PathFinder" { Icon = "/usr/share/pixmaps/PathFinder.png"; Actions = "Exec PathFinder" }
-            Entry = "Procinfo" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png"; Actions = "Exec xterm -T "Procinfo" -e procinfo -n1" }
-            Entry = "Pstree" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Pstree" -e pstree.x11" }
-            Entry = "ROX" { Icon = "/usr/share/pixmaps/rox.png"; Actions = "Exec rox" }
-            Entry = "ROX Filer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec rox" }
-            Entry = "ROX Filer" { Icon = "/usr/share/pixmaps/rox.png"; Actions = "Exec rox" }
-            Entry = "ROXTerm" { Icon = "/usr/share/icons/hicolor/scalable/apps/roxterm.svg"; Actions = "Exec roxterm" }
-            Entry = "Run Command" { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec gmrun" }
-            Entry = "Run Command" { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec xde-run" }
-            Entry = "SpaceFM" { Icon = "/usr/share/icons/hicolor/48x48/apps/spacefm.png"; Actions = "Exec spacefm" }
-            Entry = "System Profiler and Benchmark" { Icon = "/usr/share/hardinfo/pixmaps/logo.png"; Actions = "Exec hardinfo" }
-            Entry = "Task Manager" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png"; Actions = "Exec lxtask" }
-            Entry = "TeXconfig" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "TeXconfig" -e texconfig" }
-            Entry = "Terminal" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-terminal.png"; Actions = "Exec gnome-terminal" }
-            Entry = "Thunar File Manager" { Icon = "/usr/share/icons/hicolor/16x16/apps/Thunar.png"; Actions = "Exec thunar" }
-            Entry = "Top CPU Processes" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png"; Actions = "Exec xterm -T "Top CPU Processes" -e top" }
-            Entry = "UXTerm" { Icon = "/usr/share/pixmaps/xterm-color_48x48.xpm"; Actions = "Exec uxterm" }
-            Entry = "Unclutter" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec /usr/bin/unclutter" }
-            Entry = "Vifm" { Icon = "/usr/share/pixmaps/vifm.png"; Actions = "Exec xterm -T "Vifm" -e vifm" }
-            Entry = "Wireshark" { Icon = "/usr/share/icons/hicolor/16x16/apps/wireshark.png"; Actions = "Exec wireshark" }
-            Entry = "X Load" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-system-monitor.png"; Actions = "Exec xload" }
-            Entry = "X-Terminal as root (GKsu)" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec gksu -u root /usr/bin/x-terminal-emulator" }
-            Entry = "XDE Panel" { Icon = "/usr/share/icons/hicolor/48x48/apps/perlpanel-panel.png"; Actions = "Exec sh -c "xde-panel $HOME/.config/xde-panel/${XDG_CURRENT_DESKTOP:-default}/rc.xml"" }
-            Entry = "XTerm" { Icon = "/usr/share/pixmaps/xterm-color_48x48.xpm"; Actions = "Exec xterm" }
-            Entry = "XTerm" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -name Terminal" }
-            Entry = "XTerm" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -name Terminal" }
-            Entry = "Xfce Terminal" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-terminal.png"; Actions = "Exec xfce4-terminal" }
-            Entry = "Xfe" { Icon = "/usr/share/pixmaps/xfe.png"; Actions = "Exec xfe" }
-            Entry = "Xsensors" { Icon = "/usr/share/pixmaps/xsensors.png"; Actions = "Exec xsensors" }
-            Entry = "dconf Editor" { Icon = "/usr/share/icons/hicolor/16x16/apps/dconf-editor.png"; Actions = "Exec dconf-editor" }
-            Entry = "emelFM2" { Icon = "/usr/share/pixmaps/emelfm2.png"; Actions = "Exec /usr/bin/emelfm2" }
-            Entry = "mc" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "mc" -e mc" }
-            Entry = "stalonetray" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec stalonetray" }
-            Entry = "urxvt" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-terminal.png"; Actions = "Exec urxvt" }
-            Entry = "urxvt (client)" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-terminal.png"; Actions = "Exec urxvtc" }
-            Entry = "urxvt (tabbed)" { Icon = "/usr/share/icons/gnome/16x16/apps/utilities-terminal.png"; Actions = "Exec urxvt-tabbed" }
-    }
-    Separator {}
-    Submenu = "X11 Tools" {
-        Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"
-            Entry = "Openbox Window Properties" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec obxprop|gxmessage -name obxprop -geometry 400x400 -font 'Liberation Mono 8' -title 'X Window Properties' -file -" }
-            Entry = "Reset color map" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xstdcmap -default" }
-            Entry = "Session Manager Proxy" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec smproxy" }
-            Entry = "X Clipboard" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xclipboard" }
-            Entry = "X Clock" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xclock -geometry 164x164" }
-            Entry = "X Color Selector" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xcolorsel" }
-            Entry = "X Console" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xconsole -file /dev/xconsole" }
-            Entry = "X Display Atoms" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xlsatoms | gxmessage -name xlsatoms -geometry 400x400 -font 'Liberation Mono 8' -title 'X Display Atoms' -file -" }
-            Entry = "X Display Clients" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xlsclients -a -l | gxmessage -name xlsclients -geometry 400x400 -font 'Liberation Mono 8' -title 'X Display Clients' -file -" }
-            Entry = "X Display Properties" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdpyinfo|gxmessage -name xdpyinfo -geometry 450x450 -font 'Liberation Mono 8' -title 'X Display Properties' -file -" }
-            Entry = "X Display Refresh" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xrefresh" }
-            Entry = "X Events" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xterm -T 'X Events' -e xev" }
-            Entry = "X Eyes" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xeyes" }
-            Entry = "X Font Select" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xfontsel" }
-            Entry = "X Input" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xinput|gxmessage -name xinput -font 'Liberation Mono 8' -title 'X Input Information' -file -" }
-            Entry = "X Keyboard LEDs" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xkbvleds" }
-            Entry = "X Keyboard State" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xkbwatch" }
-            Entry = "X Kill" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xkill" }
-            Entry = "X Magnifier" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xmag" }
-            Entry = "X Manual Page" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xman" }
-            Entry = "X Mod Key Mapping" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xmodmap|gxmessage -name xmodmap -font 'Liberation Mono 8' -title 'X Mod Key Information' -file -" }
-            Entry = "X RandR" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xrandr|gxmessage -name xrandr -font 'Liberation Mono 8' -title 'X Window Properties' -file -" }
-            Entry = "X Resource Editor" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec editres" }
-            Entry = "X Resource Top" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xterm -T "X Resource Top" -e xrestop" }
-            Entry = "X Settings" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xset -q|gxmessage -name xset -geometry 600x420 -wrap -font 'Liberation Mono 8' -title 'X Settings' -file -" }
-            Entry = "X Video Information" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xvinfo|gxmessage -name xvinfo -font 'Liberation Mono 8' -title 'X Video Information' -file -" }
-            Entry = "X Video Tuner" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xvidtune" }
-            Entry = "X Window Dump" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec bash -c "set -e; xwd>`zenity --entry --text Filename`"" }
-            Entry = "X Window Dump Display" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec bash -c "set -e; xwd>`zenity --entry --text Filename`"" }
-            Entry = "X Window Information" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xwininfo -frame -all -children|gxmessage -name xwininfo -geometry 750x500 -font 'Liberation Mono 8' -title 'X Windows' -file -" }
-            Entry = "X Window Properties" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xprop|gxmessage -name xprop -geometry 400x400 -font 'Liberation Mono 8' -title 'X Window Properties' -file -" }
-    }
-    Submenu = "Dock Apps" {
-        Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"
-            Entry = "ASClock" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec asclock -d -t shaped" }
-            Entry = "Alarm Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmclockmon" }
-            Entry = "Alsa Mixer" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec AlsaMixer.app" }
-            Entry = "Analog and Digital Clock" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmtime" }
-            Entry = "Audacious Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmauda" }
-            Entry = "Audio Mixer" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmsmixer -w" }
-            Entry = "Audio Mixer" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmmixer -w" }
-            Entry = "Battery Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmbattery" }
-            Entry = "Battery Dock App (ACPI)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmacpi" }
-            Entry = "Binary Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmBinClock" }
-            Entry = "Blob Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmblob" }
-            Entry = "Blue CPU Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmbluecpu" }
-            Entry = "Blue Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmblueclock" }
-            Entry = "Blue GPU Temperature Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmbluegpu" }
-            Entry = "Blue Memory Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmbluemem" }
-            Entry = "Bubble Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec bubblemon" }
-            Entry = "Bubble Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmbubble" }
-            Entry = "CPU Load Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmcpuload" }
-            Entry = "CPU Load Dock App (bars)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmcpu" }
-            Entry = "Calculator Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmcalc" }
-            Entry = "Calendar Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmCalClock" }
-            Entry = "Calendar Clock Keyboard Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmCalClockKbd" }
-            Entry = "Clip History Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmcliphist" }
-            Entry = "Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec lal" }
-            Entry = "Core CPU Load" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmcore" }
-            Entry = "Disk Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmdiskmon" }
-            Entry = "Filesystem Mounting Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmudmount" }
-            Entry = "Launcher Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmappl" }
-            Entry = "Mandelbrot Set Browser Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmMand" }
-            Entry = "Monitoring Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec allin1" }
-            Entry = "Network Device Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmnd" }
-            Entry = "Network Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmnet -w -l" }
-            Entry = "System Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmsysmon" }
-            Entry = "Timer Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmtimer" }
-            Entry = "Trash Can Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmtrash" }
-            Entry = "WMCDplay" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmcdplay" }
-            Entry = "WMMaiLoad" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmmaiload" }
-            Entry = "WMMail" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmmail" }
-            Entry = "WMbiff" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmbiff" }
-            Entry = "WMifs" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmifs" }
-            Entry = "Weather Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmWeather -s CYEG" }
-            Entry = "Weather Monitor Dock App Plus" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmweather+ -s CYEG" }
-            Entry = "Wifi Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmwave" }
-            Entry = "Wifi Monitor (LED)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmwifi" }
-            Entry = "Wmclock" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmclock" }
-            Entry = "wmITime" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmitime" }
-            Entry = "wmInet" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wminet" }
-            Entry = "wmMoonClock" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmMoonClock" }
-            Entry = "wmMoonClock" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmMoonClock" }
-            Entry = "wmStickyNotes" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmstickynotes" }
-            Entry = "wmTop" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmtop" }
-            Entry = "wmbatteries" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec wmbatteries" }
-            Entry = "wmbutton" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmbutton" }
-            Entry = "wmfire" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmfire" }
-            Entry = "wmforkplop" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmforkplop" }
-            Entry = "wmfrog" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmfrog" }
-            Entry = "wmgtemp" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmgtemp" }
-            Entry = "wmwork" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec wmwork" }
-    }
-    Submenu = "Other" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/applications-other.png"
-            Entry = "About EDE" { Icon = "/usr/share/icons/gnome/16x16/actions/help-about.png"; Actions = "Exec ede-about" }
-            Entry = "Bash" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Bash" -e bash --login" }
-            Entry = "Dash" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Dash" -e dash -i" }
-            Entry = "E16" { Icon = "/usr/share/e16/icons/e16.png"; Actions = "Exec e16" }
-            Entry = "Font Viewer" { Icon = "/usr/share/pixmaps/gfontview.png"; Actions = "Exec gfontview" }
-            Entry = "GnuChess" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "GnuChess" -e gnuchess" }
-            Entry = "Help" { Icon = "/usr/share/icons/gnome/16x16/apps/help-browser.png"; Actions = "Exec ede-help" }
-            Entry = "Info" { Icon = "/usr/share/icons/gnome/16x16/status/info.png"; Actions = "Exec xterm -T "Info" -e info" }
-            Entry = "Oclock" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec oclock" }
-            Entry = "PNMixer" { Icon = "/usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png"; Actions = "Exec pnmixer" }
-            Entry = "Run Program..." { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec ede-launch" }
-            Entry = "Screen Lock" { Icon = "/usr/share/icons/gnome/16x16/actions/system-lock-screen.png"; Actions = "Exec ede-screen-lock" }
-            Entry = "Sh" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xterm -T "Sh" -e sh --login" }
-            Entry = "Simple Tray XKB Indicator" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec sbxkb" }
-            Entry = "TeXdoctk" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec texdoctk" }
-            Entry = "TigerVNC viewer" { Icon = "/usr/share/icons/hicolor/16x16/apps/tigervnc.png"; Actions = "Exec /usr/bin/vncviewer" }
-            Entry = "X Fishtank" { Icon = "/usr/share/icons/gnome/16x16/apps/wallpaper.png"; Actions = "Exec xfisktank" }
-            Entry = "X Snow" { Icon = "/usr/share/icons/gnome/16x16/apps/wallpaper.png"; Actions = "Exec xsnow" }
-            Entry = "XDG Tray Menu" { Icon = "/usr/share/icons/Mist/16x16/apps/start-here.png"; Actions = "Exec xdg-traymenu" }
-            Entry = "Xlock" { Icon = "/usr/share/icons/gnome/16x16/actions/gnome-lockscreen.png"; Actions = "Exec xlock" }
-            Entry = "Xlogo" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xlogo" }
-            Entry = "gEDA Attribute Editor" { Icon = "/usr/share/icons/hicolor/scalable/apps/geda-gattrib.svg"; Actions = "Exec gattrib" }
-            Entry = "gEDA Schematic Editor" { Icon = "/usr/share/icons/hicolor/scalable/apps/geda-gschem.svg"; Actions = "Exec gschem" }
-            Entry = "mcedit" { Icon = "/usr/share/icons/gnome/16x16/apps/text-editor.png"; Actions = "Exec xterm -T "mcedit" -e mcedit" }
-    }
-    Separator {}
-    Submenu = "Preferences" {
-        Icon = "/usr/share/icons/gnome/16x16/categories/preferences-desktop.png"
-            Entry = "Adobe Flash Player" { Icon = "/usr/share/icons/hicolor/16x16/apps/flash-player-properties.png"; Actions = "Exec flash-player-properties" }
-            Entry = "ChBg" { Icon = "/usr/share/pixmaps/chbg_64x64.xpm"; Actions = "Exec chbg" }
-            Entry = "Configure EDE" { Icon = "/usr/share/icons/Mist/16x16/devices/computer.png"; Actions = "Exec ede-conf" }
-            Entry = "Customize Look and Feel" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec lxappearance" }
-            Entry = "Desktop Preferences" { Icon = "/usr/share/icons/Mist/16x16/places/user-desktop.png"; Actions = "Exec pcmanfm --desktop-pref" }
-            Entry = "FOX Desktop Setup" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec ControlPanel" }
-            Entry = "File Manager" { Icon = "/usr/share/icons/gnome/16x16/apps/system-file-manager.png"; Actions = "Exec thunar-settings" }
-            Entry = "Firewall Builder" { Icon = "/usr/share/icons/hicolor/16x16/apps/fwbuilder.png"; Actions = "Exec fwbuilder" }
-            Entry = "Gtk Theme Switch 2" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec gtk-theme-switch2" }
-            Entry = "Gtk2 Change Theme" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec gtk-chtheme" }
-            Entry = "Gtk2 Preferences" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec gtk2_prefs" }
-            Entry = "Keyboard Settings" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-desktop-keyboard.png"; Actions = "Exec lxkb_config" }
-            Entry = "Keyboard and Mouse" { Icon = "/usr/share/icons/gnome/16x16/devices/input-keyboard.png"; Actions = "Exec xde-input -editor" }
-            Entry = "LXDE Panel Settings" { Icon = "/usr/share/icons/gnome/16x16/categories/preferences-desktop.png"; Actions = "Exec lxpanelctl config" }
-            Entry = "Monitor Settings" { Icon = "/usr/share/icons/Mist/16x16/devices/display.png"; Actions = "Exec lxrandr" }
-            Entry = "Network Connections" { Icon = "/usr/share/icons/gnome/16x16/categories/preferences-system-network.png"; Actions = "Exec nm-connection-editor" }
-            Entry = "Openbox Configuration Manager" { Icon = "/usr/share/pixmaps/obconf.png"; Actions = "Exec obconf" }
-            Entry = "Packages" { Icon = "/usr/share/icons/gnome/16x16/apps/system-software-install.png"; Actions = "Exec gpk-application" }
-            Entry = "Panel tint2" { Icon = "/usr/share/pixmaps/tint2conf.png"; Actions = "Exec tint2conf" }
-            Entry = "Pop-Up Notifications" { Icon = "/usr/share/icons/hicolor/16x16/apps/notification-properties.png"; Actions = "Exec /usr/bin/notification-properties" }
-            Entry = "Preferred Applications" { Icon = "/usr/share/icons/gnome/16x16/categories/preferences-desktop.png"; Actions = "Exec libfm-pref-apps" }
-            Entry = "Preferred Applications" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/empty.png"; Actions = "Exec ede-preferred-applications" }
-            Entry = "Print Settings" { Icon = "/usr/share/icons/gnome/16x16/devices/printer.png"; Actions = "Exec system-config-printer" }
-            Entry = "Printing" { Icon = "/usr/share/icons/gnome/16x16/devices/printer.png"; Actions = "Exec system-config-printer" }
-            Entry = "Removable Drives and Media" { Icon = "/usr/share/icons/gnome/16x16/devices/drive-removable-media.png"; Actions = "Exec thunar-volman-settings" }
-            Entry = "Search and Indexing" { Icon = "/usr/share/icons/hicolor/16x16/apps/tracker.png"; Actions = "Exec tracker-preferences" }
-            Entry = "XDE Background" { Icon = "/usr/share/icons/gnome/16x16/devices/keyboard.png"; Actions = "Exec xde-setbg" }
-            Entry = "systemadm" { Icon = "/usr/share/icons/gnome/16x16/categories/applications-system.png"; Actions = "Exec systemadm" }
-    }
+        Entry = "1) Web Browser" { Icon = "/usr/share/icons/gnome/16x16/apps/web-browser.png"; Actions = "Exec xdg-launch --pointer preferred-web-browser" }
+        Entry = "2) File Manager" { Icon = "/usr/share/icons/gnome-brave/16x16/apps/file-manager.png"; Actions = "Exec xdg-launch --pointer preferred-file-manager" }
+        Entry = "3) Text Editor" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/text-editor.png"; Actions = "Exec xdg-launch --pointer preferred-text-editor" }
+        Entry = "4) Terminal" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/terminal.png"; Actions = "Exec xdg-launch --pointer preferred-terminal" }
+        Entry = "5) Run Command" { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec xdg-launch --pointer preferred-execute" }
+        Separator {}
+        Submenu = "Archlinux" {
+            Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"
+                Entry = "AUR" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-AUR" }
+                Entry = "Bugs" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-Bugs" }
+                Entry = "Developers" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-Developers" }
+                Entry = "Documentation" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-Documentation" }
+                Entry = "Donate" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-Donate" }
+                Entry = "Forum" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-Forum" }
+                Entry = "Homepage" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-Homepage" }
+                Entry = "SVN" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-SVN" }
+                Entry = "Schwag" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-Schwag" }
+                Entry = "Wiki" { Icon = "/usr/share/icons/hicolor/16x16/apps/arch-logo.png"; Actions = "Exec xdg-launch --pointer Arch-Wiki" }
+        }
+        Submenu = "Accessories" {
+            Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-accessories.png"
+                Entry = "7-Zip FM" { Icon = "/usr/share/icons/hicolor/32x32/apps/p7zip.png"; Actions = "Exec xdg-launch --pointer 7zFM" }
+                Entry = "AfterStep Terminal" { Icon = "/usr/share/icons/hicolor/22x22/apps/aterm.png"; Actions = "Exec xdg-launch --pointer aterm" }
+                Entry = "AllTray 0.7.5.1dev" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/alltray.png"; Actions = "Exec xdg-launch --pointer alltray" }
+                Entry = "Bvi" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer bvi" }
+                Entry = "Bvi Plus" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer bviplus" }
+                Entry = "FLTK Editor" { Icon = "/usr/share/pixmaps/fltk-editor.xpm"; Actions = "Exec xdg-launch --pointer fltk-editor" }
+                Entry = "FOX Calculator" { Icon = "/usr/share/pixmaps/calculator.png"; Actions = "Exec xdg-launch --pointer calculator" }
+                Entry = "FOX Text Editor" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/accessories-text-editor.png"; Actions = "Exec xdg-launch --pointer adie" }
+                Entry = "File Manager Stuurman" { Icon = "/usr/share/icons/gnome-brave/16x16/apps/system-file-manager.png"; Actions = "Exec xdg-launch --pointer stuurman" }
+                Entry = "Font Viewer" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-desktop-font.png"; Actions = "Exec xdg-launch --pointer gnome-font-viewer" }
+                Entry = "Gtk VNC Viewer" { Icon = "/usr/share/icons/gnome-brave/16x16/apps/gnome-remote-desktop.png"; Actions = "Exec xdg-launch --pointer gvncviewer" }
+                Entry = "LXTerminal" { Icon = "/usr/share/pixmaps/lxterminal.png"; Actions = "Exec xdg-launch --pointer lxterminal" }
+                Entry = "MacSlow's Cairo-Clock" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/cairo-clock.png"; Actions = "Exec xdg-launch --pointer cairo-clock" }
+                Entry = "Mount-gtk" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/drive-removable-media.png"; Actions = "Exec xdg-launch --pointer mount-gtk" }
+                Entry = "Nano" { Icon = "/usr/share/icons/hicolor/22x22/apps/nano.png"; Actions = "Exec xdg-launch --pointer nano" }
+                Entry = "SpaceFM File Search" { Icon = "/usr/share/icons/hicolor/48x48/apps/spacefm-find.png"; Actions = "Exec xdg-launch --pointer spacefm-find" }
+                Entry = "VI" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/gvim.png"; Actions = "Exec xdg-launch --pointer vi" }
+                Entry = "VIM" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/gvim.png"; Actions = "Exec xdg-launch --pointer vim" }
+                Entry = "Vi IMproved" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/gvim.png"; Actions = "Exec xdg-launch --pointer gvim" }
+                Entry = "XTerm (Unicode)" { Icon = "/usr/share/pixmaps/xterm-color_32x32.xpm"; Actions = "Exec xdg-launch --pointer xterm-(unicode)" }
+                Entry = "Xarchiver" { Icon = "/usr/share/icons/hicolor/16x16/apps/xarchiver.png"; Actions = "Exec xdg-launch --pointer xarchiver" }
+                Entry = "Xcalc Calculator" { Icon = "/usr/share/icons/gnome/16x16/apps/accessories-calculator.png"; Actions = "Exec xdg-launch --pointer xcalc" }
+                Entry = "Xedit" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer xedit" }
+                Entry = "Xfburn" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/media-cdrom.png"; Actions = "Exec xdg-launch --pointer xfburn" }
+                Entry = "Xfi" { Icon = "/usr/share/pixmaps/xfi.png"; Actions = "Exec xdg-launch --pointer xfi" }
+                Entry = "Xfp" { Icon = "/usr/share/pixmaps/xfp.png"; Actions = "Exec xdg-launch --pointer xfp" }
+                Entry = "Xfv" { Icon = "/usr/share/pixmaps/xfv.png"; Actions = "Exec xdg-launch --pointer xfv" }
+                Entry = "Xfw" { Icon = "/usr/share/pixmaps/xfw.png"; Actions = "Exec xdg-launch --pointer xfw" }
+                Entry = "Zalc" { Icon = "/usr/share/pixmaps/zalc.png"; Actions = "Exec xdg-launch --pointer zalc" }
+                Entry = "xplanetFX" { Icon = "/usr/share/pixmaps/xplanetFX.svg"; Actions = "Exec xdg-launch --pointer xplanetFX" }
+        }
+        Submenu = "Education" {
+            Icon = "/usr/share/icons/gnome/16x16/categories/applications-engineering.png"
+                Entry = "Calcoo" { Icon = "/usr/share/pixmaps/calcoo.png"; Actions = "Exec xdg-launch --pointer calcoo" }
+                Entry = "LibreOffice Math" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-math.png"; Actions = "Exec xdg-launch --pointer libreoffice-math" }
+                Entry = "Qucs" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer qucs" }
+                Entry = "StarPlot Star Chart Viewer" { Icon = "/usr/share/pixmaps/starplot32x32.xpm"; Actions = "Exec xdg-launch --pointer starplot" }
+        }
+        Submenu = "Games" {
+            Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-games.png"
+                Entry = "Block Attack!" { Icon = "/usr/share/icons/hicolor/32x32/apps/blocks.png"; Actions = "Exec xdg-launch --pointer blocks" }
+                Entry = "Checkers" { Icon = "/usr/share/icons/hicolor/32x32/apps/checkers.png"; Actions = "Exec xdg-launch --pointer checkers" }
+                Entry = "Chess" { Icon = "/usr/share/icons/hicolor/16x16/apps/gnome-chess.png"; Actions = "Exec xdg-launch --pointer gnome-chess" }
+                Entry = "Internet Chess Club" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer internet-chess-club" }
+                Entry = "Pingus" { Icon = "/usr/share/pingus/images/core/editor/actions.png"; Actions = "Exec xdg-launch --pointer pingus" }
+                Entry = "Sudoku" { Icon = "/usr/share/icons/hicolor/32x32/apps/sudoku.png"; Actions = "Exec xdg-launch --pointer sudoku" }
+                Entry = "XBill" { Icon = "/usr/share/xbill/pixmaps/wingdows.xpm"; Actions = "Exec xdg-launch --pointer xbill" }
+                Entry = "XGalaga" { Icon = "/usr/share/pixmaps/xgalaga.png"; Actions = "Exec xdg-launch --pointer xgalaga" }
+                Entry = "Xboard" { Icon = "/usr/share/icons/hicolor/scalable/apps/xboard.svg"; Actions = "Exec xdg-launch --pointer xboard" }
+                Entry = "Xboard" { Icon = "/usr/share/icons/hicolor/scalable/apps/xboard.svg"; Actions = "Exec xdg-launch --pointer xboard-ics" }
+                Entry = "Xtetris" { Icon = "/usr/share/pixmaps/xtetris.png"; Actions = "Exec xdg-launch --pointer xtetris" }
+                Entry = "aafire" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer aafire" }
+                Entry = "cacafire" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer cacafire" }
+        }
+        Submenu = "Graphics" {
+            Icon = "/usr/share/icons/gnome/16x16/categories/applications-graphics.png"
+                Entry = "Blender" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/blender.png"; Actions = "Exec xdg-launch --pointer blender" }
+                Entry = "Feh" { Icon = "/usr/share/feh/images/feh.png"; Actions = "Exec xdg-launch --pointer feh" }
+                Entry = "G3DViewer" { Icon = "/usr/share/pixmaps/g3dviewer.png"; Actions = "Exec xdg-launch --pointer g3dviewer" }
+                Entry = "GNU Image Manipulation Program" { Icon = "/usr/share/icons/hicolor/16x16/apps/gimp.png"; Actions = "Exec xdg-launch --pointer gimp" }
+                Entry = "GQview" { Icon = "/usr/share/pixmaps/gqview.png"; Actions = "Exec xdg-launch --pointer gqview" }
+                Entry = "GV" { Icon = "/usr/share/pixmaps/gv.png"; Actions = "Exec xdg-launch --pointer gv" }
+                Entry = "Gaw Gtk Analog Wave viewer" { Icon = "/usr/share/pixmaps/gaw.png"; Actions = "Exec xdg-launch --pointer gaw" }
+                Entry = "Geeqie" { Icon = "/usr/share/pixmaps/geeqie.png"; Actions = "Exec xdg-launch --pointer geeqie" }
+                Entry = "Image Viewer" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/gpicview.png"; Actions = "Exec xdg-launch --pointer gpicview" }
+                Entry = "ImageMagick" { Icon = "/usr/share/icons/gnome-brave/16x16/devices/display.png"; Actions = "Exec xdg-launch --pointer imagemagick" }
+                Entry = "ImageMagick Image Viewer" { Icon = "/usr/share/pixmaps/imagic.png"; Actions = "Exec xdg-launch --pointer display" }
+                Entry = "Inkscape" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/inkscape.png"; Actions = "Exec xdg-launch --pointer inkscape" }
+                Entry = "Konstruktor" { Icon = "/usr/share/icons/hicolor/16x16/apps/konstruktor.png"; Actions = "Exec xdg-launch --pointer konstruktor" }
+                Entry = "LibreOffice Draw" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-draw.png"; Actions = "Exec xdg-launch --pointer libreoffice-draw" }
+                Entry = "The GIMP" { Icon = "/usr/share/icons/hicolor/16x16/apps/gimp.png"; Actions = "Exec xdg-launch --pointer the-gimp" }
+                Entry = "Window Magnifier" { Icon = "/usr/share/WindowMaker/Icons/Magnify.xpm"; Actions = "Exec xdg-launch --pointer wmagnify" }
+                Entry = "Wings3D" { Icon = "/usr/share/pixmaps/wings3d.png"; Actions = "Exec xdg-launch --pointer wings3d" }
+                Entry = "X Window Snapshot" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer x-window-snapshot" }
+                Entry = "XPaint" { Icon = "/usr/share/pixmaps/XPaintIcon.xpm"; Actions = "Exec xdg-launch --pointer xpaint" }
+                Entry = "XV Image Viewer" { Icon = "/usr/share/pixmaps/xv.png"; Actions = "Exec xdg-launch --pointer xv" }
+                Entry = "Xfig" { Icon = "/usr/share/pixmaps/xfig.png"; Actions = "Exec xdg-launch --pointer xfig" }
+                Entry = "flPhoto" { Icon = "/usr/share/pixmaps/flphoto.png"; Actions = "Exec xdg-launch --pointer flphoto" }
+                Entry = "gThumb" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/gthumb.png"; Actions = "Exec xdg-launch --pointer gthumb" }
+                Entry = "xzgv" { Icon = "/usr/share/pixmaps/xzgv.xpm"; Actions = "Exec xdg-launch --pointer xzgv" }
+        }
+        Submenu = "Internet" {
+            Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-internet.png"
+                Entry = "Avahi SSH Server Browser" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/network-wired.png"; Actions = "Exec xdg-launch --pointer bssh" }
+                Entry = "Avahi VNC Server Browser" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/network-wired.png"; Actions = "Exec xdg-launch --pointer bvnc" }
+                Entry = "DHCP Client Daemon Applet" { Icon = "/usr/share/icons/gnome-brave/16x16/status/network-transmit-receive.png"; Actions = "Exec xdg-launch --pointer dhcpcd-gtk" }
+                Entry = "ELinks" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/html.png"; Actions = "Exec xdg-launch --pointer elinks" }
+                Entry = "Ekiga Softphone" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/ekiga.png"; Actions = "Exec xdg-launch --pointer ekiga" }
+                Entry = "Ettercap" { Icon = "/usr/share/pixmaps/ettercap.svg"; Actions = "Exec xdg-launch --pointer ettercap" }
+                Entry = "Firefox" { Icon = "/usr/share/icons/hicolor/16x16/apps/firefox.png"; Actions = "Exec xdg-launch --pointer firefox" }
+                Entry = "Firefox" { Icon = "/usr/share/icons/hicolor/16x16/apps/firefox.png"; Actions = "Exec xdg-launch --pointer mozilla-firefox" }
+                Entry = "IP Telephony, VoIP and Video Conferencing" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/ekiga.png"; Actions = "Exec xdg-launch --pointer gnome-ekiga" }
+                Entry = "Links" { Icon = "/usr/share/pixmaps/links_32x32.xpm"; Actions = "Exec xdg-launch --pointer links" }
+                Entry = "Lynx Text Browser" { Icon = "/usr/share/icons/hicolor/22x22/apps/aterm.png"; Actions = "Exec xdg-launch --pointer lynx" }
+                Entry = "Midori" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/midori.png"; Actions = "Exec xdg-launch --pointer midori" }
+                Entry = "Midori Private Browsing" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/midori.png"; Actions = "Exec xdg-launch --pointer midori-private" }
+                Entry = "Mutt" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer mutt" }
+                Entry = "OpenNX Connection Wizard" { Icon = "/usr/share/icons/hicolor/16x16/apps/opennx-wizard.png"; Actions = "Exec xdg-launch --pointer innovidata-opennx-wizard" }
+                Entry = "OpenNX Session Administrator" { Icon = "/usr/share/icons/hicolor/16x16/apps/opennx-admin.png"; Actions = "Exec xdg-launch --pointer innovidata-opennx-admin" }
+                Entry = "OpenNX client" { Icon = "/usr/share/icons/hicolor/16x16/apps/nx.png"; Actions = "Exec xdg-launch --pointer innovidata-opennx" }
+                Entry = "Remmina Remote Desktop Client" { Icon = "/usr/share/icons/hicolor/16x16/apps/remmina.png"; Actions = "Exec xdg-launch --pointer remmina" }
+                Entry = "SSL/SSH VNC Viewer" { Icon = "/usr/share/icons/gnome-brave/16x16/devices/computer.png"; Actions = "Exec xdg-launch --pointer ssvnc" }
+                Entry = "Telnet" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer telnet" }
+                Entry = "TigerVNC Viewer" { Icon = "/usr/share/icons/hicolor/16x16/apps/tigervnc.png"; Actions = "Exec xdg-launch --pointer vncviewer" }
+                Entry = "Tightvnc" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer mandriva-tightvnc" }
+                Entry = "Wireshark Network Analyzer" { Icon = "/usr/share/icons/hicolor/16x16/apps/wireshark.png"; Actions = "Exec xdg-launch --pointer redhat-wireshark" }
+                Entry = "X11VNC Server" { Icon = "/usr/share/icons/gnome-brave/16x16/devices/computer.png"; Actions = "Exec xdg-launch --pointer x11vnc" }
+                Entry = "Xbiff" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer xbiff" }
+                Entry = "Zenmap" { Icon = "/usr/share/zenmap/pixmaps/zenmap.png"; Actions = "Exec xdg-launch --pointer zenmap" }
+                Entry = "Zenmap (as root)" { Icon = "/usr/share/zenmap/pixmaps/zenmap.png"; Actions = "Exec xdg-launch --pointer zenmap-root" }
+                Entry = "wpa_gui" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer wpa_gui" }
+        }
+        Submenu = "Office" {
+            Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-office.png"
+                Entry = "GV" { Icon = "/usr/share/pixmaps/gv.png"; Actions = "Exec xdg-launch --pointer gv" }
+                Entry = "GXditview" { Icon = "/usr/share/icons/hicolor/24x24/apps/postscript-viewer.png"; Actions = "Exec xdg-launch --pointer gxditview" }
+                Entry = "LibreOffice" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-startcenter.png"; Actions = "Exec xdg-launch --pointer libreoffice-startcenter" }
+                Entry = "LibreOffice Base" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-base.png"; Actions = "Exec xdg-launch --pointer libreoffice-base" }
+                Entry = "LibreOffice Calc" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-calc.png"; Actions = "Exec xdg-launch --pointer libreoffice-calc" }
+                Entry = "LibreOffice Draw" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-draw.png"; Actions = "Exec xdg-launch --pointer libreoffice-draw" }
+                Entry = "LibreOffice Impress" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-impress.png"; Actions = "Exec xdg-launch --pointer libreoffice-impress" }
+                Entry = "LibreOffice Math" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-math.png"; Actions = "Exec xdg-launch --pointer libreoffice-math" }
+                Entry = "LibreOffice Writer" { Icon = "/usr/share/icons/gnome/16x16/apps/libreoffice-writer.png"; Actions = "Exec xdg-launch --pointer libreoffice-writer" }
+                Entry = "RAKT PDF Viewer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer raktpdf" }
+                Entry = "X PDF" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/xpdf.png"; Actions = "Exec xdg-launch --pointer xpdf" }
+                Entry = "XDvi" { Icon = "/usr/share/pixmaps/xdvi.png"; Actions = "Exec xdg-launch --pointer xdvi" }
+                Entry = "Xditview" { Icon = "/usr/share/icons/hicolor/24x24/apps/postscript-viewer.png"; Actions = "Exec xdg-launch --pointer xditview" }
+                Entry = "Zat" { Icon = "/usr/share/pixmaps/zat.png"; Actions = "Exec xdg-launch --pointer zat" }
+                Entry = "Zathura" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer zathura" }
+                Entry = "apvlv" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer apvlv" }
+        }
+        Submenu = "Programming" {
+            Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-development.png"
+                Entry = "CMake" { Icon = "/usr/share/pixmaps/CMakeSetup32.png"; Actions = "Exec xdg-launch --pointer CMake" }
+                Entry = "Eeschema" { Icon = "/usr/share/icons/hicolor/16x16/apps/eeschema.png"; Actions = "Exec xdg-launch --pointer eeschema" }
+                Entry = "FLUID" { Icon = "/usr/share/icons/hicolor/16x16/apps/fluid.png"; Actions = "Exec xdg-launch --pointer fluid" }
+                Entry = "KiCad" { Icon = "/usr/share/icons/hicolor/scalable/apps/kicad.svg"; Actions = "Exec xdg-launch --pointer kicad" }
+                Entry = "Qt4 Assistant" { Icon = "/usr/share/icons/hicolor/32x32/apps/assistant-qt4.png"; Actions = "Exec xdg-launch --pointer assistant-qt4" }
+                Entry = "Qt4 Designer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer qt4-designer" }
+                Entry = "Qt4 Designer" { Icon = "/usr/share/icons/hicolor/128x128/apps/designer-qt4.png"; Actions = "Exec xdg-launch --pointer designer-qt4" }
+                Entry = "Qt4 Linguist" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer qt4-linguist" }
+                Entry = "Qt4 Linguist" { Icon = "/usr/share/icons/hicolor/16x16/apps/linguist-qt4.png"; Actions = "Exec xdg-launch --pointer linguist-qt4" }
+                Entry = "Qt4 QDbusViewer" { Icon = "/usr/share/icons/hicolor/32x32/apps/qdbusviewer-qt4.png"; Actions = "Exec xdg-launch --pointer qdbusviewer-qt4" }
+                Entry = "Scratch" { Icon = "/usr/share/icons/hicolor/32x32/apps/scratch.png"; Actions = "Exec xdg-launch --pointer scratch" }
+                Entry = "Vi IMproved" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/gvim.png"; Actions = "Exec xdg-launch --pointer gvim" }
+        }
+        Submenu = "Science & Math" {
+            Icon = "/usr/share/icons/gnome/16x16/categories/applications-science.png"
+                Entry = "Bc" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer bc" }
+                Entry = "Dc" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer dc" }
+                Entry = "GNUplot" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer gnuplot" }
+                Entry = "GSpiceUI" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer gspiceui" }
+        }
+        Submenu = "Sound & Video" {
+            Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-multimedia.png"
+                Entry = "ALSA Mixer" { Icon = "/usr/share/icons/gnome/16x16/apps/gnome-mixer.png"; Actions = "Exec xdg-launch --pointer alsamixer" }
+                Entry = "Alsaplayer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer alsaplayer" }
+                Entry = "Audacious (GTKui)" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer audacious2-gtkui" }
+                Entry = "Audacious2" { Icon = "/usr/share/icons/hicolor/scalable/apps/audacious2.svg"; Actions = "Exec xdg-launch --pointer audacious2" }
+                Entry = "Aumix" { Icon = "/usr/share/aumix/aumix.xpm"; Actions = "Exec xdg-launch --pointer aumix" }
+                Entry = "Consonance" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer consonance" }
+                Entry = "FFADO Mixer" { Icon = "/usr/share/pixmaps/ffado.png"; Actions = "Exec xdg-launch --pointer ffadomixer" }
+                Entry = "FlBurn" { Icon = "/usr/share/pixmaps/flburn.png"; Actions = "Exec xdg-launch --pointer flburn" }
+                Entry = "Flmusic" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer flmusic" }
+                Entry = "Goggles Music Manager" { Icon = "/usr/share/icons/hicolor/16x16/apps/gogglesmm.png"; Actions = "Exec xdg-launch --pointer gogglesmm" }
+                Entry = "Guayadeque Music Player" { Icon = "/usr/share/pixmaps/guayadeque.png"; Actions = "Exec xdg-launch --pointer guayadeque" }
+                Entry = "Music Player" { Icon = "/usr/share/pixmaps/lxmusic.png"; Actions = "Exec xdg-launch --pointer lxmusic" }
+                Entry = "PNMixer" { Icon = "/usr/share/icons/gnome/16x16/apps/multimedia-volume-control.png"; Actions = "Exec xdg-launch --pointer pnmixer" }
+                Entry = "Pragha" { Icon = "/usr/share/icons/hicolor/128x128/apps/pragha.png"; Actions = "Exec xdg-launch --pointer pragha" }
+                Entry = "Qt V4L2 test Utility" { Icon = "/usr/share/icons/hicolor/16x16/apps/qv4l2.png"; Actions = "Exec xdg-launch --pointer qv4l2" }
+                Entry = "SimpleBurn" { Icon = "/usr/share/pixmaps/simpleburn.png"; Actions = "Exec xdg-launch --pointer simpleburn" }
+                Entry = "Stopmotion" { Icon = "/usr/share/pixmaps/stopmotion.png"; Actions = "Exec xdg-launch --pointer stopmotion" }
+                Entry = "Videos" { Icon = "/usr/share/icons/hicolor/16x16/apps/totem.png"; Actions = "Exec xdg-launch --pointer totem" }
+                Entry = "Xfburn" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/media-cdrom.png"; Actions = "Exec xdg-launch --pointer xfburn" }
+                Entry = "moc-tray" { Icon = "/usr/share/pixmaps/moc-tray.png"; Actions = "Exec xdg-launch --pointer moc-tray" }
+        }
+        Submenu = "System Tools" {
+            Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-system.png"
+                Entry = "Atop" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer atop" }
+                Entry = "Avahi Zeroconf Browser" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/network-wired.png"; Actions = "Exec xdg-launch --pointer avahi-discover" }
+                Entry = "Battery Status Icon" { Icon = "/usr/share/icons/gnome/16x16/devices/battery.png"; Actions = "Exec xdg-launch --pointer cbatticon" }
+                Entry = "Bluetooth Control" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/bluetooth.png"; Actions = "Exec xdg-launch --pointer bluetoothctl" }
+                Entry = "Bulk Rename" { Icon = "/usr/share/icons/gnome-brave/16x16/apps/Thunar.png"; Actions = "Exec xdg-launch --pointer Thunar-bulk-rename" }
+                Entry = "Cairo Composite Manager" { Icon = "/usr/share/pixmaps/cairo-compmgr/cairo-compmgr.png"; Actions = "Exec xdg-launch --pointer cairo-compmgr" }
+                Entry = "Conky Status Display" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer conky" }
+                Entry = "DHCP Client Daemon Applet" { Icon = "/usr/share/icons/gnome-brave/16x16/status/network-transmit-receive.png"; Actions = "Exec xdg-launch --pointer dhcpcd-gtk" }
+                Entry = "File Manager PCManFM" { Icon = "/usr/share/icons/gnome-brave/16x16/apps/system-file-manager.png"; Actions = "Exec xdg-launch --pointer pcmanfm" }
+                Entry = "Fluff" { Icon = "/usr/share/pixmaps/fluff.png"; Actions = "Exec xdg-launch --pointer fluff" }
+                Entry = "Fluxbox Tray Menu." { Icon = "/usr/share/icons/gnome-colors-common/16x16/places/start-here.png"; Actions = "Exec xdg-launch --pointer ftmenu" }
+                Entry = "Fluxbox XKB Switcher" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/keyboard.png"; Actions = "Exec xdg-launch --pointer fbxkb" }
+                Entry = "GSmartControl" { Icon = "/usr/share/icons/hicolor/16x16/apps/gsmartcontrol.png"; Actions = "Exec xdg-launch --pointer gsmartcontrol" }
+                Entry = "Htop" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/htop.png"; Actions = "Exec xdg-launch --pointer htop" }
+                Entry = "LSHW" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer gtk-lshw" }
+                Entry = "Lock Screen" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gnome-lockscreen.png"; Actions = "Exec xdg-launch --pointer xde-xlock" }
+                Entry = "Lock Screen" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gnome-lockscreen.png"; Actions = "Exec xdg-launch --pointer slock" }
+                Entry = "Manage Printing" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/cups.png"; Actions = "Exec xdg-launch --pointer cups" }
+                Entry = "New Login in a Window" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/gdm-xnest.png"; Actions = "Exec xdg-launch --pointer gdmflexiserver-xnest" }
+                Entry = "Package Updater" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/system-software-update.png"; Actions = "Exec xdg-launch --pointer gpk-update-viewer" }
+                Entry = "Pango Viewer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer pango-view" }
+                Entry = "PathFinder" { Icon = "/usr/share/pixmaps/PathFinder.png"; Actions = "Exec xdg-launch --pointer PathFinder" }
+                Entry = "Procinfo" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/utilities-system-monitor.png"; Actions = "Exec xdg-launch --pointer procinfo" }
+                Entry = "Pstree" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer pstree" }
+                Entry = "ROX" { Icon = "/usr/share/pixmaps/rox.png"; Actions = "Exec xdg-launch --pointer mandriva-rox" }
+                Entry = "ROX Filer" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer rox-filer" }
+                Entry = "ROX Filer" { Icon = "/usr/share/pixmaps/rox.png"; Actions = "Exec xdg-launch --pointer rox" }
+                Entry = "ROXTerm" { Icon = "/usr/share/icons/hicolor/scalable/apps/roxterm.svg"; Actions = "Exec xdg-launch --pointer roxterm" }
+                Entry = "Run Command" { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec xdg-launch --pointer gmrun" }
+                Entry = "Run Command" { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec xdg-launch --pointer xde-run" }
+                Entry = "Run XDG Application" { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec xdg-launch --pointer xde-app" }
+                Entry = "SpaceFM" { Icon = "/usr/share/icons/hicolor/48x48/apps/spacefm.png"; Actions = "Exec xdg-launch --pointer spacefm" }
+                Entry = "System Profiler and Benchmark" { Icon = "/usr/share/hardinfo/pixmaps/logo.png"; Actions = "Exec xdg-launch --pointer hardinfo" }
+                Entry = "Systemd File Browser" { Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-system.png"; Actions = "Exec xdg-launch --pointer sd-files" }
+                Entry = "Systemd Unit Browser" { Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-system.png"; Actions = "Exec xdg-launch --pointer sd-units" }
+                Entry = "Task Manager" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/utilities-system-monitor.png"; Actions = "Exec xdg-launch --pointer lxtask" }
+                Entry = "TeXconfig" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer texconfig" }
+                Entry = "Thunar File Manager" { Icon = "/usr/share/icons/gnome-brave/16x16/apps/Thunar.png"; Actions = "Exec xdg-launch --pointer Thunar" }
+                Entry = "Top CPU Processes" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/utilities-system-monitor.png"; Actions = "Exec xdg-launch --pointer top" }
+                Entry = "UXTerm" { Icon = "/usr/share/pixmaps/xterm-color_48x48.xpm"; Actions = "Exec xdg-launch --pointer uxterm" }
+                Entry = "Unclutter" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer unclutter" }
+                Entry = "Vifm" { Icon = "/usr/share/pixmaps/vifm.png"; Actions = "Exec xdg-launch --pointer vifm" }
+                Entry = "Wireshark" { Icon = "/usr/share/icons/hicolor/16x16/apps/wireshark.png"; Actions = "Exec xdg-launch --pointer wireshark" }
+                Entry = "Workspace Pager" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer xde-pager" }
+                Entry = "X Load" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/utilities-system-monitor.png"; Actions = "Exec xdg-launch --pointer xload" }
+                Entry = "X-Terminal as root (GKsu)" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/gksu-debian.png"; Actions = "Exec xdg-launch --pointer terminal-as-root-(gksu)" }
+                Entry = "XDE Panel" { Icon = "/usr/share/icons/hicolor/48x48/apps/perlpanel-panel.png"; Actions = "Exec xdg-launch --pointer xde-panel" }
+                Entry = "XTerm" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer mandriva-xterm" }
+                Entry = "XTerm" { Icon = "/usr/share/pixmaps/xterm-color_48x48.xpm"; Actions = "Exec xdg-launch --pointer xterm" }
+                Entry = "XTerm" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer mageia-xterm" }
+                Entry = "Xfe" { Icon = "/usr/share/pixmaps/xfe.png"; Actions = "Exec xdg-launch --pointer xfe" }
+                Entry = "Xsensors" { Icon = "/usr/share/pixmaps/xsensors.png"; Actions = "Exec xdg-launch --pointer xsensors" }
+                Entry = "dconf Editor" { Icon = "/usr/share/icons/hicolor/16x16/apps/dconf-editor.png"; Actions = "Exec xdg-launch --pointer dconf-editor" }
+                Entry = "emelFM2" { Icon = "/usr/share/pixmaps/emelfm2.png"; Actions = "Exec xdg-launch --pointer emelfm2" }
+                Entry = "mc" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer mc" }
+                Entry = "stalonetray" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer stalonetray" }
+                Entry = "urxvt" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/utilities-terminal.png"; Actions = "Exec xdg-launch --pointer urxvt" }
+                Entry = "urxvt (client)" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/utilities-terminal.png"; Actions = "Exec xdg-launch --pointer urxvtc" }
+                Entry = "urxvt (tabbed)" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/utilities-terminal.png"; Actions = "Exec xdg-launch --pointer urxvt-tabbed" }
+        }
+        Separator {}
+        Submenu = "X11 Tools" {
+            Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"
+                Entry = "Openbox Window Properties" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer obxprop" }
+                Entry = "Reset color map" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xstdcmap" }
+                Entry = "Session Manager Proxy" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer smproxy" }
+                Entry = "X Clipboard" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xclipboard" }
+                Entry = "X Clock" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xclock" }
+                Entry = "X Color Selector" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xcolorsel" }
+                Entry = "X Console" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xconsole" }
+                Entry = "X Display Atoms" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xlsatoms" }
+                Entry = "X Display Clients" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xlsclients" }
+                Entry = "X Display Properties" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xdpyinfo" }
+                Entry = "X Display Refresh" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xrefresh" }
+                Entry = "X Events" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xev" }
+                Entry = "X Eyes" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xeyes" }
+                Entry = "X Font Select" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xfontsel" }
+                Entry = "X Input" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xinput" }
+                Entry = "X Keyboard LEDs" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xkbvleds" }
+                Entry = "X Keyboard State" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xkbwatch" }
+                Entry = "X Kill" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xkill" }
+                Entry = "X Magnifier" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xmag" }
+                Entry = "X Manual Page" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xman" }
+                Entry = "X Mod Key Mapping" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xmodmap" }
+                Entry = "X RandR" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xrandr" }
+                Entry = "X Resource Editor" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer editres" }
+                Entry = "X Resource Top" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xrestop" }
+                Entry = "X Settings" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xset" }
+                Entry = "X Video Information" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xvinfo" }
+                Entry = "X Video Tuner" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xvidtune" }
+                Entry = "X Window Dump" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xwd" }
+                Entry = "X Window Dump Display" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xwud" }
+                Entry = "X Window Information" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xwininfo" }
+                Entry = "X Window Properties" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xprop" }
+        }
+        Submenu = "Dock Apps" {
+            Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"
+                Entry = "AfterStep Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer asclock" }
+                Entry = "Alarm Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmclockmon" }
+                Entry = "Alarm Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmclock" }
+                Entry = "Alsa Mixer" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer AlsaMixer.app" }
+                Entry = "Analog and Digital Clock" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmtime" }
+                Entry = "Application Button Dock App" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer wmbutton" }
+                Entry = "Audacious Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmauda" }
+                Entry = "Audio Mixer" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmsmixer" }
+                Entry = "Audio Mixer" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmmixer" }
+                Entry = "Battery Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmbattery" }
+                Entry = "Battery Dock App (ACPI)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmacpi" }
+                Entry = "Battery Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmbatteries" }
+                Entry = "Binary Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmBinClock" }
+                Entry = "Blob Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmblob" }
+                Entry = "Blue CPU Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmbluecpu" }
+                Entry = "Blue Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmblueclock" }
+                Entry = "Blue GPU Temperature Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmbluegpu" }
+                Entry = "Blue Memory Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmbluemem" }
+                Entry = "Bubble Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer bubblemon" }
+                Entry = "Bubble Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmbubble" }
+                Entry = "CD Player Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmcdplay" }
+                Entry = "CPU Load Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmcpuload" }
+                Entry = "CPU Load Dock App (bars)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmcpu" }
+                Entry = "CPU Load Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmcpumon" }
+                Entry = "CPU Monitor Dock App (wmfire)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmfire" }
+                Entry = "Calculator Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmcalc" }
+                Entry = "Calendar Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmCalClock" }
+                Entry = "Calendar Clock Keyboard Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmCalClockKbd" }
+                Entry = "Clip History Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmcliphist" }
+                Entry = "Clock Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer lal" }
+                Entry = "Core CPU Load" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmcore" }
+                Entry = "Disk Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmdiskmon" }
+                Entry = "Filesystem Mounting Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmudmount" }
+                Entry = "Launcher Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmappl" }
+                Entry = "Mail Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmbiff" }
+                Entry = "Mandelbrot Set Browser Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmMand" }
+                Entry = "Monitoring Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer allin1" }
+                Entry = "Network Device Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmnd" }
+                Entry = "Network Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmnet" }
+                Entry = "Network Monitor Dock App (wmifinfo)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmifinfo" }
+                Entry = "System Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmsysmon" }
+                Entry = "System Monitor Dock App (wmforkplop)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmforkplop" }
+                Entry = "Temperature Sensor Dock App (wmgtemp)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmgtemp" }
+                Entry = "Timer Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmtimer" }
+                Entry = "Trash Can Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmtrash" }
+                Entry = "WMMaiLoad" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmmaiload" }
+                Entry = "WMMail" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmmail" }
+                Entry = "WMifs" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer wmifs" }
+                Entry = "Weather Monitor Dock App" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmWeather" }
+                Entry = "Weather Monitor Dock App Plus" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmweather+" }
+                Entry = "Weather Report Dock App (wmfrog)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmfrog" }
+                Entry = "Wifi Monitor" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmwave" }
+                Entry = "Wifi Monitor (LED)" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmwifi" }
+                Entry = "wmITime" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmitime" }
+                Entry = "wmInet" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wminet" }
+                Entry = "wmMoonClock" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer wmmoonclock" }
+                Entry = "wmMoonClock" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer wmMoonClock" }
+                Entry = "wmStickyNotes" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmstickynotes" }
+                Entry = "wmTop" { Icon = "/usr/share/icons/hicolor/16x16/apps/GNUstep3D.png"; Actions = "Exec xdg-launch --pointer wmtop" }
+                Entry = "wmwork" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer wmwork" }
+        }
+        Submenu = "Other" {
+            Icon = "/usr/share/icons/gnome/16x16/categories/applications-other.png"
+                Entry = "Audacious" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer audacious" }
+                Entry = "Bash" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/bash.png"; Actions = "Exec xdg-launch --pointer bash" }
+                Entry = "Dash" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer dash" }
+                Entry = "Debian Sensible Browser" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer debian-sensible-browser" }
+                Entry = "Dillo" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer dillo" }
+                Entry = "Dmenu Launch" { Icon = "/usr/share/icons/gnome/16x16/actions/system-run.png"; Actions = "Exec xdg-launch --pointer dmenu_launch" }
+                Entry = "E16" { Icon = "/usr/share/e16/icons/e16.png"; Actions = "Exec xdg-launch --pointer e16" }
+                Entry = "Font Viewer" { Icon = "/usr/share/pixmaps/gfontview.png"; Actions = "Exec xdg-launch --pointer gfontview" }
+                Entry = "GnuChess" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer gnuchess" }
+                Entry = "Info" { Icon = "/usr/share/icons/gnome-colors-common/16x16/status/info.png"; Actions = "Exec xdg-launch --pointer info" }
+                Entry = "Oclock" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer oclock" }
+                Entry = "Sh" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer sh" }
+                Entry = "Simple Tray XKB Indicator" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer sbxkb" }
+                Entry = "Systemd Applet" { Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-system.png"; Actions = "Exec xdg-launch --pointer sd-applet" }
+                Entry = "TeXdoctk" { Icon = "/usr/share/icons/gnome/16x16/mimetypes/exec.png"; Actions = "Exec xdg-launch --pointer texdoctk" }
+                Entry = "X Fishtank" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/wallpaper.png"; Actions = "Exec xdg-launch --pointer xfishtank" }
+                Entry = "X Snow" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/wallpaper.png"; Actions = "Exec xdg-launch --pointer xsnow" }
+                Entry = "XDG Tray Menu" { Icon = "/usr/share/icons/gnome-colors-common/16x16/places/start-here.png"; Actions = "Exec xdg-launch --pointer xdg-traymenu" }
+                Entry = "Xcircuit" { Icon = "/usr/share/icons/xcircuit.png"; Actions = "Exec xdg-launch --pointer xcircuit" }
+                Entry = "Xlock" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gnome-lockscreen.png"; Actions = "Exec xdg-launch --pointer xlockmore" }
+                Entry = "Xlogo" { Icon = "/usr/share/icons/hicolor/16x16/apps/xlogo.png"; Actions = "Exec xdg-launch --pointer xlogo" }
+                Entry = "gEDA Attribute Editor" { Icon = "/usr/share/icons/hicolor/scalable/apps/geda-gattrib.svg"; Actions = "Exec xdg-launch --pointer geda-gattrib" }
+                Entry = "gEDA Schematic Editor" { Icon = "/usr/share/icons/hicolor/scalable/apps/geda-gschem.svg"; Actions = "Exec xdg-launch --pointer geda-gschem" }
+                Entry = "mcedit" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/text-editor.png"; Actions = "Exec xdg-launch --pointer mcedit" }
+        }
+        Separator {}
+        Submenu = "Preferences" {
+            Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/preferences-desktop.png"
+                Entry = "Adobe Flash Player" { Icon = "/usr/share/icons/hicolor/16x16/apps/flash-player-properties.png"; Actions = "Exec xdg-launch --pointer flash-player-properties" }
+                Entry = "ChBg" { Icon = "/usr/share/pixmaps/chbg_64x64.xpm"; Actions = "Exec xdg-launch --pointer chbg" }
+                Entry = "Customize Look and Feel" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec xdg-launch --pointer lxappearance" }
+                Entry = "Desktop Preferences" { Icon = "/usr/share/icons/gnome-brave/16x16/places/user-desktop.png"; Actions = "Exec xdg-launch --pointer pcmanfm-desktop-pref" }
+                Entry = "FOX Desktop Setup" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec xdg-launch --pointer ControlPanel" }
+                Entry = "File Manager" { Icon = "/usr/share/icons/gnome-brave/16x16/apps/system-file-manager.png"; Actions = "Exec xdg-launch --pointer thunar-settings" }
+                Entry = "Firewall Builder" { Icon = "/usr/share/icons/hicolor/16x16/apps/fwbuilder.png"; Actions = "Exec xdg-launch --pointer fwbuilder" }
+                Entry = "Gtk Theme Switch 2" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec xdg-launch --pointer gtk-theme-switch2" }
+                Entry = "Gtk2 Change Theme" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec xdg-launch --pointer gtk-chtheme" }
+                Entry = "Gtk2 Preferences" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-desktop-theme.png"; Actions = "Exec xdg-launch --pointer gtk2_prefs" }
+                Entry = "Keyboard Settings" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-desktop-keyboard.png"; Actions = "Exec xdg-launch --pointer lxkb-config" }
+                Entry = "Keyboard and Mouse" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/input-keyboard.png"; Actions = "Exec xdg-launch --pointer xde-input" }
+                Entry = "LXDE Panel Settings" { Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/preferences-desktop.png"; Actions = "Exec xdg-launch --pointer lxpanelctl" }
+                Entry = "Monitor Settings" { Icon = "/usr/share/icons/gnome-brave/16x16/devices/display.png"; Actions = "Exec xdg-launch --pointer lxrandr" }
+                Entry = "Openbox Configuration Manager" { Icon = "/usr/share/pixmaps/obconf.png"; Actions = "Exec xdg-launch --pointer obconf" }
+                Entry = "Packages" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/system-software-install.png"; Actions = "Exec xdg-launch --pointer gpk-application" }
+                Entry = "Panel tint2" { Icon = "/usr/share/pixmaps/tint2conf.png"; Actions = "Exec xdg-launch --pointer tint2conf" }
+                Entry = "Preferred Applications" { Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/preferences-desktop.png"; Actions = "Exec xdg-launch --pointer libsmfm-pref-apps" }
+                Entry = "Preferred Applications" { Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/preferences-desktop.png"; Actions = "Exec xdg-launch --pointer libfm-pref-apps" }
+                Entry = "Print Settings" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/printer.png"; Actions = "Exec xdg-launch --pointer system-config-printer" }
+                Entry = "Printing" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/printer.png"; Actions = "Exec xdg-launch --pointer redhat-system-config-printer" }
+                Entry = "Removable Drives and Media" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/drive-removable-media.png"; Actions = "Exec xdg-launch --pointer thunar-volman-settings" }
+                Entry = "Stuurman Desktop Preferences" { Icon = "/usr/share/icons/gnome-brave/16x16/places/user-desktop.png"; Actions = "Exec xdg-launch --pointer stuurman-desktop-pref" }
+                Entry = "XDE Background" { Icon = "/usr/share/icons/gnome-colors-common/16x16/devices/keyboard.png"; Actions = "Exec xdg-launch --pointer xde-setbg" }
+                Entry = "systemadm" { Icon = "/usr/share/icons/gnome-colors-common/16x16/categories/applications-system.png"; Actions = "Exec xdg-launch --pointer systemadm" }
+        }
     Separator {}
     Submenu = "Pekwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/pekwm.png"; 
         Entry = "Run Command..." { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-execute.png"; Actions = "ShowCmdDialog" }
-        SubMenu = "Workspace List" { Icon = "/usr/share/icons/Mist/16x16/apps/preferences-desktop-display.png"; 
+        SubMenu = "Workspace List" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-desktop-display.png"; 
             Entry = "" { Actions = "Dynamic $_PEKWM_SCRIPT_PATH/pekwm_ws_menu.sh goto dynamic" }
         }
-        Entry = "Window List" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "ShowMenu GotoClient True" }
-        Submenu = "Themes" { Icon = "/usr/share/icons/gnome/16x16/apps/style.png"; 
+        Entry = "Window List" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "ShowMenu GotoClient True" }
+        Submenu = "Themes" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/style.png"; 
             Entry { Actions = "Dynamic xde-style -m -t" }
         }
-        Submenu = "Styles" { Icon = "/usr/share/icons/gnome/16x16/apps/style.png"; 
+        Submenu = "Styles" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/style.png"; 
             Entry { Actions = "Dynamic xde-style -m" }
         }
         Submenu = "Layout" {
@@ -452,64 +444,63 @@ RootMenu = "Pekwm" {
             Entry = "Layout Boxed" { Actions = "SetLayouter TILE_Boxed" }
             Entry = "Layout Fib" { Actions = "SetLayouter TILE_Fib" }
         }
-        Submenu = "Window Managers" { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-quit.png"; 
-            Entry = "Start 2bwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/2bWM.png"; Actions = "RestartOther 2bwm" }
-            Entry = "Start adwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/adwm.png"; Actions = "RestartOther /u2/custompkgs/ubs/adwm-git/working/src/adwm" }
-            Entry = "Start AEWM" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther aewm" }
-            Entry = "Start AEWM++" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther aewm++" }
-            Entry = "Start AfterStep" { Icon = "/usr/share/icons/hicolor/48x48/apps/AfterStep.png"; Actions = "RestartOther afterstep" }
-            Entry = "Start awesome" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther awesome" }
-            Entry = "Start Blackbox" { Icon = "/usr/share/icons/hicolor/16x16/apps/blackbox.png"; Actions = "RestartOther blackbox" }
-            Entry = "Start bspwm" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther bspwm" }
-            Entry = "Start CTWM" { Icon = "/home/brian/.local/share/icons/hicolor/16x16/apps/ctwm.png"; Actions = "RestartOther ctwm" }
-            Entry = "Start cwm" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther cwm" }
-            Entry = "Start Dwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/dwm.png"; Actions = "RestartOther dwm" }
-            Entry = "Start E16" { Icon = "/usr/share/e16/icons/e16.png"; Actions = "RestartOther /usr/share/e16/misc/starte16" }
-            Entry = "Start echinus" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther echinus" }
-            Entry = "Start EDE" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther startede" }
-            Entry = "Start evilwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/evilwm.png"; Actions = "RestartOther evilwm" }
-            Entry = "Start failsafewm" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther failsafewm" }
-            Entry = "Start Fluxbox" { Icon = "/usr/share/icons/hicolor/16x16/apps/fluxbox.png"; Actions = "RestartOther startfluxbox" }
-            Entry = "Start FLWM" { Icon = "/usr/share/pixmaps/flwm.png"; Actions = "RestartOther flwm" }
-            Entry = "Start Fvwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/fvwm.png"; Actions = "RestartOther fvwm2" }
-            Entry = "Start FVWM-Crystal" { Icon = "/usr/share/icons/hicolor/16x16/apps/fvwm-crystal.png"; Actions = "RestartOther fvwm-crystal" }
-            Entry = "Start herbstluftwm" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther herbstluftwm" }
-            Entry = "Start i3" { Icon = "/usr/share/icons/hicolor/16x16/apps/i3.png"; Actions = "RestartOther i3" }
-            Entry = "Start IceWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/icewm.png"; Actions = "RestartOther icewm" }
-            Entry = "Start Jwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/jwm.png"; Actions = "RestartOther jwm" }
-            Entry = "Start larswm" { Icon = "/usr/share/icons/hicolor/16x16/apps/larswm.png"; Actions = "RestartOther larswm" }
-            Entry = "Start LXDE" { Icon = "/usr/share/pixmaps/lxde-icon.png"; Actions = "RestartOther startlxde" }
-            Entry = "Start mantis-wm" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther mantis-wm" }
-            Entry = "Start matwm2" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther matwm2" }
-            Entry = "Start Metacity" { Icon = "/usr/share/pixmaps/metacity.png"; Actions = "RestartOther metacity" }
-            Entry = "Start MWM" { Icon = "/home/brian/.local/share/icons/hicolor/16x16/apps/mwm.png"; Actions = "RestartOther mwm" }
-            Entry = "Start Openbox" { Icon = "/usr/share/pixmaps/openbox.png"; Actions = "RestartOther openbox-session" }
-            Entry = "Start pawm" { Icon = "/usr/share/icons/hicolor/16x16/apps/pawm.png"; Actions = "RestartOther pawm" }
-            Entry = "Start spectrwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/spectrwm.png"; Actions = "RestartOther spectrwm" }
-            Entry = "Start TWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/twm.png"; Actions = "RestartOther twm" }
-            Entry = "Start velox" { Icon = "/usr/share/icons/hicolor/16x16/apps/velox.png"; Actions = "RestartOther velox" }
-            Entry = "Start VTWM" { Icon = "/home/brian/.local/share/icons/hicolor/16x16/apps/vtwm.png"; Actions = "RestartOther vtwm" }
-            Entry = "Start Waimea" { Icon = "/usr/share/icons/gnome/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther waimea" }
-            Entry = "Start Wind" { Icon = "/usr/share/icons/hicolor/16x16/apps/windwm.png"; Actions = "RestartOther wind" }
-            Entry = "Start WindowMaker" { Icon = "/usr/share/icons/hicolor/16x16/apps/wmaker.png"; Actions = "RestartOther wmaker" }
-            Entry = "Start wm2" { Icon = "/usr/share/icons/hicolor/16x16/apps/wm2.png"; Actions = "RestartOther wm2" }
-            Entry = "Start wmii" { Icon = "/usr/share/icons/hicolor/16x16/apps/wmii.png"; Actions = "RestartOther wmii" }
-            Entry = "Start wmx" { Icon = "/usr/share/icons/hicolor/16x16/apps/wmx.png"; Actions = "RestartOther wmx" }
-            Entry = "Start XDWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/xdwm.png"; Actions = "RestartOther xdwm-session" }
-            Entry = "Start Xfce Session" { Icon = "/usr/share/icons/hicolor/16x16/apps/archlinux-wm-xfce.png"; Actions = "RestartOther startxfce4" }
-            Entry = "Start yeahwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/yeahwm.png"; Actions = "RestartOther yeahwm" }
-            Entry = "Start μwm" { Icon = "/usr/share/pixmaps/uwm16x16.xpm"; Actions = "RestartOther uwm" }
+        Submenu = "Window Managers" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gtk-quit.png"; 
+            Entry = "Start 2bwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/2bWM.png"; Actions = "RestartOther xdg-launch --pointer -X 2bwm" }
+            Entry = "Start adwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/adwm.png"; Actions = "RestartOther xdg-launch --pointer -X adwm" }
+            Entry = "Start AEWM" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X aewm" }
+            Entry = "Start AEWM++" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X aewm++" }
+            Entry = "Start AfterStep" { Icon = "/usr/share/icons/hicolor/48x48/apps/AfterStep.png"; Actions = "RestartOther xdg-launch --pointer -X AfterStep" }
+            Entry = "Start awesome" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X awesome" }
+            Entry = "Start Blackbox" { Icon = "/usr/share/icons/hicolor/16x16/apps/blackbox.png"; Actions = "RestartOther xdg-launch --pointer -X blackbox" }
+            Entry = "Start bspwm" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X bspwm" }
+            Entry = "Start CTWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/ctwm.png"; Actions = "RestartOther xdg-launch --pointer -X ctwm" }
+            Entry = "Start cwm" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X cwm" }
+            Entry = "Start Dwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/dwm.png"; Actions = "RestartOther xdg-launch --pointer -X dwm" }
+            Entry = "Start E16" { Icon = "/usr/share/e16/icons/e16.png"; Actions = "RestartOther xdg-launch --pointer -X e16-session" }
+            Entry = "Start echinus" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X echinus" }
+            Entry = "Start evilwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/evilwm.png"; Actions = "RestartOther xdg-launch --pointer -X evilwm" }
+            Entry = "Start failsafewm" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X failsafewm" }
+            Entry = "Start Fluxbox" { Icon = "/usr/share/icons/hicolor/16x16/apps/fluxbox.png"; Actions = "RestartOther xdg-launch --pointer -X fluxbox" }
+            Entry = "Start FLWM" { Icon = "/usr/share/pixmaps/flwm.png"; Actions = "RestartOther xdg-launch --pointer -X flwm" }
+            Entry = "Start Fvwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/fvwm.png"; Actions = "RestartOther xdg-launch --pointer -X Fvwm" }
+            Entry = "Start FVWM-Crystal" { Icon = "/usr/share/icons/hicolor/16x16/apps/fvwm-crystal.png"; Actions = "RestartOther xdg-launch --pointer -X fvwm-crystal" }
+            Entry = "Start herbstluftwm" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X herbstluftwm" }
+            Entry = "Start i3" { Icon = "/usr/share/icons/hicolor/16x16/apps/i3.png"; Actions = "RestartOther xdg-launch --pointer -X i3" }
+            Entry = "Start IceWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/icewm.png"; Actions = "RestartOther xdg-launch --pointer -X icewm" }
+            Entry = "Start Jwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/jwm.png"; Actions = "RestartOther xdg-launch --pointer -X Jwm" }
+            Entry = "Start larswm" { Icon = "/usr/share/icons/hicolor/16x16/apps/larswm.png"; Actions = "RestartOther xdg-launch --pointer -X larswm" }
+            Entry = "Start LXDE" { Icon = "/usr/share/pixmaps/lxde-icon.png"; Actions = "RestartOther xdg-launch --pointer -X LXDE" }
+            Entry = "Start mantis-wm" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X mantis-wm" }
+            Entry = "Start matwm2" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X matwm2" }
+            Entry = "Start Metacity" { Icon = "/usr/share/pixmaps/metacity.png"; Actions = "RestartOther xdg-launch --pointer -X metacity" }
+            Entry = "Start Mutter" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X mutter" }
+            Entry = "Start MWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/mwm.png"; Actions = "RestartOther xdg-launch --pointer -X mwm" }
+            Entry = "Start Openbox" { Icon = "/usr/share/pixmaps/openbox.png"; Actions = "RestartOther xdg-launch --pointer -X openbox" }
+            Entry = "Start pawm" { Icon = "/usr/share/icons/hicolor/16x16/apps/pawm.png"; Actions = "RestartOther xdg-launch --pointer -X pawm" }
+            Entry = "Start spectrwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/spectrwm.png"; Actions = "RestartOther xdg-launch --pointer -X spectrwm" }
+            Entry = "Start TWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/twm.png"; Actions = "RestartOther xdg-launch --pointer -X twm" }
+            Entry = "Start μwm" { Icon = "/usr/share/pixmaps/uwm16x16.xpm"; Actions = "RestartOther xdg-launch --pointer -X uwm" }
+            Entry = "Start velox" { Icon = "/usr/share/icons/hicolor/16x16/apps/velox.png"; Actions = "RestartOther xdg-launch --pointer -X velox" }
+            Entry = "Start VTWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/vtwm.png"; Actions = "RestartOther xdg-launch --pointer -X vtwm" }
+            Entry = "Start Waimea" { Icon = "/usr/share/icons/gnome-colors-common/16x16/apps/preferences-system-windows.png"; Actions = "RestartOther xdg-launch --pointer -X waimea" }
+            Entry = "Start Wind" { Icon = "/usr/share/icons/hicolor/16x16/apps/windwm.png"; Actions = "RestartOther xdg-launch --pointer -X windwm" }
+            Entry = "Start wm2" { Icon = "/usr/share/icons/hicolor/16x16/apps/wm2.png"; Actions = "RestartOther xdg-launch --pointer -X wm2" }
+            Entry = "Start WindowMaker" { Icon = "/usr/share/icons/hicolor/16x16/apps/wmaker.png"; Actions = "RestartOther xdg-launch --pointer -X wmaker" }
+            Entry = "Start wmii" { Icon = "/usr/share/icons/hicolor/16x16/apps/wmii.png"; Actions = "RestartOther xdg-launch --pointer -X wmii" }
+            Entry = "Start wmx" { Icon = "/usr/share/icons/hicolor/16x16/apps/wmx.png"; Actions = "RestartOther xdg-launch --pointer -X wmx" }
+            Entry = "Start XDWM" { Icon = "/usr/share/icons/hicolor/16x16/apps/xdwm.png"; Actions = "RestartOther xdg-launch --pointer -X xdwm" }
+            Entry = "Start yeahwm" { Icon = "/usr/share/icons/hicolor/16x16/apps/yeahwm.png"; Actions = "RestartOther xdg-launch --pointer -X yeahwm" }
             Separator {}
-            Entry = "Reload" { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-redo-ltr.png"; Actions = "Reload" }
-            Entry = "Restart" { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-refresh.png"; Actions = "Restart" }
-            Entry = "Exit" { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-quit.png"; Actions = "Exit" }
+            Entry = "Reload" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gtk-redo-ltr.png"; Actions = "Reload" }
+            Entry = "Restart" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gtk-refresh.png"; Actions = "Restart" }
+            Entry = "Exit" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gtk-quit.png"; Actions = "Exit" }
         }
     }
-    Entry = "Reload" { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-redo-ltr.png"; Actions = "Reload" }
-    Entry = "Restart" { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-refresh.png"; Actions = "Restart" }
+    Entry = "Reload" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gtk-redo-ltr.png"; Actions = "Reload" }
+    Entry = "Restart" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gtk-refresh.png"; Actions = "Restart" }
     Separator {}
-    Entry = "Exit" { Icon = "/usr/share/icons/gnome/16x16/actions/gtk-quit.png"; Actions = "Exit" }
+    Entry = "Exit" { Icon = "/usr/share/icons/gnome-colors-common/16x16/actions/gtk-quit.png"; Actions = "Exit" }
 }
 
-COMMAND = "cat $HOME/.pekwm/window"
+INCLUDE = "window"
 
