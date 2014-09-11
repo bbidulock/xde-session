@@ -1,17 +1,17 @@
 INCLUDE = "$_PEKWM_ETC_PATH/config_system"
 
 Files {
-    Keys = "keys"
+    Keys = "~/.pekwm/keys"
     Mouse = "$_PEKWM_ETC_PATH/mouse"
-    Menu = "menu"
+    Menu = "~/.pekwm/menu"
     Start = "$_PEKWM_ETC_PATH/start"
     AutoProps = "$_PEKWM_ETC_PATH/autoproperties"
-    Theme = "$_PEKWM_THEME_PATH/Penguins"
+    Theme = "/usr/share/pekwm/themes/Penguins"
     Icons = "/usr/share/pekwm/icons/"
 }
 
 CmdDialog {
-    HistoryFile = "history"
+    HistoryFile = "~/.pekwm/history"
 }
 
 Harbour {

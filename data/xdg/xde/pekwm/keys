@@ -232,7 +232,7 @@ Global {
 	# External Commands
 #	KeyPress = "Mod1 Print"			{ Actions = "Exec scrot -s &" }
 	KeyPress = "Mod1 Print"			{ Actions = "Exec $_PEKWM_SCRIPT_PATH/pekwm_screenshot.sh" }
-#	KeyPress = "Mod4 E"			{ Actions = "Exec roxterm &" }
+#	KeyPress = "Mod4 E"			{ Actions = "Exec $TERM" }
 	KeyPress = "Mod4 E"			{ Actions = "Exec pcmanfm &" }
 #	KeyPress = "Mod1 Ctrl F"		{ Actions = "Exec pcmanfm &" }
 	KeyPress = "Mod1 Ctrl N"		{ Actions = "Exec uxterm &" }
@@ -413,7 +413,7 @@ Global {
 #	}
 	# External commands
 	Chain = "Mod1 Ctrl E" {
-		KeyPress = "E"		{ Actions = "Exec roxterm &" }
+		KeyPress = "E"		{ Actions = "Exec $TERM" }
 		KeyPress = "L"		{ Actions = "Exec xlock -mode blank &" }
 		KeyPress = "S"		{ Actions = "Exec scrot &" }
 		KeyPress = "C"		{ Actions = "ShowCmdDialog" }
