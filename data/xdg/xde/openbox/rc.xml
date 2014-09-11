@@ -137,120 +137,180 @@
       <action name="NextWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="A-Tab">
       <action name="NextWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="A-j">
       <action name="NextWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="W-Tab">
       <action name="NextWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="W-j">
       <action name="NextWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="A-k">
       <action name="PreviousWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="A-S-Escape">
       <action name="PreviousWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="A-S-Tab">
       <action name="PreviousWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="W-k">
       <action name="PreviousWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="W-S-Tab">
       <action name="PreviousWindow">
 	<allDesktops>no</allDesktops>
 	<panels>no</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus, Raise, Unshade</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="A-C-Escape">
       <action name="NextWindow">
 	<allDesktops>no</allDesktops>
 	<panels>yes</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="A-C-S-Escape">
       <action name="PreviousWindow">
 	<allDesktops>no</allDesktops>
 	<panels>yes</panels>
-	<desktops>no</desktops>
+	<desktop>no</desktop>
 	<linear>yes</linear>
 	<interactive>yes</interactive>
-	<finalactions>Focus</finalactions>
+	<finalactions>
+	  <action name="Focus" />
+	  <action name="Raise" />
+	  <action name="Unshade" />
+	</finalactions>
+	<raise>yes</raise>
       </action>
     </keybind>
     <keybind key="A-1">
@@ -1953,6 +2013,7 @@
     <submenuShowDelay>100</submenuShowDelay>
     <applicationIcons>yes</applicationIcons>
     <manageDesktops>yes</manageDesktops>
+    <file>~/.openbox/menu.xml</file>
   </menu>
   <margins>
     <left>0</left>
