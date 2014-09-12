@@ -5,7 +5,7 @@ XDE_USE_XDG_HOME=1
 here=$(cd `dirname $0`;pwd)
 
 name=adwm
-files="version keysrc adwmrc stylerc"
+files="version adwmrc"
 xtras=""
 clone="version"
 udirs="styles"
@@ -167,6 +167,9 @@ runscript() {
 	[ -x "$script" ] || script="$sdir/$name"
 	[ -x "$script" ] && $script $@
 }
+
+makelink "$priv" "keysrc"  "/usr/share/adwm/styles/Penguins/keysrc"
+makelink "$priv" "stylerc" "/usr/share/adwm/styles/Penguins/stylerc"
 
 exit 0
 
