@@ -168,8 +168,6 @@ runscript() {
 	[ -x "$script" ] && $script $@
 }
 
-makelink "$priv" "style"   "/usr/share/adwm/styles/Penguins"
-makelink "$priv" "keys"    "/usr/share/adwm/styles/Penguins"
 makelink "$priv" "keysrc"  "/usr/share/adwm/styles/Penguins/keysrc"
 makelink "$priv" "stylerc" "/usr/share/adwm/styles/Penguins/stylerc"
 
