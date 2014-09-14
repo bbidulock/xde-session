@@ -112,24 +112,53 @@ nobase_dist_xdgconf_DATA += \
 nobase_dist_xdgconf_DATA += \
 	xdg/xde/adwm/adwmrc \
 	xdg/xde/adwm/keysrc \
+	xdg/xde/adwm/setup.sh \
+	xdg/xde/adwm/start.sh \
 	xdg/xde/adwm/stylerc \
 	xdg/xde/adwm/version \
 	xdg/xde/blackbox/keys \
 	xdg/xde/blackbox/menu \
 	xdg/xde/blackbox/rc \
+	xdg/xde/blackbox/setup.pl \
+	xdg/xde/blackbox/setup.sh \
+	xdg/xde/blackbox/start.sh \
 	xdg/xde/blackbox/version \
 	xdg/xde/blackbox/xde-rc \
 	xdg/xde/ctwm/apps \
 	xdg/xde/ctwm/buttons \
+	xdg/xde/ctwm/config \
 	xdg/xde/ctwm/defaults \
+	xdg/xde/ctwm/getstyles \
 	xdg/xde/ctwm/keys \
 	xdg/xde/ctwm/menu \
 	xdg/xde/ctwm/rc \
 	xdg/xde/ctwm/rc.m4 \
+	xdg/xde/ctwm/setstyle \
+	xdg/xde/ctwm/setup \
+	xdg/xde/ctwm/setup.sh \
+	xdg/xde/ctwm/start \
+	xdg/xde/ctwm/start.sh \
 	xdg/xde/ctwm/stylemenu \
 	xdg/xde/ctwm/version \
 	xdg/xde/ctwm/winmenu \
 	xdg/xde/echinus/version \
+	xdg/xde/etwm/apps \
+	xdg/xde/etwm/buttons \
+	xdg/xde/etwm/config \
+	xdg/xde/etwm/defaults \
+	xdg/xde/etwm/getstyles \
+	xdg/xde/etwm/keys \
+	xdg/xde/etwm/menu \
+	xdg/xde/etwm/rc \
+	xdg/xde/etwm/rc.m4 \
+	xdg/xde/etwm/setstyle \
+	xdg/xde/etwm/setup \
+	xdg/xde/etwm/setup.sh \
+	xdg/xde/etwm/start \
+	xdg/xde/etwm/start.sh \
+	xdg/xde/etwm/stylemenu \
+	xdg/xde/etwm/version \
+	xdg/xde/etwm/winmenu \
 	xdg/xde/fluxbox/apps \
 	xdg/xde/fluxbox/fbdesk \
 	xdg/xde/fluxbox/fbdesk.icons \
@@ -139,7 +168,9 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/fluxbox/menu \
 	xdg/xde/fluxbox/menuconfig \
 	xdg/xde/fluxbox/overlay \
+	xdg/xde/fluxbox/setup.sh \
 	xdg/xde/fluxbox/slitlist \
+	xdg/xde/fluxbox/start.sh \
 	xdg/xde/fluxbox/startup \
 	xdg/xde/fluxbox/unexicon-menu \
 	xdg/xde/fluxbox/usermenu \
@@ -155,23 +186,31 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/icewm/prefoverride \
 	xdg/xde/icewm/programs \
 	xdg/xde/icewm/recent.menu \
+	xdg/xde/icewm/setup.sh \
+	xdg/xde/icewm/start.sh \
 	xdg/xde/icewm/theme \
 	xdg/xde/icewm/toolbar \
 	xdg/xde/icewm/version \
 	xdg/xde/icewm/winoptions \
+	xdg/xde/jwm/config \
 	xdg/xde/jwm/defaults \
 	xdg/xde/jwm/desktop \
+	xdg/xde/jwm/getstyles \
 	xdg/xde/jwm/groups \
 	xdg/xde/jwm/keys \
 	xdg/xde/jwm/menu \
 	xdg/xde/jwm/paths \
 	xdg/xde/jwm/rc \
 	xdg/xde/jwm/root \
+	xdg/xde/jwm/setstyle \
+	xdg/xde/jwm/setup.sh \
+	xdg/xde/jwm/start.sh \
 	xdg/xde/jwm/style \
 	xdg/xde/jwm/tray \
 	xdg/xde/jwm/version \
 	xdg/xde/lxde/version \
 	xdg/xde/metacity/version \
+	xdg/xde/openbox/keys.xml \
 	xdg/xde/openbox/lxde-rc.xml \
 	xdg/xde/openbox/lxde-rc.xml.new \
 	xdg/xde/openbox/menu \
@@ -182,27 +221,32 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/openbox/menu.xml.old \
 	xdg/xde/openbox/rc.xml \
 	xdg/xde/openbox/rc.xml.orig \
+	xdg/xde/openbox/setup.sh \
+	xdg/xde/openbox/start.sh \
 	xdg/xde/openbox/unx-rc.xml \
 	xdg/xde/openbox/version \
 	xdg/xde/openbox/xdg-menu.xml \
-	xdg/xde/pekwm/autoproperties \
 	xdg/xde/pekwm/config \
-	xdg/xde/pekwm/config_system \
-	xdg/xde/pekwm/history \
 	xdg/xde/pekwm/keys \
 	xdg/xde/pekwm/menu \
-	xdg/xde/pekwm/mouse \
-	xdg/xde/pekwm/start \
+	xdg/xde/pekwm/setup.sh \
+	xdg/xde/pekwm/start.sh \
 	xdg/xde/pekwm/vars \
 	xdg/xde/pekwm/version \
 	xdg/xde/pekwm/window \
 	xdg/xde/twm/apps \
 	xdg/xde/twm/buttons \
+	xdg/xde/twm/config \
 	xdg/xde/twm/defaults \
+	xdg/xde/twm/getstyles \
 	xdg/xde/twm/keys \
 	xdg/xde/twm/menu \
 	xdg/xde/twm/rc \
 	xdg/xde/twm/rc.m4 \
+	xdg/xde/twm/setstyle \
+	xdg/xde/twm/setup.sh \
+	xdg/xde/twm/start \
+	xdg/xde/twm/start.sh \
 	xdg/xde/twm/stylemenu \
 	xdg/xde/twm/version \
 	xdg/xde/twm/winmenu \
@@ -210,22 +254,34 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/uwm/keys \
 	xdg/xde/uwm/menu \
 	xdg/xde/uwm/panel \
+	xdg/xde/uwm/setup \
+	xdg/xde/uwm/start \
 	xdg/xde/uwm/uwmrc \
 	xdg/xde/uwm/version \
 	xdg/xde/uwm/winmenu \
 	xdg/xde/vtwm/apps \
 	xdg/xde/vtwm/buttons \
+	xdg/xde/vtwm/config \
 	xdg/xde/vtwm/defaults \
+	xdg/xde/vtwm/getstyles \
 	xdg/xde/vtwm/keys \
 	xdg/xde/vtwm/menu \
 	xdg/xde/vtwm/rc \
 	xdg/xde/vtwm/rc.m4 \
+	xdg/xde/vtwm/setstyle \
+	xdg/xde/vtwm/setup.sh \
+	xdg/xde/vtwm/start \
+	xdg/xde/vtwm/start.sh \
 	xdg/xde/vtwm/stylemenu \
 	xdg/xde/vtwm/version \
 	xdg/xde/vtwm/winmenu \
 	xdg/xde/waimea/actionrc \
 	xdg/xde/waimea/config \
 	xdg/xde/waimea/menu \
+	xdg/xde/waimea/setup \
+	xdg/xde/waimea/setup.sh \
+	xdg/xde/waimea/start \
+	xdg/xde/waimea/start.sh \
 	xdg/xde/waimea/version \
 	xdg/xde/wmaker/version
 
