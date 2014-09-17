@@ -2,17 +2,16 @@
 
 Adwm*modkey:A
 
+
 Adwm*appendtag:AC + equal
 Adwm*arrange:AS + F5
 Adwm*arrangeicons:AS + F8
-Adwm*begmove:A + F7
-Adwm*begmoveresize:AC + a : Return
-Adwm*begmoveresize:WS + m
-Adwm*begsize:A + F8
+Adwm*begmove:A + F7, WS + m
+Adwm*begsize:A + F8, AC + a : Return
 Adwm*button2:W + v
 Adwm*decborder:WAS + b = 1
 Adwm*decmargin:WAS + m = 1
-Adwm*decmwfact:A + h = -0.05, W + h = -0.05
+Adwm*decmwfact:A + h = 5%, W + h = 5%
 Adwm*decncolumns:WC + l = -1, WS + period = -1
 Adwm*decnmaster:AS + j = -1, W + period = -1, WS + l = -1
 Adwm*docknext:AC + Tab
@@ -23,23 +22,23 @@ Adwm*edgetoS:AC + c : S + b, AC + c : S + x
 Adwm*edgetoW:AC + c : S + a
 Adwm*fillleft:W + Left
 Adwm*fillright:W + Right
-Adwm*fliplayout:WS + backslash
-Adwm*focusnext:A + Escape, A + Tab, A + j, W + Tab, W + j
+Adwm*flipview:WS + backslash
+Adwm*focusnext:A + j, A + Escape, A + Tab, W + Tab, W + j
 Adwm*focusprev:A + k, AS + Escape, AS + Tab, W + k, WS + Tab
 Adwm*focusurgent:W + u
-Adwm*groupnext:A + Above_Tab, A + F6, W + Above_Tab
-Adwm*groupprev:AS + Above_Tab, AS + F6, WS + Above_Tab
+Adwm*groupnext:A + grave, A + F6, W + grave
+Adwm*groupprev:AS + grave, AS + F6, WS + grave
 Adwm*hide:AS + F12, AS + h
 Adwm*hideall:AS + F11
 Adwm*iconify:A + F9, AS + m, W + i, W + n, W + w
 Adwm*iconifyall:AS + F9
 Adwm*incborder:WA + b = 1
 Adwm*incmargin:WA + m = 1
-Adwm*incmwfact:A + l = +0.05, W + l = +0.05
+Adwm*incmwfact:A + l = 5%, W + l = 5%
 Adwm*incncolumns:WC + h = +1, WS + comma = +1
 Adwm*incnmaster:AS + k = +1, W + comma = +1, WS + h = +1
 Adwm*initscr:WS + i
-Adwm*killclient:A + F4, A + F5, A + q, AC + a : q : f, AC + a : q : k, AC + a : q : q, AS + c, W + q, W + x, WS + c, WS + x
+Adwm*killclient:A + F4, A + q, AC + a : q : f, AC + a : q : k, AC + a : q : q, AS + c, W + q, W + x, WS + c, WS + x
 Adwm*layoutnext:W + space
 Adwm*layoutprev:WS + space
 Adwm*lower:A + Down, AC + a : S + l, AC + a : l
@@ -53,7 +52,7 @@ Adwm*movetoNE:AC + KP_9, AC + c : e, AC + c : p
 Adwm*movetoNW:AC + KP_7, AC + c : q
 Adwm*movetoS:AC + KP_2, AC + c : b, AC + c : x
 Adwm*movetoSE:AC + KP_3, AC + c : c, AC + c : m
-Adwm*movetoSW:AC + KP_1, AC + c : c, AC + c : m
+Adwm*movetoSW:AC + KP_1, AC + c : z
 Adwm*movetoW:AC + KP_4, AC + c : a
 Adwm*moveup:WS + bracketleft = 0 -5 0 0
 Adwm*panelnext:AC + Escape
@@ -65,7 +64,7 @@ Adwm*raisetiled:WS + r
 Adwm*reload:AC + p : Delete
 Adwm*resizedecx:AC + a : Left = 3 0 -6 0, AS + a = 3 0 -6 0, W + minus = 3 0 -6 0
 Adwm*resizedecy:AC + a : Down = 0 3 0 -6, AS + s = 0 3 0 -6, WS + minus = 0 3 0 -6
-Adwm*resizeincx:AC + a : Right -3 0 6 0, AS + d = -3 0 6 0, W + equal = -3 0 6 0
+Adwm*resizeincx:AC + a : Right = -3 0 6 0, AS + d = -3 0 6 0, W + equal = -3 0 6 0
 Adwm*resizeincy:AC + a : Up = 0 -3 0 6, AS + w = 0 -3 0 6, WS + equal = 0 -3 0 6
 Adwm*restart:AC + p : Next, AC + p : Prior = twm, AS + q, WC + r
 Adwm*rmlasttag:AC + minus
@@ -137,26 +136,18 @@ Adwm*snaptoS:ACS + KP_2
 Adwm*snaptoSE:ACS + KP_3
 Adwm*snaptoSW:ACS + KP_1
 Adwm*snaptoW:ACS + KP_4
-Adwm*spawn0:A + F1 = uxterm
-Adwm*spawn1:A + F2 = xde-run
-Adwm*spawn2:A + Print = scrot -s
-Adwm*spawn3:A + space = xde-winmenu -w active -W center
-Adwm*spawn4:A + x = uxterm
-Adwm*spawn5:AC + Delete = xde-logout
-Adwm*spawn6:AC + Return = uxterm
-Adwm*spawn7:AC + e : c = xde-run
-Adwm*spawn8:AC + e : e = uxterm
-Adwm*spawn9:AC + e : l = xde-xlock -l
-Adwm*spawn10:AC + e : s = scrot -s
-Adwm*spawn11:AC + f = pcmanfm
-Adwm*spawn12:AC + m = xdg-traymenu -p
-Adwm*spawn13:AC + n = uxterm
-Adwm*spawn14:AC + p : d = xde-run
-Adwm*spawn15:AC + r = xde-run
-Adwm*spawn16:AC + t = roxterm
-Adwm*spawn17:AC + v = gvim
-Adwm*spawn18:AC + w = firefox
+Adwm*spawn0:AC + t = roxterm
+Adwm*spawn10:A + Print = scrot -s
+Adwm*spawn11:A + x = uxterm
+Adwm*spawn12:AC + Delete = xde-logout
+Adwm*spawn13:AC + Return = uxterm
+Adwm*spawn14:AC + e : c = xde-run
+Adwm*spawn15:AC + e : e = uxterm
+Adwm*spawn16:AC + e : l = xde-xlock -l
+Adwm*spawn17:AC + e : s = scrot -s
+Adwm*spawn18:AC + p : d = xde-run
 Adwm*spawn19:AC + x = uxterm
+Adwm*spawn1:AC + w = firefox
 Adwm*spawn20:AS + Return = uxterm
 Adwm*spawn21:C + Escape = xdg-traymenu -p
 Adwm*spawn22:F11 = xde-winlist
@@ -167,10 +158,18 @@ Adwm*spawn26:W + p = xdg-traymenu -p
 Adwm*spawn27:W + r = xde-run
 Adwm*spawn28:W + s = scrot
 Adwm*spawn29:W + slash = xde-findws
+Adwm*spawn2:AC + f = pcmanfm
 Adwm*spawn30:WS + Delete = xde-xlock -l
 Adwm*spawn31:WS + Return = uxterm
 Adwm*spawn32:WS + s = scrot -s
 Adwm*spawn33:WS + slash = xde-namews
+Adwm*spawn3:AC + r = xde-run
+Adwm*spawn4:AC + v = gvim
+Adwm*spawn5:AC + n = uxterm
+Adwm*spawn6:AC + m = xdg-traymenu -p
+Adwm*spawn7:A + space = xde-winmenu -w active -W center
+Adwm*spawn8:A + F1 = uxterm
+Adwm*spawn9:A + F2 = xde-run
 Adwm*swapnext:WS + j
 Adwm*swapprev:WS + k
 Adwm*tag0:AS + 1
@@ -215,8 +214,7 @@ Adwm*togglefull:A + F11, AC + a : f, W + f
 Adwm*togglemax:A + F10, AC + a : m : m, CS + Left, W + m
 Adwm*togglemaxh:AC + a : m : h, CS + Right
 Adwm*togglemaxv:AC + a : m : v, AS + F10, CS + Up
-Adwm*togglemonitor:A + grave
-Adwm*toggleselect:CS + Return, W + z
+Adwm*toggleselect:W + z
 Adwm*toggleshade:A + F12, A + s, AC + a : s
 Adwm*toggleshowing:AC + d, W + d
 Adwm*togglesticky:AC + a : a, AC + s
