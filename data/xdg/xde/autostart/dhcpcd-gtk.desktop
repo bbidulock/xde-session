@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=DHCP Client Daemon Applet
@@ -8,7 +9,7 @@ Icon=network-transmit-receive
 TryExec=dhcpcd-gtk
 Exec=dhcpcd-gtk
 Terminal=false
+NotShowIn=GNOME;KDE;XFCE;
 Categories=TrayIcon;System;Network;
 StartupNotify=true
-NotShowIn=GNOME;KDE;XFCE;
 X-GNOME-Autostart-enabled=true

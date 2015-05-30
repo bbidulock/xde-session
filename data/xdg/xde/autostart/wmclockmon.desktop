@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=Alarm Clock Dock App
@@ -8,8 +9,8 @@ Icon=GNUstep3D
 TryExec=/usr/bin/wmclockmon
 Exec=wmclockmon
 Terminal=false
-Categories=DockApp;WMAKER;
 OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+Categories=DockApp;WMAKER;
 StartupNotify=false
 StartupWMClass=wmclockmon
 X-Arch-Package=wmclockmon

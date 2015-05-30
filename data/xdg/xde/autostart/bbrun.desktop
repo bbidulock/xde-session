@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=BlackBox Run Command
@@ -8,11 +9,10 @@ Icon=system-run
 TryExec=/usr/bin/bbrun
 Exec=bbrun -a -w
 Terminal=false
-Categories=System;Utility;DockApp;WMAKER;
+Hidden=true
 OnlyShowIn=BLACKBOX;
+Categories=DockApp;WMAKER;
 StartupNotify=false
 StartupWMClass=bbrun
 X-GNOME-Autostart-enabled=true
-Hidden=true
-# Always crashes if you press ENTER instead of OK
 X-Arch-Package=bbrun

@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=Network Monitor
@@ -8,8 +9,8 @@ Icon=GNUstep3D
 TryExec=/usr/bin/wmnet
 Exec=wmnet -w -l
 Terminal=false
-Categories=DockApp;WMAKER;
 OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+Categories=DockApp;WMAKER;
 StartupNotify=false
 Actions=Interface1;Interface2;Interface3;Interface4;
 

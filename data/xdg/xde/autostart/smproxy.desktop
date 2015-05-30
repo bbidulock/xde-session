@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=Session Manager Proxy
@@ -8,7 +9,7 @@ Icon=xlogo
 TryExec=/usr/bin/smproxy
 Exec=smproxy
 Terminal=false
+NotShowIn=GNOME;KDE;XFCE;
 Categories=X-X11;Application;X-XTool;
 StartupNotify=false
-NotShowIn=GNOME;KDE;XFCE;
 X-GNOME-Autostart-enabled=false

@@ -1,15 +1,16 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=Weather Monitor Dock App Plus
 GenericName=Weather
 Comment=Monitor weather conditions
 Icon=GNUstep3D
-Exec=wmweather+ -s CYEG
 TryExec=/usr/bin/wmweather+
+Exec=wmweather+ -s CYEG
 Terminal=false
-Categories=DockApp;WMAKER;
 OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
+Categories=DockApp;WMAKER;
 StartupNotify=false
 Actions=CYEG;
 

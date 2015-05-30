@@ -1,14 +1,15 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=System monitor
 GenericName=System monitor
 Comment=System tray system monitor
 Icon=utilities-system-monitor
-Exec=gatotray
 TryExec=gatotray
+Exec=gatotray
 Terminal=false
+OnlyShowIn=FLUXBOX;BLACKBOX;
 Categories=TrayIcon;
 StartupNotify=false
-OnlyShowIn=FLUXBOX;BLACKBOX;
 X-GNOME-Autostart-enabled=true

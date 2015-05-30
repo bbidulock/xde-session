@@ -1,17 +1,16 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=LXDE Panel
 GenericName=lxpanel 0.5.12
 Comment=Panel for XDG compliant desktop.
 Icon=lxpanel
-Exec=sh -c "lxpanel -p ${XDG_CURRENT_DESKTOP:-default}"
 TryExec=lxpanel
+Exec=sh -c "lxpanel -p ${XDG_CURRENT_DESKTOP:-default}"
 Terminal=false
-Categories=LXDE;System;Utility;
+Hidden=true
 OnlyShowIn=FLUXBOX;BLACKBOX;OPENBOX;PEKWM;WMAKER;ADWM;
+Categories=LXDE;System;Utility;
 StartupNotify=false
 StartupWMClass=lxpanel
-# Note that LXDE launches this separate from XDG autostart
-Hidden=true
-# We now use xde-panel only

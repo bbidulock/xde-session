@@ -1,16 +1,16 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=Application
 Name=Menu Tray
 GenericName=Menu
 Comment=Menutry fluxbox tray menu
 Icon=start-here
-Exec=menutray -i
 TryExec=menutray
+Exec=menutray -i
 Terminal=false
+Hidden=true
+NotShowIn=GNOME;KDE;XFCE;LXDE;
 Categories=TrayIcon;
 StartupNotify=false
-NotShowIn=GNOME;KDE;XFCE;LXDE;
 X-GNOME-Autostart-enabled=true
-Hidden=true
-# Don't need this anymore
