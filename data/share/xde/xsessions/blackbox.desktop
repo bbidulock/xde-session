@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Highly configurable and low resource X11 Window manager
 Icon=blackbox
+TryExec=/usr/bin/blackbox
 Exec=blackbox
 Terminal=false
 NoDisplay=true
@@ -17,6 +18,7 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=blackbox
+X-Arch-Package=blackboxwm 0.71.1-1
 Actions=XDE;
 
 [Desktop Action XDE]

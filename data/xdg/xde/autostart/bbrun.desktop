@@ -15,4 +15,4 @@ Categories=DockApp;WMAKER;
 StartupNotify=false
 StartupWMClass=bbrun
 X-GNOME-Autostart-enabled=true
-X-Arch-Package=bbrun
+X-Arch-Package=bbrun 1.6-5

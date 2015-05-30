@@ -13,4 +13,4 @@ Hidden=true
 OnlyShowIn=BLACKBOX;WMAKER;PEKWM;ADWM;
 Categories=DockApp;WMAKER;
 StartupNotify=false
-X-Arch-Package=docker-tray
+X-Arch-Package=docker-tray 1.5-3

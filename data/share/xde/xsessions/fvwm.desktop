@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=The FVWM window manager
 Icon=fvwm
+TryExec=/usr/bin/fvwm
 Exec=fvwm
 Terminal=false
 NoDisplay=true

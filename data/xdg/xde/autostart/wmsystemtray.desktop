@@ -10,5 +10,5 @@ TryExec=/usr/bin/wmsystemtray
 Exec=wmsystemtray -s
 Terminal=false
 OnlyShowIn=BLACKBOX;WMAKER;
-Categories=DockApp;WMAKER;
+Categories=TrayIcon;System;Utility;DockApp;WMAKER;SystemTray;
 StartupNotify=false

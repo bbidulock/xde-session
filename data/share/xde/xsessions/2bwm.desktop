@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=2bwm - A fast floating and keyboard driven window manager
 Icon=2bWM
+TryExec=/usr/bin/2bwm
 Exec=2bwm
 Terminal=false
 NoDisplay=true

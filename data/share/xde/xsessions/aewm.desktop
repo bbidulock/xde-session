@@ -17,6 +17,7 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=AEWM
+X-Arch-Package=aewm 1.3.12-6
 Actions=XDE;
 
 [Desktop Action XDE]
