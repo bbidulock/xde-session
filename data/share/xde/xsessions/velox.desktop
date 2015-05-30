@@ -1,20 +1,23 @@
-[Desktop Entry] 
+[Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=velox
-Icon=velox
-Exec=velox
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Simple tiling window manager
+Icon=velox
+Exec=velox
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=velox
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=velox
+X-Arch-Package=velox 0.0.3-2
 Actions=XDE;
 
 [Desktop Action XDE]

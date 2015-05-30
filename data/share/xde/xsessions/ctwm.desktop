@@ -1,20 +1,22 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=CTWM
-Icon=ctwm
-Exec=ctwm
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Claude's Tab Window Manager for the X Window System
+Icon=ctwm
+Exec=ctwm
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=ctwm
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=ctwm
 Actions=XDE;
 
 [Desktop Action XDE]

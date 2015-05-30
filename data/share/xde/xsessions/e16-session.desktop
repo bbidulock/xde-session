@@ -1,9 +1,8 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=E16
-Icon=/usr/share/e16/icons/e16.png
-Exec=/usr/share/e16/misc/starte16
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
@@ -11,13 +10,17 @@ Comment=This session starts the Enlightenment (e16) window manager
 Comment[fr]=Démarre une session avec enlightenment (e16)
 Comment[it]=Questo avvia il window manager Enlightenment (e16)
 Comment[pt]=Esta sessão inicia o gestor de janelas Enlightenment (e16)
+Icon=/usr/share/e16/icons/e16.png
+Exec=/usr/share/e16/misc/starte16
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=true
-NoDisplay=true
-X-GNOME-WMName=enlightenment
+X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=true
+X-GNOME-WMName=enlightenment
+X-Arch-Package=enlightenment16 1.0.16-1
 Actions=XDE;KDE;Gnome2;Gnome3;
 
 [Desktop Action KDE]

@@ -1,20 +1,23 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=bspwm
-Icon=bspwm
-Exec=bspwm
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=A tiling window manager base on binary space partitioning
+Icon=bspwm
+Exec=bspwm
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=bspwm
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=bspwm
+X-Arch-Package=bspwm-git 997-1
 Actions=XDE;
 
 [Desktop Action XDE]

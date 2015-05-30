@@ -1,20 +1,23 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=wm2
-Icon=wm2
-Exec=wm2
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=The ideal window manager for today's ascetic programmer
+Icon=wm2
+Exec=wm2
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=wm2
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=wm2
+X-Arch-Package=wm2-svn r114-1
 Actions=XDE;
 
 [Desktop Action XDE]

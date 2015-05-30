@@ -1,20 +1,23 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=wmii
-Icon=wmii
-Exec=wmii
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=wmii pre-3.6 Development Snapshot
+Icon=wmii
+Exec=wmii
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=wmii
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=wmii
+X-Arch-Package=wmii 3.9.2-4
 Actions=XDE;
 
 [Desktop Action XDE]

@@ -1,20 +1,23 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=2bwm
-Icon=2bWM
-Exec=2bwm
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=2bwm - A fast floating and keyboard driven window manager
+Icon=2bWM
+Exec=2bwm
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=2bwm
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=2bwm
+X-Arch-Package=2bwm-git 0.1.r106.g0419aae-1
 Actions=XDE;
 
 [Desktop Action XDE]

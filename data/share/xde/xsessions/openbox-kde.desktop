@@ -1,17 +1,20 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=KDE/Openbox
-Icon=openbox
-Exec=openbox-kde-session
-TryExec=startkde
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Use the Openbox window manager inside of the K Desktop Environment
+Icon=openbox
+TryExec=startkde
+Exec=openbox-kde-session
+Terminal=false
 Hidden=true
-# name we put on the WM spec check window
-X-GNOME-WMName=Openbox
+StartupNotify=false
+X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=true
+X-GNOME-WMName=Openbox
+X-Arch-Package=openbox 3.5.2-7

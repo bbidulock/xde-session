@@ -1,20 +1,23 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=Pekwm
-Icon=pekwm
-Exec=pekwm
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Small, fast, functional, and flexible window manager
+Icon=pekwm
+Exec=pekwm
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=pekwm
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=pekwm
+X-Arch-Package=pekwm-git 1:0.1.17.r115.gf055b87-2
 Actions=XDE;
 
 [Desktop Action XDE]

@@ -1,20 +1,22 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=failsafewm
-Icon=failsafewm
-Exec=failsafewm
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=A frameless, low-footprint window manager
+Icon=failsafewm
+Exec=failsafewm
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=failsafewm
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=Applications
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=failsafewm
 Actions=XDE;
 
 [Desktop Action XDE]

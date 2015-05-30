@@ -1,9 +1,8 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=TWM
-Icon=twm
-Exec=twm
 Name[eo]=TFA
 Name[hi]=टीडबल्यूएम
 Name[te]=టి డబ్ల్యు ఎం
@@ -70,13 +69,16 @@ Comment[uk]=Tab Window Manager
 Comment[vi]=Trình Quản lý Cửa sổ Thẻ
 Comment[zh_CN]=标签式窗口管理器
 Comment[zh_TW]=Tab 視窗管理程式
+Icon=twm
+Exec=twm
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=twm
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=twm
 Actions=XDE;
 
 [Desktop Action XDE]

@@ -1,22 +1,24 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=Openbox
-Icon=openbox
-Exec=openbox-session
-TryExec=openbox
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Log in using the Openbox window manager
+Icon=openbox
+TryExec=openbox
+Exec=openbox-session
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System
 StartupNotify=true
-NoDisplay=true
-# name we put on the WM spec check window
-X-GNOME-WMName=Openbox
+X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=true
+X-GNOME-WMName=Openbox
+X-Arch-Package=openbox 3.5.2-7
 Actions=XDE;Gnome;KDE;
 
 [Desktop Action XDE]

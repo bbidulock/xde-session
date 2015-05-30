@@ -1,20 +1,23 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=wmx
-Icon=wmx
-Exec=wmx
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=The ideal window manager for today's ascetic programmer
+Icon=wmx
+Exec=wmx
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=true
-NoDisplay=true
-X-GNOME-WMName=wmx
+X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=true
+X-GNOME-WMName=wmx
+X-Arch-Package=wmx-svn r114-2
 Actions=XDE;
 
 [Desktop Action XDE]

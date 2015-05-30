@@ -1,25 +1,27 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=LXDE
-Icon=lxde-icon
-Exec=startlxde
 GenericName=X11 Desktop Environment
 GenericName[de]=X11 Desktop-Umgebung
 GenericName[fi]=X11-työpöytäympäristö
 GenericName[pt]=Ambiente de trabalho X11
-# The names/descriptions should really be better
 Comment=LXDE - Lightweight X11 desktop environment
 Comment[de]=LXDE - Leichtgewichtige X11 Desktop-Umgebung
 Comment[fi]=LXDE - kevyt X11-työpöytäympäristö
 Comment[ja]=LXDE - 軽量な X11 デスクトップ環境
 Comment[pt]=LXDE - Ambiente de trabalho X11 leve
 Comment[zh_TW]=LXDE - 輕量級的 X11 桌面環境
-# name we put on the WM spec check window
-X-GNOME-WMName=Openbox
+Icon=lxde-icon
+Exec=startlxde
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=true
+X-GNOME-WMName=Openbox
+X-Arch-Package=lxde-common 0.99.0-2
 
 [Window Manager]
 SessionManaged=false

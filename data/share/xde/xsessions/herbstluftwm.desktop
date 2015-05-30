@@ -1,20 +1,23 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=herbstluftwm
-Icon=herbstluftwm
-Exec=herbstluftwm
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Manual tiling window manager
+Icon=herbstluftwm
+Exec=herbstluftwm
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=herbstluftwm
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=herbstluftwm
+X-Arch-Package=herbstluftwm-git v0.6.2.48.gceeae62-1
 Actions=XDE;
 
 [Desktop Action XDE]

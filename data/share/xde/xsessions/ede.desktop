@@ -1,18 +1,20 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=EDE
-Icon=ede
-Exec=startede
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=This session logs you into EDE Desktop
-# name we put on the WM spec check window
-X-GNOME-WMName=pekwm
+Icon=ede
+Exec=startede
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=pekwm
 
 [Window Manager]
 SessionManaged=true

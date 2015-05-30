@@ -1,21 +1,23 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=FVWM-Crystal
-Icon=fvwm-crystal
-Exec=fvwm-crystal
-#Exec=gnome-session --choose-session=FVWM-Crystal
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Umm... Nice desktop. Transparent, and all...
+Icon=fvwm-crystal
+Exec=fvwm-crystal
+Terminal=false
+NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
-NoDisplay=true
-X-GNOME-WMName=fvwm
+X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=false
+X-GNOME-WMName=fvwm
+X-Arch-Package=fvwm-crystal 3.3.2-2
 
 [Window Manager]
 SessionManaged=true

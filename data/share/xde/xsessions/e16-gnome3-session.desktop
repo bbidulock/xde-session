@@ -1,14 +1,18 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=E16 GNOME3
-Icon=/usr/share/e16/icons/e16.png
-Exec=gnome-session --session=e16-gnome
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
+Icon=/usr/share/e16/icons/e16.png
+Exec=gnome-session --session=e16-gnome
+Terminal=false
 Hidden=true
-X-GNOME-WMName=enlightenment
+StartupNotify=false
+X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-Autostart-Notify=true
+X-GNOME-WMName=enlightenment
+X-Arch-Package=enlightenment16 1.0.16-1
