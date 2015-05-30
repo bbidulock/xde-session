@@ -85,6 +85,7 @@
 -TGdkScreen
 -TGdkWindow
 -TGdkXEvent
+-TGError
 -TGHashTable
 -Tginfo_t
 -Tgint
@@ -94,8 +95,10 @@
 -Tgl_desc_t
 -TGList
 -Tglock_t
+-TGMarkupParseContext
 -Tgpointer
 -Tgroupview_t
+-Tgsize
 -TGtkAllocation
 -TGtkBox
 -TGtkButton
@@ -109,7 +112,9 @@
 -TGtkMenu
 -TGtkMenuItem
 -TGtkMenuShell
+-TGtkStatusIcon
 -TGtkTextBuffer
+-TGtkTooltip
 -TGtkTreeIter
 -TGtkTreeModel
 -TGtkTreePath
@@ -163,6 +168,7 @@
 -Tlong
 -Tmajor_t
 -Tmblk_t
+-TMessage
 -Tmessage_t
 -Tminor_t
 -Tmm_segment_t
@@ -174,6 +180,7 @@
 -Tmtp_long
 -Tmtp_ulong
 -Tmtp_ushort
+-TNotifyNotification
 -Tnp_long
 -Tnp_ulong
 -TN_qos_range_info_sccp_t
@@ -201,6 +208,7 @@
 -Tqnode_t
 -Tqpair_t
 -Tqueue_t
+-TRecentItem
 -Trecv_fp_t
 -Treq_nod_t
 -Tresult_fp_t
@@ -210,6 +218,7 @@
 -Tsaddr_t
 -Tsend_cb_t
 -Tsend_fp_t
+-TSequence
 -Tsite_id_t
 -Tsize_t
 -T_SLIST_CONN
@@ -276,6 +285,7 @@
 -TWnckWindow
 -TWnckWorkspace
 -Twnode_t
+-TXClientMessageEvent
 -TXdeMonitor
 -TXdeScreen
 -TXdmcpNetaddr
