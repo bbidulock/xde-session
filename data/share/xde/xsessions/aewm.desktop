@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=An Exiguous Window Manager
 Icon=aewm
+TryExec=aewm
 Exec=aewm
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=AEWM
 X-Arch-Package=aewm 1.3.12-6
+X-Arch-Package-Name=aewm
+X-Arch-Package-Version=1.3.12-6
+X-Arch-Package-Description=Minimal window manager - includes separate utilities
+X-Arch-Package-URL=http://www.red-bean.com/decklin/aewm
 Actions=XDE;
 
 [Desktop Action XDE]

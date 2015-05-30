@@ -128,6 +128,7 @@ Comment[vi]=Phiên chạy này đăng nhập bạn vào máy từ xa bằng SSH
 Comment[zh_CN]=此会话使您通过 SSH 登录到远程主机
 Comment[zh_HK]=本作業階段會使用 ssh 登入至遠端主機
 Comment[zh_TW]=本作業階段會使用 ssh 登入至遠端主機
+TryExec=/usr/lib64/gdm-ssh-session
 Exec=/usr/lib64/gdm-ssh-session
 Terminal=false
 StartupNotify=false

@@ -14,6 +14,7 @@ Comment[ja]=LXDE - 軽量な X11 デスクトップ環境
 Comment[pt]=LXDE - Ambiente de trabalho X11 leve
 Comment[zh_TW]=LXDE - 輕量級的 X11 桌面環境
 Icon=lxde-icon
+TryExec=startlxde
 Exec=startlxde
 Terminal=false
 StartupNotify=false
@@ -22,6 +23,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=Openbox
 X-Arch-Package=lxde-common 0.99.0-2
+X-Arch-Package-Name=lxde-common
+X-Arch-Package-Version=0.99.0-2
+X-Arch-Package-Description=Common files of the LXDE Desktop
+X-Arch-Package-URL=http://lxde.org/
 
 [Window Manager]
 SessionManaged=false

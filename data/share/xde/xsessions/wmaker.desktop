@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=This session logs you into Window Maker
 Icon=wmaker
+TryExec=wmaker
 Exec=wmaker
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=wmaker
 X-Arch-Package=windowmaker-crm-git 0.95.6.r296.gbae28b2-1
+X-Arch-Package-Name=windowmaker-crm-git
+X-Arch-Package-Version=0.95.6.r296.gbae28b2-1
+X-Arch-Package-Description=An X11 window manager with a NEXTSTEP look and feel
+X-Arch-Package-URL=http://www.windowmaker.org/
 Actions=XDE;
 
 [Desktop Action XDE]

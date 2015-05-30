@@ -19,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=Openbox
 X-Arch-Package=openbox 3.5.2-7
+X-Arch-Package-Name=openbox
+X-Arch-Package-Version=3.5.2-7
+X-Arch-Package-Description=Highly configurable and lightweight X11 window manager
+X-Arch-Package-URL=http://openbox.org
 Actions=XDE;Gnome;KDE;
 
 [Desktop Action XDE]

@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Claude's Tab Window Manager for the X Window System
 Icon=ctwm
+TryExec=ctwm
 Exec=ctwm
 Terminal=false
 NoDisplay=true
@@ -17,6 +18,11 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=ctwm
+X-Arch-Package=ctwm-git 3.8.2.r521.g53f6772-1
+X-Arch-Package-Name=ctwm-git
+X-Arch-Package-Version=3.8.2.r521.g53f6772-1
+X-Arch-Package-Description=Claude's Tab Window Manager
+X-Arch-Package-URL=http://ctwm.org/
 Actions=XDE;
 
 [Desktop Action XDE]

@@ -19,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=2bwm
 X-Arch-Package=2bwm-git 0.1.r106.g0419aae-1
+X-Arch-Package-Name=2bwm-git
+X-Arch-Package-Version=0.1.r106.g0419aae-1
+X-Arch-Package-Description=A fast floating window manager
+X-Arch-Package-URL=https://github.com/venam/2bwm
 Actions=XDE;
 
 [Desktop Action XDE]

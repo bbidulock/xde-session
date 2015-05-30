@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Simple and lightweight tiling and floating window manager for X11
 Icon=echinus
+TryExec=echinus
 Exec=echinus
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=echinus
 X-Arch-Package=echinus-git 0.4.9.r31.g2acd233-1
+X-Arch-Package-Name=echinus-git
+X-Arch-Package-Version=0.4.9.r31.g2acd233-1
+X-Arch-Package-Description=A window manager for X in the spirit of dwm
+X-Arch-Package-URL=http://plhk.ru/echinus
 Actions=XDE;
 
 [Desktop Action XDE]

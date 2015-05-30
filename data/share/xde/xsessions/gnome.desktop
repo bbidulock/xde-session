@@ -154,6 +154,7 @@ Comment[zh_CN]=此会话将您登录到 GNOME
 Comment[zh_HK]=這個作業階段讓你登入 GNOME
 Comment[zh_TW]=這個作業階段讓您登入 GNOME
 Icon=archlinux-wm-gnome
+TryExec=gnome-session
 Exec=gnome-session
 Terminal=false
 StartupNotify=false

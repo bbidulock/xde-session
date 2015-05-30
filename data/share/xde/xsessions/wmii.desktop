@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=wmii pre-3.6 Development Snapshot
 Icon=wmii
+TryExec=wmii
 Exec=wmii
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=wmii
 X-Arch-Package=wmii 3.9.2-4
+X-Arch-Package-Name=wmii
+X-Arch-Package-Version=3.9.2-4
+X-Arch-Package-Description=A small, dynamic window manager for X11
+X-Arch-Package-URL=http://wmii.suckless.org/
 Actions=XDE;
 
 [Desktop Action XDE]

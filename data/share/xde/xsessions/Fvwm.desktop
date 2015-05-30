@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Fvwm
 Icon=fvwm
+TryExec=fvwm2
 Exec=fvwm2
 Terminal=false
 NoDisplay=true
@@ -17,6 +18,11 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=fvwm
+X-Arch-Package=fvwm 2.6.5-4
+X-Arch-Package-Name=fvwm
+X-Arch-Package-Version=2.6.5-4
+X-Arch-Package-Description=A multiple large virtual desktop window manager originally derived from twm
+X-Arch-Package-URL=http://www.fvwm.org
 Actions=XDE;
 
 [Desktop Action XDE]

@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=The ideal window manager for today's ascetic programmer
 Icon=wm2
+TryExec=wm2
 Exec=wm2
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=wm2
 X-Arch-Package=wm2-svn r114-1
+X-Arch-Package-Name=wm2-svn
+X-Arch-Package-Version=r114-1
+X-Arch-Package-Description=The ideal window manager for today's elegant and ascetic programmer
+X-Arch-Package-URL=http://www.all-day-breakfast.com/wm2/
 Actions=XDE;
 
 [Desktop Action XDE]

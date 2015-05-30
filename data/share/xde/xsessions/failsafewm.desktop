@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=A frameless, low-footprint window manager
 Icon=failsafewm
+TryExec=failsafewm
 Exec=failsafewm
 Terminal=false
 NoDisplay=true
@@ -17,6 +18,11 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=Applications
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=failsafewm
+X-Arch-Package=failsafewm 0.0.2-1
+X-Arch-Package-Name=failsafewm
+X-Arch-Package-Version=0.0.2-1
+X-Arch-Package-Description=A frameless, low-footprint window manager designed for failsafe sessions
+X-Arch-Package-URL=http://freecode.com/projects/failsafewm/
 Actions=XDE;
 
 [Desktop Action XDE]

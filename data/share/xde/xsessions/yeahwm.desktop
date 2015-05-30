@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Minimalist Window Manager for X
 Icon=yeahwm
+TryExec=yeahwm
 Exec=yeahwm
 Terminal=false
 NoDisplay=true
@@ -17,6 +18,11 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=yeahwm
+X-Arch-Package=yeahwm 0.3.5-3
+X-Arch-Package-Name=yeahwm
+X-Arch-Package-Version=0.3.5-3
+X-Arch-Package-Description=YeahWM - a window manager for X based on evilwm and aewm with little resource usage.
+X-Arch-Package-URL=http://phrat.de/index.html
 Actions=XDE;
 
 [Desktop Action XDE]

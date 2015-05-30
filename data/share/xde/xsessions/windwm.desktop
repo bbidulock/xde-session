@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Wind window manager
 Icon=windwm
+TryExec=wind
 Exec=wind
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=wind
 X-Arch-Package=windwm-git 1.5-1
+X-Arch-Package-Name=windwm-git
+X-Arch-Package-Version=1.5-1
+X-Arch-Package-Description=Wind is window manager implements most parts of the ICCCM and EWMH/NetWM standards
+X-Arch-Package-URL=http://windwm.sourceforge.net/
 Actions=XDE;
 
 [Desktop Action XDE]

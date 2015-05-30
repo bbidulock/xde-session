@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Lightweight window manager for X
 Icon=mantis-wm
+TryExec=mantis-wm
 Exec=mantis-wm
 Terminal=false
 NoDisplay=true
@@ -17,6 +18,11 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=mantis-wm
+X-Arch-Package=mantis-wm-git 0.11.c5805bd-2
+X-Arch-Package-Name=mantis-wm-git
+X-Arch-Package-Version=0.11.c5805bd-2
+X-Arch-Package-Description=Lightweight window manager for X
+X-Arch-Package-URL=http://github.com/andreas-volker/mantis-wm
 Actions=XDE;
 
 [Desktop Action XDE]

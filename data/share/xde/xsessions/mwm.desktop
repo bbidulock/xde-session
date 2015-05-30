@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Motif Window Manager
 Icon=mwm
+TryExec=mwm
 Exec=mwm
 Terminal=false
 NoDisplay=true
@@ -17,6 +18,11 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=MWM
+X-Arch-Package=lesstif 0.95.2-6
+X-Arch-Package-Name=lesstif
+X-Arch-Package-Version=0.95.2-6
+X-Arch-Package-Description=LGPL'd re-implementation of Motif
+X-Arch-Package-URL=http://sourceforge.net/projects/lesstif/
 Actions=XDE;
 
 [Desktop Action XDE]

@@ -19,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=blackbox
 X-Arch-Package=blackboxwm 0.71.1-1
+X-Arch-Package-Name=blackboxwm
+X-Arch-Package-Version=0.71.1-1
+X-Arch-Package-Description=A window manager for X11 (maintained fork of blackbox)
+X-Arch-Package-URL=http://github.com/bbidulock/blackboxwm
 Actions=XDE;
 
 [Desktop Action XDE]

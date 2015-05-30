@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Simple tiling window manager
 Icon=velox
+TryExec=velox
 Exec=velox
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=velox
 X-Arch-Package=velox 0.0.3-2
+X-Arch-Package-Name=velox
+X-Arch-Package-Version=0.0.3-2
+X-Arch-Package-Description=A simple xcb window manager inspired by awesome, xmonad, and dwm.
+X-Arch-Package-URL=http://www.ohloh.net/p/velox-wm
 Actions=XDE;
 
 [Desktop Action XDE]

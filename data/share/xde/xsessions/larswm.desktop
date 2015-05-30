@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=A tiling window manager based on 9wm
 Icon=larswm
+TryExec=larswm
 Exec=larswm
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=larswm
 X-Arch-Package=larswm-git 7.5.3.r17.gefa957c-1
+X-Arch-Package-Name=larswm-git
+X-Arch-Package-Version=7.5.3.r17.gefa957c-1
+X-Arch-Package-Description=A tiling window manager based on 9wm
+X-Arch-Package-URL=http://porneia.free.fr/larswm/larswm.html
 Actions=XDE;
 
 [Desktop Action XDE]

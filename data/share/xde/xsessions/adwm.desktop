@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=An advanced dynamic window manager for X
 Icon=adwm
+TryExec=adwm
 Exec=adwm
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=ADWM
 X-Arch-Package=adwm-git 0.5.3.r0.g04c1484-1
+X-Arch-Package-Name=adwm-git
+X-Arch-Package-Version=0.5.3.r0.g04c1484-1
+X-Arch-Package-Description=Advanced dynamic window manager for X
+X-Arch-Package-URL=http://github.com/bbidulock/adwm
 Actions=XDE;
 
 [Desktop Action XDE]

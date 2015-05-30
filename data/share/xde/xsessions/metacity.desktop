@@ -99,6 +99,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Minimal GTK2 Window Manager
 Icon=metacity
+TryExec=metacity
 Exec=metacity
 Terminal=false
 NoDisplay=true
@@ -113,6 +114,11 @@ X-GNOME-WMSettingsModule=metacity
 X-GNOME-Bugzilla-Bugzilla=GNOME
 X-GNOME-Bugzilla-Product=metacity
 X-GNOME-Bugzilla-Component=general
+X-Arch-Package=metacity2 2.34.13-1
+X-Arch-Package-Name=metacity2
+X-Arch-Package-Version=2.34.13-1
+X-Arch-Package-Description=Legacy GNOME window manager
+X-Arch-Package-URL=https://wiki.gnome.org/Projects/Metacity
 Actions=XDE;
 
 [Desktop Action XDE]

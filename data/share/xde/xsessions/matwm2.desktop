@@ -8,6 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=A nice tiling or floating window manager
 Icon=matwm2
+TryExec=matwm2
 Exec=matwm2
 Terminal=false
 NoDisplay=true
@@ -18,6 +19,10 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=matwm2
 X-Arch-Package=matwm2-svn r793-4
+X-Arch-Package-Name=matwm2-svn
+X-Arch-Package-Version=r793-4
+X-Arch-Package-Description=A nice tiling or floating window manager
+X-Arch-Package-URL=http://code.google.com/p/segin-utils/
 Actions=XDE;
 
 [Desktop Action XDE]
