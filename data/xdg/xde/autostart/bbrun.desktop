@@ -16,3 +16,7 @@ StartupNotify=false
 StartupWMClass=bbrun
 X-GNOME-Autostart-enabled=true
 X-Arch-Package=bbrun 1.6-5
+X-Arch-Package-Name=bbrun
+X-Arch-Package-Version=1.6-5
+X-Arch-Package-Description=A run - component for blackbox window manager
+X-Arch-Package-URL=https://packages.debian.org/unstable/x11/bbrun

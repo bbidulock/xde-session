@@ -14,3 +14,7 @@ Categories=DockApp;WMAKER;
 StartupNotify=false
 StartupWMClass=wmnd
 X-Arch-Package=wmnd 0.4.17-1
+X-Arch-Package-Name=wmnd
+X-Arch-Package-Version=0.4.17-1
+X-Arch-Package-Description=Dockapp for monitoring network interfaces.
+X-Arch-Package-URL=http://www.thregr.org/~wavexx/software/wmnd/

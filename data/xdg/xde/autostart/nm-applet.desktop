@@ -129,6 +129,7 @@ Comment[zh_CN]=管理网络连接
 Comment[zh_HK]=管理你的網絡連線
 Comment[zh_TW]=管理您的網路連線
 Icon=nm-device-wireless
+TryExec=nm-applet
 Exec=nm-applet
 Terminal=false
 NoDisplay=true

@@ -14,3 +14,7 @@ Categories=TrayIcon;System;Utility;
 StartupNotify=false
 X-GNOME-Autostart-enabled=true
 X-Arch-Package=gatotray 2.3-1
+X-Arch-Package-Name=gatotray
+X-Arch-Package-Version=2.3-1
+X-Arch-Package-Description=Graphical CPU stats monitor in the system tray.
+X-Arch-Package-URL=http://code.google.com/p/gatotray/

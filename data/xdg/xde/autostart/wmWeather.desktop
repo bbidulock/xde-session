@@ -12,6 +12,11 @@ Terminal=false
 OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
 Categories=DockApp;WMAKER;
 StartupNotify=false
+X-Arch-Package=wmweather 1.31-5
+X-Arch-Package-Name=wmweather
+X-Arch-Package-Version=1.31-5
+X-Arch-Package-Description=Shows local weather conditions in a WindowMaker dockapp
+X-Arch-Package-URL=None
 Actions=CYEG;
 
 [Desktop Action CYEG]

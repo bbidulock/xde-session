@@ -12,6 +12,11 @@ Terminal=false
 OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
 Categories=DockApp;WMAKER;
 StartupNotify=false
+X-Arch-Package=wmnet 1.06-4
+X-Arch-Package-Name=wmnet
+X-Arch-Package-Version=1.06-4
+X-Arch-Package-Description=A network monitor applet for WindowMaker
+X-Arch-Package-URL=http://www.katharineosborne.com/wmnet/
 Actions=Interface1;Interface2;Interface3;Interface4;
 
 [Desktop Action Interface1]

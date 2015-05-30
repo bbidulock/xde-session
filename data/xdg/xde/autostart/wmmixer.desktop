@@ -13,3 +13,8 @@ OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
 Categories=DockApp;WMAKER;
 StartupNotify=false
 StartupWMClass=wmmixer
+X-Arch-Package=wmmixer 1.7+20141005-1
+X-Arch-Package-Name=wmmixer
+X-Arch-Package-Version=1.7+20141005-1
+X-Arch-Package-Description=A mixer application written for the WindowMaker dock.
+X-Arch-Package-URL=http://windowmaker.org/dockapps/?name=wmmixer

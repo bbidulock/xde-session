@@ -13,3 +13,7 @@ OnlyShowIn=FLUXBOX;BLACKBOX;OPENBOX;ICEWM;WMAKER;FVWM;JWM;PEKWM;ADWM;
 Categories=Utility;
 StartupNotify=false
 X-Arch-Package=compton-git 0.1_beta2.59.g23d1dd1-1
+X-Arch-Package-Name=compton-git
+X-Arch-Package-Version=0.1_beta2.59.g23d1dd1-1
+X-Arch-Package-Description=X Compositor (a fork of xcompmgr-dana) (git-version)
+X-Arch-Package-URL=https://github.com/chjj/compton

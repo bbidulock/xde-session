@@ -12,6 +12,11 @@ Terminal=false
 OnlyShowIn=FLUXBOX;OPENBOX;LXDE;BLACKBOX;PEKWM;WMAKER;ADWM;WAIMEA;
 Categories=DockApp;WMAKER;
 StartupNotify=false
+X-Arch-Package=wmweather+ 2.15-1
+X-Arch-Package-Name=wmweather+
+X-Arch-Package-Version=2.15-1
+X-Arch-Package-Description=Downloads the National Weather Service METAR bulletins, ANV and MRF forecasts, and any weather map for display in a WindowMaker dockapp
+X-Arch-Package-URL=http://sourceforge.net/projects/wmweatherplus
 Actions=CYEG;
 
 [Desktop Action CYEG]
