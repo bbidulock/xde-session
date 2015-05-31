@@ -2,13 +2,13 @@
 Version=1.0
 Encoding=UTF-8
 Type=XSession
-Name=Pekwm
+Name=PekWM
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Small, fast, functional, and flexible window manager
 Icon=pekwm
-TryExec=pekwm
+TryExec=/usr/bin/pekwm
 Exec=pekwm
 Terminal=false
 NoDisplay=true
@@ -29,7 +29,7 @@ Actions=XDE;
 Name=XDE
 Icon=xde
 Exec=xde-session -desktop PEKWM -startwm pekwm
-Comment=Pekwm under an XDE session
+Comment=PekWM under an XDE session
 
 [Window Manager]
 SessionManaged=true

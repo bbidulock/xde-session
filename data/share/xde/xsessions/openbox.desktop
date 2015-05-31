@@ -8,8 +8,8 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Log in using the Openbox window manager
 Icon=openbox
-TryExec=openbox
-Exec=openbox-session
+TryExec=/usr/bin/openbox
+Exec=openbox
 Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System
@@ -18,12 +18,16 @@ X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=Openbox
+X-AppInstall-Package=openbox
+X-AppInstall-Popcon=1673
+X-AppInstall-Section=main
 X-Arch-Package=openbox 3.5.2-7
 X-Arch-Package-Name=openbox
 X-Arch-Package-Version=3.5.2-7
 X-Arch-Package-Description=Highly configurable and lightweight X11 window manager
 X-Arch-Package-URL=http://openbox.org
-Actions=XDE;Gnome;KDE;
+X-Ubuntu-Gettext-Domain=openbox
+Actions=XDE;Gnome;KDE;Session;
 
 [Desktop Action XDE]
 Name=XDE
@@ -43,6 +47,13 @@ Icon=kde
 Exec=openbox-kde-session
 TryExec=startkde
 Comment=Use the Openbox window manager inside of the K Desktop Environment
+
+[Desktop Action Session]
+Name=Session
+Icon=openbox
+Exec=openbox-session
+TryExec=openbox-session
+Comment=Log in using the Openbox window manager (without a session manager)
 
 [Window Manager]
 SessionManaged=false

@@ -28,11 +28,10 @@ Actions=XDE;
 [Desktop Action XDE]
 Name=XDE
 Icon=xde
-Exec=xde-session -desktop BLACKBOX -startwm "blackbox -rc ${XDG_CONFIG_HOME:-~/.config}/blackbox/rc"
+Exec=xde-session -desktop BLACKBOX -startwm start-blackbox
 Comment=Blackbox in an XDE session
 
 [Window Manager]
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true
-SessionSetup=/u2/code/xde-tools/working/share/xde/blackbox/setup.sh
