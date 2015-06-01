@@ -366,10 +366,12 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/xsessions/fluxbox.desktop \
 	share/xde/xsessions/flwm.desktop \
 	share/xde/xsessions/Fvwm1.desktop \
+	share/xde/xsessions/fvwm2.desktop \
 	share/xde/xsessions/fvwm-crystal.desktop \
 	share/xde/xsessions/Fvwm.desktop \
 	share/xde/xsessions/fvwm.desktop \
 	share/xde/xsessions/gnome.desktop \
+	share/xde/xsessions/goomwwm.desktop \
 	share/xde/xsessions/herbstluftwm.desktop \
 	share/xde/xsessions/i3.desktop \
 	share/xde/xsessions/i3-with-shmlog.desktop \
@@ -382,6 +384,7 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/xsessions/matwm2.desktop \
 	share/xde/xsessions/metacity.desktop \
 	share/xde/xsessions/mutter.desktop \
+	share/xde/xsessions/mvwm.desktop \
 	share/xde/xsessions/mwm.desktop \
 	share/xde/xsessions/openbox.desktop \
 	share/xde/xsessions/openbox-gnome.desktop \

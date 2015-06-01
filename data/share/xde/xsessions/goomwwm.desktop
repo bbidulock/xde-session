@@ -1,0 +1,36 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Type=XSession
+Name=goomwwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Get out of my way, Window Manager!
+TryExec=goomwwm
+Exec=goomwwm
+Terminal=false
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=goomwwm
+X-Arch-Package=goomwwm-git 1:1.0.0.73.g25c9a12-2
+X-Arch-Package-Name=goomwwm-git
+X-Arch-Package-Version=1:1.0.0.73.g25c9a12-2
+X-Arch-Package-Description=Get out of my way, Window Manager!
+X-Arch-Package-URL=http://github.com/seanpringle/goomwwm
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+Exec=xde-session -desktop GOOMWWM -startwm start-goomwwm
+Comment=GOOMWWM in an XDE session
+
+[Window Manager]
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true
