@@ -21,9 +21,9 @@ X-GNOME-WMName=Openbox
 X-AppInstall-Package=openbox
 X-AppInstall-Popcon=1673
 X-AppInstall-Section=main
-X-Arch-Package=openbox 3.5.2-7
+X-Arch-Package=openbox 3.6-1
 X-Arch-Package-Name=openbox
-X-Arch-Package-Version=3.5.2-7
+X-Arch-Package-Version=3.6-1
 X-Arch-Package-Description=Highly configurable and lightweight X11 window manager
 X-Arch-Package-URL=http://openbox.org
 X-Ubuntu-Gettext-Domain=openbox
@@ -38,24 +38,25 @@ Comment=Openbox under an XDE session
 [Desktop Action Gnome]
 Name=Gnome
 Icon=gnome
+TryExec=openbox-gnome-session
 Exec=openbox-gnome-session
 Comment=Use the Openbox window manager inside of the GNOME desktop environment
 
 [Desktop Action KDE]
 Name=KDE
 Icon=kde
+TryExec=/usr/bin/startkde
 Exec=openbox-kde-session
-TryExec=startkde
 Comment=Use the Openbox window manager inside of the K Desktop Environment
 
 [Desktop Action Session]
 Name=Session
 Icon=openbox
-Exec=openbox-session
 TryExec=openbox-session
+Exec=openbox-session
 Comment=Log in using the Openbox window manager (without a session manager)
 
 [Window Manager]
 SessionManaged=false
-StartupNotification=false
+StartupNotification=true
 X-XDE-Managed=true
