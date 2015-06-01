@@ -4,6 +4,7 @@ nobase_dist_xdgconf_DATA = \
 	xdg/pcmanfm/FLUXBOX/pcmanfm.conf \
 	xdg/pcmanfm/FVWM/pcmanfm.conf \
 	xdg/pcmanfm/ICEWM/pcmanfm.conf \
+	xdg/pcmanfm/MVWM/pcmanfm.conf \
 	xdg/pcmanfm/OPENBOX/pcmanfm.conf \
 	xdg/pcmanfm/WMAKER/pcmanfm.conf
 
@@ -66,6 +67,8 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/lxpanel/JWM/panels/panel \
 	xdg/xde/lxpanel/LXDE/config \
 	xdg/xde/lxpanel/LXDE/panels/panel \
+	xdg/xde/lxpanel/MVWM/config \
+	xdg/xde/lxpanel/MVWM/panels/panel \
 	xdg/xde/lxpanel/OPENBOX/config \
 	xdg/xde/lxpanel/OPENBOX/panels/panel \
 	xdg/xde/lxpanel/PEKWM/config \
@@ -94,6 +97,7 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/xde-panel/ICEWM/rc.xml \
 	xdg/xde/xde-panel/JWM/rc.xml \
 	xdg/xde/xde-panel/METACITY/rc.xml \
+	xdg/xde/xde-panel/MVWM/rc.xml \
 	xdg/xde/xde-panel/OPENBOX/rc.xml \
 	xdg/xde/xde-panel/PEKWM/rc.xml \
 	xdg/xde/xde-panel/WAIMEA/rc.xml \
@@ -106,6 +110,7 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/xde-session/FVWM/desktop.conf \
 	xdg/xde/xde-session/ICEWM/desktop.conf \
 	xdg/xde/xde-session/LXDE/autostart \
+	xdg/xde/xde-session/MVWM/desktop.conf \
 	xdg/xde/xde-session/OPENBOX/desktop.conf \
 	xdg/xde/xde-session/WMAKER/desktop.conf
 
@@ -417,6 +422,8 @@ nobase_dist_xdgdata_DATA += \
 	share/lxpanel/profile/FVWM/panels/panel \
 	share/lxpanel/profile/ICEWM/config \
 	share/lxpanel/profile/ICEWM/panels/panel \
+	share/lxpanel/profile/MVWM/config \
+	share/lxpanel/profile/MVWM/panels/panel \
 	share/lxpanel/profile/OPENBOX/config \
 	share/lxpanel/profile/OPENBOX/panels/panel \
 	share/lxpanel/profile/WMAKER/config \
