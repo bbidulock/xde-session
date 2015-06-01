@@ -16,10 +16,11 @@ actions on the box such as powering off the computer, restarting the
 computer, etc.
 
 When a selection is made or logout/disconnect is selected,
-B<xde-chooser> prints the selected session name or the special name
-C<logout> to standard output and exits with a zero exit status.  On
-error, a diagnostic message is printed to standard error and a non-zero
-exit status is returned.
+B<xde-chooser> prints the selected session name (or filename to the
+xsession desktop file when B<-f> is given) or the special name C<logout>
+to standard output and exits with a zero exit status.  On error, a
+diagnostic message is printed to standard error and a non-zero exit
+status is returned.
 
 =head1 ARGUMENTS
 
@@ -107,6 +108,13 @@ The following general options can be used with most of the command
 options listed above:
 
 =over
+
+=item B<--filename>, B<-f>
+
+When a user session is selected, output the full path filename to the
+xsessions desktop file instead of just the appid corresponding to the
+file.  This is useful for passing the full filename to a session manager
+such as L<xde-session(1)>.
 
 =item B<--default>, B<-d>
 

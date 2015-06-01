@@ -1,6 +1,6 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2014  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2008-2015  Monavacon Limited <http://www.monavacon.com/>
  Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
@@ -243,6 +243,7 @@ typedef struct {
 	double xposition;
 	double yposition;
 	Bool setstyle;
+	Bool filename;
 } Options;
 
 Options options = {
@@ -285,6 +286,7 @@ Options options = {
 	.xposition = 0.5,
 	.yposition = 0.5,
 	.setstyle = True,
+	.filename = False,
 };
 
 Options defaults = {
@@ -327,6 +329,7 @@ Options defaults = {
 	.xposition = 0.5,
 	.yposition = 0.5,
 	.setstyle = True,
+	.filename = False,
 };
 
 typedef struct {
@@ -2988,20 +2991,24 @@ static void
 do_chooser(int argc, char *argv[])
 {
 	const char *file;
-	char *out;
-	int i;
 
 	if (!(file = choose(argc, argv))) {
 		DPRINTF("Logging out...\n");
-		fprintf(stdout, "logout");
+		fputs("logout", stdout);
 		return;
 	}
 	DPRINTF("Launching session %s...\n", options.current);
-	out = strdup(options.current);
-	for (i = 0; i < strlen(out); i++)
-		out[i] = tolower(out[i]);
-	fprintf(stdout, out);
-	free(out);
+	if (!options.filename) {
+		char *out = strdup(options.current);
+		int i;
+
+		for (i = 0; i < strlen(out); i++)
+			out[i] = tolower(out[i]);
+		fputs(out, stdout);
+		free(out);
+	} else {
+		fputs(file, stdout);
+	}
 	create_session(options.current, file);
 }
 
@@ -3014,7 +3021,7 @@ copying(int argc, char *argv[])
 --------------------------------------------------------------------------------\n\
 %1$s\n\
 --------------------------------------------------------------------------------\n\
-Copyright (c) 2008-2014  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2008-2015  Monavacon Limited <http://www.monavacon.com/>\n\
 Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
 Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
 \n\
@@ -3058,7 +3065,7 @@ version(int argc, char *argv[])
 %1$s (OpenSS7 %2$s) %3$s\n\
 Written by Brian Bidulock.\n\
 \n\
-Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014  Monavacon Limited.\n\
+Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015  Monavacon Limited.\n\
 Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
 Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
@@ -3163,6 +3170,8 @@ General options:\n\
         use the XDE desktop theme for the selection window\n\
     -T, --timeout SECONDS  (%17$u sec)\n\
         set dialog timeout\n\
+    -f, --filename         (%22$s)\n\
+        output the filename instead of appid\n\
     --vendor VENDOR        (%18$s)\n\
         vendor identifier for branding\n\
     -N, --dry-run          (%19$s)\n\
@@ -3193,6 +3202,7 @@ General options:\n\
 	,show_bool(options.dryrun)
 	,options.debug
 	,options.output
+	,show_bool(options.filename)
 	);
         /* *INDENT-ON* */
 }
@@ -4252,6 +4262,7 @@ main(int argc, char *argv[])
 			{"exec",	    no_argument,	NULL, 'e'},
 			{"xde-theme",	    no_argument,	NULL, 'x'},
 			{"timeout",	    required_argument,	NULL, 'T'},
+			{"filename",	    no_argument,	NULL, 'f'},
 			{"vendor",	    required_argument,	NULL, '5'},
 			{"default",	    required_argument,	NULL, '6'},
 			{"setbg",	    no_argument,	NULL, '8'},
@@ -4271,10 +4282,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "pb:S:s:nc:l:di:t:exT:ND::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "pb:S:s:nc:l:di:t:exT:fND::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "pb:s:nc:l:di:t:exT:NDvhVCH?");
+		c = getopt(argc, argv, "pb:s:nc:l:di:t:exT:fNDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -4347,6 +4358,9 @@ main(int argc, char *argv[])
 			break;
 		case 'T':	/* -T, --timeout TIMEOUT */
 			options.timeout = strtoul(optarg, NULL, 0);
+			break;
+		case 'f':	/* -f, --filename */
+			options.filename = True;
 			break;
 		case '5':	/* --vendor VENDOR */
 			free(options.vendor);
