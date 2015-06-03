@@ -12,17 +12,21 @@ TryExec=fluxbox
 Exec=startfluxbox
 Terminal=false
 NoDisplay=true
-Categories=WindowManager;Application;System
+Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=fluxbox
+X-AppInstall-Package=fluxbox-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=fluxbox-git 1.3.7.16.g69d1333-2
 X-Arch-Package-Name=fluxbox-git
 X-Arch-Package-Version=1.3.7.16.g69d1333-2
 X-Arch-Package-Description=Lightweight stacking WM with tabbing, dockapps, etc.
 X-Arch-Package-URL=http://www.fluxbox.org/
+DesktopNames=FLUXBOX
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop FLUXBOX -startwm fluxbox
 Comment=Fluxbox in an XDE session
+DesktopNames=XDE:FLUXBOX
 
 [Window Manager]
+Name=fluxbox
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=false

@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=cwm
+X-AppInstall-Package=cwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=cwm-git 20150423-1
 X-Arch-Package-Name=cwm-git
 X-Arch-Package-Version=20150423-1
 X-Arch-Package-Description=OpenBSD fork of calmwm, a clean and lightweight window manager
 X-Arch-Package-URL=http://www.openbsd.org/cgi-bin/man.cgi?query=cwm&sektion=1
+DesktopNames=CWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop CWM -startwm start-cwm
 Comment=cwm in an XDE session
+DesktopNames=XDE:CWM
 
 [Window Manager]
+Name=cwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

@@ -17,11 +17,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=goomwwm
+X-AppInstall-Package=goomwwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=goomwwm-git 1:1.0.0.73.g25c9a12-2
 X-Arch-Package-Name=goomwwm-git
 X-Arch-Package-Version=1:1.0.0.73.g25c9a12-2
 X-Arch-Package-Description=Get out of my way, Window Manager!
 X-Arch-Package-URL=http://github.com/seanpringle/goomwwm
+DesktopNames=GOOMWWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -29,8 +33,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop GOOMWWM -startwm start-goomwwm
 Comment=GOOMWWM in an XDE session
+DesktopNames=XDE:GOOMWWM
 
 [Window Manager]
+Name=goomwwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

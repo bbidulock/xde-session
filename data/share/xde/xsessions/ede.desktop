@@ -11,13 +11,23 @@ Icon=ede
 TryExec=startede
 Exec=startede
 Terminal=false
+Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=pekwm
+X-AppInstall-Package=ede
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
+X-Arch-Package-Name=ede
+X-Arch-Package-Version=2.1-1
+X-Arch-Package-Description=The lightweight Equinox Desktop Environment
+X-Arch-Package-URL=http://equinox-project.org/
+DesktopNames=EDE
 
 [Window Manager]
+Name=pekwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=false

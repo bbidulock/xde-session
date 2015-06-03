@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=larswm
+X-AppInstall-Package=larswm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=larswm-git 7.5.3.r17.gefa957c-1
 X-Arch-Package-Name=larswm-git
 X-Arch-Package-Version=7.5.3.r17.gefa957c-1
 X-Arch-Package-Description=A tiling window manager based on 9wm
 X-Arch-Package-URL=http://porneia.free.fr/larswm/larswm.html
+DesktopNames=LARSWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop LARSWM -startwm start-larswm
 Comment=larswm in an XDE session
+DesktopNames=XDE:LARSWM
 
 [Window Manager]
+Name=larswm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

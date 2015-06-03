@@ -38,7 +38,7 @@ Comment[ja]=複数の仮想デスクトップをサポートしたICCCM準拠の
 Comment[km]=កម្មវិធី​គ្រប់គ្រង​បង្អួច​ដ៏​មាន​អានុភាព ដែល​អាច​មាន​ផ្ទៃតុ​និម្មិត​ច្រើន ដោយ​អនុវត្ត​តាម ICCCM
 Comment[lt]=galinga, su ICCCM suderinama daugelio virtualių darbastalių langų tvarkyklė
 Comment[mk]=Моќен менаџер на прозорци со повеќе виртуелни површини во согласност со ICCCM
-Comment[mr]=शक्तीशाली ICCCM-कम्प्लायन्ट मल्टिपल व्हर्च्युअलडेस्कटॉप विंडो मॅनेजर 
+Comment[mr]=शक्तीशाली ICCCM-कम्प्लायन्ट मल्टिपल व्हर्च्युअलडेस्कटॉप विंडो मॅनेजर
 Comment[mt]=Window manager b'saħħtu, konformi ma' ICCCM, b'desktops virtwali.
 Comment[nb]=En slagkraftig vindusbehandler med flere virtuelle skrivbord, som støtter ICCCM
 Comment[nds]=En kraftvulle, ICCCM-kompatible Finsterpleger, mit vele virtuelle Schriefdischen
@@ -88,6 +88,7 @@ X-Arch-Package-Name=mvwm-git
 X-Arch-Package-Version=r5713.f23f011-1
 X-Arch-Package-Description=A clean-up effort of FVWM (with rounded corner patch)
 X-Arch-Package-URL=https://github.com/ThomasAdam/mvwm
+DesktopNames=MVWM
 X-SuSE-translate=true
 Actions=XDE;
 
@@ -96,8 +97,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop MVWM -startwm mvwm
 Comment=MVWM in an XDE session
+DesktopNames=XDE:MVWM
 
 [Window Manager]
+Name=mvwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

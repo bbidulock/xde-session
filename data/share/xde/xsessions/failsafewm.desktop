@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=Applications
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=failsafewm
+X-AppInstall-Package=failsafewm
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=failsafewm 0.0.2-1
 X-Arch-Package-Name=failsafewm
 X-Arch-Package-Version=0.0.2-1
 X-Arch-Package-Description=A frameless, low-footprint window manager designed for failsafe sessions
 X-Arch-Package-URL=http://freecode.com/projects/failsafewm/
+DesktopNames=FAILSAFEWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop FAILSAFEWM -startwm failsafewm
 Comment=failsafewm in an XDE session
+DesktopNames=XDE:FAILSAFEWM
 
 [Window Manager]
+Name=failsafewm
 SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=false

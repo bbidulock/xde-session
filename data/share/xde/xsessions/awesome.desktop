@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=awesome
+X-AppInstall-Package=awesome-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=awesome-git 3.5.2.423.g1542722-1
 X-Arch-Package-Name=awesome-git
 X-Arch-Package-Version=3.5.2.423.g1542722-1
 X-Arch-Package-Description=Highly configurable framework window manager
 X-Arch-Package-URL=http://awesome.naquadah.org/
+DesktopNames=AWESOME
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop AWESOME -startwm awesome
 Comment=awesome in an XDE session
+DesktopNames=XDE:AWESOME
 
 [Window Manager]
+Name=awesome
 SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=false

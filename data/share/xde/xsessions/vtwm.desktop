@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Virtual Tab Window Manager
 Icon=vtwm
-TryExec=/usr/bin/vtwm
+TryExec=vtwm
 Exec=vtwm
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=vtwm
+X-AppInstall-Package=vtwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=vtwm-git 5.5.0.rc8.15-5
 X-Arch-Package-Name=vtwm-git
 X-Arch-Package-Version=5.5.0.rc8.15-5
 X-Arch-Package-Description=A lightweight, customizable window manager with a virtual desktop
 X-Arch-Package-URL=http://www.vtwm.org
+DesktopNames=VTWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop VTWM -startwm start-vtwm
 Comment=VTWM under an XDE session
+DesktopNames=XDE:VTWM
 
 [Window Manager]
+Name=vtwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

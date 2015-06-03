@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Dynamic window manager
 Icon=dwm
-TryExec=/usr/bin/dwm
+TryExec=dwm
 Exec=dwm
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=dwm
+X-AppInstall-Package=dwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=dwm-git 1:6.0.43.g14343e6-1
 X-Arch-Package-Name=dwm-git
 X-Arch-Package-Version=1:6.0.43.g14343e6-1
 X-Arch-Package-Description=A dynamic window manager for X
 X-Arch-Package-URL=http://dwm.suckless.org
+DesktopNames=DWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop DWM -startwm start-dwm
 Comment=Dwm in an XDE session
+DesktopNames=XDE:DWM
 
 [Window Manager]
+Name=dwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

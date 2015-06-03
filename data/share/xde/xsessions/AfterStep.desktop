@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=AfterStep
+X-AppInstall-Package=afterstep-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=afterstep-git 2.2.12.r18.g4f62e0d-1
 X-Arch-Package-Name=afterstep-git
 X-Arch-Package-Version=2.2.12.r18.g4f62e0d-1
 X-Arch-Package-Description=A Window Manager based on NextStep Interface
 X-Arch-Package-URL=http://www.afterstep.org
+DesktopNames=AFTERSTEP
 X-Ubuntu-Gettext-Domain=gnome-session-3.0
 Actions=XDE;
 
@@ -31,8 +35,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop AFTERSTEP -startwm afterstep
 Comment=AfterStep in an XDE session
+DesktopNames=XDE:AFTERSTEP
 
 [Window Manager]
+Name=AfterStep
 SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=false

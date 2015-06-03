@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=An X11 window manager design for maximum efficiency
 Icon=waimea
-TryExec=/usr/bin/waimea
+TryExec=waimea
 Exec=waimea
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=waimea
+X-AppInstall-Package=waimea-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=waimea-git 0.5.0.19-1
 X-Arch-Package-Name=waimea-git
 X-Arch-Package-Version=0.5.0.19-1
 X-Arch-Package-Description=An X11 window manager designed for maximum efficiency
 X-Arch-Package-URL=https://github.com/bbidulock/waimea
+DesktopNames=WAIMEA
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop WAIMEA -startwm start-waimea
 Comment=Waimea under an XDE session
+DesktopNames=XDE:WAIMEA
 
 [Window Manager]
+Name=waimea
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

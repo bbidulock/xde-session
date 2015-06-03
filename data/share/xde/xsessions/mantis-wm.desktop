@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=mantis-wm
+X-AppInstall-Package=mantis-wm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=mantis-wm-git 0.11.c5805bd-2
 X-Arch-Package-Name=mantis-wm-git
 X-Arch-Package-Version=0.11.c5805bd-2
 X-Arch-Package-Description=Lightweight window manager for X
 X-Arch-Package-URL=http://github.com/andreas-volker/mantis-wm
+DesktopNames=MANTIS
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop MANTIS -startwm start-mantis
 Comment=Mantis under an XDE session
+DesktopNames=XDE:MANTIS
 
 [Window Manager]
+Name=mantis-wm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

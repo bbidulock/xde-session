@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=blackbox
+X-AppInstall-Package=blackboxwm
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=blackboxwm 0.71.1-1
 X-Arch-Package-Name=blackboxwm
 X-Arch-Package-Version=0.71.1-1
 X-Arch-Package-Description=A window manager for X11 (maintained fork of blackbox)
 X-Arch-Package-URL=http://github.com/bbidulock/blackboxwm
+DesktopNames=BLACKBOX
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop BLACKBOX -startwm start-blackbox
 Comment=Blackbox in an XDE session
+DesktopNames=XDE:BLACKBOX
 
 [Window Manager]
+Name=blackbox
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

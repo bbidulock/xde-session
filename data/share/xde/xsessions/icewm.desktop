@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Simple and fast window manger
 Icon=icewm
-TryExec=/usr/bin/icewm
+TryExec=icewm
 Exec=icewm
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,16 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=icewm
+X-AppInstall-Package=icewm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=icewm-git 1.3.9.104-1
 X-Arch-Package-Name=icewm-git
 X-Arch-Package-Version=1.3.9.104-1
 X-Arch-Package-Description=A window manager designed for speed, usability, and consistency
 X-Arch-Package-URL=https://github.com/bbidulock/icewm
+DesktopNames=ICEWM
+X-SuSE-translate=true
 Actions=XDE;Session;
 
 [Desktop Action XDE]
@@ -30,6 +35,7 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop ICEWM -startwm start-icewmn
 Comment=IceWM in an XDE session
+DesktopNames=XDE:ICEWM
 
 [Desktop Action Session]
 Name=IceWM Session
@@ -39,6 +45,7 @@ Name[en_US]=IceWM Session
 Comment=Simple and fast window manger
 
 [Window Manager]
+Name=icewm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

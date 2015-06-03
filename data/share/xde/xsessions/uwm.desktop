@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Micro (μ) Window Manger
 Icon=uwm16x16
-TryExec=/usr/bin/uwm
+TryExec=uwm
 Exec=uwm
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=uwm
+X-AppInstall-Package=uwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=uwm-git 0.30.10-6
 X-Arch-Package-Name=uwm-git
 X-Arch-Package-Version=0.30.10-6
 X-Arch-Package-Description=Micro (u) Window Manager
 X-Arch-Package-URL=http://uwm.sourceforge.net/
+DesktopNames=UWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop UWM -startwm uwm
 Comment=Micro (μ) Window Manger under an XDE session
+DesktopNames=XDE:UWM
 
 [Window Manager]
+Name=uwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

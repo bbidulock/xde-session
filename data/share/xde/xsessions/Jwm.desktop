@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=jwm
+X-AppInstall-Package=jwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=jwm-git s1102-1
 X-Arch-Package-Name=jwm-git
 X-Arch-Package-Version=s1102-1
 X-Arch-Package-Description=JWM is a light-weight window manager for the X11 Window System. Git version.
 X-Arch-Package-URL=http://joewing.net/projects/jwm/
+DesktopNames=JWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop JWM -startwm jwm
 Comment=JWM in an XDE session
+DesktopNames=XDE:JWM
 
 [Window Manager]
+Name=jwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

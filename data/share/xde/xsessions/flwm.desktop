@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=The Fast Light Window Manager
 Icon=flwm
-TryExec=/usr/bin/flwm
+TryExec=flwm
 Exec=flwm
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=flwm
+X-AppInstall-Package=flwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=flwm-git 1.14.r8.gc896405-1
 X-Arch-Package-Name=flwm-git
 X-Arch-Package-Version=1.14.r8.gc896405-1
 X-Arch-Package-Description=Fast Light Window Manager
 X-Arch-Package-URL=https://github.com/bbidulock/flwm
+DesktopNames=FLWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop FLWM -startwm start-flwm
 Comment=FLWM in an XDE session
+DesktopNames=XDE:FLWM
 
 [Window Manager]
-SessionManaged=true
+Name=flwm
+SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=true

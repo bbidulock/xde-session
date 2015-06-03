@@ -12,9 +12,24 @@ TryExec=/usr/bin/startkde
 Exec=openbox-kde-session
 Terminal=false
 Hidden=true
+Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=Openbox
-X-Arch-Package=openbox 3.5.2-7
+X-AppInstall-Package=openbox
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
+X-Arch-Package=openbox 3.6-1
+X-Arch-Package-Name=openbox
+X-Arch-Package-Version=3.6-1
+X-Arch-Package-Description=Highly configurable and lightweight X11 window manager
+X-Arch-Package-URL=http://openbox.org
+DesktopNames=KDE
+
+[Window Manager]
+Name=Openbox
+SessionManaged=false
+StartupNotification=true
+X-XDE-Managed=false

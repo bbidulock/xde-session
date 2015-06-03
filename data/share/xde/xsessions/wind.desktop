@@ -19,11 +19,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=wind
+X-AppInstall-Package=windwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=windwm-git 1.5-1
 X-Arch-Package-Name=windwm-git
 X-Arch-Package-Version=1.5-1
 X-Arch-Package-Description=Wind is window manager implements most parts of the ICCCM and EWMH/NetWM standards
 X-Arch-Package-URL=http://windwm.sourceforge.net/
+DesktopNames=WIND
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -31,8 +35,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop WIND -startwm start-wind
 Comment=Wind under an XDE session
+DesktopNames=XDE:WIND
 
 [Window Manager]
+Name=wind
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

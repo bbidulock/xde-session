@@ -93,3 +93,4 @@ X-Arch-Package-Name=mutter
 X-Arch-Package-Version=3.16.2-1
 X-Arch-Package-Description=A window manager for GNOME
 X-Arch-Package-URL=http://www.gnome.org
+DesktopNames=MUTTER

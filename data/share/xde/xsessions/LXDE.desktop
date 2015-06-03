@@ -17,18 +17,24 @@ Icon=lxde-icon
 TryExec=/usr/bin/startlxde
 Exec=startlxde
 Terminal=false
+Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=Openbox
+X-AppInstall-Package=lxde-common
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=lxde-common 0.99.0-2
 X-Arch-Package-Name=lxde-common
 X-Arch-Package-Version=0.99.0-2
 X-Arch-Package-Description=Common files of the LXDE Desktop
 X-Arch-Package-URL=http://lxde.org/
+DesktopNames=LXDE
 
 [Window Manager]
+Name=Openbox
 SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=false

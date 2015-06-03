@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=echinus
+X-AppInstall-Package=echinus-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=echinus-git 0.4.9.r31.g2acd233-1
 X-Arch-Package-Name=echinus-git
 X-Arch-Package-Version=0.4.9.r31.g2acd233-1
 X-Arch-Package-Description=A window manager for X in the spirit of dwm
 X-Arch-Package-URL=http://plhk.ru/echinus
+DesktopNames=ECHINUS
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop ECHINUS -startwm start-echinus
 Comment=echinus in an XDE session
+DesktopNames=XDE:ECHINUS
 
 [Window Manager]
+Name=echinus
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

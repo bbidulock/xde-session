@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Simple tiling window manager
 Icon=velox
-TryExec=/usr/bin/velox
+TryExec=velox
 Exec=velox
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=velox
+X-AppInstall-Package=velox
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=velox 0.0.3-2
 X-Arch-Package-Name=velox
 X-Arch-Package-Version=0.0.3-2
 X-Arch-Package-Description=A simple xcb window manager inspired by awesome, xmonad, and dwm.
 X-Arch-Package-URL=http://www.ohloh.net/p/velox-wm
+DesktopNames=VELOX
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -exec uxterm -desktop VELOX -startwm velox
 Comment=velox under an XDE session
+DesktopNames=XDE:VELOX
 
 [Window Manager]
+Name=velox
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

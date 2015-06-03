@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=herbstluftwm
+X-AppInstall-Package=herbstluftwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=herbstluftwm-git v0.6.2.48.gceeae62-1
 X-Arch-Package-Name=herbstluftwm-git
 X-Arch-Package-Version=v0.6.2.48.gceeae62-1
 X-Arch-Package-Description=Manual tiling window manager for X
 X-Arch-Package-URL=http://wwwcip.cs.fau.de/~re06huxa/herbstluftwm
+DesktopNames=HERBSTLUFTWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop HERBSTLUFTWM -startwm start-herbstluftwm
 Comment=herbstluftwm in an XDE session
+DesktopNames=XDE:HERBSTLUFTWM
 
 [Window Manager]
+Name=herbstluftwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

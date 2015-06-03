@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=This session logs you into XDWM
 Icon=xdwm
-TryExec=/usr/bin/xdwm-session
+TryExec=xdwm-session
 Exec=xdwm-session
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=xdwm
+X-AppInstall-Package=xdwm
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=xdwm 6.1p6-1
 X-Arch-Package-Name=xdwm
 X-Arch-Package-Version=6.1p6-1
 X-Arch-Package-Description=An extended dynamic window manager for X (dwm fork)
 X-Arch-Package-URL=http://github.com/aperezdc/xdwm
+DesktopNames=XDWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop XDWM -startwm xdwm
 Comment=XDWM under an XDE session
+DesktopNames=XDE:XDWM
 
 [Window Manager]
+Name=xdwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

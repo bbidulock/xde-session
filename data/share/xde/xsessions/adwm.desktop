@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=ADWM
+X-AppInstall-Package=adwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=adwm-git 0.5.3.r0.g04c1484-1
 X-Arch-Package-Name=adwm-git
 X-Arch-Package-Version=0.5.3.r0.g04c1484-1
 X-Arch-Package-Description=Advanced dynamic window manager for X
 X-Arch-Package-URL=http://github.com/bbidulock/adwm
+DesktopNames=ADWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop ADWM -startwm start-adwm
 Comment=adwm in an XDE session
+DesktopNames=XDE:ADWM
 
 [Window Manager]
+Name=adwm
 SessionManaged=false
 StartupNotification=true
 X-XDE-Managed=true

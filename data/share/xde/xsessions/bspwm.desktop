@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=bspwm
+X-AppInstall-Package=bspwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=bspwm-git 997-1
 X-Arch-Package-Name=bspwm-git
 X-Arch-Package-Version=997-1
 X-Arch-Package-Description=A tiling window manager based on binary space partitioning
 X-Arch-Package-URL=https://github.com/baskerville/bspwm
+DesktopNames=BSPWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop BSPWM -startwm start-bspwm
 Comment=bswpm in an XDE session
+DesktopNames=XDE:BSPWM
 
 [Window Manager]
+Name=bspwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

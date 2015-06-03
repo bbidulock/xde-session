@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Small, fast, functional, and flexible window manager
 Icon=pekwm
-TryExec=/usr/bin/pekwm
+TryExec=pekwm
 Exec=pekwm
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=pekwm
+X-AppInstall-Package=pekwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=pekwm-git 1:0.1.17.r115.gf055b87-2
 X-Arch-Package-Name=pekwm-git
 X-Arch-Package-Version=1:0.1.17.r115.gf055b87-2
 X-Arch-Package-Description=Small, fast, functional, and flexible window manager
 X-Arch-Package-URL=http://www.pekwm.org/
+DesktopNames=PEKWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop PEKWM -startwm pekwm
 Comment=PekWM under an XDE session
+DesktopNames=XDE:PEKWM
 
 [Window Manager]
+Name=pekwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

@@ -8,7 +8,7 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=2bwm - A fast floating and keyboard driven window manager
 Icon=2bWM
-TryExec=/usr/bin/2bwm
+TryExec=2bwm
 Exec=2bwm
 Terminal=false
 NoDisplay=true
@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=2bwm
+X-AppInstall-Package=2bwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=2bwm-git 0.1.r106.g0419aae-1
 X-Arch-Package-Name=2bwm-git
 X-Arch-Package-Version=0.1.r106.g0419aae-1
 X-Arch-Package-Description=A fast floating window manager
 X-Arch-Package-URL=https://github.com/venam/2bwm
+DesktopNames=2BWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop 2BWM -startwm start-2bwm
 Comment=2bwm in an XDE session
+DesktopNames=XDE:2BWM
 
 [Window Manager]
+Name=2bwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

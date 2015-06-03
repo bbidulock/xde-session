@@ -18,13 +18,18 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=fvwm
+X-AppInstall-Package=fvwm-crystal
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=fvwm-crystal 3.3.2-2
 X-Arch-Package-Name=fvwm-crystal
 X-Arch-Package-Version=3.3.2-2
 X-Arch-Package-Description=Transparent Themes for fvwm
 X-Arch-Package-URL=http://fvwm-crystal.sourceforge.net/
+DesktopNames=FVWM
 
 [Window Manager]
+Name=fvwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=false

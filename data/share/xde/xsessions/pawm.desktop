@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=pawm
+X-AppInstall-Package=pawm
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=pawm 2.3.0-3
 X-Arch-Package-Name=pawm
 X-Arch-Package-Version=2.3.0-3
 X-Arch-Package-Description=Puto Amo Window Manager is a full featured window manager, but without useless bells and whistles
 X-Arch-Package-URL=https://sites.google.com/site/pleyadestest/david/projects/pawm
+DesktopNames=PAWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop PAWM -startwm pawm
 Comment=Puto Amo under and XDE session
+DesktopNames=XDE:PAWM
 
 [Window Manager]
+Name=pawm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

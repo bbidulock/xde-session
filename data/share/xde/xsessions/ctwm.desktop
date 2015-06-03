@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=ctwm
+X-AppInstall-Package=ctwm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=ctwm-git 3.8.2.r521.g53f6772-1
 X-Arch-Package-Name=ctwm-git
 X-Arch-Package-Version=3.8.2.r521.g53f6772-1
 X-Arch-Package-Description=Claude's Tab Window Manager
 X-Arch-Package-URL=http://ctwm.org/
+DesktopNames=CTWM
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop CTWM -startwm start-ctwm
 Comment=CTWM in an XDE session
+DesktopNames=XDE:CTWM
 
 [Window Manager]
+Name=ctwm
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true

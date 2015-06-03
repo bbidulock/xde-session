@@ -18,11 +18,15 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=wmaker
+X-AppInstall-Package=windowmaker-crm-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
 X-Arch-Package=windowmaker-crm-git 0.95.6.r296.gbae28b2-1
 X-Arch-Package-Name=windowmaker-crm-git
 X-Arch-Package-Version=0.95.6.r296.gbae28b2-1
 X-Arch-Package-Description=An X11 window manager with a NEXTSTEP look and feel
 X-Arch-Package-URL=http://www.windowmaker.org/
+DesktopNames=WMAKER
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -30,8 +34,10 @@ Name=XDE
 Icon=xde
 Exec=xde-session -desktop WMAKER -startwm wmaker
 Comment=WindowMaker under an XDE session
+DesktopNames=XDE:WMAKER
 
 [Window Manager]
+Name=wmaker
 SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=true
