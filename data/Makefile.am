@@ -357,6 +357,7 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/xsessions/awesome.desktop \
 	share/xde/xsessions/blackbox.desktop \
 	share/xde/xsessions/bspwm.desktop \
+	share/xde/xsessions/compiz.desktop \
 	share/xde/xsessions/ctwm.desktop \
 	share/xde/xsessions/cwm.desktop \
 	share/xde/xsessions/dwm.desktop \

@@ -112,7 +112,20 @@ TryExec=xde-input
 Exec=xde-input
 Terminal=false
 NotShowIn=GNOME;KDE;XFCE;LXDE;
-Categories=XDE;System;Settings;HardwareSettings;
+Categories=Settings;System;HardwareSettings;XDE;
 StartupNotify=true
 StartupWMClass=xde-input
 X-GNOME-Autostart-enabled=true
+X-AppInstall-Package=xde-session-git
+X-AppInstall-Popcon=0
+X-AppInstall-Section=main
+X-Arch-Package=xde-session-git 1.1.14.g42b29ca-1
+X-Arch-Package-Name=xde-session-git
+X-Arch-Package-Version=1.1.14.g42b29ca-1
+X-Arch-Package-Description=X Desktop Environment Display and Session Management
+X-Arch-Package-URL=https://github.com/bbidulock/xde-session
+Actions=Edit;
+
+[Desktop Action Edit]
+Name=Edit Settings
+Exec=xde-input -editor
