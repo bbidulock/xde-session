@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=MVWM
 GenericName=Window Manager
@@ -67,7 +65,6 @@ Comment[zu]=Isendlalelo esisebenza njengomlawuli wesibonisi esinamandla se-ICCCM
 Icon=mvwm
 TryExec=/usr/bin/mvwm
 Exec=mvwm
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=true
@@ -82,22 +79,27 @@ X-GNOME-Bugzilla-Product=Mvwm
 X-GNOME-Bugzilla-Component=general
 X-AppInstall-Package=mvwm-git
 X-AppInstall-Popcon=572
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=mvwm-git r5713.f23f011-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=mvwm-git
 X-Arch-Package-Version=r5713.f23f011-1
 X-Arch-Package-Description=A clean-up effort of FVWM (with rounded corner patch)
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/ThomasAdam/mvwm
 DesktopNames=MVWM
+X-LightDM-DesktopName=mvwm
 X-SuSE-translate=true
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop MVWM -startwm mvwm
 Comment=MVWM in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop MVWM -startwm mvwm
 DesktopNames=XDE:MVWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=mvwm

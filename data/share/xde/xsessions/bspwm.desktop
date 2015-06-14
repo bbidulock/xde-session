@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=bspwm
 GenericName=Window Manager
@@ -8,9 +6,8 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=A tiling window manager base on binary space partitioning
 Icon=bspwm
-TryExec=bspwm
+TryExec=/usr/bin/bspwm
 Exec=bspwm
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,22 +16,34 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=bspwm
 X-AppInstall-Package=bspwm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=bspwm-git 997-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=bspwm-git
 X-Arch-Package-Version=997-1
 X-Arch-Package-Description=A tiling window manager based on binary space partitioning
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/baskerville/bspwm
 DesktopNames=BSPWM
-Actions=XDE;
+X-LightDM-DesktopName=bspwm
+Actions=XDE;BSPWM;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop BSPWM -startwm start-bspwm
 Comment=bswpm in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop BSPWM -startwm start-bspwm
 DesktopNames=XDE:BSPWM
+X-LightDM-DesktopName=xde
+
+[Desktop Action BSPWM]
+Name=Session
+Comment=Launch a bspwm session
+TryExec=/usr/bin/bspwm-session
+Exec=bspwm-session
+DesktopNames=BSPWM
+X-LightDM-DesktopName=bspwm
 
 [Window Manager]
 Name=bspwm

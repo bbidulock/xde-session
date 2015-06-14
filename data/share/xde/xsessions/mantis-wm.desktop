@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=mantis-wm
 GenericName=Window Manager
@@ -10,7 +8,6 @@ Comment=Lightweight window manager for X
 Icon=mantis-wm
 TryExec=/usr/bin/mantis-wm
 Exec=mantis-wm
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,22 +16,26 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=mantis-wm
 X-AppInstall-Package=mantis-wm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=mantis-wm-git 0.11.c5805bd-2
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=mantis-wm-git
 X-Arch-Package-Version=0.11.c5805bd-2
 X-Arch-Package-Description=Lightweight window manager for X
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://github.com/andreas-volker/mantis-wm
 DesktopNames=MANTIS
+X-LightDM-DesktopName=mantis
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop MANTIS -startwm start-mantis
 Comment=Mantis under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop MANTIS -startwm start-mantis
 DesktopNames=XDE:MANTIS
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=mantis-wm

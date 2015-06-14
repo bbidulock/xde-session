@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=cwm
 GenericName=Window Manager
@@ -10,7 +8,6 @@ Comment=OpenBSD fork of calmwm, a clean and lightweight window manager
 Icon=cwm
 TryExec=/usr/bin/cwm
 Exec=cwm
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,22 +16,26 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=cwm
 X-AppInstall-Package=cwm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=cwm-git 20150423-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=cwm-git
 X-Arch-Package-Version=20150423-1
 X-Arch-Package-Description=OpenBSD fork of calmwm, a clean and lightweight window manager
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.openbsd.org/cgi-bin/man.cgi?query=cwm&sektion=1
 DesktopNames=CWM
+X-LightDM-DesktopName=cwm
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop CWM -startwm start-cwm
 Comment=cwm in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop CWM -startwm start-cwm
 DesktopNames=XDE:CWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=cwm

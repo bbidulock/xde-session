@@ -1,17 +1,13 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
-Name=IceWM
-Name[en_US]=IceWM
+Name=IceWM Session
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Simple and fast window manger
 Icon=icewm
-TryExec=icewm-session
+TryExec=/usr/bin/icewm-session
 Exec=icewm-session
-Terminal=false
 NoDisplay=true
 Hidden=true
 Categories=WindowManager;Application;System;
@@ -21,14 +17,16 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=icewm
 X-AppInstall-Package=icewm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=icewm-git 1.3.9.104-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=icewm-git
 X-Arch-Package-Version=1.3.9.104-1
 X-Arch-Package-Description=A window manager designed for speed, usability, and consistency
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/bbidulock/icewm
 DesktopNames=ICEWM
+X-LightDM-DesktopName=icewm
 
 [Window Manager]
 Name=icewm

@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=2bwm
 GenericName=Window Manager
@@ -8,9 +6,8 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=2bwm - A fast floating and keyboard driven window manager
 Icon=2bWM
-TryExec=2bwm
+TryExec=/usr/bin/2bwm
 Exec=2bwm
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,21 +16,25 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=2bwm
 X-AppInstall-Package=2bwm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
-X-Arch-Package=2bwm-git 0.1.r106.g0419aae-1
+X-AppInstall-Section=custom
+X-Arch-Package=2bwm-git 0.1.r110.ga461244-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=2bwm-git
-X-Arch-Package-Version=0.1.r106.g0419aae-1
+X-Arch-Package-Version=0.1.r110.ga461244-1
 X-Arch-Package-Description=A fast floating window manager
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/venam/2bwm
+X-LightDM-DesktopName=2bwm
 DesktopNames=2BWM
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop 2BWM -startwm start-2bwm
 Comment=2bwm in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop 2BWM -startwm start-2bwm
+X-LightDM-DesktopName=xde
 DesktopNames=XDE:2BWM
 
 [Window Manager]

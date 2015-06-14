@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=Wind
 GenericName=Window Manager
@@ -10,7 +8,6 @@ Comment=Wind window manager
 Icon=windwm
 TryExec=/usr/bin/wind
 Exec=wind
-Terminal=false
 NoDisplay=true
 Hidden=true
 Categories=WindowManager;Application;System;
@@ -20,22 +17,26 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=wind
 X-AppInstall-Package=windwm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=windwm-git 1.5-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=windwm-git
 X-Arch-Package-Version=1.5-1
 X-Arch-Package-Description=Wind is window manager implements most parts of the ICCCM and EWMH/NetWM standards
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://windwm.sourceforge.net/
 DesktopNames=WIND
+X-LightDM-DesktopName=wind
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop WIND -startwm start-wind
 Comment=Wind under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop WIND -startwm start-wind
 DesktopNames=XDE:WIND
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=wind

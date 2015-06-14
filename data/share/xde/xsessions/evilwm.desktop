@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=evilwm
 GenericName=Window Manager
@@ -9,7 +7,6 @@ GenericName[pt]=Gestor de Janelas
 Icon=evilwm
 TryExec=/usr/bin/evilwm
 Exec=evilwm
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -18,22 +15,26 @@ X-GNOME-Autostart-Phase=Applications
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=evilwm
 X-AppInstall-Package=evilwm
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=evilwm 1.1.0-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=evilwm
 X-Arch-Package-Version=1.1.0-1
 X-Arch-Package-Description=Minimalist but usable window manager for the X Window System
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://evilwm.sourceforge.net
 DesktopNames=EVILWM
+X-LightDM-DesktopName=evilwm
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop EVILWM -startwm start-evilwm
 Comment=evilwm in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop EVILWM -startwm start-evilwm
 DesktopNames=XDE:EVILWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=evilwm

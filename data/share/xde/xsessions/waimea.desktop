@@ -1,16 +1,13 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=Waimea
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
-Comment=An X11 window manager design for maximum efficiency
+Comment=An X11 window manager designed for maximum efficiency
 Icon=waimea
-TryExec=waimea
+TryExec=/usr/bin/waimea
 Exec=waimea
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,22 +16,26 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=waimea
 X-AppInstall-Package=waimea-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=waimea-git 0.5.0.19-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=waimea-git
 X-Arch-Package-Version=0.5.0.19-1
 X-Arch-Package-Description=An X11 window manager designed for maximum efficiency
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/bbidulock/waimea
 DesktopNames=WAIMEA
+X-LightDM-DesktopName=waimea
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop WAIMEA -startwm start-waimea
 Comment=Waimea under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop WAIMEA -startwm start-waimea
 DesktopNames=XDE:WAIMEA
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=waimea

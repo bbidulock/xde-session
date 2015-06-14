@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=larswm
 GenericName=Window Manager
@@ -10,7 +8,6 @@ Comment=A tiling window manager based on 9wm
 Icon=larswm
 TryExec=/usr/bin/larswm
 Exec=larswm
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,22 +16,26 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=larswm
 X-AppInstall-Package=larswm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=larswm-git 7.5.3.r17.gefa957c-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=larswm-git
 X-Arch-Package-Version=7.5.3.r17.gefa957c-1
 X-Arch-Package-Description=A tiling window manager based on 9wm
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://porneia.free.fr/larswm/larswm.html
 DesktopNames=LARSWM
+X-LightDM-DesktopName=larswm
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop LARSWM -startwm start-larswm
 Comment=larswm in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop LARSWM -startwm start-larswm
 DesktopNames=XDE:LARSWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=larswm

@@ -4,20 +4,16 @@ Name=PekWM
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
-Comment=Small, fast, functional, and flexible window manager
-Icon=pekwm
 TryExec=/usr/bin/pekwm
 Exec=pekwm
-NoDisplay=true
-Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-WMName=pekwm
+X-GNOME-WMName=PEKWM
 X-AppInstall-Package=pekwm-git
 X-AppInstall-Section=custom
-X-Arch-Package=pekwm-git 1:0.1.17.r120.ge1cb85a-1
+X-Arch-Package=pekwm-git 1:0.1.17.r115.gf055b87-2
 X-Arch-Package-Repository=custom
 X-Arch-Package-Name=pekwm-git
 X-Arch-Package-Version=1:0.1.17.r120.ge1cb85a-1
@@ -30,15 +26,16 @@ Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Comment=PekWM under an XDE session
+Comment=pekwm in an XDE session
 Icon=xde
 TryExec=/usr/bin/xde-session
-Exec=xde-session -desktop PEKWM -startwm pekwm
+Exec=xde-session -desktop PEKWM -startwm start-pekwm
 DesktopNames=XDE:PEKWM
 X-LightDM-DesktopName=xde
 
+
 [Window Manager]
 Name=pekwm
-SessionManaged=true
-StartupNotification=false
+SessionManaged=false
+StartupNotification=true
 X-XDE-Managed=true

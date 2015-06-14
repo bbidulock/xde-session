@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=Jwm
 GenericName=Window Manager
@@ -8,9 +6,8 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Minimalistic pure X11 window manager with menu/tray support
 Icon=jwm
-TryExec=jwm
+TryExec=/usr/bin/jwm
 Exec=jwm
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,22 +16,26 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=jwm
 X-AppInstall-Package=jwm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
-X-Arch-Package=jwm-git s1102-1
+X-AppInstall-Section=custom
+X-Arch-Package=jwm-git s1104-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=jwm-git
-X-Arch-Package-Version=s1102-1
+X-Arch-Package-Version=s1104-1
 X-Arch-Package-Description=JWM is a light-weight window manager for the X11 Window System. Git version.
+X-Arch-Package-Groups=x11
 X-Arch-Package-URL=http://joewing.net/projects/jwm/
 DesktopNames=JWM
+X-LightDM-DesktopName=jwm
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop JWM -startwm jwm
 Comment=JWM in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop JWM -startwm jwm
 DesktopNames=XDE:JWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=jwm

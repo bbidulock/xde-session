@@ -1,16 +1,13 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=FVWM-Crystal
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Umm... Nice desktop. Transparent, and all...
-Icon=/usr/bin/fvwm-crystal
-TryExec=fvwm-crystal
+Icon=fvwm-crystal
+TryExec=/usr/bin/fvwm-crystal
 Exec=fvwm-crystal
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,14 +16,16 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=fvwm
 X-AppInstall-Package=fvwm-crystal
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=extra
 X-Arch-Package=fvwm-crystal 3.3.2-2
+X-Arch-Package-Repository=extra
 X-Arch-Package-Name=fvwm-crystal
 X-Arch-Package-Version=3.3.2-2
 X-Arch-Package-Description=Transparent Themes for fvwm
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://fvwm-crystal.sourceforge.net/
 DesktopNames=FVWM
+X-LightDM-DesktopName=fvwm
 
 [Window Manager]
 Name=fvwm

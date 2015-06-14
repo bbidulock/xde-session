@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=awesome
 GenericName=Window Manager
@@ -8,9 +6,8 @@ GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment=Highly configurable framework window manager
 Icon=awesome
-TryExec=awesome
+TryExec=/usr/bin/awesome
 Exec=awesome
-Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -19,22 +16,26 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=awesome
 X-AppInstall-Package=awesome-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=main
+X-AppInstall-Section=custom
 X-Arch-Package=awesome-git 3.5.2.423.g1542722-1
+X-Arch-Package-Repository=custom
 X-Arch-Package-Name=awesome-git
 X-Arch-Package-Version=3.5.2.423.g1542722-1
 X-Arch-Package-Description=Highly configurable framework window manager
+X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://awesome.naquadah.org/
 DesktopNames=AWESOME
+X-LightDM-DesktopName=awesome
 Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Icon=xde
-Exec=xde-session -desktop AWESOME -startwm awesome
 Comment=awesome in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop AWESOME -startwm awesome
 DesktopNames=XDE:AWESOME
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=awesome
