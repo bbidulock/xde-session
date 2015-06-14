@@ -1,0 +1,34 @@
+[Desktop Entry]
+Type=Application
+Name=KDE/Openbox
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Use the Openbox window manager inside of the K Desktop Environment
+Icon=openbox
+TryExec=/usr/bin/startkde
+Exec=openbox-kde-session
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=true
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=Openbox
+X-AppInstall-Package=openbox
+X-AppInstall-Section=community
+X-Arch-Package=openbox 3.6-1
+X-Arch-Package-Repository=community
+X-Arch-Package-Name=openbox
+X-Arch-Package-Version=3.6-1
+X-Arch-Package-Description=Highly configurable and lightweight X11 window manager
+X-Arch-Package-Groups=lxde  lxqt
+X-Arch-Package-URL=http://openbox.org
+DesktopNames=KDE
+X-LightDM-DesktopName=kde
+
+[Window Manager]
+Name=Openbox
+SessionManaged=false
+StartupNotification=true
+X-XDE-Managed=false

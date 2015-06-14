@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=Application
+Name=pawm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Puto Amo window manager
+Icon=pawm
+TryExec=/usr/bin/pawm
+Exec=pawm
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=pawm
+X-AppInstall-Package=pawm
+X-AppInstall-Section=community
+X-Arch-Package=pawm 2.3.0-3
+X-Arch-Package-Repository=community
+X-Arch-Package-Name=pawm
+X-Arch-Package-Version=2.3.0-3
+X-Arch-Package-Description=Puto Amo Window Manager is a full featured window manager, but without useless bells and whistles
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=https://sites.google.com/site/pleyadestest/david/projects/pawm
+DesktopNames=PAWM
+X-LightDM-DesktopName=pawm
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=Puto Amo under and XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop PAWM -startwm pawm
+DesktopNames=XDE:PAWM
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=pawm
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

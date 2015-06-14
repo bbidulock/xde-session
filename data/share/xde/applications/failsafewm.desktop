@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=Application
+Name=failsafewm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=A frameless, low-footprint window manager
+Icon=failsafewm
+TryExec=/usr/bin/failsafewm
+Exec=failsafewm
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=Applications
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=failsafewm
+X-AppInstall-Package=failsafewm
+X-AppInstall-Section=custom
+X-Arch-Package=failsafewm 0.0.2-1
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=failsafewm
+X-Arch-Package-Version=0.0.2-1
+X-Arch-Package-Description=A frameless, low-footprint window manager designed for failsafe sessions
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://freecode.com/projects/failsafewm/
+DesktopNames=FAILSAFEWM
+X-LightDM-DesktopName=failsafewm
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=failsafewm in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop FAILSAFEWM -startwm failsafewm
+DesktopNames=XDE:FAILSAFEWM
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=failsafewm
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=false

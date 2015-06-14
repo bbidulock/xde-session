@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=Application
+Name=yeahwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Minimalist Window Manager for X
+Icon=yeahwm
+TryExec=/usr/bin/yeahwm
+Exec=yeahwm
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=yeahwm
+X-AppInstall-Package=yeahwm
+X-AppInstall-Section=custom
+X-Arch-Package=yeahwm 0.3.5-3
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=yeahwm
+X-Arch-Package-Version=0.3.5-3
+X-Arch-Package-Description=YeahWM - a window manager for X based on evilwm and aewm with little resource usage.
+X-Arch-Package-Groups=yeahtools
+X-Arch-Package-URL=http://phrat.de/index.html
+DesktopNames=YEAHWM
+X-LightDM-DesktopName=yeahwm
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=YeahWM under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop YEAHWM -startwm start-yeahwm
+DesktopNames=XDE:YEAHWM
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=yeahwm
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

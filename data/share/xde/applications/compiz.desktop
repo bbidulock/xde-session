@@ -1,0 +1,65 @@
+[Desktop Entry]
+Type=Application
+Name=Compiz
+Name[ar]=كمبويز
+Name[bn]=কমপিজ
+Name[bn_IN]=কমপিজ
+Name[fa]=کامپیز
+Name[gu]=કોમ્પિઝ
+Name[he]=קומפיז
+Name[hi]=कॉम्पिज़
+Name[hne]=काम्पिज
+Name[kn]=ಕಾಂಪಿಜ್
+Name[ko]=컴피즈
+Name[ml]=കോമ്പിസ്
+Name[mr]=कॉम्पीझ
+Name[or]=କମ୍ପିଜ
+Name[pa]=ਕੰਮਪਿਜ਼
+Name[sr@ijekavian]=Компиз
+Name[sr]=Компиз
+Name[x-test]=xxCompizxx
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+TryExec=/usr/bin/compiz
+Exec=compiz
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=compiz
+X-GnomeWMSettingsLibrary=compiz
+X-GNOME-WMSettingsModule=compiz
+X-AppInstall-Package=compiz-core
+X-AppInstall-Popcon=2477
+X-AppInstall-Section=aur
+X-Arch-Package=compiz-core 0.8.10-1
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=compiz-core
+X-Arch-Package-Version=0.8.10-1
+X-Arch-Package-Description=This is the latest stable release of Compiz without DE deps
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://blog.northfield.ws/compiz-0-8-10-release-announcement/
+X-Arch-Package-Votes=60
+DesktopNames=COMPIZ
+X-LightDM-DesktopName=compiz
+X-KDE-WindowManagerConfigure=simple-ccsm
+X-KDE-WindowManagerRestartArgument=--replace
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=compiz in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop COMPIZ -startwm start-compiz
+DesktopNames=XDE:COMPIZ
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=compiz
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=true

@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=Application
+Name=matwm2
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=A nice tiling or floating window manager
+Icon=matwm2
+TryExec=/usr/bin/matwm2
+Exec=matwm2
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=matwm2
+X-AppInstall-Package=matwm2-svn
+X-AppInstall-Section=custom
+X-Arch-Package=matwm2-svn r793-4
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=matwm2-svn
+X-Arch-Package-Version=r793-4
+X-Arch-Package-Description=A nice tiling or floating window manager
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://code.google.com/p/segin-utils/
+DesktopNames=MATWM2
+X-LightDM-DesktopName=matwm2
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=matwm2 under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop MATWM2 -startwm start-matwm2
+DesktopNames=XDE:MATWM2
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=matwm2
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

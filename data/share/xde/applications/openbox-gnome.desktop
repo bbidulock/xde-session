@@ -1,0 +1,35 @@
+[Desktop Entry]
+Type=Application
+Name=GNOME/Openbox
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Use the Openbox window manager inside of the GNOME desktop environment
+Icon=openbox
+TryExec=/usr/bin/gnome-session
+Exec=openbox-gnome-session
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=true
+X-GNOME-Autostart-Notify=true
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=openbox
+X-AppInstall-Package=gnome-session
+X-AppInstall-Section=extra
+X-Arch-Package=gnome-session 3.16.0-1
+X-Arch-Package-Repository=extra
+X-Arch-Package-Name=gnome-session
+X-Arch-Package-Version=3.16.0-1
+X-Arch-Package-Description=The GNOME Session Handler
+X-Arch-Package-Groups=gnome
+X-Arch-Package-URL=http://www.gnome.org
+DesktopNames=GNOME
+X-LightDM-DesktopName=gnome
+
+[Window Manager]
+Name=Openbox
+SessionManaged=false
+StartupNotification=true
+X-XDE-Managed=false

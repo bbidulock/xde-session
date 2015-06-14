@@ -1,0 +1,43 @@
+[Desktop Entry]
+Type=Application
+Name=wmx
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=The ideal window manager for today's ascetic programmer
+Icon=wmx
+TryExec=/usr/bin/wmx
+Exec=wmx
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=true
+X-GNOME-Autostart-Notify=true
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=wmx
+X-AppInstall-Package=wmx-svn
+X-AppInstall-Section=custom
+X-Arch-Package=wmx-svn r114-2
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=wmx-svn
+X-Arch-Package-Version=r114-2
+X-Arch-Package-Description=The ideal window manager for today's elegant and ascetic programmer
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://www.all-day-breakfast.com/wmx/
+DesktopNames=WMX
+X-LightDM-DesktopName=wmx
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop WMX -startwm start-wmx
+DesktopNames=XDE:WMX
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=wmx
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

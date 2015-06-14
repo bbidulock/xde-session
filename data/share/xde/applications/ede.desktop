@@ -1,0 +1,32 @@
+[Desktop Entry]
+Type=Application
+Name=EDE
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=This session logs you into EDE Desktop
+Icon=ede
+TryExec=/usr/bin/startede
+Exec=startede
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=pekwm
+X-AppInstall-Package=ede
+X-AppInstall-Section=custom
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=ede
+X-Arch-Package-Version=2.1-1
+X-Arch-Package-Description=The lightweight Equinox Desktop Environment
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://equinox-project.org/
+DesktopNames=EDE
+X-LightDM-DesktopName=ede
+
+[Window Manager]
+Name=pekwm
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=false
