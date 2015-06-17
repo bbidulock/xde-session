@@ -429,7 +429,6 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/xsessions/pawm.desktop \
 	share/xde/xsessions/pekwm.desktop \
 	share/xde/xsessions/pekwm-git.desktop \
-	share/xde/xsessions/pekwm_kdm.desktop \
 	share/xde/xsessions/plan9port.desktop \
 	share/xde/xsessions/rio.desktop \
 	share/xde/xsessions/spectrwm.desktop \
