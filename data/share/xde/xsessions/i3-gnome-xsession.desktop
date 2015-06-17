@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=XSession
+Name=i3 + GNOME
+Comment=improved dynamic tiling window manager
+TryExec=/usr/bin/gnome-session
+Exec=gnome-session --session=i3-gnome
+X-AppInstall-Package=i3-gnome
+X-AppInstall-Popcon=24
+X-AppInstall-Section=aur
+X-Arch-Package=i3-gnome 4.7-3
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=i3-gnome
+X-Arch-Package-Version=4.7-3
+X-Arch-Package-Description=Integrate the i3 window manager into GNOME
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://i3wm.org/
+X-Arch-Package-Votes=24

@@ -1,0 +1,87 @@
+[Desktop Entry]
+Type=XSession
+Name=Openbox
+Name[bn]=ওপেনবক্স
+Name[cy]=Blwchagored (Openbox)
+Name[fa]=اپن‌باکس
+Name[gu]=ઓપનબોક્સ
+Name[hi]=ओपनबाक्स
+Name[hne]=ओपनबाक्स
+Name[km]=បើក​ប្រអប់​
+Name[kn]=ಓಪನ್ ಬಾಕ್ಸ್
+Name[mai]=ओपनबाक्स
+Name[ml]=ഓപ്പണ്‍ബോക്സ്
+Name[mr]=ओपनबाक्स
+Name[ne]=खुला बाकस
+Name[pa]=ਓਪਨ-ਬਾਕਸੇ
+Name[sr@ijekavian]=Опенбокс
+Name[sr]=Опенбокс
+Name[ta]=திறப்பு பெட்டி
+Name[te]=ఒపెన్ బాక్స్
+Name[x-test]=xxOpenboxxx
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Log in using the Openbox window manager
+Icon=openbox
+TryExec=/usr/bin//usr/bin/openbox
+Exec=openbox
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=true
+X-GNOME-Autostart-Notify=true
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=Openbox
+X-AppInstall-Package=openbox-git
+X-AppInstall-Section=custom
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=openbox-git
+X-Arch-Package-Version=3.5.2.12.geffa866-1
+X-Arch-Package-Description=A window manager for the X11 windowing system
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://openbox.org/
+Aliases=openbox;
+DesktopNames=OPENBOX
+X-KDE-WindowManagerRestartArgument=--replace
+X-Ubuntu-Gettext-Domain=openbox
+Actions=XDE;Gnome;KDE;Session;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=Openbox under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop OPENBOX -startwm start-openbox
+DesktopNames=XDE:OPENBOX
+
+[Desktop Action Gnome]
+Name=Gnome
+Comment=Use the Openbox window manager inside of the GNOME desktop environment
+Icon=gnome
+TryExec=/usr/bin/openbox-gnome-session
+Exec=openbox-gnome-session
+DesktopNames=GNOME
+
+[Desktop Action KDE]
+Name=KDE
+Comment=Use the Openbox window manager inside of the K Desktop Environment
+Icon=kde
+TryExec=/usr/bin//usr/bin/startkde
+Exec=openbox-kde-session
+DesktopNames=KDE
+
+[Desktop Action Session]
+Name=Session
+Comment=Log in using the Openbox window manager (without a session manager)
+Icon=openbox
+TryExec=/usr/bin/openbox-session
+Exec=openbox-session
+DesktopNames=OPENBOX
+
+[Window Manager]
+Name=Openbox
+SessionManaged=false
+StartupNotification=true
+X-XDE-Managed=true

@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=XSession
+Name=Rio
+Comment=Log in to a Rio environment from Plan9port
+Icon=/opt/plan9/dist/spaceglenda100.png
+TryExec=/usr/bin/rio-de
+Exec=/usr/bin/rio-de
+X-AppInstall-Package=p9p-de
+X-AppInstall-Popcon=3
+X-AppInstall-Section=aur
+X-Arch-Package=p9p-de 20130526-2
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=p9p-de
+X-Arch-Package-Version=20130526-2
+X-Arch-Package-Description=Using plan9port as a desktop environment or Rio as window
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://swtch.com/plan9port/screenshots/rio.png
+X-Arch-Package-Votes=3

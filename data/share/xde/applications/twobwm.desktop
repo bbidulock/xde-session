@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=XSession
+Name=twobwm
+Comment=A fast floating and keyboard driven window manager
+TryExec=/usr/bin/twobwm
+Exec=twobwm
+X-AppInstall-Package=twobwm-git
+X-AppInstall-Section=custom
+X-Arch-Package=twobwm-git r349.3e0b5a7-1
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=twobwm-git
+X-Arch-Package-Version=r349.3e0b5a7-1
+X-Arch-Package-Description=A fast floating window manager
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=https://github.com/venam/2bwm

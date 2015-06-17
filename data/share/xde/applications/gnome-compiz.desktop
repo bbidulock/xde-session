@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=XSession
+Name=GNOME/Compiz
+Comment=This session logs you into the GNOME desktop environment with Compiz and Cairo-Dock
+Icon=compiz
+TryExec=/usr/bin/gnome-session
+Exec=/usr/bin/gnome-session --session=gnome-compiz
+X-AppInstall-Package=gnome-session-compiz-awn
+X-AppInstall-Popcon=6
+X-AppInstall-Section=aur
+X-Arch-Package=gnome-session-compiz-awn 1.0-1
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=gnome-session-compiz-awn
+X-Arch-Package-Version=1.0-1
+X-Arch-Package-Description=GDM session definition/menu entry for GNOME 3, with Compiz as
+X-Arch-Package-Groups=gnome-extra
+X-Arch-Package-URL=http://www.compiz.org/
+X-Arch-Package-Votes=6

@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=XSession
+Name=MCWM
+Comment=MC's Window Manager
+TryExec=/usr/bin/mcwm
+Exec=mcwm
+NoDisplay=true
+X-AppInstall-Package=mcwm-git
+X-AppInstall-Section=custom
+X-Arch-Package=mcwm-git 20130209.2.r11.gee7d9df-3
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=mcwm-git
+X-Arch-Package-Version=20130209.2.r11.gee7d9df-3
+X-Arch-Package-Description=A minimalist floating window manager written on top of the XCB
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=https://github.com/bbidulock/mcwm
+Aliases=mcwm;

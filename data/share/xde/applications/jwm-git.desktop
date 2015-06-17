@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=XSession
+Name=Jwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Minimalistic pure X11 window manager with menu/tray support
+Icon=jwm
+TryExec=/usr/bin/jwm
+Exec=jwm
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=jwm
+X-AppInstall-Package=jwm-git
+X-AppInstall-Section=custom
+X-Arch-Package=jwm-git s1102-1
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=jwm-git
+X-Arch-Package-Version=s1102-1
+X-Arch-Package-Description=JWM is a light-weight window manager for the X11 Window System. Git version.
+X-Arch-Package-Groups=x11
+X-Arch-Package-URL=http://joewing.net/projects/jwm/
+Aliases=jwm;
+DesktopNames=JWM
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=JWM in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop JWM -startwm jwm
+DesktopNames=XDE:JWM
+
+[Window Manager]
+Name=jwm
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

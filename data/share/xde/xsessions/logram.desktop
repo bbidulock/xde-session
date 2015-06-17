@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=XSession
+Name=Panache
+TryExec=/usr/bin/startlogram
+Exec=/usr/bin/startlogram
+X-AppInstall-Package=panache-lbase-git
+X-AppInstall-Popcon=1
+X-AppInstall-Section=aur
+X-Arch-Package=panache-lbase-git 20100212-1
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=panache-lbase-git
+X-Arch-Package-Version=20100212-1
+X-Arch-Package-Description=A desktop environment based on QT4 from Logram
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://www.logram-project.org/
+X-Arch-Package-Votes=1

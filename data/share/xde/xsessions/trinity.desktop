@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=XSession
+Name=Trinity
+Comment=The Trinity Desktop Environment. A powerful Open Source graphical desktop environment
+TryExec=/opt/trinity/bin/startkde
+Exec=/opt/trinity/bin/startkde
+X-AppInstall-Package=trinity-kdebase
+X-AppInstall-Section=aur
+X-Arch-Package=trinity-kdebase 3513-5
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=trinity-kdebase
+X-Arch-Package-Version=3513-5
+X-Arch-Package-Description=Trinity Desktop Enviroment base components
+X-Arch-Package-Groups=trinity-base;
+X-Arch-Package-URL=http://www.trinitydesktop.org

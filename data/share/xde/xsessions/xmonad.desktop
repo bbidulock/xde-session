@@ -1,0 +1,20 @@
+[Desktop Entry]
+Type=XSession
+Name=XMonad
+TryExec=/usr/bin/xmonad
+Exec=xmonad
+NoDisplay=true
+StartupNotify=false
+X-GNOME-Autostart-Notify=true
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=XMonad
+X-AppInstall-Package=xmonad
+X-AppInstall-Section=community
+X-AppInstall-Architectures=amd64,armel,hppa,i386,kfreebsd-amd64,kfreebsd-i386,mips,mipsel,powerpc,s390,sparc
+X-Arch-Package-Repository=community
+X-Arch-Package-Name=xmonad
+X-Arch-Package-Version=0.11.1-2
+X-Arch-Package-Description=Lightweight X11 tiled window manager written in Haskell
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://xmonad.org/

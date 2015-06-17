@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=XSession
+Name=GNOME/XMonad
+Comment=Tiling window manager
+TryExec=/usr/bin/gnome-session
+Exec=gnome-session --session=xmonad-gnome
+X-AppInstall-Package=haskell-xmonad-gnome3
+X-AppInstall-Section=aur
+X-Arch-Package=haskell-xmonad-gnome3 20141022-2
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=haskell-xmonad-gnome3
+X-Arch-Package-Version=20141022-2
+X-Arch-Package-Description=Minimal XMonad/GNOME3 hybrid desktop configuration. Pulls
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=https://github.com/tonyskn/arch-aur-packages/tree/master/xmonad-gnome3
+X-Arch-Package-Votes=0

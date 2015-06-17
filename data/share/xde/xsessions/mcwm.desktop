@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=XSession
+Name=MCWM
+Comment=MC's Window Manager
+TryExec=/usr/bin/mcwm
+Exec=mcwm
+X-AppInstall-Package=mcwm
+X-AppInstall-Section=custom
+X-Arch-Package=mcwm 20130209.2-5
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=mcwm
+X-Arch-Package-Version=20130209.2-5
+X-Arch-Package-Description=A minimalist floating window manager written on top of the XCB
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://hack.org/mc/hacks/mcwm/

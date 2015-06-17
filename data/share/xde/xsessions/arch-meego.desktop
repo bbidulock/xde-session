@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=XSession
+Name=Arch Netbook
+Comment=Arch's MeeGo User eXperience.
+TryExec=/usr/bin/startmeego
+Exec=startmeego
+X-AppInstall-Package=uxlaunch-git
+X-AppInstall-Section=aur
+X-Arch-Package=uxlaunch-git 20110220-1
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=uxlaunch-git
+X-Arch-Package-Version=20110220-1
+X-Arch-Package-Description=A generic X session launch utility for MeeGo
+X-Arch-Package-Groups=meego;
+X-Arch-Package-URL=http://meego.com

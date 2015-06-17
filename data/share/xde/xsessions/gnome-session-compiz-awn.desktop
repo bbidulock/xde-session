@@ -1,0 +1,57 @@
+[Desktop Entry]
+Type=XSession
+Name=Compiz
+Name[ar]=كمبويز
+Name[bn]=কমপিজ
+Name[bn_IN]=কমপিজ
+Name[fa]=کامپیز
+Name[gu]=કોમ્પિઝ
+Name[he]=קומפיז
+Name[hi]=कॉम्पिज़
+Name[hne]=काम्पिज
+Name[kn]=ಕಾಂಪಿಜ್
+Name[ko]=컴피즈
+Name[ml]=കോമ്പിസ്
+Name[mr]=कॉम्पीझ
+Name[or]=କମ୍ପିଜ
+Name[pa]=ਕੰਮਪਿਜ਼
+Name[sr@ijekavian]=Компиз
+Name[sr]=Компиз
+Name[x-test]=xxCompizxx
+TryExec=/usr/bin/bash
+Exec=bash -c 'compiz --replace --sm-client-id $DESKTOP_AUTOSTART_ID --keep-desktop-hints ccp decoration'
+NoDisplay=true
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=compiz
+X-GnomeWMSettingsLibrary=compiz
+X-GNOME-WMSettingsModule=compiz
+X-AppInstall-Package=gnome-session-compiz-awn
+X-AppInstall-Popcon=6
+X-AppInstall-Section=aur
+X-Arch-Package=gnome-session-compiz-awn 1.0-1
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=gnome-session-compiz-awn
+X-Arch-Package-Version=1.0-1
+X-Arch-Package-Description=GDM session definition/menu entry for GNOME 3, with Compiz as
+X-Arch-Package-Groups=gnome-extra
+X-Arch-Package-URL=http://www.compiz.org/
+X-Arch-Package-Votes=6
+DesktopNames=COMPIZ
+X-KDE-WindowManagerConfigure=simple-ccsm
+X-KDE-WindowManagerRestartArgument=--replace
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=compiz in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop COMPIZ -startwm start-compiz
+DesktopNames=XDE:COMPIZ
+
+[Window Manager]
+Name=compiz
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=true

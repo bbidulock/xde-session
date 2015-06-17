@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=XSession
+Name=FLWM
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=The Fast Light Window Manager
+Icon=flwm
+TryExec=/usr/bin/flwm
+Exec=flwm
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=flwm
+X-AppInstall-Package=flwm-tc
+X-AppInstall-Section=custom
+X-Arch-Package=flwm-tc 1.14-2
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=flwm-tc
+X-Arch-Package-Version=1.14-2
+X-Arch-Package-Description=Fast Light Window Manager (an enhanced version by the Tiny Core team)
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://flwm.sourceforge.net/
+Aliases=flwm;
+DesktopNames=FLWM
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=FLWM in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop FLWM -startwm start-flwm
+DesktopNames=XDE:FLWM
+
+[Window Manager]
+Name=flwm
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=true

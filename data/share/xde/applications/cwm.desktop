@@ -15,12 +15,12 @@ X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=cwm
-X-AppInstall-Package=cwm-git
+X-AppInstall-Package=cwm
 X-AppInstall-Section=custom
-X-Arch-Package=cwm-git 20150423-1
+X-Arch-Package=cwm 5.6-1
 X-Arch-Package-Repository=custom
-X-Arch-Package-Name=cwm-git
-X-Arch-Package-Version=20150423-1
+X-Arch-Package-Name=cwm
+X-Arch-Package-Version=5.6-1
 X-Arch-Package-Description=OpenBSD fork of calmwm, a clean and lightweight window manager
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.openbsd.org/cgi-bin/man.cgi?query=cwm&sektion=1

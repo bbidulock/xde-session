@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=XSession
+Name=velox
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Simple tiling window manager
+Icon=velox
+TryExec=/usr/bin/velox
+Exec=velox
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=velox
+X-AppInstall-Package=velox-git
+X-AppInstall-Section=custom
+X-Arch-Package=velox-git 0.0.2.r244.g4e549c6-1
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=velox-git
+X-Arch-Package-Version=0.0.2.r244.g4e549c6-1
+X-Arch-Package-Description=A simple xcb window manager inspired by awesome, xmonad, and dwm.
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://www.ohloh.net/p/velox-wm
+Aliases=velox;
+DesktopNames=VELOX
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=velox under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -exec uxterm -desktop VELOX -startwm velox
+DesktopNames=XDE:VELOX
+
+[Window Manager]
+Name=velox
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

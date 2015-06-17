@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=XSession
+Name=Awesome Cinnamon
+Comment=Dynamic window manager
+TryExec=/usr/bin/cinnamon
+Exec=cinnamon-session-cinnamon --session=awesome
+X-AppInstall-Package=awesome-cinnamon
+X-AppInstall-Popcon=3
+X-AppInstall-Section=aur
+X-Arch-Package=awesome-cinnamon 0.1-4
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=awesome-cinnamon
+X-Arch-Package-Version=0.1-4
+X-Arch-Package-Description=Launch awesome with cinnamon-settings-daemon
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=https://github.com/clfarron4/archlinux-awesome-cinnamon/
+X-Arch-Package-Votes=3

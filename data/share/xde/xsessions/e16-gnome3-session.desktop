@@ -5,7 +5,7 @@ GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
 Comment[it]=Questo avvia GNOME 3 usando Enlightenment (e16) come window manager
-Icon=/usr/share/e16/icons/e16.png
+Icon=e16
 TryExec=/usr/bin/gnome-session
 Exec=gnome-session --session=e16-gnome
 Hidden=true

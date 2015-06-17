@@ -350,68 +350,121 @@ nobase_dist_xdgdata_DATA = \
 
 nobase_dist_xdgdata_DATA += \
 	share/xde/xsessions/2bwm.desktop \
+	share/xde/xsessions/2bwm-git.desktop \
 	share/xde/xsessions/adwm.desktop \
+	share/xde/xsessions/adwm-git.desktop \
 	share/xde/xsessions/aewm.desktop \
 	share/xde/xsessions/aewm++.desktop \
 	share/xde/xsessions/AfterStep.desktop \
+	share/xde/xsessions/arch-meego.desktop \
+	share/xde/xsessions/awesome-cinnamon.desktop \
 	share/xde/xsessions/awesome.desktop \
+	share/xde/xsessions/awesome-git.desktop \
+	share/xde/xsessions/awesome-gnome.desktop \
 	share/xde/xsessions/blackbox.desktop \
+	share/xde/xsessions/blackbox-git.desktop \
 	share/xde/xsessions/bspwm.desktop \
 	share/xde/xsessions/compiz.desktop \
 	share/xde/xsessions/ctwm.desktop \
+	share/xde/xsessions/ctwm-git.desktop \
 	share/xde/xsessions/cwm.desktop \
+	share/xde/xsessions/cwm-git.desktop \
 	share/xde/xsessions/dwm.desktop \
+	share/xde/xsessions/dwm-git.desktop \
 	share/xde/xsessions/e16-gnome2-session.desktop \
 	share/xde/xsessions/e16-gnome3-session.desktop \
 	share/xde/xsessions/e16-kde-session.desktop \
 	share/xde/xsessions/e16-session.desktop \
 	share/xde/xsessions/echinus.desktop \
+	share/xde/xsessions/echinus-git.desktop \
 	share/xde/xsessions/ede.desktop \
+	share/xde/xsessions/enlightenment.desktop \
 	share/xde/xsessions/evilwm.desktop \
+	share/xde/xsessions/evilwm-git.desktop \
 	share/xde/xsessions/failsafewm.desktop \
 	share/xde/xsessions/fluxbox.desktop \
+	share/xde/xsessions/fluxbox-git.desktop \
+	share/xde/xsessions/fluxbox-wm.desktop \
 	share/xde/xsessions/flwm.desktop \
+	share/xde/xsessions/flwm-git.desktop \
+	share/xde/xsessions/flwm-tc.desktop \
 	share/xde/xsessions/Fvwm1.desktop \
 	share/xde/xsessions/fvwm2.desktop \
 	share/xde/xsessions/fvwm-crystal.desktop \
 	share/xde/xsessions/Fvwm.desktop \
 	share/xde/xsessions/fvwm.desktop \
+	share/xde/xsessions/gnome-compiz.desktop \
 	share/xde/xsessions/gnome.desktop \
+	share/xde/xsessions/gnome-session-compiz-awn.desktop \
 	share/xde/xsessions/goomwwm.desktop \
 	share/xde/xsessions/herbstluftwm.desktop \
 	share/xde/xsessions/i3.desktop \
+	share/xde/xsessions/i3-gnome-xsession.desktop \
 	share/xde/xsessions/i3-with-shmlog.desktop \
+	share/xde/xsessions/icewm2.desktop \
 	share/xde/xsessions/icewm.desktop \
+	share/xde/xsessions/icewm-git.desktop \
 	share/xde/xsessions/icewm-session.desktop \
 	share/xde/xsessions/Jwm.desktop \
+	share/xde/xsessions/jwm-git.desktop \
 	share/xde/xsessions/larswm.desktop \
+	share/xde/xsessions/larswm-git.desktop \
+	share/xde/xsessions/logram.desktop \
 	share/xde/xsessions/LXDE.desktop \
+	share/xde/xsessions/lxsession-default-apps.desktop \
 	share/xde/xsessions/mantis-wm.desktop \
+	share/xde/xsessions/mate.desktop \
 	share/xde/xsessions/matwm2.desktop \
+	share/xde/xsessions/matwm2-svn.desktop \
+	share/xde/xsessions/mcwm.desktop \
+	share/xde/xsessions/mcwm-git.desktop \
 	share/xde/xsessions/metacity.desktop \
 	share/xde/xsessions/mutter.desktop \
 	share/xde/xsessions/mvwm.desktop \
 	share/xde/xsessions/mwm.desktop \
 	share/xde/xsessions/openbox.desktop \
+	share/xde/xsessions/openbox-git.desktop \
 	share/xde/xsessions/openbox-gnome.desktop \
 	share/xde/xsessions/openbox-kde.desktop \
 	share/xde/xsessions/pawm.desktop \
 	share/xde/xsessions/pekwm.desktop \
+	share/xde/xsessions/pekwm-git.desktop \
+	share/xde/xsessions/pekwm_kdm.desktop \
+	share/xde/xsessions/plan9port.desktop \
+	share/xde/xsessions/rio.desktop \
 	share/xde/xsessions/spectrwm.desktop \
+	share/xde/xsessions/spectrwm-git.desktop \
 	share/xde/xsessions/ssh.desktop \
+	share/xde/xsessions/trinity.desktop \
 	share/xde/xsessions/twm.desktop \
+	share/xde/xsessions/twm-git.desktop \
+	share/xde/xsessions/twobwm.desktop \
 	share/xde/xsessions/uwm.desktop \
+	share/xde/xsessions/uwm-git.desktop \
 	share/xde/xsessions/velox.desktop \
+	share/xde/xsessions/velox-git.desktop \
 	share/xde/xsessions/vtwm.desktop \
+	share/xde/xsessions/vtwm-git.desktop \
+	share/xde/xsessions/waimea-cvs.desktop \
 	share/xde/xsessions/waimea.desktop \
+	share/xde/xsessions/waimea-git.desktop \
 	share/xde/xsessions/wind.desktop \
+	share/xde/xsessions/windowmaker-crm-git.desktop \
+	share/xde/xsessions/windowmaker-git.desktop \
 	share/xde/xsessions/windwm.desktop \
+	share/xde/xsessions/windwm-git.desktop \
 	share/xde/xsessions/wm2.desktop \
+	share/xde/xsessions/wm2-svn.desktop \
 	share/xde/xsessions/wmaker.desktop \
+	share/xde/xsessions/wmii36.desktop \
 	share/xde/xsessions/wmii.desktop \
 	share/xde/xsessions/wmx.desktop \
+	share/xde/xsessions/wmx-svn.desktop \
 	share/xde/xsessions/xdwm.desktop \
 	share/xde/xsessions/xfce.desktop \
+	share/xde/xsessions/xmonad.desktop \
+	share/xde/xsessions/xmonad-gnome.desktop \
+	share/xde/xsessions/xsession.desktop \
 	share/xde/xsessions/yeahwm.desktop
 
 nobase_dist_xdgdata_DATA += \

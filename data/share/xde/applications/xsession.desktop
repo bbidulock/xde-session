@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Name=XSession
+Comment=Run a custom ~/.xsession client script
+TryExec=~/.xsession
+Exec=~/.xsession
+NoDisplay=true
+X-AppInstall-Package=xsession.desktop
+X-AppInstall-Popcon=2
+X-AppInstall-Section=aur
+X-Arch-Package=xsession.desktop 0.0.1-2
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=xsession.desktop
+X-Arch-Package-Version=0.0.1-2
+X-Arch-Package-Description=Run a custom ~/.xsession client script
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://www.example.com/
+X-Arch-Package-Votes=2
+Aliases=xsession;

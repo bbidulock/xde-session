@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=XSession
+Name=wm2
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=The ideal window manager for today's ascetic programmer
+Icon=wm2
+TryExec=/usr/bin/wm2
+Exec=wm2
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=wm2
+X-AppInstall-Package=wm2-svn
+X-AppInstall-Section=custom
+X-Arch-Package=wm2-svn r114-1
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=wm2-svn
+X-Arch-Package-Version=r114-1
+X-Arch-Package-Description=The ideal window manager for today's elegant and ascetic programmer
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://www.all-day-breakfast.com/wm2/
+Aliases=wm2;
+DesktopNames=WM2
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=wm2 under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -exec uxterm -desktop WM2 -startwm wm2
+DesktopNames=XDE:WM2
+
+[Window Manager]
+Name=wm2
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

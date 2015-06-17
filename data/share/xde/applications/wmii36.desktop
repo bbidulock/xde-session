@@ -1,0 +1,44 @@
+[Desktop Entry]
+Type=XSession
+Name=wmii
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=A small, dynamic window manager for X11
+Icon=wmii
+TryExec=/usr/bin/wmii
+Exec=wmii
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=wmii
+X-AppInstall-Package=wmii36
+X-AppInstall-Section=aur
+X-Arch-Package=wmii36 3.6-1
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=wmii36
+X-Arch-Package-Version=3.6-1
+X-Arch-Package-Description=Next generation WMI (Window Manager Improved 2)
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://wmii.suckless.org/
+Aliases=wmii;
+DesktopNames=WMII
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=wmii under an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -exec uxterm -desktop WMII -startwm wmii
+DesktopNames=XDE:WMII
+
+[Window Manager]
+Name=wmii
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true
