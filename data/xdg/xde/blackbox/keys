@@ -313,6 +313,8 @@
     [execute]  (Mod4-Shift-Return) {uxterm}
     [execute]  (Mod4-Shift-s) {scrot -s}
     [execute]  (Mod4-Shift-slash) {xde-namews}
+    [execute]  (XF86MonBrightnessUp) {xbrightness +4096}
+    [execute]  (XF86MonBrightnessDown) {xbrightness -4096}
 
     [chain] (Mod1-Control-p)
         [execute]  (d) {xde-run}
