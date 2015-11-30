@@ -1,5 +1,5 @@
 [Desktop Entry]
-Type=Application
+Type=XSession
 Name=XSession
 Comment=Run a custom ~/.xsession client script
 TryExec=~/.xsession
