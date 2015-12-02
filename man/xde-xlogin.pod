@@ -45,28 +45,29 @@ the B<-xdmaddress>, B<-clientaddress> and B<-connectionType> options
 indicates to B<xde-xlogin> that it was not launched by B<xdm(1)> or an
 B<xdm(1)> work-alike as a chooser.  See L</USAGE> for more information.
 
+=head2 COMMAND OPTIONS
+
+When no command option is specified, B<xde-xlogin> executes the program.
+The following command options, when specified, print information instead
+of running the program.
+
 =over 4
 
-=item B<-banner> I<PNGFILE>
+=item B<-help>
 
-Specifies the banner grapic to display in the left pane of the host
-menu.  L<xdm(1)> does not provide this option, but it can easily be
-invoked by a shell script invoked by L<xdm(1)> that adds the options.
-For example:
+=item B<-version>
 
- #!/bin/sh
- /usr/lib/X11/xdm/xde-xlogin -banner /usr/lib/X11/xdm/banner.png $@
+=item B<-copying>
 
-=item B<-welcome> I<TEXT>
+=back
 
-Specifies the pango markup text that is to be displayed in the title
-area of the host menu.  As with the B<-banner> option, this option can
-easily be supplied by a shell script between L<xdm(1)> and
-B<xde-xlogin> that adds the options:
+=head2 XDM OPTIONS
 
- #!/bin/sh
- /usr/lib/X11/xdm/xde-xlogin -welcome "Welcome to X!" \
-	 -banner /usr/lib/X11/xdm/banner.png $@
+XDM options are not normally specified by the user of the program on the
+command line: they are, instead, provided by XDM when B<xde-xlogin> is
+being used as a greeter program.
+
+=over 4
 
 =item B<-xdmaddress> I<ADDRESS>
 
@@ -108,6 +109,55 @@ interest to L<xdm(1)> (see F</usr/include/X11/Xdmcp.h>) are:
 =item 256 - B<FamilyLocal> (AF_UNIX addresses only)
 
 =back
+
+=back
+
+=head2 GENERAL OPTIONS
+
+=over 4
+
+=item B<-welcome> I<TEXT>
+
+Specifies the pango markup text that is to be displayed in the title
+area of the host menu.  As with the B<-banner> option, this option can
+easily be supplied by a shell script between L<xdm(1)> and
+B<xde-xlogin> that adds the options:
+
+ #!/bin/sh
+ /usr/lib/X11/xdm/xde-xlogin -welcome "Welcome to X!" \
+	 -banner /usr/lib/X11/xdm/banner.png $@
+
+=item B<-banner> I<PNGFILE>
+
+Specifies the banner grapic to display in the left pane of the host
+menu.  L<xdm(1)> does not provide this option, but it can easily be
+invoked by a shell script invoked by L<xdm(1)> that adds the options.
+For example:
+
+ #!/bin/sh
+ /usr/lib/X11/xdm/xde-xlogin -banner /usr/lib/X11/xdm/banner.png $@
+
+=item B<-splash> I<JPGFILE>
+
+=item B<-side> {B<top>|B<left>|B<bottom>|B<right>}
+
+=item B<-charset> I<CHARSET>
+
+=item B<-language> I<LANGUAGE>
+
+=item B<-icons> I<THEME>
+
+=item B<-theme> I<THEME>
+
+=item B<-xde-theme>
+
+=item B<-vendor> I<VENDOR>
+
+=item B<-dry-run>
+
+=item B<-debug> I<LEVEL>
+
+=item B<-verbose> I<LEVEL>
 
 =back
 

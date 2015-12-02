@@ -1,6 +1,6 @@
 =head1 NAME
 
-xde-chooser -- choose and XDG desktop session to execute
+xde-chooser -- choose an XDG desktop session to execute
 
 =head1 SYNOPSIS
 
