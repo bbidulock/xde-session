@@ -70,6 +70,7 @@ Icon=fvwm
 TryExec=/usr/bin/fvwm
 Exec=fvwm
 NoDisplay=true
+Hidden=true
 Categories=WindowManager;Application;System;
 StartupNotify=true
 X-GNOME-Autostart-Notify=true
@@ -91,6 +92,7 @@ X-Arch-Package-Version=2.6.5-4
 X-Arch-Package-Description=A multiple large virtual desktop window manager originally derived from twm
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.fvwm.org
+Aliases=fvwm;
 DesktopNames=FVWM
 X-LightDM-DesktopName=fvwm
 X-SuSE-translate=true
@@ -98,10 +100,10 @@ Actions=XDE;
 
 [Desktop Action XDE]
 Name=XDE
-Comment=Fvwm in an XDE session
+Comment=FVWM in an XDE session
 Icon=xde
 TryExec=/usr/bin/xde-session
-Exec=xde-session -desktop FVWM -startwm start-fvwm
+Exec=xde-session -desktop FVWM -startwm fvwm
 DesktopNames=XDE:FVWM
 X-LightDM-DesktopName=xde
 
