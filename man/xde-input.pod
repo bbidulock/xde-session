@@ -240,7 +240,7 @@ not set L<xset(1)> parameters.
 
 =head1 EDITING INPUT SETTINGS
 
-B<xde-input> provides a mechanism for editting settings by invoking it
+B<xde-input> provides a mechanism for editing settings by invoking it
 using the B<--editor> option, or by invoking it as B<xde-input-edit>.
 Other tools for editing input settings are L<lxinput(1)> and L<xset(1)>.
 Values set with these tools are also detected and saved by B<xde-input>.
@@ -257,7 +257,7 @@ L<https://github.com/bbidulock/xde-session/issues>.
 =head1 HISTORY
 
 I wrote this tool because none of the lightweight window managers (with
-the notable excpetion of WindowMaker) save or restore the L<xset(1)>
+the notable exception of WindowMaker) save or restore the L<xset(1)>
 settings.  I got tired of typing C<xset r rate 300 66> every time I
 entered an X Window session under L<fluxbox(1)>, so I wrote this tool.
 Unfortunately, I also had to write the
