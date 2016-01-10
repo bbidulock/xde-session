@@ -262,7 +262,7 @@ can be detected that the display is remote from the current host.
 
 =item B<XDE-XChooser>*B<autologin>: {B<true>|B<false>}
 
-When I<true>, spefifies that the user defined in
+When I<true>, specifies that the user defined in
 B<XDE-XChooser>*B<user.default> should be automatically logged into a
 session without requiring a password.  It may be necessary for such a
 user to be a member of the C<autologin> group.  Auto login will be
@@ -283,7 +283,7 @@ appended.
 =item B<XDE-XChooser>*B<login.permit>: {B<true>|B<false>}
 
 The XDMCP Chooser has control of an X Display in the same manner as the
-XDMCP Greeter program and may provide an immeditate login option in
+XDMCP Greeter program and may provide an immediate login option in
 addition to a list of XDMCP hosts.  When I<true>, this option specifies
 that this login is to be presented as an option to users of the XDMCP
 Chooser.
@@ -292,7 +292,7 @@ Chooser.
 
 The XDMCP Chooser may provide a direct login option to the user of the
 chooser.  When I<true>, this option specifies that remote displays will
-be given the same opportunity to log in directly.  WHen I<false>,
+be given the same opportunity to log in directly.  When I<false>,
 displays that are detected as remote from the host will no be offered a
 direct login.
 
