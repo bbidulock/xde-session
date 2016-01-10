@@ -157,6 +157,12 @@ other controllable information concerning every window in the system
 B<-windowManager> option is not specified, save-yourself phase 2 window
 manager state will only be saved for proxied windows.
 
+=head1 BUGS
+
+B<xde-smproxy> had no known bugs at the time of release.  Please report
+bugs for current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues>.
+
 =head1 HISTORY
 
 I wrote B<xde-smproxy(1)> because the normal Xorg L<smproxy(1)> was
@@ -172,6 +178,12 @@ L<xdg-launch(1)>,
 L<smproxy(1)>,
 L<xsm(1)>.
 
+=head1 AUTHOR
+
+Brian Bidulock L<mailto:bidulock@cpan.org>
+
+See B<--copying> for full copyright notice and copying permissions.
+
 =cut
 
-# vim: set tw=72 nocin:
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
