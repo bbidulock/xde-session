@@ -18,8 +18,8 @@
 =head1 DESCRIPTION
 
 B<xde-session> starts a new X session, optionally launches a window
-manager, and optionallly starts any additional applications or XDG
-autostart applications as specified by the I<XDG Desktop Specification>. 
+manager, and optionally starts any additional applications or XDG
+auto-start applications as specified by the I<XDG Desktop Specification>. 
 
 See the L</USAGE> section for usage examples.
 
@@ -92,14 +92,14 @@ C<FLUXBOX>, C<BLACKBOX>, C<ICEWM>, C<LXDE>.  The default value when not
 specified is C<FLUXBOX>.  The desktop environment must be specified when
 B<--autostart> is specified.
 
-In L<lxsession(1)> compatability mode, this is equivalent to the B<-e>
+In L<lxsession(1)> compatibility mode, this is equivalent to the B<-e>
 option to L<lxsession(1)>.  This option may also be specified using the
 B<XDG_CURRENT_DESKTOP> or B<FBXDG_DE> environment variables described
 below.
 
 =item B<--session>, B<-s> I<SESSION>
 
-Invokes L<lxsession(1)> compatability mode, and specifies the session
+Invokes L<lxsession(1)> compatibility mode, and specifies the session
 profile to use for emulating L<lxsession(1)>.  This is equivalent to the
 B<-s> option to L<lxsession(1)>.  This option may also be specified
 using the B<DESKTOP_SESSION> environment variable as described below.
@@ -115,7 +115,7 @@ L<session.conf> file in the F<SESSION> subdirectory under
 F<$XDG_CONFIG_HOME/xde-session>, where F<SESSION> is specified by the
 B<-s> option, or by the first non-option argument.
 
-In L<lxsession(1)> compatability mode, this option will be determined
+In L<lxsession(1)> compatibility mode, this option will be determined
 from the L<lxsession(1)> F<desktop.conf> file in the F<SESSION>
 subdirectory under F<$XDG_CONFIG_HOME/lxsession>, where F<SESSION> is
 specified with the B<-s> option.
@@ -123,15 +123,15 @@ specified with the B<-s> option.
 =item B<--file>, B<-f> I<FILE>
 
 Execute the commands contained in the file, I<FILE>, after executing the
-window manager, but before executing any other commands or autostarting
+window manager, but before executing any other commands or auto-starting
 tasks.  File is compatible with the L<lxsession(1)> F<autostart> file.
 Each line of the file contains a shell command to execute, optionally
 prefixed with a C<@> to indicate that the process should be restarted
 when it exits abnormally.  Tasks executed from this file will be started
-before any specified by the B<-x> option, or autostarted from XDG
+before any specified by the B<-x> option, or auto-started from XDG
 autostart desktop files.
 
-In L<lxsession(1)> compatablity mode, this option will default to the
+In L<lxsession(1)> compatibility mode, this option will default to the
 F<autostart> file in the F<SESSION> subdirectory under
 F<$XDG_CONFIG_HOME/lxsession>, where F<SESSION> is specified with the
 B<-s> option.
@@ -160,7 +160,7 @@ restarted when it exits abnormally.
 
 Specifies whether (or not) to autostart XDG applications in accordance
 with the I<Desktop Application Autostart Specification>.  The inverted
-sense of the B<-a> flag is for compatablity with L<lxsession(1)>.
+sense of the B<-a> flag is for compatibility with L<lxsession(1)>.
 
 =item B<--wait>, B<-w>, B<--nowait>
 
@@ -207,7 +207,7 @@ F<~/.fluxbox/startup> file.  The execution line should look like:
  xde-session --desktop FLUXBOX --startwm "fluxbox -rc ~/.fluxbox/init"
 
 where F<~/.fluxbox/init> is just the default.  Use B<xde-session-edit(1)>
-to autostart the programs that you would otherwise start from your
+to auto-start the programs that you would otherwise start from your
 F<startup> script.  Therefore the above command bypasses the normal
 F<startup> script, which is likely unaware of B<xde-session>.
 
@@ -223,7 +223,7 @@ where F<~/.blackboxrc> is just the default.
 
 L<icewm(1)> user normally either launch L<icewm(1)> alone or
 L<icewm-session(1)>.  L<icewm-session(1)> provides some limited
-autostarting of applications (it forks L<icewwmtray(1)> and
+auto-starting of applications (it forks L<icewwmtray(1)> and
 L<icewmbg(1)> as well as L<icewm(1)> itself), but does not support XDG
 Autostart, XSETTINGS and Startup Notification.
 
@@ -236,7 +236,7 @@ directly, or under LXDE using L<lxdestart(1)>.
 
 L<wmaker(1)> has its own non-XDG compliant session management.  This
 means that if B<xde-session> is used to launch WindowMaker, it should be
-made to suppress XDG autostart tasks using the B<--noautostart> or B<-a>
+made to suppress XDG auto-start tasks using the B<--noautostart> or B<-a>
 option, such as:
 
  xde-session --noautostart --desktop WMAKER --startwm wmaker
@@ -251,12 +251,12 @@ option, such as:
 
 =item F<$XDG_CONFIG_{HOME,DIRS}/lxsession/SESSION/autostart>
 
-The default F<autostart> files in L<lxsession(1)> compatability mode.
-Note that the values from B<all> autostart files will be used.
+The default F<autostart> files in L<lxsession(1)> compatibility mode.
+Note that the values from B<all> auto-start files will be used.
 
 =item F<$XDG_CONFIG_{HOME,DIRS}/lxsession/SESSION/desktop.conf>
 
-The default F<desktop.conf> file in L<lxsession(1)> compatability mode.
+The default F<desktop.conf> file in L<lxsession(1)> compatibility mode.
 Note that the values from only the file in the "most important"
 directory will be used.
 
@@ -338,7 +338,7 @@ also terminate when the window manager exits normally.
 
 =head1 CAVEATS
 
-When in L<lxsession(1)> compatability mode, B<xde-session> cannot act as
+When in L<lxsession(1)> compatibility mode, B<xde-session> cannot act as
 an Xsettings daemon in accordance with the Xsettings specification.
 L<lxsession(1)> can.
 
