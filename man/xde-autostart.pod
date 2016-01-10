@@ -11,7 +11,7 @@ B<xde-autostart> [I<OPTIONS>]
 =head1 DESCRIPTION
 
 B<xde-autostart> performs the autostart startup functions for a new
-session.  Autostarting of applications is as specified in the L<XDG
+session.  Auto-starting of applications is as specified in the L<XDG
 Desktop Specification>.
 
 See L</USAGE> section for usage examples.
@@ -74,17 +74,17 @@ option is not specified.
 
 Specify the desktop environment (DE) to use, I<DESKTOP>, e.g.
 C<FLUXBOX>, C<BLACKBOX>, C<ICEWM>, C<XDE>.  The default value when not
-specified is C<XDE>.  The desktop evironment must be specified when
+specified is C<XDE>.  The desktop environment must be specified when
 B<--autostart> is specified.
 
-In L<lxsession(1)> compatability mode, this is equivalent to the B<-e>
+In L<lxsession(1)> compatibility mode, this is equivalent to the B<-e>
 option to L<lxsession(1)>.  This option may also be specified using the
 B<XDG_CURRENT_DESKTOP> or B<FBXDG_DE> environment variables described
 below.
 
 =item B<--session>, B<-s> I<SESSION>
 
-Invokes B<lxsession(1)> compatability mode, and specifies the session
+Invokes B<lxsession(1)> compatibility mode, and specifies the session
 profile to use for emulating the autostart portion of L<lxsession(1)>.
 This is equivalent to the B<-s> option to L<lxsession(1)>.  This option
 may also be specified using the B<DESKTOP_SESSION> environment variable
@@ -93,15 +93,15 @@ as described below.
 =item B<--file>, B<-f> I<FILE>
 
 Execute the commands contained in the file, I<FILE>, after a window
-manager appears, but before executing any other commands or autostarting
+manager appears, but before executing any other commands or auto-starting
 tasks.  The file is compatible with the L<lxsession(1)> F<autostart>
 file.  Each line of the file contains a shell command to execute,
-optionaly prefixede with a C<@> to indicate that the process should be
+optionally prefixed with a C<@> to indicate that the process should be
 restarted when it exits abnormally.  Tasks executed from this file will
-be started before any specified by the B<-x> option, or autostarted from
+be started before any specified by the B<-x> option, or auto-started from
 XDG autostart desktop files.
 
-In L<lxsession(1)> compatability mode, this option will default to the
+In L<lxsession(1)> compatibility mode, this option will default to the
 F<autostart> file in the F<SESSION> subdirectory under
 F<$XDG_CONFIG_HOME/lxsession>, where I<SESSION> is specified with the
 B<-s> option.
@@ -119,7 +119,7 @@ should be restarted when it exits abnormally.
 
 Specifies whether (or not) to autostart XDG applications in accordance
 with the L<Desktop Application Autostart Specification>.  The inverted
-sense of the B<-a> flag is for compatability with L<lxsession(1)>.
+sense of the B<-a> flag is for compatibility with L<lxsession(1)>.
 
 =item B<--wait>, B<-w>, B<--nowait>
 
@@ -146,16 +146,16 @@ optional branding.
 
 =item B<--toolwait>, B<W> [I<GUARD>][:I<DELAY>]
 
-When autostarting tasks for which startup notification completion can be
+When auto-starting tasks for which startup notification completion can be
 determined, serialize the startup in a similar fashion to
 L<xtoolwait(1)>, where the next autostart task is not launched until the
 previous task is complete, or the guard timeout period, I<GUARD>, in
 milliseconds, expires.  Where startup notification completion cannot be
 determined (such as for command executed from the B<--file> or B<--exec>
-options), the program will wait I<DELAY> millseconds before starting the
+options), the program will wait I<DELAY> milliseconds before starting the
 next task.  I<GUARD> defaults to 200 milliseconds.  I<DELAY> defaults to
-zero (0) milliseconds.  The default is to perform toolwait.  To disable
-toolwait, specify C<--toolwait 0:0>.
+zero (0) milliseconds.  The default is to perform tool wait.  To disable
+tool wait, specify C<--toolwait 0:0>.
 
 =item B<--charset>, B<-c> I<CHARSET>
 
@@ -166,7 +166,7 @@ login, use of this option is seldom necessary.
 
 =item B<--language>, B<-L> I<LANGUAGE>
 
-Speciy the output language for XDG desktop file derived information.
+Specify the output language for XDG desktop file derived information.
 Defaults to the language (LC_MESSAGES) of the current locale.  Because
 the program is intended on running after login, use of this option is
 seldom necessary.
@@ -181,7 +181,7 @@ specifying the I<IMAGE> argument to the B<--splash> option.
 =item B<--side>, B<-S> {B<left>|B<top>|B<right>|B<bottom>}
 
 Specifies the side of the window on which the logo will be placed.  This
-options is recognized for compatablity with other tools.
+options is recognized for compatibility with other tools.
 B<xde-autostart> always places the logo on the left and this option is
 ignored.
 
@@ -205,7 +205,7 @@ specified or default GTK+ theme.
 =item B<--foreground>, B<-F>
 
 The default is for the program to daemonize itself and continue
-monitoring autostarted tasks in the background.  This option causes the
+monitoring auto-started tasks in the background.  This option causes the
 program to run in the foreground and prints debugging information to
 standard error.  Implies a debug level of 2.
 
@@ -217,7 +217,7 @@ with B<--foreground>.
 
 =item B<--debug>, B<-d> [I<LEVEL>]
 
-Increment or set the debug level to I<LEVEL>.  The default debuggin
+Increment or set the debug level to I<LEVEL>.  The default debugging
 level is 0 (meaning no debugging).  When set, the program will print
 debugging information to standard error during operation.
 
@@ -286,7 +286,7 @@ and L<lxsession(1)> when launching XDG-compliant applications and
 desktop environments over NetWM/EWMH compliant light-weight window
 managers.  Most of these tools perform autostart I<before> the window
 manager is started, which can confuse the window manager.
-B<xde-autostart> autostarts program I<after> the window manager has
+B<xde-autostart> auto-starts program I<after> the window manager has
 appeared.
 
 B<xde-autostart> was originally written using L<perl-gtk>, but was
@@ -306,4 +306,4 @@ L<lxsession(1)>.
 
 =cut
 
-# vim: set tw=72 nocin:
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
