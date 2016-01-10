@@ -32,9 +32,9 @@ upper layer session manager.
 
 =item B<-d>, B<-dockApps>
 
-Peform proxy services also for L<wmaker(1)> dock apps.  This is seldom
-necessary as L<xde-dock(1)> provides a proxy for session management of
-L<wmaker(1)> dock apps on its own.
+Peform proxy services also for L<wmaker(1)> dock applications.  This is
+seldom necessary as L<xde-dock(1)> provides a proxy for session
+management of L<wmaker(1)> dock applications on its own.
 
 =item B<-s>, B<-systemTray>
 
@@ -67,7 +67,7 @@ client leader window that contains the C<WM_CLASS>, C<WM_NAME>,
 C<WM_COMMAND> and C<WM_CLIENT_MACHINE> properties.
 
 A non NetWM/EWMH or WinWM/WMH compliant window manager must add the
-C<WM_STATE> property to these windows in compiliance with ICCCM 2.0 for
+C<WM_STATE> property to these windows in compliance with ICCCM 2.0 for
 them to be detected.  For NetWM/EWMH or WinWM/WMH compliant window
 managers, the window must be present in the C<_NET_CLIENT_LIST> and
 C<_NET_CLIENT_LIST_STACKING> lists, or in the C<_WIN_CLIENT_LIST> list.
@@ -80,7 +80,7 @@ the B<WM_CLASS>, B<WM_NAME>, B<WM_COMMAND> and B<WM_CLIENT_MACHINE>
 properties.
 
 A non NetWM/EWMH or WinWM/WMH compliant window manager must add the
-C<WM_STATE> property to these windows in compiliance with ICCCM 2.0 for
+C<WM_STATE> property to these windows in compliance with ICCCM 2.0 for
 them to be detected.  For NetWM/EWMH or WinWM/WMH compliant window
 managers, the window must be present in the C<_NET_CLIENT_LIST> and
 C<_NET_CLIENT_LIST_STACKING> lists, or in the C<_WIN_CLIENT_LIST> list.
@@ -111,8 +111,8 @@ specifies an initial state of C<WithdrawnState>; or,
 
 =item b)
 
-in support of post 2.4.0 GTK+ dock apps, has any initial state but has
-the C<StateHint>, C<WindowGroupHint> and C<IconWindowHint> (and
+in support of post 2.4.0 GTK+ dock applications, has any initial state
+but has the C<StateHint>, C<WindowGroupHint> and C<IconWindowHint> (and
 possibly the C<IconPositionHint>) flags set; or,
 
 =item c)
@@ -122,9 +122,9 @@ has the C<WM_CLASS> property set with a I<res_class> of C<DockApp>.
 =back
 
 The C<WM_STATE> property must not be added to these windows (otherwise
-they are treated as non-dockapp windows).  Dock apps typically also have
-the C<WM_CLASS>, C<WM_NAME>, C<WM_COMMAND>, C<WM_CLIENT_MACHINE> and
-C<WM_CLIENT_LEADER> properties set.
+they are treated as non-dockapp windows).  Dock applications typically
+also have the C<WM_CLASS>, C<WM_NAME>, C<WM_COMMAND>,
+C<WM_CLIENT_MACHINE> and C<WM_CLIENT_LEADER> properties set.
 
 =item 5.
 
@@ -167,16 +167,14 @@ L<https://github.com/bbidulock/xde-session/issues>.
 
 I wrote B<xde-smproxy(1)> because the normal Xorg L<smproxy(1)> was
 lacking in a number of respects: it does not provide assistance for
-window managers; cannot identify WindowMaker dock apps; cannot identify
-applications that have system tray icons but no other window mapped;
-does not use startup notification nor /proc filesystem for additional
-information.
+window managers; cannot identify WindowMaker dock applications; cannot
+identify applications that have system tray icons but no other window
+mapped; does not use startup notification nor F</proc> file system for
+additional information.
 
 =head1 SEE ALSO
 
-L<xdg-launch(1)>,
-L<smproxy(1)>,
-L<xsm(1)>.
+L<xdg-launch(1)>, L<smproxy(1)>, L<xsm(1)>.
 
 =head1 AUTHOR
 
