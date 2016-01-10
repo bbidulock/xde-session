@@ -11,7 +11,7 @@ B<xde-xlock> [I<OPTIONS>]
 =head1 DESCRIPTION
 
 B<xde-xlock> is a screen locker replacement that provides tight
-integration with the L<systemd(8)> multi-session enviroment.  It acts as
+integration with the L<systemd(8)> multi-session environment.  It acts as
 a screen-saver locker, detects L<logind(8)> C<Lock> signals, and
 performs locking on VT switches.
 
@@ -109,7 +109,7 @@ printed to standard error.
 
 =item B<-v>, B<--verbose> [I<LEVEL>]
 
-Increase, or set to I<LEVEL>, the output verbosity.  THe default output
+Increase, or set to I<LEVEL>, the output verbosity.  The default output
 verbosity level is one (1), which means to output normal information to
 standard output.  When set to zero (0), no output will be printed to
 standard output. 
@@ -183,7 +183,7 @@ is running, it locks the screen before permitting the switch.
 =back
 
 The B<--quit> option can be used to ask a running instance of the screen
-locker to quit (uninstall itself and exit).
+locker to quit (remove itself and exit).
 
 The B<--lock> option can be used to ask a running instance of the screen
 locker to lock the screen.
@@ -239,6 +239,12 @@ F</usr/local/share:/usr/share> in accordance with XDG specifications.
 
 =back
 
+=head1 BUGS
+
+B<xde-xlock> had no known bugs at the time of release.  Please report
+bugs for current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues>.
+
 =head1 HISTORY
 
 I wrote B<xde-xlock> because there were no stand-alone screen lockers
@@ -252,8 +258,10 @@ L<xde-session(1)>.
 
 =head1 AUTHOR
 
-Brian Bidulock L<mailto:bidulock@openss7.org>
+Brian Bidulock L<mailto:bidulock@cpan.org>
+
+See B<--copying> for full copyright notice and copying permissions.
 
 =cut
 
-# vim: set tw=72 nocin:
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
