@@ -10,7 +10,7 @@ B<xde-xsession> [I<OPTIONS>] [I<SESSION>|I<SPECIAL>]
 
 =head1 DESCRIPTION
 
-B<xde-xsession> is a C<C>-language program that can be lauched from, or
+B<xde-xsession> is a C<C>-language program that can be launched from, or
 in lieue of, F<~/.xinitrc> or F<~/.xsession> to choose, launch and
 manage an X session, or when already running to switch or control the X
 session.  It has the following features:
@@ -296,7 +296,7 @@ C<XSession> desktop entry file.
 =head2 AUTOSTART DESKTOP ENTRY FILE
 
 B<xde-session> reads the B<AutoStart> formatted F<.desktop> file in the
-F<autostart> subdirectory of each use and system XDG config directory.
+F<autostart> subdirectory of each use and system XDG configuration directory.
 Normal XDG precedence rules apply for F<.desktop> files in these
 directories.
 
@@ -442,7 +442,7 @@ This key cannot reasonably be used from an XSession file.
 The desktop environment to set in the $XDG_CURRENT_DESKTOP environment
 variable and to use for autostart and application launching when
 examining C<OnlyShowIn> and C<NotShowIn> key-value pairs in desktop
-entry files.  Will be overriden by the B<--desktop> command line option.
+entry files.  Will be overridden by the B<--desktop> command line option.
 Can be specified in an XSession file.
 
 =item B<StartupFile>=I<PATH>
@@ -450,7 +450,7 @@ Can be specified in an XSession file.
 Specifies a null, partial, absolute tilde-expanded or relative path to a
 file from which to read formatted commands to launch before performing
 autostart, but after starting the XSession.  Defaults to an automatic
-lookup algorithm.  Will be overriden by the B<--file> command line
+lookup algorithm.  Will be overridden by the B<--file> command line
 option.  Can be specified in an XSession file.
 
 =item B<Wait>=I<BOOLEAN>
@@ -470,8 +470,8 @@ specified in an XSession file.
 
 =item B<ToolWait>=I<BOOLEAN>
 
-Specifies whether or not to perform tool wait on autostarted tasks where
-startup completion notification can be deteremined from the
+Specifies whether or not to perform tool wait on auto-started tasks where
+startup completion notification can be determined from the
 B<StartupNotify> and B<StartupWMClass> key-value pairs in the desktop
 entry file for the task.  The default when unspecified is to perform
 tool wait.  Can be overridden by the B<--toolwait> command line option.
@@ -514,7 +514,7 @@ C<--vendor> option.  Not useful in an XSession file.
 
 Specifies whether or not a splash window is to be generated when
 performing initializations and starting applications.  The default when
-unspecified is to display a splash window.  Will be overriden by the
+unspecified is to display a splash window.  Will be overridden by the
 B<--splash> command line option.  Can be specified in an XSession file. 
 
 =item B<SplashImage>=I<PATH>
