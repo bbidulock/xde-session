@@ -23,9 +23,9 @@ appearance.
 =item I<ADDRESSES>
 
 Provides the human-readable (decimal and dot notation, host name)
-specification of the display managers to query to determin whether they
+specification of the display managers to query to determine whether they
 are willing to manage a display.  In addition to all manner of textual
-IP addresses, the special value C<BROADCAST> can be specfied to indicate
+IP addresses, the special value C<BROADCAST> can be specified to indicate
 to the chooser that it should (also) broadcast queries to discover
 display managers.  The special value C<DNS-SD> can be specified to
 indicate to the chooser that it should (also) use C<DNS-SD> to discover
@@ -97,7 +97,7 @@ Specifies the connection type supported by the client as a decimal
 number, I<TYPE>.
 
 B<xde-xlogin> uses this option to filter the list of willing display
-managers to those that suport this connection type.  The three types of
+managers to those that support this connection type.  The three types of
 interest to L<xdm(1)> (see F</usr/include/X11/Xdmcp.h>) are:
 
 =over 4
@@ -129,7 +129,7 @@ B<xde-xlogin> that adds the options:
 
 =item B<-banner> I<PNGFILE>
 
-Specifies the banner grapic to display in the left pane of the host
+Specifies the banner graphic to display in the left pane of the host
 menu.  L<xdm(1)> does not provide this option, but it can easily be
 invoked by a shell script invoked by L<xdm(1)> that adds the options.
 For example:
