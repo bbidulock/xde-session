@@ -1,3 +1,31 @@
 @PACKAGE@ -- TODO file.  @DATE@
 
+- [ ] do not autostart tray icons; make an xde-trayicons instead (or
+      maybe just use xde-tray) that is autostarted, but which will only
+      launch the tray icons requested by the user (or default to a
+      reasonable set).
+
+- [ ] Expect system tray .desktop files to be in the XDG subdirectory
+      $XDG_DATA_DIRS/trayicons.  Also consider .desktop files with the
+      Category of TrayIcon in $XDG_DATA_DIRS/applications.
+
+- [ ] xde-tray (or xde-trayicons) should also monitor the system tray
+      and add to configuration tray icons that are launched separately
+      after startup.  Should also do X11 Session Management for the
+      system tray and icons.
+
+- [ ] do not autostart dock apps; make an xde-dockapps instead (or maybe
+      just use xde-dock) that is autostarted, but which will only launch
+      the dock apps requested by the user (or default to a reasonable
+      set).
+
+- [ ] Expect dock app .desktop files to be in the XDG subdirectory
+      $XDG_DATA_DIRS/dockapps.  Also consider .desktop files with the
+      Category of DockApp in $XDG_DATA_DIRS/applications.
+
+- [ ] xde-dock (or xde-dockapps) should also monitor the dock and add to
+      configuration dock apps that are launched separately after
+      startup.  Should also do X11 Session Management for the dock and
+      dock apps.
+
 # vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:
