@@ -1,3 +1,5 @@
+=pod
+
 =head1 NAME
 
 xde-chooser -- choose an XDG desktop session to execute
@@ -344,6 +346,9 @@ file, or from a display manager such as L<slim(1)>.
 B<xde-chooser> should really output the path to the F<XSessions> file
 instead of the lowercase session name.
 
+Please report bugs for current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues>.
+
 =head1 HISTORY
 
 I wrote B<xde-chooser> to provide a mechanism for selecting availabile
@@ -356,7 +361,7 @@ however, I hate to wait on computers so it was converted to C<C>.
 
 =head1 AUTHOR
 
-Brian Bidulock <bidulock@cpan.org>
+Brian Bidulock L<mailto:bidulock@cpan.org>
 
 See B<--copying> for full copyright notice and copying permissions.
 
@@ -368,4 +373,4 @@ L<lxsession(1)>.
 
 =cut
 
-# vim: set tw=72 nocin:
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
