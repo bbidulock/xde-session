@@ -84,7 +84,7 @@ manager.  It assists the window manager in the following ways:
 =item 1.
 
 Provides ICCCM 2.0 Section 5.2 Window Manager Support for Session
-Management.  It peforms this action as a meta-WM in parallel or in lieue
+Management.  It performs this action as a meta-WM in parallel or in lieue
 of session management performed by the window manager itself.  For known
 window managers it can enhance session management by detecting and
 managing windowmaker dock applications and system tray icons. (Note that
@@ -111,9 +111,9 @@ that L<xde-theme(1)> can do this too).
 
 =item 5.
 
-It can perform setup and autostart capabilities for window maangers as
+It can perform setup and autostart capabilities for window mangers as
 well.  Note that L<xde-autostart(1)> can perform autostart capabilities
-too; however, B<xde-wmproxy(1)> can make autostarted tasks children of
+too; however, B<xde-wmproxy(1)> can make auto-started tasks children of
 the window manager itself.
 
 =item 6.
@@ -159,7 +159,7 @@ If the second window manager is not ICCCM 2.0 compliant, it will not run
 because the first window manager will not release the
 C<SubstructureRedirect> input selection mask on the root window of the
 managed screen.  Such a second window manager can still be run from
-outside of the first by invoking it using xde-wmproxy as a wrapper to
+outside of the first by invoking it using B<xde-wmproxy> as a wrapper to
 launch the window manager.
 
 =head1 BUGS
