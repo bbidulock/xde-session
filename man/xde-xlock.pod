@@ -177,7 +177,7 @@ it unlocks the screen.
 
 =item 4.
 
-When a virtual teriminal change is made to the VT on which the X server
+When a virtual terminal change is made to the VT on which the X server
 is running, it locks the screen before permitting the switch.
 
 =back
