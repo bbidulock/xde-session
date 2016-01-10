@@ -61,7 +61,7 @@ B<xde-chooser>.
 
 A Session name is the name of the F<*.desktop> file (without the
 F<.desktop> suffix) that exists in a F<@XDG_DATA_DIRS/xsessions/>
-subdirectory describing the window manager session.  Som commonly
+subdirectory describing the window manager session.  Some commonly
 recognized session names are as follows: C<adwm>, C<AfterStep>,
 C<blackbox>, C<ctwm>, C<dwm>, C<etwm>, C<fluxbox>, C<flwm>, C<Fvwm>,
 C<fvwm>, C<Fvwm1>, C<icewm>, C<jwm>, C<openbox>, C<pekwm>, C<twm>,
@@ -82,7 +82,7 @@ ambiguous.  B<xde-chooser> accepts the following options:
 =head2 COMMAND OPTIONS
 
 The following command options are mutually exclusive: the first option
-in this groug encountered sets the mode of the program.  When no command
+in this group encountered sets the mode of the program.  When no command
 option is specified, the program assumes normal operation.  In normal
 operation the graphical chooser is display and once the user has
 selected a session, the program exits.
@@ -162,7 +162,7 @@ is compatible with L<xde-logout(1)>.
 =item B<--side>, B<-s> {B<left>|B<top>|B<right>|B<bottom>}
 
 Specifies the side of the window on which the logo will be placed.  This
-option is recognized for compatability with L<lxsession-logout(1)>.
+option is recognized for compatibility with L<lxsession-logout(1)>.
 B<xde-logout> always places the logo on the left and this option is
 ignored.
 
@@ -251,7 +251,7 @@ F<wmaker>, F<wmii>, F<xfce>.
 =item F<$HOME/.dmrc>
 
 This file contains the default session in the C<Session=> key of the
-C<[Desktop]> section.  This file will be written whenever the a new
+C<[Desktop]> section.  This file will be written whenever a new
 default is chosen.  It will be read in preference to the
 F<$XDG_CONFIG_HOME/xde/default> file.
 
@@ -351,7 +351,7 @@ L<https://github.com/bbidulock/xde-session/issues>.
 
 =head1 HISTORY
 
-I wrote B<xde-chooser> to provide a mechanism for selecting availabile
+I wrote B<xde-chooser> to provide a mechanism for selecting available
 window managers in an XDG compliant way for the I<unexicon> desktop.
 With L<gdm(1)> going to GTK3, the I<unexicon> desktop uses L<xdm(1)>,
 L<slim(1)>, L<xde-chooser(1)> and L<xde-session(1)> instead.
