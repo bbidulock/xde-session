@@ -1,0 +1,201 @@
+=pod
+
+=head1 NAME
+
+xde-traymgr - a system tray manager for XDE
+
+=head1 SYNOPSIS
+
+B<xde-traymgr> [I<OPTIONS>]
+
+=head1 DESCRIPTION
+
+B<xde-traymgr> is a C<C> language application program that manages
+system tray icons.  It provides startup, ordering and X11 session
+management for system tray icons.
+
+=head1 OPTIONS
+
+The program uses L<getopt_long_only(3)> to parse options, so abbreviated
+or single-dash long options are recognized when not ambiguous.  The
+program accepts the following options:
+
+=head2 COMMAND OPTIONS
+
+Command options affect the major operating mode of the program.  Only
+one command option may be specified (with the exception that B<--help>
+can be specified in conjunction with any other command option).  When no
+command option is specified, B<--manage> is assumed.  The command
+options recognized by the program are as follows:
+
+=over
+
+=item [B<--manage>, B<-m>]
+
+Assume normal operation.  Launch system tray icons and monitor the
+system tray.
+
+=item B<--replace>, B<-r>
+
+Replace a currently running instance of the program with the current
+process.
+
+=item B<--quit>, B<-q>
+
+Ask a running instance to exit.
+
+=item B<--edit>, B<-e>
+
+Ask a running instance to launch the editor.  The editor is used to
+edit the system tray icons that will be launched at startup and the
+order of system tray icons in the tray.
+
+=item B<--help>, B<-h>
+
+Print usage information to standard error containing current option
+settings and exit.
+
+=item B<--version>, B<-V>
+
+Print the program version to standard output and exit.
+
+=item B<--copying>, B<-C>
+
+Print copying permissions to standard output and exit.
+
+=item B<--client-id> I<CLIENTID>
+
+Tells the program to restore X Session Management settings saved using
+the client identifier, I<CLIENTID>.  This is an internal option used for
+communicating with an X Session Manager and should not be specified on
+the command line.  See L</USAGE>, below.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+The following general options can be used with most of the command
+options listed above:
+
+=over
+
+=item B<--display>, B<-d> I<DISPLAY>
+
+Specifies the display to use.  This is not normally necessary as the
+display is obtained from the B<DISPLAY> environment variable when this
+option is not specified.
+
+=item B<--nolaunch>, B<-n>
+
+Do not launch any dock applications, but simply monitor and provide X11
+session management.
+
+=item B<-n>, B<--dry-run>
+
+Don't do anything, just print what would be done on standard error.
+
+=item B<-D>, B<--debug> [I<LEVEL>]
+
+Increase, or set to I<LEVEL>, the debugging verbosity.  The default
+debugging verbosity level is zero (0), which means to output no
+debugging information.  When non-zero, debugging information will be
+printed to standard error.
+
+=item B<-v>, B<--verbose> [I<LEVEL>]
+
+Increase, or set to I<LEVEL>, the output verbosity.  The default output
+verbosity level is one (1), which means to output normal information to
+standard output.  When set to zero (0), no output will be printed to
+standard output. 
+
+=back
+
+=head1 USAGE
+
+=head1 ENVIRONMENT
+
+The following environment variables are examined by B<xde-traymgr>:
+
+=over
+
+=item B<HOME>
+
+Will be used to determine the user's home directory for the purpose of
+calculating the default values for B<XDG_CONFIG_HOME> and
+B<XDG_DATA_HOME> when required.
+
+=item B<XDG_CONFIG_HOME>
+
+When set, F<$XDG_CONFIG_HOME/autostart> will be examined for
+F<*.desktop> files.  The variable defaults to F<$HOME/.config>.
+
+=item B<XDG_CONFIG_DIRS>
+
+When set, F<$XDG_CONFIG_DIRS/autostart> will be examined for each
+directory in the colon separated list of directories contained in
+B<XDG_CONFIG_DIRS>.  The variable defaults to F</etc/xdg>.
+
+=item B<XDG_DATA_HOME>
+
+When set, F<$XDG_DATA_HOME/trayicons> and F<$XDG_DATA_HOME/applications>
+will be examined for C<TrayIcon> category F<*.desktop> files.  The
+variable defaults to F<$HOME/.local/share>.
+
+=item B<XDG_DATA_DIRS>
+
+When set, F<$XDG_DATA_DIRS/trayicons> and F<$XDG_DATA_DIRS/applications>
+will be examined for each directory in the colon separated list of
+directories contained in B<XDG_DATA_DIRS>.  The variable defaults to
+F</usr/local/share:/usr/share>.
+
+=item B<DISPLAY>
+
+=item B<DESKTOP_STARTUP_ID>
+
+=item B<LANG>
+
+=item B<XDG_CURRENT_DESKTOP>
+
+=item B<XDG_MENU_PREFIX>
+
+=item B<XDG_VENDOR_ID>
+
+=item B<DESKTOP_SESSION>
+
+=back
+
+=head1 BUGS
+
+B<xde-traymgr> had no known bugs at the time of release.  Please report
+bugs for current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues>.
+
+=head1 HISTORY
+
+Originally, XDE used to launch WindowMaker dock applications at startup
+using F<autostart> directory F<.desktop> files.  This approach did not
+provide for session management control and provided only a crude
+mechanism for editing dock applications (basically just editing
+F<autostart> entries).  I wrote this application to provide both the
+ability to place dock applications under session management control as
+well as providing a better mechanism for editing which dock applications
+will be launched at startup with corresponding window managers.
+
+Many docks do not have the ability to specify ordering of system tray
+icons (with the possible exception of L<fluxbox(1)> and L<wmaker(1)>).
+The F<autostart> approach also had the problem that dock applications
+were launched in application id order and raced for position in the
+dock.  This application has the ability to order and reorder dock
+applications in the dock, as well as controlling the order of startup.
+
+=head1 SEE ALSO
+
+=head1 AUTHOR
+
+Brian Bidulock L<mailto:bidulock@cpan.org>
+
+See B<--copying> for full copyright notice and copying permissions.
+
+=cut
+
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:

@@ -10,7 +10,9 @@ xde_man_files = \
 	xde-xlogin.man \
 	xde-wmproxy.man \
 	xde-xsession.man \
-	xde-xlock.man
+	xde-xlock.man \
+	xde-traymgr.man \
+	xde-dockmgr.man
 
 nodist_man1_MANS = $(xde_man_files)
 CLEANFILES = $(xde_man_files)
@@ -26,7 +28,9 @@ EXTRA_DIST = \
 	xde-xlogin.pod \
 	xde-wmproxy.pod \
 	xde-xsession.pod \
-	xde-xlock.pod
+	xde-xlock.pod \
+	xde-traymgr.pod \
+	xde-dockmgr.pod
 
 SUFFIXES = .man .pod
 
