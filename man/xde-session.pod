@@ -1,17 +1,19 @@
+=pod
+
 =head1 NAME
 
  xde-session - start a window-manager session
 
 =head1 SYNOPSIS
 
- xde-session [ COMMAND ] [ OPTIONS ] [ I<SESSION> ]
+ xde-session [ COMMAND ] [ OPTIONS ] [ SESSION ]
  xde-session --help
 
  xde-session help
  xde-session edit    [ OPTIONS ]
  xde-session run     [ OPTIONS ] COMMAND ARG ...
- xde-session start   [ OPTIONS ] [ I<SESSION> ]
- xde-session restart [ OPTIONS ] [ I<SESSION> ]
+ xde-session start   [ OPTIONS ] [ SESSION ]
+ xde-session restart [ OPTIONS ] [ SESSION ]
 
 =head1 DESCRIPTION
 
@@ -268,7 +270,7 @@ The following environment variables are examined or set by B<xde-session>:
 
 =item B<HOME>
 
-Will be used to determined the user's home directory for the purpose of
+Will be used to determine the user's home directory for the purpose of
 calculating the default value for C<XDG_CONFIG_HOME> when required.
 
 =item B<XDG_CONFIG_HOME>
@@ -340,6 +342,12 @@ When in L<lxsession(1)> compatability mode, B<xde-session> cannot act as
 an Xsettings daemon in accordance with the Xsettings specification.
 L<lxsession(1)> can.
 
+=head1 BUGS
+
+B<xde-sessions> had no known bugs at the time of release.  Please report
+bugs for current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues>.
+
 =head1 HISTORY
 
 I wrote B<xde-session> due to the deficiencies of B<fbautostart(1)> and
@@ -348,15 +356,9 @@ environments over NWM/ENWM compliant light-weight window managers.
 
 =head1 AUTHOR
 
-Brian Bidulock <bidulock@openss7.org>
+Brian Bidulock L<mailto:bidulock@cpan.org>
 
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2013 by OpenSS7 Corporation.  All rights reserved.
-
-This program is free software; you basically stole it, and you can,
-therefore, do what you want with it, but we take no responsibility in
-that.
+See B<--copying> for full copyright notice and copying permissions.
 
 =head1 SEE ALSO
 
@@ -378,3 +380,4 @@ L<System Tray|http://www.freedesktop.org/wiki/Specifications/systemtray-spec>.
 
 =cut
 
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
