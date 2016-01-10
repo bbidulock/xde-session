@@ -162,7 +162,18 @@ managed screen.  Such a second window manager can still be run from
 outside of the first by invoking it using xde-wmproxy as a wrapper to
 launch the window manager.
 
+=head1 BUGS
+
+B<xde-wmproxy> had no known bugs at the time of release.  Please report
+bugs for current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues>.
+
+=head1 AUTHOR
+
+Brian Bidulock L<mailto:bidulock@cpan.org>
+
+See B<--copying> for full copyright notice and copying permissions.
 
 =cut
 
-# vim: set tw=72 nocin nosi:
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
