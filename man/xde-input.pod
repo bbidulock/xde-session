@@ -1,3 +1,5 @@
+=pod
+
 =head1 NAME
 
 xde-input - X settings for the X Desktop Environment
@@ -246,6 +248,12 @@ Note, however, that some versions of L<lxinput(1)> have bugs and
 annoyingly incorrectly set key repeat rates (they set the rate to the
 interval and intervals to the rate).
 
+=head1 BUGS
+
+B<xde-input> had no known bugs at the time of release.  Please report
+bugs for current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues>.
+
 =head1 HISTORY
 
 I wrote this tool because none of the lightweight window managers (with
@@ -260,7 +268,9 @@ discovering that L<lxinput(1)> incorrectly sets the rate to the interval
 
 =head1 AUTHOR
 
-Brian Bidulock <bidulock@cpan.org>
+Brian Bidulock L<mailto:bidulock@cpan.org>
+
+See B<--copying> for full copyright notice and copying permissions.
 
 =head1 SEE ALSO
 
@@ -271,3 +281,5 @@ L<X11::Protocol(3pm)>.
 L<X11::Protocol::Ext::XKEYBOARD(3pm)>.
 
 =cut
+
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
