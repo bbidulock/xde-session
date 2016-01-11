@@ -14,6 +14,7 @@ bin_PROGRAMS = \
         xde-xsession \
 	xde-login \
 	xde-xlock \
+	xde-wait \
 	test-login \
 	test-root
 
@@ -62,6 +63,11 @@ xde_xlock_CPPFLAGS = -DNAME=\"xde-xlock\"
 xde_xlock_SOURCES = xde-xlock.c
 xde_xlock_CFLAGS = $(AM_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(SYSTEMD_CFLAGS)
 xde_xlock_LDFLAGS = -lpam $(XVNC_LIBS) $(XFT_LIBS) $(DBUS_GLIB_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+
+xde_wait_CPPFLAGS = -DNAME=\"xde-wait\"
+xde_wait_SOURCES = xde-wait.c
+xde_wait_CFLAGS = $(X11_CFLAGS)
+xde_wait_LDFLAGS = $(X11_LIBS)
 
 xde_xsession_CPPFLAGS = -DNAME=\"xde-xsession\"
 xde_xsession_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS)

@@ -1,0 +1,199 @@
+=pod
+
+=head1 NAME
+
+xde-wait - wait for desktop resource
+
+=head1 SYNOPSIS
+
+B<xde-wait> [I<OPTIONS>] [[-c|--command|--] I<COMMAND> [I<ARGUMENT> [...]]]
+
+=head1 DESCRIPTION
+
+B<xde-wait> is a simple C<C> language program that can be used to wait
+for a window manager, system tray, pager or composite manager before
+running a command or exiting.
+
+=head1 ARGUMENTS
+
+=over
+
+=item [B<-c>, B<--command>, B<-->] I<COMMAND> [I<ARGUMENT> [...]]
+
+When specified, this sequence must be the last portion of the command
+line.  I<COMMAND> is the command to execute and I<ARGUMENT>s are the
+arguments for I<COMMAND>.  B<xde-wait> will L<execvp(3)> the command and
+arguments.
+
+=back
+
+=head1 OPTIONS
+
+The options that are detailed below are recognized by B<xdg-wait>.
+B<xdg-wait> uses L<getopt_long_only(3)>, so unambiguous abbreviations
+of long options and long options with a single dash are also supported.
+
+=head2 COMMAND OPTIONS
+
+The default is to wait for a desktop resource before exiting.  When any
+of the following options are specified, the command mode changes:
+
+=over
+
+=item [B<-w>, B<--wait>]
+
+When specified, or no other command option is specified, wait for the
+desktop resources and then exit or process the command.
+
+=item B<-i>, B<--info>
+
+Do not actually execute the command or wait; just print what would have
+been done to standard output.
+
+=item B<-h>, B<--help>
+
+Prints usage information to standard output and exits.
+
+=item B<-V>, B<--version>
+
+Prints detailed version information and exits.
+
+=item B<-C>, B<--copying>
+
+Prints detailed copying permissions and exits.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+The following are more general options:
+
+=over
+
+=item B<-d>, B<--display> I<DISPLAY>
+
+Specify the display to use (overriding the B<DISPLAY> environment
+variable).  The default is the value of the B<DISPLAY> environment
+variable.
+
+=item B<-s>, B<--screen> I<SCREEN>
+
+Only bind to the root window of the specified screen.
+
+=item B<-N>, B<--nowait>
+
+Do not wait for any desktop resource to appear.  The default is to wait
+for a window manager to appear: this option waits for nothing but simply
+backgrounds the command (or returns immediately if no command has been
+specified).
+
+=item B<-W>, B<--manager>, B<--window-manager>
+
+Wait for a window manager to appear.  This is the default.  See
+L<WINDOW MANAGERS> for the detection algorithm.
+
+=item B<-S>, B<--tray>, B<--system-tray>
+
+Wait for a system tray to appear before running the command or exiting.
+
+=item B<-P>, B<--pager>, B<--desktop-pager>
+
+Wait for a desktop pager to appear (or for EWMH/NetWM pager settings to
+be set) before running the command or exiting.
+
+=item B<-O>, B<--composite>, B<--composite-manager>
+
+Wait for a compositing manager to appear before running the command or
+exiting.
+
+=item B<-A>, B<--all>
+
+Wait for all desktop resources (window manager, system tray, desktop
+pager and composite manager) before running the command or exiting.
+
+=item B<-t>, B<--delay> I<MILLISECONDS>
+
+The default is to wait indefinitely for a resource to appear before
+continuing.  This option will wait not less than I<MILLISECONDS>
+milliseconds before proceeding.
+
+=back
+
+=head2 CONFIGURATION OPTIONS
+
+=over
+
+=item B<-v>, B<--verbose> [I<LEVEL>]
+
+Print diagnostic information to standard error during operation.  This
+option can be repeated to increase the verbosity of output.  The default
+level is 1.
+
+=item B<-D>, B<--debug> [I<LEVEL>]
+
+Prints debugging information to standard error during operation.  This
+option can be repeated to increase the debugging level.  The default
+level is 0.
+
+=back
+
+=head1 USAGE
+
+The common procedure when starting light-weight window managers is to
+start a start a window manager and sleep for two seconds before starting
+applications like so:
+
+    start-fluxbox & wm=$!
+    sleep 2
+    xtoolwait -withdrawn wmblob
+    xtoolwait -withdrawn wmfire
+    xtoolwait -withdrawn wmcalclock
+    xtoolwait pnmixer
+    wait $wm
+
+This is not optimal and increases the amount of time that it takes for a
+full desktop environment to start.
+
+With B<xde-wait>, you would use the following:
+
+    start-fluxbox & wm=$!
+    xde-wait --manager
+    xtoolwait -withdrawn wmblob
+    xtoolwait -withdrawn wmfire
+    xtoolwait -withdrawn wmcalclock
+    xde-wait --system-tray
+    xtoolwait pnmixer
+    wait $wm
+
+This starts applications immediately after the window manager becomes
+available.
+
+=head1 BUGS
+
+B<xde-wait> had no know bugs at the time of release.  Please report bugs
+in current versions to
+L<https://github.com/bbidulock/xde-ctools/issues/>.
+
+=head1 HISTORY
+
+I wrote B<xde-wait> (and the comparable features of L<xdg-launch(1)>) to
+support light-weight applications that behave poorly when launched
+before a window manager, system tray or pager are available.  Many
+light-weight system tray icons are particularly brittle when launched
+before a system tray.
+
+=head1 SEE ALSO
+
+L<xtoolwait(1x)>,
+L<xdg-launch(1)>,
+L<xdg-toolwait(1)>
+
+=head1 AUTHOR
+
+Brian Bidulock L<mailto:bidulock@openss7.org>.
+
+Please see C<xde-wait --copying> for copying permissions.
+
+=cut
+
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
