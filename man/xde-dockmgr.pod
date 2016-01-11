@@ -111,6 +111,8 @@ standard output.
 
 =head1 USAGE
 
+=head1 BEHAVIOR
+
 =head1 ENVIRONMENT
 
 The following environment variables are examined by B<xde-traymgr>:
@@ -188,6 +190,8 @@ reorder icons in the system tray, as well as controlling the order of
 startup.
 
 =head1 SEE ALSO
+
+L<xde-traymgr(1)>
 
 =head1 AUTHOR
 

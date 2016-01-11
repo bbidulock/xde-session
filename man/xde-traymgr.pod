@@ -112,6 +112,42 @@ standard output.
 
 =head1 USAGE
 
+=head1 BEHAVIOR
+
+When B<xde-traymgr> first starts, it establishes a connection with the
+X11 Session Manager and becomes an X11 Session Manager itself.  The
+purpose here is to intercept any X11 session management from system tray
+icon applications.
+
+When B<xde-traymgr> starts, it also monitors for startup notification so
+that it may identify applications that are invoked that establish a
+system tray icon.
+
+When B<xde-traymgr> starts, it then checks for the
+C<_NET_SYSTEM_TRAY_S%d> selection on all screens of the display, where
+C<%d> is the screen number.  When no system tray manager exists for a
+given screen, it will await acquisition of the manager selection for
+that screen before performing management of system tray icons for that
+selection.
+
+The B<xde-traymgr> selects for events on the manager window so that it
+may receive client messages requesting docking.  When it receives a
+C<SYSTEM_TRAY_REQUEST_DOCK> client message (message type
+C<_NET_SYSTEM_TRAY_OPCODE>), it identifies and selects for events on the
+"icon" window identified in the message.  When received, B<xde-traymgr>
+will monitor for XEMBED events associated with the "icon" window.
+
+After establishing input selection with the manager window,
+B<xde-traymgr> will start launching system tray icon applications as
+specified in the configuration file (or X11 session management save file
+when session management is restoring the program).  When determining
+which system tray icon applications to launch, it may consult an X11
+session management save file; the C<XDG_CURRENT_DESKTOP> environment
+variable; the C<DESKTOP_SESSION> environment variable; and information
+obtained concerning the window manager (or window manager name).  This
+information is used to locate the configuration file associated with the
+restored or default session for a given profile.
+
 =head1 ENVIRONMENT
 
 The following environment variables are examined by B<xde-traymgr>:
@@ -189,6 +225,8 @@ dock.  This application has the ability to order and reorder dock
 applications in the dock, as well as controlling the order of startup.
 
 =head1 SEE ALSO
+
+L<xde-dockmgr(1)>
 
 =head1 AUTHOR
 
