@@ -192,7 +192,7 @@ L<xdg-toolwait(1)>
 
 Brian Bidulock L<mailto:bidulock@openss7.org>.
 
-Please see C<xde-wait --copying> for copying permissions.
+See B<--copying> for full copyright notice and copying permissions.
 
 =cut
 
