@@ -170,9 +170,9 @@ available.
 
 =head1 BUGS
 
-B<xde-wait> had no know bugs at the time of release.  Please report bugs
-in current versions to
-L<https://github.com/bbidulock/xde-ctools/issues/>.
+B<xde-wait> had no know bugs at the time of release.  Please report
+bugs in current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues/>.
 
 =head1 HISTORY
 
