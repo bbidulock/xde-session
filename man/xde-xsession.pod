@@ -313,51 +313,77 @@ group in the file.  It also recognizes the following GNOME-defined keys:
 
 =item B<X-GNOME-Autostart-Notify>=I<BOOLEAN>
 
-=item B<X-GNOME-Autostart-Phase>={B<Applications>|B<Desktop>|B<Initialization>|B<Panel>|B<WindowManager>}
-
-=item B<X-GNOME-Provides>=I<ARRAY>;{B<filemanager>|B<login-sound>|B<panel>|B<windowmanager>}
-
-=item B<X-GNOME-Settings-Panel>=I<string>
+=item B<X-GNOME-Autostart-Phase>=I<STRING>
 
 =over
 
-=item background
+=item I<Initialization>
 
-=item datetime
+=item I<WindowManager>
 
-=item display
+=item I<Panel>
 
-=item empathy-accounts
+=item I<Desktop>
 
-=item info
+=item I<Applications>
 
-=item keyboard
+=back
 
-=item media
+=item B<X-GNOME-Provides>=I<ARRAY>
 
-=item mouse
+=over
 
-=item network
+=item I<filemanager>
 
-=item power
+=item I<login-sound>
 
-=item printers
+=item I<panel>
 
-=item region
+=item I<windowmanager>
 
-=item screen
+=back
 
-=item sound
+=item B<X-GNOME-Settings-Panel>=I<STRING>
 
-=item universal-access
+=over
 
-=item user-accounts
+=item I<background>
+
+=item I<datetime>
+
+=item I<display>
+
+=item I<empathy-accounts>
+
+=item I<info>
+
+=item I<keyboard>
+
+=item I<media>
+
+=item I<mouse>
+
+=item I<network>
+
+=item I<power>
+
+=item I<printers>
+
+=item I<region>
+
+=item I<screen>
+
+=item I<sound>
+
+=item I<universal-access>
+
+=item I<user-accounts>
 
 =back
 
 =item B<X-GNOME-UsesNotifications>=I<BOOLEAN>
 
-=item B<X-GNOME=WMName>=I<STRING>
+=item B<X-GNOME-WMName>=I<STRING>
 
 This is the name that is put on the window manager check window.  That
 is, the B<_NET_WM_NAME> property on the B<_NET_SUPPORTING_WM_CHECK>
