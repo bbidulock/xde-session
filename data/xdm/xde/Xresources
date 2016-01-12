@@ -161,9 +161,9 @@ xlogin.Login.greetFace:			Sans-12:bold
 !xlogin.Login.greetColor:		white
 xlogin.Login.greetColor:		grey20
 
-xlogin.Login.namePrompt:		Username:\ \ 
+xlogin.Login.namePrompt:		Username:  
 
-xlogin.Login.passwdPrompt:		Password:\ \ 
+xlogin.Login.passwdPrompt:		Password:  
 
 !xlogin.Login.promptFace:		Terminus-18:style=Bold
 xlogin.Login.promptFace:		Sans-12:bold
