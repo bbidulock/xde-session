@@ -11,8 +11,8 @@ B</usr/lib/X11/xdm/xde-xlogin> [I<OPTIONS>] ADDRESSES ...
 =head1 DESCRIPTION
 
 B<xde-xlogin> is an L<xdm(1)> xlogin and chooser replacement that
-provides a much nicer appearing login screen for L<xdm(1)>.  It is
-designed to let L<xdm(1)> do the heavy lifting of coordinating the
+provides a much nicer appearing login screen for L<xdm(1)>.
+It is designed to let L<xdm(1)> do the heavy lifting of coordinating the
 majority of the XDMCP protocol while providing a more aesthetic
 appearance.
 
@@ -20,9 +20,9 @@ appearance.
 
 =over 4
 
-=item I<ADDRESSES>
+=item I<ADDRESSES ...>
 
-Provides the human-readable (decimal and dot notation, host name)
+Provides the human-readable (decimal and dot notation, host names)
 specification of the display managers to query to determine whether they
 are willing to manage a display.  In addition to all manner of textual
 IP addresses, the special value C<BROADCAST> can be specified to indicate
@@ -41,9 +41,9 @@ No options are necessary.  When launched by L<xdm(1)>, it will provide
 the appropriate arguments.  B<xde-xlogin> can be launched directly on
 the command line of an x-terminal to test its appearance and operation.
 In this mode, arguments are still required but no options.  Absence of
-the B<-xdmaddress>, B<-clientaddress> and B<-connectionType> options
-indicates to B<xde-xlogin> that it was not launched by B<xdm(1)> or an
-B<xdm(1)> work-alike as a chooser.  See L</USAGE> for more information.
+the B<-xdmAddress>, B<-clientAddress> and B<-connectionType> options
+indicates to B<xde-xlogin> that it was not launched by L<xdm(1)> or an
+L<xdm(1)> work-alike as a chooser.  See L</USAGE> for more information.
 
 =head2 COMMAND OPTIONS
 
@@ -73,12 +73,12 @@ permissions and exits.
 =head2 XDM OPTIONS
 
 XDM options are not normally specified by the user of the program on the
-command line: they are, instead, provided by XDM when B<xde-xlogin> is
-being used as a greeter program.
+command line: they are, instead, provided by L<xdm(1)> when
+B<xde-xlogin> is being used as a greeter program.
 
 =over 4
 
-=item B<-xdmaddress> I<ADDRESS>
+=item B<-xdmAddress> I<ADDRESS>
 
 Specifies the address of a TCP socket upon which L<xdm(1)> is awaiting
 instructions for the server.  L<xdm(1)> encodes this I<ADDRESS> as a
@@ -91,7 +91,7 @@ the IPv4 or IPv6 network-byte-order IP address.
 B<xde-xlogin> uses the socket address communicated in this option to
 communicate the selection back to L<xdm(1)>.
 
-=item B<-clientaddress> I<IPADDR>
+=item B<-clientAddress> I<IPADDR>
 
 Specifies the client IP address I<IPADDR> that initiated the request.
 L<xdm(1)> encodes this as a string of hexadecimal characters (with no 0x
@@ -119,6 +119,8 @@ interest to L<xdm(1)> (see F</usr/include/X11/Xdmcp.h>) are:
 =item 256 - B<FamilyLocal> (AF_UNIX addresses only)
 
 =back
+
+L<xdm(1)> will only supply B<FamilyInternet>(0) or B<FamilyInternet6>(6).
 
 =back
 
@@ -153,7 +155,16 @@ For example:
 
 =item B<-splash> I<JPGFILE>
 
-Specifies an image to use for the background image for the login window.
+Specifies the graphic to use as the root window background for the
+greeter.  L<xdm(1)> does not provide this option, but it can easily be
+invoked by a shell script by L<xdm(1)> that adds the options.  For
+example:
+
+ #!/bin/sh
+ /usr/lib/X11/xdm/xde-xlogin -splash /usr/lib/X11/xdm/xde/splash.jpg $@
+
+When unspecified, the program searches for an image file named
+F<${XDG_VENDOR_ID:--}splash.jpg>.
 
 =item B<-side> {B<top>|B<left>|B<bottom>|B<right>}
 
@@ -171,22 +182,21 @@ set is determined using the current locale: see L<locale(7)>.
 Specifies the language to use.  When unspecified, the language is
 determined using the current locale: see L<locale(7)>.
 
-=item B<-icons> I<THEME>
+=item B<-icons> I<ICON-THEME>
 
-Specifies the XDG icon theme name to use for icons.  When unspecified,
-the icon theme is automatically determined using desktop and toolkit
-files.
+Specifies the GTK+ icon theme to use.  When unspecified, the icon theme
+is automatically determined using desktop and toolkit files.
 
-=item B<-theme> I<THEME>
+=item B<-theme> I<GTK2-THEME>
 
-Specifies the GTK2 theme to use for formatting widgets.  When
-unspecified, the GTK2 theme is automatically determined using desktop
-and toolkit files.
+Specifies the GTK+ theme name to use.  When unspecified, the GTK2 theme
+is automatically determined using desktop and toolkit files.
 
 =item B<-xde-theme>
 
-Specifies that the XDE theme is to be used.  The default is to specify
-this flag.
+Specifies that the GTK+ icon theme and theme name to be used are those
+of the X Desktop Environment (XDE) rather than the system default theme.
+The default is to specify this flag.
 
 =item B<-vendor> I<VENDOR>
 
@@ -248,19 +258,43 @@ Most values that affect the look and feel of B<xde-xlogin> may also be
 specified as X resources in the B<RESOURCE_MANAGER> database associated
 with the X server.  All of these resources can have the specific
 resource name and class C<xde-xlogin>, C<XDE-XLogin>.  When no resource
-is found with the specific name and class, XDM resources with name and
-class C<xlogin.Login>, C<Xlogin.Login> will also be examined for
-specified resources.  The resources are as follows:
+is found with the specific name and class, L<xdm(1)> resources with name
+and class C<xlogin.Login>, C<Xlogin.Login> will also be examined for
+specified resources.
 
-=over
+Note that L<xdm(1)> usually adds the resources contained in the
+F</etc/X11/xdm/Xresources> file that is loaded by L<xdm(1)> on startup
+to the resource database on the X server.  Chooser resource defaults
+(see also L<xdm(1)> and L<xde-xchooser(1)>) are contained in the
+F</usr/share/X11/app-defaults/Chooser> file.  Likewise, B<xde-xlogin>
+specific resource defaults are contained in the
+F</usr/share/X11/app-defaults/XDE-XLogin> file, in accordance with the
+convention of naming applications default files after their resource
+class. See also L</FILES>.
 
-=item B<xde-xlogin>.B<debug>
+B<xde-xlogin> observes the following X11 Resource Manager resources when
+loaded by L<xdm(1)> prior to execution:
 
-Specifies the value of the B<-debug> option.
+=over 4
 
-=item B<xde-xlogin>.B<Chooser>.B<x>
+=item B<XDE-XLogin>*B<x>: I<DOUBLE>
 
-=item B<xde-xlogin>.B<Chooser>.B<y>
+Specifies the X position on the monitor as a floating point number
+between C<0.0> and C<1.0>, where C<0.0> represents the left edge of the
+monitor and C<1.0>, the right edge.  The dialog will be positioned on this
+point depending on its gravity (currently static or centered).
+
+=item B<XDE-XLogin>*B<y>: I<DOUBLE>
+
+Specifies the Y position on the monitor as a floating point number
+between C<0.0> and C<1.0>, where C<0.0> represents the top edge of the
+monitor and C<1.0>, the bottom edge.  The dialog will be positioned on
+this point depending on its gravity (currently static or centered).
+
+=item B<XDE-XLogin>*B<debug>: I<INTEGER>
+
+Provides the debugging level in the same fasion as the B<-debug> command
+line option.
 
 =item B<xde-xlogin>.B<face>
 
@@ -602,11 +636,29 @@ F</usr/lib/X11/xdm/xde-xlogin>.  See L<xdm(1)/AUTHENTICATION WIDGET>.
 
 =item F</usr/lib/X11/xdm/xde-xlogin>
 
-The default location of the B<xde-xlogin> executable.
+The default location of the B<xde-xlogin> executable.  As this is not
+useful for normal users, it does not reside in the F</usr/bin>
+directory.
 
-=item F</usr/lib/X11/xmd/banner.png>
+=item F</usr/lib/X11/xdm/banner.png>
 
 The default location of the banner graphic.
+
+=item F</etc/X11/xdm/Xresources>
+
+The normal location of the X resources file for L<xdm(1)>.
+
+=item F</etc/X11/xdm/xde/Xresources>
+
+Because this greeter is associated with XDE, a complete set of
+L<xdm(1)> configuration files, including the X resources file containing
+B<XDE-XLogin> resources are contained in the F</etc/X11/xdm/xde>
+subdirectory.  Application defaults are not loaded from anywhere else
+for security.
+
+=item F</usr/share/X11/app-defaults/XDE-XLogin>
+
+X resource defaults for B<xde-xlogin>.
 
 =back
 
@@ -635,6 +687,16 @@ L<slim(1)>.
 Brian Bidulock L<mailto:bidulock@cpan.org>
 
 See B<--copying> for full copyright notice and copying permissions.
+
+=head1 SEE ALSO
+
+L<xdm(1)>, L<Xnest(1)>, L<Xephyr(1)>, X Display Manager Control Protocol
+Specification.
+
+=head1 LICENSE
+
+See the F<COPYING> file in the distribution or use the B<--copying> flag
+to display copying permissions.
 
 =cut
 

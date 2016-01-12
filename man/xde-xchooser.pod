@@ -6,13 +6,13 @@ xde-xchooser - A GTK2 XDMCP Host chooser replacement.
 
 =head1 SYNOPSIS
 
- /usr/lib/X11/xdm/xde-xchooser [options] {ADDRESSES ...}
+B</usr/lib/X11/xdm/xde-xchooser> [I<OPTIONS>] ADDRESSES ...
 
 =head1 DESCRIPTION
 
 B<xde-xchooser> is a GTK2 replacement for the horribly ugly Athena
-Widget Set chooser that comes with Xorg X Display Manager.  It is
-designed to let L<xdm(1)> do the heavy lifting of coordinating the
+Widget Set chooser that comes with Xorg X Display Manager.
+It is designed to let L<xdm(1)> do the heavy lifting of coordinating the
 majority of the XDMCP protocol while providing a more aesthetic
 appearance.
 
@@ -24,10 +24,14 @@ appearance.
 
 Provides the human-readable (decimal and dot notation, host names)
 specification of the display managers to query to determine whether they
-are willing to manage a display.  In additional to all manner of textual
-IP addresses, the special value C<BROADCAST> can be specified to
-indicate to the chooser that it should (also) broadcast queries to
-discover display managers.
+are willing to manage a display.  In addition to all manner of textual
+IP addresses, the special value C<BROADCAST> can be specified to indicate
+to the chooser that it should (also) broadcast queries to discover
+display managers.  The special value C<DNS-SD> can be specified to
+indicate to the chooser that it should (also) use C<DNS-SD> to discover
+display managers that offer the C<tcp.xdmcp> service.  The special
+value C<MULTICAST> can be specified to indicate to the chooser that it
+should (also) use multicast to discover display managers.
 
 =back
 
@@ -36,27 +40,58 @@ discover display managers.
 No options are necessary.  When launched by L<xdm(1)>, it will provide
 the appropriate arguments.  B<xde-xchooser> can be launched directly on
 the command line of an x-terminal to test its appearance and operation.
-In this mode arguments are still required but no options.  Absence of
+In this mode, arguments are still required but no options.  Absence of
 the B<-xdmAddress>, B<-clientAddress> and B<-connectionType> options
 indicates to B<xde-xchooser> that it was not launched by L<xdm(1)> or an
-L<xdm(1)> workalike.
+L<xdm(1)> work-alike as a chooser.  See L</USAGE> for more information.
+
+=head2 COMMAND OPTIONS
+
+When no command option is specified, B<xde-xchooser> executes the program.
+The following command options, when specified, print information instead
+of running the program.
 
 =over 4
 
-=item B<-xdmaddress> I<ADDRESS>
+=item B<-help>
+
+Instead of operating normally, the program prints usage information to
+standard output and exits.
+
+=item B<-version>
+
+Instead of operating normally, the program prints detailed version
+information and exits.
+
+=item B<-copying>
+
+Instead of operating normally, the program prints detailed copying
+permissions and exits.
+
+=back
+
+=head2 XDM OPTIONS
+
+XDM options are not normally specified by the user of the program on the
+command line: they are, instead, provided by L<xdm(1)> when
+B<xde-xchooser> is being used as a greeter program.
+
+=over 4
+
+=item B<-xdmAddress> I<ADDRESS>
 
 Specifies the address of a TCP socket upon which L<xdm(1)> is awaiting
-instructions for the server.  L<xdm(1)> encodes this as I<ADDRESS> as a
+instructions for the server.  L<xdm(1)> encodes this I<ADDRESS> as a
 string of hexadecimal characters (with no 0x prefix) representing the
 binary socket address.  The first two bytes are a host-byte-order 16-bit
 address family (e.g. AF_INET); the second and third bytes are the
 host-byte-order 16-bit port number; and the remaining 4 or 16 bytes are
 the IPv4 or IPv6 network-byte-order IP address.
 
-B<xde-xchooser> uses this option to communicate the selection back to
-L<xdm(1)>.
+B<xde-xchooser> uses the socket address communicated in this option to
+communicate the selection back to L<xdm(1)>.
 
-=item B<-clientaddress> I<IPADDR>
+=item B<-clientAddress> I<IPADDR>
 
 Specifies the client IP address I<IPADDR> that initiated the request.
 L<xdm(1)> encodes this as a string of hexadecimal characters (with no 0x
@@ -72,7 +107,7 @@ Specifies the connection type supported by the client as a decimal
 number, I<TYPE>.
 
 B<xde-xchooser> uses this option to filter the list of willing display
-managers to those that suport this connection type.  The three types of
+managers to those that support this connection type.  The three types of
 interest to L<xdm(1)> (see F</usr/include/X11/Xdmcp.h>) are:
 
 =over 4
@@ -87,7 +122,17 @@ interest to L<xdm(1)> (see F</usr/include/X11/Xdmcp.h>) are:
 
 L<xdm(1)> will only supply B<FamilyInternet>(0) or B<FamilyInternet6>(6).
 
+=back
+
+=head2 GENERAL OPTIONS
+
+The following are more general options:
+
+=over 4
+
 =item B<-welcome> I<TEXT>
+
+=item B<-prompt> I<PROMPT>
 
 Specifies the pango markup text that is to be displayed in the title
 area of the host menu.  As with the B<-banner> option, this option can
@@ -116,7 +161,7 @@ F<${XDG_VENDOR_ID--}banner.png>.
 =item B<-splash> I<JPGFILE>
 
 Specifies the graphic to use as the root window background for the
-chooser.  L<xdm(1)> does not provide this option, but it can easliy be
+chooser.  L<xdm(1)> does not provide this option, but it can easily be
 invoked by a shell script by L<xdm(1)> that adds the options.  For
 example:
 
@@ -126,8 +171,7 @@ example:
 When unspecified, the program searches for an image file named
 F<${XDG_VENDOR_ID:--}splash.jpg>.
 
-
-=item B<-side> {B<top>|B<bottom>|B<left>|B<right>}
+=item B<-side> {B<top>|B<left>|B<bottom>|B<right>}
 
 Specifies the side on which the logo (banner) will be displayed.  This
 option is currently ignored and the logo will always be placed on the
@@ -135,53 +179,103 @@ left side.
 
 =item B<-charset> I<CHARSET>
 
-Specifies the character set to use.  Defaults to the character set of
-the current locale.
+Specifies the character set to use.  When unspecified, the character
+set is determined using the current locale: see L<locale(7)>.
 
-=item B<-language> I<LANG>
+=item B<-language> I<LANGUAGE>
 
-Specifies the language to use.  Defaults to the language of the current
-locale.
+Specifies the language to use.  When unspecified, the language is
+determined using the current locale: see L<locale(7)>.
 
 =item B<-icons> I<ICON-THEME>
 
-Specifies the GTK+ icon theme to use.  The default is to use the system
-default icon theme.
+Specifies the GTK+ icon theme to use.  When unspecified, the icon theme
+is automatically determined using desktop and toolkit files.
 
 =item B<-theme> I<GTK2-THEME>
 
-Specifies the GTK+ theme name to use.  The default is to use the system
-default icon theme.
+Specifies the GTK+ theme name to use.  When unspecified, the GTK2 theme
+is automatically determined using desktop and toolkit files.
 
 =item B<-xde-theme>
 
 Specifies that the GTK+ icon theme and theme name to be used are those
 of the X Desktop Environment (XDE) rather than the system default theme.
+The default is to specify this flag.
 
 =item B<-vendor> I<VENDOR>
 
-=item B<-dry-run>
-
-=item B<-debug> [I<LEVEL>]
-
-=item B<-verbose> [I<LEVEL>]
-
-=item B<-login>
+Specifies the vendor identifier for branding.  The default, when
+unspecified, is to used the value of environment variables
+B<XDG_VENDOR_ID> and B<XDG_MENU_PREFIX> to determine the vendor name and
+prefix.
 
 =item B<-xsessions>
 
+Specifies that available X sessions (window managers) should be provided
+as a menu on the login window.  This allows a user to select an
+available session before logging in.
+
+=item B<-default> I<DEFAULT>
+
+Specifies the default X session (window manager) name that should be
+used when no X session is selected by the user.  This default is fed as
+an argument to F<~/.xinitrc>.
+
+=item B<-username> I<USERNAME>
+
+Specifies the default user name for login.
+
+=item B<-nosetbg>
+
+Specifies that the background image should not be set by the program.
+The default behaviour is to set the background in accordance with the
+B<-banner> option.
+
+=item B<-transparent>
+
+Specifies that the login panel should be transparent and that the
+widgets should be embedded in the background image.  The default is to
+paint the login panel.
+
+=item B<-dry-run>
+
+Specifies that the program should not perform any actions but should
+simply print intentions to standard output.  This option is for testing.
+
+=item B<-debug> [I<LEVEL>]
+
+Prints debugging information to standard error during operation.  This
+option can be repeated to increase the debugging level.  The default
+level is 0.
+
+=item B<-verbose> [I<LEVEL>]
+
+Print diagnostic information to standard error during operation.  This
+option can be repeated to increase the verbosity of output.  The default
+level is 1.
+
 =back
 
-=head1 CONFIGURATION
+=head1 X RESOURCES
 
-=cut 
+Most values that affect the look and feel of B<xde-xlogin> may also be
+specified as X resources in the B<RESOURCE_MANAGER> database associated
+with the X server.  All of these resources can have the specific
+resource name and class C<xde-chooser>, C<XDE-Chooser>.  When no resource
+is found with the specific name and class, L<xdm(1)> resources with name
+and class C<chooser>, C<Chooser> will also be examined for
+specified resources.
 
-B<xde-xchooser> has no configuration of its own.  If you want to change
-its look or behaviour, you are welcome to hack the code.  It is only
-about 600 lines of C<C>.  There is a F<banner.png> file used that is
-installed by default in F</usr/lib/X11/xdm/banner.png>.
-
-=pod
+Note that L<xdm(1)> usually adds the resources contained in the
+F</etc/X11/xdm/Xresources> file that is loaded by L<xdm(1)> on startup
+to the resource database on the X server.  Chooser resource defaults
+(see also L<xdm(1)> and L<xde-xlogin(1)>) are contain in the
+F</usr/share/X11/app-defaults/Chooser> file.  Likewise, B<xde-xchooser>
+specific resource defaults are contained in the
+F</usr/share/X11/app-defaults/XDE-Chooser> file, in accordance with the
+convention of naming applications default files after their resource
+class.  See also L</FILES>.
 
 B<xde-xchooser> observes the following X11 Resource Manager resources when
 loaded by L<xdm(1)> prior to execution:
@@ -436,7 +530,25 @@ The default location of the B<xde-xchooser> executable.
 
 The default location of the banner graphic.
 
+=item F</etc/X11/xdm/Xresources>
+
+The normal location of the X resources file for L<xdm(1)>.
+
+=item F</etc/X11/xdm/xde/Xresources>
+
+Because this chooser is allociated with XDE, a complete set of
+L<xdm(1)> configuration files, including the X resources file containing
+B<XDE-Chooser> resources are contained in the F</etc/X11/xdm/xde>
+subdirectory.  Application defaults are not loaded from anywhere else
+for security.
+
+=item F</usr/share/X11/app-defaults/XDE-Chooser>
+
+X resource defaults for B<xde-xchooser>.
+
 =back
+
+=head1 USAGE
 
 =head1 BUGS
 
