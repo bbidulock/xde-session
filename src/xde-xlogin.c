@@ -5303,6 +5303,7 @@ get_resources(int argc, char *argv[])
 	XrmInitialize();
 	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
 	rdb = XrmGetStringDatabase((char *) xtp.value);
+	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	XFree(xtp.value);
 	if (!rdb) {
 		DPRINTF("no resource manager database allocated\n");
