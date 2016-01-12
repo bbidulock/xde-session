@@ -915,10 +915,16 @@ setup()
 
 	if (!(prog = options.setup)) {
 		char *dirs, *save, *dir;
-		int slen, wlen;
+		int slen, wlen, dlen, hlen, blen;
 
 		fprintf(stderr, "%s\n", "executing default setup");
-		save = dirs = strdup(envir.XDG_DATA_DIRS);
+		dlen = strlen(envir.XDG_CONFIG_DIRS);
+		hlen = strlen(envir.XDG_CONFIG_HOME);
+		blen = dlen + hlen + 2;
+		save = dirs = calloc(blen, sizeof(*dirs));
+		strncpy(dirs, envir.XDG_CONFIG_HOME, blen);
+		strncat(dirs, ":", blen);
+		strncat(dirs, envir.XDG_CONFIG_DIRS, blen);
 		slen = strlen(script);
 		wlen = strlen(options.wmname);
 
@@ -960,11 +966,17 @@ startwm()
 	char *cmd;
 
 	if (!options.startwm) {
-		char *dirs, *dir;
-		int slen, wlen;
+		char *dirs, *save, *dir;
+		int slen, wlen, dlen, hlen, blen;
 
 		fprintf(stderr, "%s\n", "executing default start");
-		dirs = strdup(envir.XDG_DATA_DIRS);
+		dlen = strlen(envir.XDG_CONFIG_DIRS);
+		hlen = strlen(envir.XDG_CONFIG_HOME);
+		blen = dlen + hlen + 2;
+		save = dirs = calloc(blen, sizeof(*dirs));
+		strncpy(dirs, envir.XDG_CONFIG_HOME, blen);
+		strncat(dirs, ":", blen);
+		strncat(dirs, envir.XDG_CONFIG_DIRS, blen);
 		slen = strlen(script);
 		wlen = strlen(options.wmname);
 
@@ -979,12 +991,20 @@ startwm()
 			strncat(path, script, len);
 
 			status = stat(path, &st);
-			if (status != -1 && ((S_IXUSR | S_IXGRP | S_IXOTH) & st.st_mode)) {
-				options.startwm = path;
-				break;
+			if (status == -1) {
+				fprintf(stderr, "stat: %s: %s\n", path, strerror(errno));
+				free(path);
+				continue;
 			}
-			free(path);
+			if (!((S_IXUSR | S_IXGRP | S_IXOTH) & st.st_mode)) {
+				fprintf(stderr, "stat: %s: %s\n", path, "not executable");
+				free(path);
+				continue;
+			}
+			options.startwm = path;
+			break;
 		}
+		free(save);
 		if (!options.startwm) {
 			fprintf(stderr, "will simply execute '%s'\n", options.wmname);
 			options.startwm = strdup(options.wmname);
