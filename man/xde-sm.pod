@@ -1,0 +1,330 @@
+=pod
+
+=head1 NAME
+
+xde-sm - XDE Session Manager
+
+=head1 SYNOPSIS
+
+B<xde-sm> [I<OPTIONS>]
+
+=head1 DESCRIPTION
+
+B<xde-sm> is an X11 Session Manager.  It is a more beautiful replacement
+for the historical L<xsm(1)>.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--display> I<DISPLAY>
+
+Specifies the X display to which  B<xde-sm> is to connect, I<DISPLAY>,
+instead of using the value of the B<DISPLAY> environment variable.
+
+=item B<--session> I<SESSION>
+
+Specifies a particular session, I<SESSION>, which to establish, instead
+asking the user to select from a menu.  I<SESSION> must be a valid
+session name associated with a stored session or a valid special
+keyword; otherwise, B<xde-sm> will behave as though no session were
+specified.  The following special keywords are recognized:
+
+=over 4
+
+=item C<last>
+
+Restore the last saved session if one exists.  If there is no session
+saved for this user, the user is prompted to select a default session
+from the menu.
+
+=item C<default>
+
+Restore the session that the user has selected as the default session.
+If no default session has been specified by the user, one will be
+selected.
+
+=item C<choose>
+
+Provide a menu to choose from the available sessions: saved and default.
+
+=back
+
+=item B<--verbose> [I<LEVEL>]
+
+=back
+
+=head1 ENVIRONMENT
+
+B<xde-sm> observes the following environment variables:
+
+=over 4
+
+=item B<SM_SAVE_DIR>
+
+When the B<SM_SAVE_DIR> environment variable is defined, it specifies a
+directory in which B<xde-sm> will save all its configuration files.
+Otherwise, they will be stored in the user's XDG configuration
+directory: F<$XDG_CONFIG_HOME/xde-sm>.
+
+Session aware applications are also encouraged to save their checkpoint
+files in the B<SM_SAVE_DIR> directory, although the user should not
+depend on this convention.
+
+=back
+
+=head1 BEHAVIOR
+
+When B<xde-sm> starts up, it first checks to see if the user previously
+saved any sessions.  If no saved session exist, B<xde-sm> starts up a
+set of default applications (as described above in L</CONFIGURATION>).
+If at least one session exists, a session menu is presented.  The
+B<--session> option forces the specified session or selection to be
+loaded, bypassing the session menu.
+
+=head2 SESSION MENU
+
+The session menu presents the user with a list of session from which to
+choose.  The user can change the currently selected session with the
+mouse, or by using the up and down arrows on the keyboard.  Note that
+sessions that are locked (i.e. running on a different display) can not
+be loaded or deleted.
+
+The following operations can be performed from the session menu:
+
+=over 4
+
+=item I<Load Session>
+
+Pressing this button will load the currently selected session.
+Alternately, hitting the C<Return> key will also load the currently
+selected session, or the user can double-click a session from the list.
+
+=item I<Delete Session>
+
+This operation will delete the currently selected session, along with
+all of the application checkpoint files associated with the session.
+After pressing this button, the user will be asked to press the button
+to confirm the operation.
+
+=item I<Default/Fail Safe>
+
+B<xde-sm> will start up a set of default applications (as described
+under L</CONFIGURATION>).  This is useful when the user wants to start a
+fresh session, or if the session configuration files were corrupted and
+the user wants a "fail safe" session.
+
+=item I<Cancel>
+
+Pressing this button will cause B<xde-sm> to exit.
+
+=back
+
+=head2 CONTROLLING A SESSION
+
+After B<xde-sm> determines which session to load, it brings up its main
+window, then starts up all applications that are part of the session.
+The title bar for the session manager's main window will contain the
+name of the session that was loaded.
+
+The following options are available from B<xde-sm>'s main window:
+
+=over 4
+
+=item I<Client List>
+
+Pressing this button brings up a window containing a list of all clients
+that are in the current session.  For each client, the host machine that
+the client is running on is presented.  As clients are added and removed
+from the session, this list is updated to reflect the changes.  The user
+is able to control how these clients are restarted (see below).
+
+By pressing the I<View Properties> button, the user can view the session
+management properties associated with the currently selected client.
+
+By pressing the I<Clone> button, the user can start a copy of the
+selected application.
+
+By pressing the I<Kill Client> button, the user can remove a client from
+the session.
+
+By selecting a restart hint from the I<Restart Hint> menu, the user can
+control the restarting of a client.  The following hits are available:
+
+=over 4
+
+=item B<Restart If Running>
+
+This indicates that the client should be restarted in the next session
+when it is connected to the session manager at the end of the current
+session. 
+
+=item B<Restart Anyway>
+
+This indicates that the client should be restarted in the next session
+even when it exits before the current session is terminated.
+
+=item B<Restart Immediately>
+
+This hint is similar to the B<Restart Anyway> hint, but in addition, the
+client is meant to run continuously.  If the client exits, the session
+manager will try to restart it in the current session.
+
+=item B<Restart Never>
+
+This hint indicates that the client should not be restarted in the next
+session.
+
+=back
+
+Note that all X applications may not be "session aware".  Applications
+that are not session aware are ones that do not support the X Session
+Management Protocol or they can not be detected by the Session
+Management Proxy (see L</THE PROXY>).  B<xde-sm> allows the user to
+manually add such applications to the session.  The bottom of the
+B<Client List> window contains a text entry field in which application
+commands can by typed.  Each command should go on its own line.  This
+information will be saved with the session at checkpoint or shutdown
+time.  When the session is restarted, B<xde-sm> will restart these
+applications in addition to the regular "session aware" applications.
+
+=item I<Session Log>
+
+The session log window present useful information about the session.
+For example, when a session is restarted, all of the restart commands
+will be display in the log window.
+
+=item I<Checkpoint>
+
+By performing a checkpoint, all applications that are in the session are
+asked to save their state.  Not every application will save its complete
+state, but at a minimum, the session manager is guaranteed that it will
+receive the command required to restart the application (along with all
+command line options).  A window manager participating in the session
+should guarantee that the applications will come back up with the same
+window configurations.
+
+If the session for checkpoint was never assigned a name, the user will
+be required to specify a session name.  Otherwise, the user can perform
+the checkpoint using the current session name, or a new session name can
+be specified.  If the session name specified already exists, the user
+will be given the opportunity to specify a different name or to
+overwrite the already existing session.  Note that a session which is
+locked can not be overwritten.
+
+While performing a checkpoint, the user must specify the B<Save Type>
+which informs the application in the session how much state they should
+save:
+
+=over 4
+
+=item B<Local>
+
+This type indicates that the application should save enough infomration
+to restore the state as seen by the user.  It should not affect the
+state as seen by other users.  For example, an editor would create a
+temporary file containing the contents of its editing buffer, the
+location of the cursor, etc.
+
+=item B<Global>
+
+This type indicates that the application should commit all of its data
+to permanent, globally accessible storage.  For example, the editor
+would simply save the edited file name.
+
+=item B<Both>
+
+This type indicates that the application should do both of these.  For
+example, the editor would save the edited file, then create a temporary
+file with information such as the location of the cursor, etc.
+
+=back
+
+In addition to the B<Save Type>, the user may specify the B<Interact
+Style>:
+
+=over 4
+
+=item B<None>
+
+=item B<Errors>
+
+=item B<Any>
+
+=back
+
+=back
+
+=head1 CONFIGURATION
+
+B<xde-sm> usually requires a change to your F<.xsession> or F<.xinitrc>
+file.  The last program executed in your F<.xsession> or F<.xinitrc>
+file should be B<xde-sm>.  With this configuration, when the user
+chooses to shut down the session using B<xde-sm>, the session will be
+truly over.
+
+As the goal of the session manager is to restart clients when logging
+into a session, your F<.xsession> file, in general, should not directly
+start up applications.  Rather, the application should be started within
+as session.  When B<xde-sm> shuts down the session, B<xde-sm> will know
+to restart these applications.  Note, however, that there are some types
+of applications that are not session-aware.  B<xde-sm> allows you to
+explicitly add these applications to your session (see L</CLIENT LIST>).
+
+The first time that B<xde-sm> is started, it will need to locate a list
+of applications to start up.  For example, this list might include a
+window manager (e.g. L<adwm(1)>), a session management proxy (e.g.
+L<xde-smproxy(1)>, and an X terminal (e.g. L<xterm(1)>).  B<xde-sm> will
+first look for the file F<.xsmstartup> in the user's home directory.  If
+that file does not exist, it will look for the F<system.xsm> file that
+was set up at installation time.  Note that B<xde-sm> provides a "fail
+safe" option when the user chooses a session to start up.  The fail-safe
+option simply loads the default applications described above.
+
+Each line in the startup file should contain a command to start an
+application.  A sample startup file might look like this:
+
+ twm
+ smproxy
+ xterm
+
+
+
+=head1 USAGE
+
+A session is a group of applications, each of which has a particular
+state.  B<xde-sm> allows you to create arbitrary sessions - for example,
+you might have a "light" session, a "development" session, or an
+"xterminal" session.  Each session can have its own set of applications.
+Within a session, you can perform a "check-point" to save application
+state, or a "shutdown" to save state and exit the session.  When you log
+back into the system, you can load a specific session, and you can
+delete sessions you no longer want to keep.
+
+Some session managers simply allows you to manually specify a list of
+applications to be started in a session.  B<xde-sm> is more powerful
+because it lets you run applications and have them automatically become
+part of the session.  On a simple level, B<xde-sm> is useful because it
+gives you this ability to easily define which applications are in a
+session.  The true power of B<xde-sm>, however, can be taken advantage
+of when more and more applications learn to save and restore their
+state.
+
+=head1 HISTORY
+
+=head1 SEE ALSO
+
+=head1 AUTHOR
+
+Brian Bidulock L<mailto:bidulock@cpan.org>
+
+See B<--copying> for full copyright notice and copying permissions.
+
+=head1 LICENSE
+
+See the F<COPYING> file in the distribution or use the B<--copying> flag
+to display copying permissions.
+
+=cut
+
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
