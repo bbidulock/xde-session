@@ -17,7 +17,7 @@ performs locking on VT switches.
 
 =head1 OPTIONS
 
-=head2 Command Options
+=head2 COMMAND OPTIONS
 
 Command options affect the major operating mode of the program.  Only
 one command option may be specified (with the exception that B<--help>
@@ -25,7 +25,7 @@ can be specified in conjunction with any other command option).  When no
 command option is specified, B<--locker> is assumed.  The command
 options recognized by the program are as follows:
 
-=over
+=over 4
 
 =item [B<-L>, B<--locker>]
 
@@ -61,12 +61,12 @@ Print copying permissions on standard output and exit.
 
 =back
 
-=head2 General Options
+=head2 GENERAL OPTIONS
 
 General options can be specified in conjunction with any command option.
 The general options recognized by the program are as follows:
 
-=over
+=over 4
 
 =item B<-p>, B<--prompt> I<PROMPT>
 
@@ -122,7 +122,7 @@ The B<--locker> command option (the default), or the B<--replace>
 option, can be used to run the program as a background screen locker.
 In this mode the program installs itself as follows:
 
-=over
+=over 4
 
 =item 1.
 
@@ -155,7 +155,7 @@ Monitors for changes.
 
 When monitoring for changes, the screen locker responds as follows:
 
-=over
+=over 4
 
 =item 1.
 
@@ -192,7 +192,7 @@ locker to lock the screen.
 
 The following files are used by the program:
 
-=over
+=over 4
 
 =item F<$XDG_DATA_DIRS/images/${XDG_MENU_PREFIX}banner.png>
 
@@ -210,7 +210,7 @@ screen when no other background is available.
 
 The following environment variables are considered by the program:
 
-=over
+=over 4
 
 =item B<XDG_VENDOR_ID>
 

@@ -74,7 +74,9 @@ permissions and exits.
 
 XDM options are not normally specified by the user of the program on the
 command line: they are, instead, provided by L<xdm(1)> when
-B<xde-xlogin> is being used as a greeter program.
+B<xde-xlogin> is being used as a I<chooser> program.  Note that none
+of these options are provided when L<xdm(1)> runs the program as a
+I<greeter>.  See L</HISTORY>.
 
 =over 4
 
@@ -126,15 +128,25 @@ L<xdm(1)> will only supply B<FamilyInternet>(0) or B<FamilyInternet6>(6).
 
 =head2 GENERAL OPTIONS
 
-The following are more general options:
+B<xde-xlogin> provides a set of general options that are not supported
+by the L<xdm(1)> greeter or chooser.  To supply these options requires
+an intermediate script that specifies them and echoes the L<xdm(1)>
+chooser options listed above under L</XDM OPTIONS>.  So that an
+intermediate script is not necessary, L<xdm(1)> provides an
+F<XResources> files containing X resources that are used instead of
+command line options to tailor the look and feel of the greeter and
+chooser.  As a result, the use of the following command line options are
+not necessary and are really only used for testing.
+
+The following are the more general options:
 
 =over 4
 
-=item B<-welcome> I<TEXT>
-
 =item B<-prompt> I<PROMPT>
 
-Specifies the pango markup text that is to be displayed in the title
+=item B<-welcome> I<MARKUP>
+
+Specifies the F<pango> markup text that is to be displayed in the title
 area of the host menu.  As with the B<-banner> option, this option can
 easily be supplied by a shell script between L<xdm(1)> and
 B<xde-xlogin> that adds the options:
@@ -142,6 +154,9 @@ B<xde-xlogin> that adds the options:
  #!/bin/sh
  /usr/lib/X11/xdm/xde-xlogin -welcome "Welcome to X!" \
 	 -banner /usr/lib/X11/xdm/banner.png $@
+
+When unspecified, the default welcome text is C<Welcome to %s!>, where C<%s>
+is the fully qualified domain name of the local host.
 
 =item B<-banner> I<PNGFILE>
 
@@ -151,12 +166,16 @@ invoked by a shell script invoked by L<xdm(1)> that adds the options.
 For example:
 
  #!/bin/sh
- /usr/lib/X11/xdm/xde-xlogin -banner /usr/lib/X11/xdm/banner.png $@
+ /usr/lib/X11/xdm/xde-xlogin -banner /usr/lib/X11/xdm/xde/banner.png $@
+
+When unspecified, the program searches for an image file named
+F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the subdirectory
+F<images> in XDG data directories.
 
 =item B<-splash> I<JPGFILE>
 
 Specifies the graphic to use as the root window background for the
-greeter.  L<xdm(1)> does not provide this option, but it can easily be
+greeter and chooser.  L<xdm(1)> does not provide this option, but it can easily be
 invoked by a shell script by L<xdm(1)> that adds the options.  For
 example:
 
@@ -164,7 +183,8 @@ example:
  /usr/lib/X11/xdm/xde-xlogin -splash /usr/lib/X11/xdm/xde/splash.jpg $@
 
 When unspecified, the program searches for an image file named
-F<${XDG_VENDOR_ID:--}splash.jpg>.
+F<${XDG_VENDOR_ID:--}splash.{xpm,png,jpg,svg}> in the subdirectory
+F<images> in XDG data directories.
 
 =item B<-side> {B<top>|B<left>|B<bottom>|B<right>}
 
@@ -252,14 +272,45 @@ level is 1.
 
 =back
 
+=head1 EXIT STATUS
+
+When run as a I<greeter> program, instead of communicating using a
+socket, the I<greeter> program can provide further instructions to
+L<xdm(1)> based on the exit status of the I<greeter> program.
+Therefore, the program provides the exit status values as follows:
+
+=over 4
+
+=item 0 - B<OBEYSESS_DISPLAY>
+
+Obey the multiple sessions resource.
+
+=item 1 - B<REMANAGE_DISPLAY>
+
+Force re-management of the display.
+
+=item 2 - B<UNMANAGE_DISPLAY>
+
+Force deletion of the display.
+
+=item 3 - B<RESERVER_DISPLAY>
+
+Force server termination.
+
+=item 4 - B<OPENFAILED_DISPLAY>
+
+L<XOpenDisplay(1x)> failed, retry.
+
+=back
+
 =head1 X RESOURCES
 
 Most values that affect the look and feel of B<xde-xlogin> may also be
 specified as X resources in the B<RESOURCE_MANAGER> database associated
 with the X server.  All of these resources can have the specific
-resource name and class C<xde-xlogin>, C<XDE-XLogin>.  When no resource
+resource name and class (C<xde-xlogin>, C<XDE-XLogin>).  When no resource
 is found with the specific name and class, L<xdm(1)> resources with name
-and class C<xlogin.Login>, C<Xlogin.Login> will also be examined for
+and class (C<xlogin.Login>, C<Xlogin.Login>) will also be examined for
 specified resources.
 
 Note that L<xdm(1)> usually adds the resources contained in the
@@ -277,160 +328,232 @@ loaded by L<xdm(1)> prior to execution:
 
 =over 4
 
-=item B<XDE-XLogin>*B<x>: I<DOUBLE>
+=item B<xde-xlogin>.B<x>: I<DOUBLE>
 
 Specifies the X position on the monitor as a floating point number
 between C<0.0> and C<1.0>, where C<0.0> represents the left edge of the
 monitor and C<1.0>, the right edge.  The dialog will be positioned on this
 point depending on its gravity (currently static or centered).
 
-=item B<XDE-XLogin>*B<y>: I<DOUBLE>
+=item B<xde-xlogin>.B<y>: I<DOUBLE>
 
 Specifies the Y position on the monitor as a floating point number
 between C<0.0> and C<1.0>, where C<0.0> represents the top edge of the
 monitor and C<1.0>, the bottom edge.  The dialog will be positioned on
 this point depending on its gravity (currently static or centered).
 
-=item B<XDE-XLogin>*B<debug>: I<INTEGER>
+=item B<xde-xlogin>.B<debug>: I<INTEGER>
 
-Provides the debugging level in the same fasion as the B<-debug> command
+Provides the debugging level in the same fashion as the B<-debug>
+command line option.
+
+=item B<xde-xlogin>.B<banner>: I<PATH>
+
+Provides the banner to use for the branding logo in the same fashion as
+the B<-banner> command line option.  Specifies the I<PATH> to the banner
+graphic to display in the left pane of the host menu.  When unspecified,
+the program searches for an image file name
+F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the subdirectory
+F<images> in XDG data directories.
+
+=item B<xde-xlogin>.B<splash>: I<PATH>
+
+Provides the background to use for the root window in the same fashion
+as the B<-splash> command line option.
+
+=item B<xde-xlogin>.B<welcome>: I<MARKUP>
+
+Provides the welcome message to use for the root window in the same
+fashion as the B<-welcome> command line option.  Specifies the F<pango>
+markup text, I<MARKUP>, that is to be display in the title area of the
+host menu.
+
+=item B<xde-xlogin>.B<charset>: I<CHARSET>
+
+Provides the character set in the same fashion as the B<-charset>
+command line option.
+
+=item B<xde-xlogin>.B<language>: I<LANG>
+
+Provides the language in the same fashion as the B<-language> command
 line option.
 
-=item B<xde-xlogin>.B<face>
+=item B<xde-xlogin>.B<theme.icon>: I<NAME>
+
+Provides the XDG icon theme name.
+Specifies the value of the B<-icons> option.
+
+=item B<xde-xlogin>.B<theme.name>: I<NAME>
+
+Provides the XDG theme name (for GTK+).
+Specifies the value of the B<-theme> option.
+
+=item B<xde-xlogin>.B<theme.cursor>: I<NAME>
+
+Provides the XDG cursor theme name.
+
+=item B<xde-xlogin>.B<theme.xde>: {B<true>|B<false>}
+
+When I<true>, specifies that the system XDE desktop theme should be used
+instead of the system GTK+ theme.
+Specifies the value of the B<-xde-theme> option.
+
+=item B<xde-xlogin>.B<side>: {B<left>|B<right>|B<top>|B<bottom>}
+
+Specifies the side on which the logo (banner) should appear.  Currently
+only I<left> is supported.
+Specifies the value of the B<-side> option.
+
+=item B<xde-xlogin>.B<user.default>: I<USERNAME>
+
+Specifies a default use name to use for the login (when a login is
+provided).  Note that a default user name will not be presented when it
+can be detected that the display is remote from the current host.
+Specifies the value of the B<-username> option.
+
+=item B<xde-xlogin>.B<autologin>: {B<true>|B<false>}
+
+When I<true>, specifies that the user defined in
+B<xde-xlogin>.B<user.default> should be automatically logged into a
+session without requiring a password.  It may be necessary for such a
+user to be a member of the C<autologin> group.  Auto login will be
+suppressed when it can be detected that the display is remote from the
+current host.
+
+=item B<xde-xlogin>.B<vendor>: I<VENDOR-ID>
+
+Provides a vendor identifier for use in lookup up banners and
+backgrounds automatically, as with the B<-vendor> command line option.
+
+=item B<xde-xlogin>.B<prefix>: I<MENU-PREFIX>
+
+Provides a vendor identifier as a menu prefix (C<XDG_MENU_PREFIX>)
+instead of as a plain identifier.  The prefix normally has a dash (C<->)
+appended.
+
+=item B<xde-xlogin>.B<login>*B<permit>: {B<true>|B<false>}
+
+The XDMCP Chooser has control of an X Display in the same manner as the
+XDMCP Greeter program and may provide an immediate login option in
+addition to a list of XDMCP hosts.  When I<true>, this option specifies
+that this login is to be presented as an option to users of the XDMCP
+Chooser.
+
+=item B<xde-xlogin>.B<login>*B<remote>: {B<true>|B<false>}
+
+The XDMCP Chooser may provide a direct login option to the user of the
+chooser.  When I<true>, this option specifies that remote displays will
+be given the same opportunity to log in directly.  When I<false>,
+displays that are detected as remote from the host will no be offered a
+direct login.
+
+=item B<xde-xlogin>.B<xsession.chooser>: {B<true>|B<false>}
+
+Specifies the value of the B<-xsession> option.
+
+=item B<xde-xlogin>.B<xsession.execute>: {B<true>|B<false>}
+
+=item B<xde-xlogin>.B<xsession.default>: I<APPID>
+
+Specifies the value of the B<-default> option.
+
+=item B<xde-xlogin>.B<setbg>: {B<true>|B<false>}
+
+Specifies the value of the B<-nosetbg> option.
+
+=item B<xde-xlogin>.B<transparent>: {B<true>|B<false>}
+
+Specifies the value of the B<-transparent> option.
+
+=item B<xde-xlogin>.B<face>: I<XFTFONT>
 
 The typeface used to display the input typed by the user.
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<face>
+B<xlogin>.B<Login.face>
 resource is used instead.
 
 =item B<xde-xlogin>.B<greetFace>
 
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<greetFace>
+B<xlogin>.B<Login.greetFace>
 resource is used instead.
 
 =item B<xde-xlogin>.B<greetColor>
 
 The default is C<grey20>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<greetColor>
+B<xlogin>.B<Login.greetColor>
 resource is used instead.
 
 =item B<xde-xlogin>.B<promptFace>
 
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<promptFace>
+B<xlogin>.B<Login.promptFace>
 resource is used instead.
 
 =item B<xde-xlogin>.B<promptColor>
 
 The default is C<grey20>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<promptColor>
+B<xlogin>.B<Login.promptColor>
 resource is used instead.
 
 =item B<xde-xlogin>.B<inputFace>
 
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<inputFace>
+B<xlogin>.B<Login.inputFace>
 resource is used instead.
 
 =item B<xde-xlogin>.B<inputColor>
 
 The default is C<grey20>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<inputColor>
+B<xlogin>.B<Login.inputColor>
 resource is used instead.
 
 =item B<xde-xlogin>.B<failFace>
 
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<failFace>
+B<xlogin>.B<Login.failFace>
 resource is used instead.
 
 =item B<xde-xlogin>.B<failColor>
 
 The default is C<red>.
 If this resource is not specified, the
-B<xlogin>.B<Login>.B<failColor>
+B<xlogin>.B<Login.failColor>
 resource is used instead.
 
-=item B<xde-xlogin>.B<banner>
+=back
 
-Specifies the value of the B<-banner> option.
+When specific B<xde-xlogin> resources are not specified, B<xde-xlogin>
+falls back to using the resources specified for the chooser by
+L<xdm(1)>, as follows:
 
-=item B<xde-xlogin>.B<splash>
+=over 4
 
-Specifies the value of the B<-splash> option.
+=item B<Chooser>*B<geometry>: I<XGEOMETRY>
 
-=item B<xde-xlogin>.B<welcome>
+=item B<Chooser>*B<allowShellResize>: {B<true>|B<false>}
 
-Specifies the value of the B<-welcome> option.
+=item B<Chooser>*B<viewport.forceBars>: {B<true>|B<false>}
 
-=item B<xde-xlogin>.B<charset>
+=item B<Chooser>*B<label.face>: I<XFTFONT>
 
-Specifies the value of the B<-charset> option.
+=item B<Chooser>*B<label.font>: I<XFONT>
 
-=item B<xde-xlogin>.B<language>
+=item B<Chooser>*B<label.label>: I<STRING>
 
-Specifies the value of the B<-language> option.
+=item B<Chooser>*B<list.face>: I<XFTFONT>
 
-=item B<xde-xlogin>.B<theme>.B<icon>
+=item B<Chooser>*B<list.font>: I<XFONT>
 
-Specifies the value of the B<-icons> option.
-
-=item B<xde-xlogin>.B<theme>.B<name>
-
-Specifies the value of the B<-theme> option.
-
-=item B<xde-xlogin>.B<theme>.B<cursor>
-
-=item B<xde-xlogin>.B<theme>.B<xde>
-
-Specifies the value of the B<-xde-theme> option.
-
-=item B<xde-xlogin>.B<side> {left|top|right|bottom}
-
-Specifies the value of the B<-side> option.
-
-=item B<xde-xlogin>.B<user>.B<default>
-
-Specifies the value of the B<-username> option.
-
-=item B<xde-xlogin>.B<autologin>
-
-=item B<xde-xlogin>.B<vendor>
-
-Specifies the value of the B<-vendor> option.
-
-=item B<xde-xlogin>.B<prefix>
-
-=item B<xde-xlogin>.B<login>.B<permit>
-
-=item B<xde-xlogin>.B<login>.B<remote>
-
-=item B<xde-xlogin>.B<xsession>.B<chooser>
-
-Specifies the value of the B<-xsession> option.
-
-=item B<xde-xlogin>.B<xsession>.B<execute>
-
-=item B<xde-xlogin>.B<xsession>.B<default>
-
-Specifies the value of the B<-default> option.
-
-=item B<xde-xlogin>.B<setbg>
-
-Specifies the value of the B<-nosetbg> option.
-
-=item B<xde-xlogin>.B<transparent>
-
-Specifies the value of the B<-transparent> option.
+=item B<Chooser>*B<Command.font>: I<XFONT>
 
 =back
 
@@ -438,181 +561,181 @@ When specific B<xde-xlogin> resources are not specified, B<xde-xlogin>
 falls back the using the resources specified for the greeter by
 L<xdm(1)>, as follows:
 
-=over
+=over 4
 
-=item B<xlogin>.B<Login>.B<width>
+=item B<xlogin>.B<Login.width>: I<INTEGER>
 
 Specifies the width of the login widget, either in pixels, or when
 suffixed with a C<%>, as a decimal percentage of the display width.
 The default is dynamic width, depending on the contents of widgets.
 
-=item B<xlogin>.B<Login>.B<height>
+=item B<xlogin>.B<Login.height>: I<INTEGER>
 
 Specifies the height of the login widget, either in pixels, or when
 suffixed with a C<%>, as a decimal percentage of the display height.
 The default is dynamic height, depending on the contents of widgets.
 
-=item B<xlogin>.B<Login>.B<x>
+=item B<xlogin>.B<Login.x>: I<INTEGER>
 
 Specifies the x-axis position of the login widget.
 The default is centred on the screen.
 
-=item B<xlogin>.B<Login>.B<y>
+=item B<xlogin>.B<Login.y>: I<INTEGER>
 
 Specifies the y-axis position of the login widget.
 The default is centred on the screen.
 
-=item B<xlogin>.B<Login>.B<foreground>
+=item B<xlogin>.B<Login.foreground>: I<XCOLOR>
 
 The foreground colour used to display the input typed by the user.
 The default is C<grey20>.
 
-=item B<xlogin>.B<Login>.B<background>
+=item B<xlogin>.B<Login.background>: I<XCOLOR>
 
 The background colour used to display the input typed by the user.
 The default is C<LightSteelBlue3>.
 
-=item B<xlogin>.B<Login>.B<face>
+=item B<xlogin>.B<Login.face>: I<XFTFONT>
 
 The typeface used to display the input typed by the user when built with
 Xft support.
 The default is C<Sans:size=12:bold>.
 
-=item B<xlogin>.B<Login>.B<font>
+=item B<xlogin>.B<Login.font>: I<XFONT>
 
 The font used to display the input typed by the user when not built with
 Xft support.
 This resource not used by B<xde-xlogin>.
 
-=item B<xlogin>.B<Login>.B<greeting>
+=item B<xlogin>.B<Login.greeting>: I<STRING>
 
 The default is the value specified by command line option B<-welcome>,
 or C<Welcome to CLIENTHOST>.
 
-=item B<xlogin>.B<Login>.B<unsecureGreeting>
+=item B<xlogin>.B<Login.unsecureGreeting>: I<STRING>
 
 The default is C<This is an unsecure session>.
 
-=item B<xlogin>.B<Login>.B<greetFace>
+=item B<xlogin>.B<Login.greetFace>: I<XFTFONT>
 
 The default is C<Sans:size=12:bold>.
 
-=item B<xlogin>.B<Login>.B<greetFont>
+=item B<xlogin>.B<Login.greetFont>: I<XFONT>
 
 This resource not used by B<xde-xlogin>.
 
-=item B<xlogin>.B<Login>.B<greetColor>
+=item B<xlogin>.B<Login.greetColor>: I<XCOLOR>
 
 The default is C<grey20>.
 
-=item B<xlogin>.B<Login>.B<namePrompt>
+=item B<xlogin>.B<Login.namePrompt>: I<STRING>
 
-The default is C<Username: >.
+The default is C<Username:  >.
 
-=item B<xlogin>.B<Login>.B<passwdPrompt>
+=item B<xlogin>.B<Login.passwdPrompt>: I<STRING>
 
-The default is C<Password: >.
+The default is C<Password:  >.
 
-=item B<xlogin>.B<Login>.B<promptFace>
+=item B<xlogin>.B<Login.promptFace>: I<XFTFONT>
 
 The default is C<Sans:size=12:bold>.
 
-=item B<xlogin>.B<Login>.B<promptFont>
+=item B<xlogin>.B<Login.promptFont>: I<XFONT>
 
-=item B<xlogin>.B<Login>.B<promptColor>
+=item B<xlogin>.B<Login.promptColor>: I<XCOLOR>
 
 The default is C<grey20>.
 
-=item B<xlogin>.B<Login>.B<inputFace>
+=item B<xlogin>.B<Login.inputFace>: I<XFTFONT>
 
 The default is C<Sans:size=12:bold>.
 
-=item B<xlogin>.B<Login>.B<inputColor>
+=item B<xlogin>.B<Login.inputColor>: I<XCOLOR>
 
 The default is C<grey20>.
 
-=item B<xlogin>.B<Login>.B<changePasswdMessage>
+=item B<xlogin>.B<Login.changePasswdMessage>: I<STRING>
 
 The default is C<Password Change Required>.
 
-=item B<xlogin>.B<Login>.B<fail>
+=item B<xlogin>.B<Login.fail>: I<STRING>
 
-=item B<xlogin>.B<Login>.B<failFace>
+=item B<xlogin>.B<Login.failFace>: I<XFTFONT>
 
 The default is C<Sans:size=12:bold>.
 
-=item B<xlogin>.B<Login>.B<failFont>
+=item B<xlogin>.B<Login.failFont>: I<XFONT>
 
-=item B<xlogin>.B<Login>.B<failColor>
+=item B<xlogin>.B<Login.failColor>: I<XCOLOR>
 
 The default is C<red>.
 
-=item B<xlogin>.B<Login>.B<failTimeout>
+=item B<xlogin>.B<Login.failTimeout>: I<INTEGER>
 
 The default is C<10>.
 
-=item B<xlogin>.B<Login>.B<logoFilename>
+=item B<xlogin>.B<Login.logoFileName>: I<PATH>
 
 The default is F</etc/X11/xdm/xde/banner.png>.
 
-=item B<xlogin>.B<Login>.B<logoPadding>
+=item B<xlogin>.B<Login.logoPadding>: I<INTEGER>
 
 The default is C<8>.
 
-=item B<xlogin>.B<Login>.B<useShape>
+=item B<xlogin>.B<Login.useShape>: {B<true>|B<false>}
 
 The default is C<true>.
 
-=item B<xlogin>.B<Login>.B<hiColor>
+=item B<xlogin>.B<Login.hiColor>: I<XCOLOR>
 
 The default is C<grey80>.
 
-=item B<xlogin>.B<Login>.B<shdColor>
+=item B<xlogin>.B<Login.shdColor>: I<XCOLOR>
 
 The default is C<grey20>.
 
-=item B<xlogin>.B<Login>.B<frameWidth>
+=item B<xlogin>.B<Login.frameWidth>: I<INTEGER>
 
 The default is C<2>.
 
-=item B<xlogin>.B<Login>.B<innerFrameWidth>
+=item B<xlogin>.B<Login.innerFrameWidth>: I<INTEGER>
 
 The default is C<2>.
 
-=item B<xlogin>.B<Login>.B<sepWidth>
+=item B<xlogin>.B<Login.sepWidth>: I<INTEGER>
 
 The default is C<2>.
 
-=item B<xlogin>.B<Login>.B<allowRootLogin>
+=item B<xlogin>.B<Login.allowRootLogin>: {B<true>|B<false>}
 
 The default is C<true>.
 
-=item B<xlogin>.B<Login>.B<allowNullPasswd>
+=item B<xlogin>.B<Login.allowNullPasswd>: {B<true>|B<false>}
 
 The default is C<false>.
 
-=item B<xlogin>.B<Login>.B<echoPasswd>
+=item B<xlogin>.B<Login.echoPasswd>: {B<true>|B<false>}
 
 The default is C<true>.
 
-=item B<xlogin>.B<Login>.B<echoPasswdChar>
+=item B<xlogin>.B<Login.echoPasswdChar>: I<STRING>
 
 The default is C<*>.
 
-=item B<xlogin>.B<Login>.B<borderWidth>
+=item B<xlogin>.B<Login.borderWidth>: I<INTEGER>
 
 The default is C<3>.
 
-=item B<xlogin>.B<Login>.B<translations> (unused)
+=item B<xlogin>.B<Login.translations>: I<STRING>
+
+This resource not used by B<xde-xlogin>.
 
 =back
 
 =head1 CONFIGURATION
 
-B<xde-xlogin> has no configuration of its own.  If you want to change
-its look or behaviour, you are welcome to hack the code.  It is only
-about 600 lines of C<C>.  There is a F<banner.png> file used that is
-installed by default in F</usr/lib/X11/xdm/banner.png>.
+L<xdm(1)> specifies which chooser and greeter to execute in its
+configuration file F</usr/lib/X11/xdm/xdm-config>:
 
 =over 4
 
@@ -636,9 +759,9 @@ F</usr/lib/X11/xdm/xde-xlogin>.  See L<xdm(1)/AUTHENTICATION WIDGET>.
 
 =item F</usr/lib/X11/xdm/xde-xlogin>
 
-The default location of the B<xde-xlogin> executable.  As this is not
-useful for normal users, it does not reside in the F</usr/bin>
-directory.
+The default location of the B<xde-xlogin> executable.
+As this is not useful for normal users, it does not reside in the
+F</usr/bin> directory.
 
 =item F</usr/lib/X11/xdm/banner.png>
 
@@ -650,7 +773,7 @@ The normal location of the X resources file for L<xdm(1)>.
 
 =item F</etc/X11/xdm/xde/Xresources>
 
-Because this greeter is associated with XDE, a complete set of
+Because the greeter and chooser is associated with XDE, a complete set of
 L<xdm(1)> configuration files, including the X resources file containing
 B<XDE-XLogin> resources are contained in the F</etc/X11/xdm/xde>
 subdirectory.  Application defaults are not loaded from anywhere else
@@ -676,22 +799,52 @@ I used to use a patched version of L<slim(1)> for this purpose; however,
 L<slim(1)> has deficiencies with regard to establishing XDE sessions and
 has no provision for being used as a B<chooser>.
 
+Historically, L<xdm(1)> has provided a I<greeter> and a I<chooser>.  The
+I<greeter> was a graphical login program that was integrated with
+L<xdm(1)>.  The I<chooser> was a graphical XDCMP chooser program that,
+while part of the XDM distribution, was a separate program launched by
+L<xdm(1)>.  Both of these programs used the archaic Athena widget set.
+
+The XDE fork of L<xdm(1)> provides for a separate I<greeter> program to
+be used for graphical login.  Originally, XDE used a modified version of
+the L<slim(1)> login manager to act also as a I<greeter> for L<xdm(1)>.
+A I<chooser> program was written using perl-gtk2 to act as a much nicer
+looking and more fully IPv6 functional I<chooser> program.
+
+This then begged the question as to why there needed to be a separate
+I<greeter> and I<chooser>.  Why should not the user be able to login to
+the local machine, or choose to login to a remote machine instead.
+After all, choosing the local machine from the I<greeter> functions
+similar to a I<greeter>.
+
+L<slim(1)> took the approach that logging into an X server is not that
+terribly different to unlocking a screen saver.  Why should not the same
+appearance code be used for both.  This led XDE to use a related
+program, L<xde-xlock(1)> to provide the screen locking mechanism for XDE
+in the same fashion as the display manager programs.
+
+Traditional display managers for Linux, such as L<gdm(1)>, have also
+taken the approach that choosing an X session (well, at least an
+C<XSession> F<.desktop> file to run) could also be performed during
+login, instead of selecting one after the login process.
+
 =head1 SEE ALSO
 
 L<xdm(1)>,
+L<xqproxy(1)>,
+L<xde-xlogin(1)>,
 L<xde-xchooser(1)>,
-L<slim(1)>.
+L<slim(1)>,
+L<xde-xlock(1)>,
+L<Xnest(1)>,
+L<Xephyr(1)>,
+L<X Display Manager Control Protocol>.
 
 =head1 AUTHOR
 
 Brian Bidulock L<mailto:bidulock@cpan.org>
 
 See B<--copying> for full copyright notice and copying permissions.
-
-=head1 SEE ALSO
-
-L<xdm(1)>, L<Xnest(1)>, L<Xephyr(1)>, X Display Manager Control Protocol
-Specification.
 
 =head1 LICENSE
 
