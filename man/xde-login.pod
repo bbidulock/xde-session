@@ -8,6 +8,88 @@ xde-login - Log into an X Session
 
 B<xde-login> [I<OPTIONS>]
 
+=head1 DESCRIPTION
+
+=head1 OPTIONS
+
+=head2 COMMAND OPTIONS
+
+=over
+
+=item B<-h>, B<--help>, B<-?>, B<--?>
+
+=item B<-V>, B<--version>
+
+=item B<-C>, B<--copying>
+
+=back
+
+=head2 LOGIN OPTIONS
+
+=over
+
+=item B<-A>, B<--authfile> I<AUTHFILE>
+
+The X authority file, I<AUTHFILE>.
+
+=item B<-E>, B<--desktop> I<DESKTOP>
+
+The target XDG desktop environment.
+
+=item B<-u>, B<--user> I<USER>
+
+User of session to create, I<USER>.
+
+=item B<-s>, B<--seat> I<SEAT>
+
+The seat number, I<SEAT>.
+
+=item B<-S>, B<--service> I<SERVICE>
+
+The PAM service to use for login, I<SERVICE>.
+
+=item B<-T>, B<--vt> I<VTNUMBER>
+
+The virtual terminal number, I<VTNUMBER>.
+
+=item B<-y>, B<--tty> I<TTY>
+
+The tty device, I<TTY>.
+
+=item B<-c>, B<--class> I<CLASS>
+
+The B<XDG_SESSION_CLASS>, I<CLASS>.
+
+=item B<-t>, B<--type> I<TYPE>
+
+The B<XDG_SESSION_TYPE>, I<TYPE>.
+
+=item B<-e>, B<--exec>
+
+=back
+
+=head2 GENERAL OPTIONS
+
+=over
+
+=item B<-d>, B<--display> I<DISPLAY>
+
+The display to use, I<DISPLAY>, instead of the C<$DISPLAY> environment variable.
+
+=item B<-n>, B<--dry-run>
+
+Do not do anything, just print what would be done to standard output.
+
+=item B<-v>, B<--verbose> [I<LEVEL>]
+
+Increment or set output verbosity level, I<LEVEL>.
+
+=item B<-D>, B<--debug> [I<LEVEL>]
+
+Increment or set debug level, I<LEVEL>.
+
+=back
+
 =head1 AUTHOR
 
 Brian Bidulock L<mailto:bidulock@cpan.org>
