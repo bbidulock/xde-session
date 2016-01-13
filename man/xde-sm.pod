@@ -73,6 +73,27 @@ depend on this convention.
 
 =back
 
+=head1 SIGNALS
+
+B<xde-sm> responds to the following signals:
+
+=over 4
+
+=item B<SIGTERM>
+
+B<xde-sm> will respond to a B<SIGTERM> signal by performing a shutdown
+with the following options: I<fast>, I<no interaction>, I<local>.  This
+allows the user's session to be save when the system is being shut down.
+It can also be used to perform a remote shutdown of a session.
+
+=item B<SIGUSR1>
+
+B<xde-sm> will respond to a B<SIGUSR1> signal by performing a checkpoint
+with the following options: I<no interaction>, I<local>.  This signal
+can be used to perform a remote checkpoint of a session.
+
+=back
+
 =head1 BEHAVIOR
 
 When B<xde-sm> starts up, it first checks to see if the user previously
@@ -166,9 +187,9 @@ even when it exits before the current session is terminated.
 
 =item B<Restart Immediately>
 
-This hint is similar to the B<Restart Anyway> hint, but in addition, the
-client is meant to run continuously.  If the client exits, the session
-manager will try to restart it in the current session.
+This hint is similar to the B<Restart Anyway> hint, but also the client
+is meant to run continuously.  If the client exits, the session manager
+will try to restart it in the current session.
 
 =item B<Restart Never>
 
@@ -180,13 +201,13 @@ session.
 Note that all X applications may not be "session aware".  Applications
 that are not session aware are ones that do not support the X Session
 Management Protocol or they can not be detected by the Session
-Management Proxy (see L</THE PROXY>).  B<xde-sm> allows the user to
+Management Proxy (see L</PROXY>).  B<xde-sm> allows the user to
 manually add such applications to the session.  The bottom of the
 B<Client List> window contains a text entry field in which application
 commands can by typed.  Each command should go on its own line.  This
 information will be saved with the session at checkpoint or shutdown
 time.  When the session is restarted, B<xde-sm> will restart these
-applications in addition to the regular "session aware" applications.
+applications as well as the regular "session aware" applications.
 
 =item I<Session Log>
 
@@ -240,20 +261,84 @@ file with information such as the location of the cursor, etc.
 
 =back
 
-In addition to the B<Save Type>, the user may specify the B<Interact
-Style>:
+As well as the B<Save Type>, the user may specify the B<Interact Style>:
 
 =over 4
 
 =item B<None>
 
+This style indicates that the application should not interact with the
+user while saving state.
+
 =item B<Errors>
+
+This style indicates that the application may interact with the user
+only if an error condition arises.
 
 =item B<Any>
 
-=back
+This style indicates that the application may interact with the user for
+any purpose.  Note that B<xde-sm> will only allow one application to
+interact with the user at a time.
 
 =back
+
+After the checkpoint is completed, B<xde-sm> will, if necessary, display
+a window containing the list of applications that did not report a
+successful save of state.
+
+=item I<Shutdown>
+
+A shutdown provides all of the options found in a checkpoint, but also
+can cause the session to exit.  Note that if the interaction style is
+B<Errors> or B<Any>, the user may cancel the shutdown.  The user may
+cancel the shutdown if any of the applications report an unsuccessful
+save of state.
+
+The user may choose to shutdown the session without performing a
+checkpoint.
+
+=back
+
+=head2 PROXY
+
+As not all applications have been ported to support the X Session
+Management Protocol, a proxy service exists to allow "old" clients to
+work with the session manager.  For the proxy to detect an application
+joining a session, one of the following must be true:
+
+=over 4
+
+=item 1.
+
+The application maps a top-level window containing the
+B<WM_CLIENT_LEADER> property.  This property provides a pointer to the
+client leader window that contains the B<WM_CLASS>, B<WM_NAME>,
+B<WM_COMMAND> and B<WM_CLIENT_MACHINE> properties.
+
+=item 2.
+
+The application maps a top-level window that does not contain the
+B<WM_CLIENT_LEADER> property.  However, this top-level window contains
+the B<WM_CLASS>, B<WM_NAME>, B<WM_COMMAND>, and B<WM_CLIENT_MACHINE>
+properties.
+
+=back
+
+An application that supports the B<WM_SAVE_YOURSELF> protocol will
+receive a B<WM_SAVE_YOURSELF> client message each time the session
+manager issues a checkpoint or shutdown.  This allows the application to
+save state.  If an application does not support the B<WM_SAVE_YOURSELF>
+protocol, then the proxy will provide enough information to the session
+manager to restart the application (using B<WM_COMMAND>), but no state
+will be restored.
+
+=head2 REMOTE APPLICATIONS
+
+B<xde-sm> requires a remote execution protocol to restart applications
+on remote machines.  Currently, B<xde-sm> supports the L<ssh(1)>
+protocol.  To restart an application on remote machine X, machine X must
+have L<sshd(1)> installed.
 
 =head1 CONFIGURATION
 
@@ -288,8 +373,6 @@ application.  A sample startup file might look like this:
  smproxy
  xterm
 
-
-
 =head1 USAGE
 
 A session is a group of applications, each of which has a particular
@@ -310,9 +393,66 @@ session.  The true power of B<xde-sm>, however, can be taken advantage
 of when more and more applications learn to save and restore their
 state.
 
+=head1 BUGS
+
+B<xde-sm> had no known bugs at the time of release.  Please report
+bugs for current versions to the source code repository at
+L<https://github.com/bbidulock/xde-session/issues>.
+
 =head1 HISTORY
 
+L<xsm(1)> has a number of deficiencies that I was trying to address by
+writing the B<xde-sm> work-alike:
+
+=over 4
+
+=item 1.
+
+L<xsm(1)> uses the old Athena widgets set.  B<xde-sm> uses the GTK+
+toolkit.
+
+=item 2.
+
+L<xsm(1)> uses signals for remote control.  Signals can only be reliably
+issued on the same machine as is running the session manager.  B<xde-sm>
+also provides control of the session manager using X11 protocol client
+messages.
+
+=item 3.
+
+L<xsm(1)> does not support L<ssh(1)> as a remote execution protocol,
+only L<rstart(1)>, which is insecure.  B<xde-sm> uses L<ssh(1)> and
+provides a proxy for session management by appropriately setting the
+B<SESSION_MANAGER> environment variable to tunnel "session aware"
+connections to the manager back to the session management host.
+
+=item 4.
+
+L<xsm(1)> and L<smproxy(1)> do not directly support XDG autostart.
+B<xde-sm> supports XDG autostart by automatically adding autostart
+clients to the session when they are not "session aware".  This is
+partly addressed by B<xde-sm> and partly addressed by
+L<xde-autostart(1)>.
+
+=item 5.
+
+L<xsm(1)> and L<smproxy(1)> do not support XDG startup notification.
+XDG startup notification provides an additional mechanism for
+determining the characteristics of clients that are not "session aware".
+
+=back
+
+I wrote B<xde-sm> to mitigate these issues as described, above.
+
 =head1 SEE ALSO
+
+L<xsm(1)>,
+L<smproxy(1)>,
+L<ssh(1)>,
+L<sshd(1)>,
+L<xde-smproxy(1)>,
+L<rstart(1)>,
+L<xde-autostart(1)>.
 
 =head1 AUTHOR
 

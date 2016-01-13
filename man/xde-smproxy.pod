@@ -32,15 +32,17 @@ upper layer session manager.
 
 =item B<-d>, B<-dockApps>
 
-Peform proxy services also for L<wmaker(1)> dock applications.  This is
-seldom necessary as L<xde-dock(1)> provides a proxy for session
-management of L<wmaker(1)> dock applications on its own.
+Perform proxy services also for L<wmaker(1)> dock applications.  This is
+not necessary if L<xde-dockmgr(1)> is run and provides a proxy for
+session management of L<wmaker(1)> dock applications.
 
 =item B<-s>, B<-systemTray>
 
 Perform proxy services also for L<wmaker(1)> system tray icons for any
 system tray icons that do not support X11R6 session management on their
-own and whose client leaders have no other windows mapped.
+own and whose client leaders have no other windows mapped.  This is also
+not necessary if L<xde-traymgr(1)> is run an provides a proxy for
+session management of system tray applications.
 
 =item B<-w>, B<-windowManager>
 
@@ -62,15 +64,15 @@ support X11R6 session management, one of the following must be true:
 =item 1.
 
 The application maps a top-level window containing the
-C<WM_CLIENT_LEADER> property.  This property provides a pointer to the
-client leader window that contains the C<WM_CLASS>, C<WM_NAME>,
-C<WM_COMMAND> and C<WM_CLIENT_MACHINE> properties.
+B<WM_CLIENT_LEADER> property.  This property provides a pointer to the
+client leader window that contains the B<WM_CLASS>, B<WM_NAME>,
+B<WM_COMMAND> and B<WM_CLIENT_MACHINE> properties.
 
 A non NetWM/EWMH or WinWM/WMH compliant window manager must add the
-C<WM_STATE> property to these windows in compliance with ICCCM 2.0 for
+B<WM_STATE> property to these windows in compliance with ICCCM 2.0 for
 them to be detected.  For NetWM/EWMH or WinWM/WMH compliant window
-managers, the window must be present in the C<_NET_CLIENT_LIST> and
-C<_NET_CLIENT_LIST_STACKING> lists, or in the C<_WIN_CLIENT_LIST> list.
+managers, the window must be present in the B<_NET_CLIENT_LIST> and
+B<_NET_CLIENT_LIST_STACKING> lists, or in the B<_WIN_CLIENT_LIST> list.
 
 =item 2.
 
@@ -80,33 +82,33 @@ the B<WM_CLASS>, B<WM_NAME>, B<WM_COMMAND> and B<WM_CLIENT_MACHINE>
 properties.
 
 A non NetWM/EWMH or WinWM/WMH compliant window manager must add the
-C<WM_STATE> property to these windows in compliance with ICCCM 2.0 for
+B<WM_STATE> property to these windows in compliance with ICCCM 2.0 for
 them to be detected.  For NetWM/EWMH or WinWM/WMH compliant window
-managers, the window must be present in the C<_NET_CLIENT_LIST> and
-C<_NET_CLIENT_LIST_STACKING> lists, or in the C<_WIN_CLIENT_LIST> list.
+managers, the window must be present in the B<_NET_CLIENT_LIST> and
+B<_NET_CLIENT_LIST_STACKING> lists, or in the B<_WIN_CLIENT_LIST> list.
 
 =item 3.
 
-Starup notification is provided when the application is launched.  In
+Startup notification is provided when the application is launched.  In
 this case B<xde-smproxy> obtains additional information from the startup
-notification messages and can use the C<WM_CLASS> property and possibly
-the C<_NET_STARTUP_ID> property to determine properties that are
-missing, such as C<WM_NAME>, C<WM_COMMAND>, C<WM_CLIENT_MACHINE>,
-C<_NET_WM_PID>, C<_NET_WM_DESKTOP>, C<_WIN_WORKSPACE> or
-C<_DT_WORKSPACE_PRESENCE>.  In general, when the application is launched
+notification messages and can use the B<WM_CLASS> property and possibly
+the B<_NET_STARTUP_ID> property to determine properties that are
+missing, such as B<WM_NAME>, B<WM_COMMAND>, B<WM_CLIENT_MACHINE>,
+B<_NET_WM_PID>, B<_NET_WM_DESKTOP>, B<_WIN_WORKSPACE> or
+B<_DT_WORKSPACE_PRESENCE>.  In general, when the application is launched
 using B<xdg-launch(1)>, all the necessary information is available.
 
 =item 4.
 
 When the B<-dockApp> option is specified and the application is a
-L<wmaker(1)> dock app.  A WindowMaker dock app is a top-level window
-that has the following characteristics:
+L<wmaker(1)> dock application.  A Window Maker dock application is a
+top-level window that has the following characteristics:
 
 =over
 
 =item a)
 
-The top-level window contains a C<WM_HINTS> property.  The property
+The top-level window contains a B<WM_HINTS> property.  The property
 specifies an initial state of C<WithdrawnState>; or,
 
 =item b)
@@ -117,14 +119,21 @@ possibly the C<IconPositionHint>) flags set; or,
 
 =item c)
 
-has the C<WM_CLASS> property set with a I<res_class> of C<DockApp>.
+has the B<WM_CLASS> property set with a I<res_class> of C<DockApp>.
 
 =back
 
-The C<WM_STATE> property must not be added to these windows (otherwise
-they are treated as non-dockapp windows).  Dock applications typically
-also have the C<WM_CLASS>, C<WM_NAME>, C<WM_COMMAND>,
-C<WM_CLIENT_MACHINE> and C<WM_CLIENT_LEADER> properties set.
+The B<WM_STATE> property must not be added to these windows (otherwise
+they are treated as non-dock application windows).  Dock applications
+typically also have the B<WM_CLASS>, B<WM_NAME>, B<WM_COMMAND>,
+B<WM_CLIENT_MACHINE> and B<WM_CLIENT_LEADER> properties set.
+
+In many light-weight window managers supporting Window Maker dock
+applications, the order of the applications in the dock depends largely
+on the order of execution.  The position in the dock must be determined
+to ascertain the order (applications may have been launched at the same
+time and raced for position).  This additional information is saved by
+the session manager proxy.
 
 =item 5.
 
@@ -132,21 +141,29 @@ When the B<-systemTray> option is specified and the application is a
 system tray icon conforming to the freedesktop.org system tray
 specification, but does not support X11R6 session management.
 
-Typically, system tray icons provide a C<WM_CLIENT_LEADER> property that
-points to a leader window with the C<WM_CLASS>, C<WM_NAME>,
-C<WM_COMMAND> and C<WM_CLIENT_MACHINE> properties set.  The system tray
-icon itself can be identified by the presence of an C<_XEMBED_INFO>
-property (and have no C<WM_STATE> property set).  They may be visible or
+Typically, system tray icons provide a B<WM_CLIENT_LEADER> property that
+points to a leader window with the B<WM_CLASS>, B<WM_NAME>,
+B<WM_COMMAND> and B<WM_CLIENT_MACHINE> properties set.  The system tray
+icon itself can be identified by the presence of an B<_XEMBED_INFO>
+property (and have no B<WM_STATE> property set).  They may be visible or
 not.
+
+For many light-weight window managers, the system tray is provided by an
+application separate from the window manager.  Often the order of icons
+in the system tray is dependent largely on the order of execution of the
+applications that install the icons.  The position in the system tray
+must be determined to ascertain the order (applications may have been
+launched at the same time and raced for position).  This additional
+information is saved by the session manager proxy.
 
 =back
 
-Applications that support the C<WM_SAVE_YOURSELF> protocol will receive
-a C<WM_SAVE_YOURSELF> client message each time the session manager
+Applications that support the B<WM_SAVE_YOURSELF> protocol will receive
+a B<WM_SAVE_YOURSELF> client message each time the session manager
 issues a checkpoint or shutdown.  This allows applications to save
-state.  If an application does not support the C<WM_SAVE_YOURSELF>
+state.  If an application does not support the B<WM_SAVE_YOURSELF>
 protocol, then the proxy will provide enough information to the session
-manager to restart the application (using C<WM_COMMAND>), but no state
+manager to restart the application (using B<WM_COMMAND>), but no state
 will be restored.
 
 When the B<-windowManager> option is specified, during save-yourself
@@ -167,14 +184,18 @@ L<https://github.com/bbidulock/xde-session/issues>.
 
 I wrote B<xde-smproxy(1)> because the normal Xorg L<smproxy(1)> was
 lacking in a number of respects: it does not provide assistance for
-window managers; cannot identify WindowMaker dock applications; cannot
+window managers; cannot identify Window Maker dock applications; cannot
 identify applications that have system tray icons but no other window
 mapped; does not use startup notification nor F</proc> file system for
 additional information.
 
 =head1 SEE ALSO
 
-L<xdg-launch(1)>, L<smproxy(1)>, L<xsm(1)>.
+L<xdg-launch(1)>,
+L<smproxy(1)>,
+L<xsm(1)>,
+L<xde-dockmgr(1)>,
+L<xde-traymgr(1)>.
 
 =head1 AUTHOR
 
