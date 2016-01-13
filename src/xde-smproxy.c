@@ -1,6 +1,6 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2014  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>
  Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
@@ -42,7 +42,81 @@
 
  *****************************************************************************/
 
-#include "xde-smproxy.h"
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
+#endif
+
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/timerfd.h>
+#include <sys/ioctl.h>
+#include <sys/wait.h>
+#include <sys/poll.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <time.h>
+#include <signal.h>
+#include <syslog.h>
+#include <sys/utsname.h>
+
+#include <assert.h>
+#include <locale.h>
+#include <stdarg.h>
+#include <strings.h>
+#include <regex.h>
+
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xproto.h>
+#include <X11/Xutil.h>
+#include <X11/Xresource.h>
+#ifdef XRANDR
+#include <X11/extensions/Xrandr.h>
+#include <X11/extensions/randr.h>
+#endif
+#ifdef XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+#include <X11/SM/SMlib.h>
+#ifdef STARTUP_NOTIFICATION
+#define SN_API_NOT_YET_FROZEN
+#include <libsn/sn.h>
+#endif
+#include <gtk/gtk.h>
+#include <cairo.h>
+#include <glib.h>
+
+#define XPRINTF(args...) do { } while (0)
+#define OPRINTF(args...) do { if (options.output > 1) { \
+	fprintf(stderr, "I: "); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define DPRINTF(args...) do { if (options.debug) { \
+	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define EPRINTF(args...) do { \
+	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr);   } while (0)
+#define DPRINT() do { if (options.debug) { \
+	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fflush(stderr); } } while (0)
+
 
 #include <X11/ICE/ICEutil.h>
 #include <X11/SM/SMlib.h>
@@ -51,27 +125,27 @@ static int saveArgc;
 static char **saveArgv;
 
 typedef enum {
-	COMMAND_DEFAULT,
-	COMMAND_PROXY,
-	COMMAND_REPLACE,
-	COMMAND_QUIT,
-	COMMAND_HELP,
-	COMMAND_VERSION,
-	COMMAND_COPYING,
-} CommandType;
+	CommandDefault,
+	CommandProxy,
+	CommandReplace,
+	CommandQuit,
+	CommandHelp,
+	CommandVersion,
+	CommandCopying,
+} Command;
 
 typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
-	CommandType command;
+	Command command;
 } Options;
 
 Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
-	.command = COMMAND_DEFAULT,
+	.command = CommandDefault,
 };
 
 typedef enum {
@@ -4334,7 +4408,7 @@ copying(int argc, char *argv[])
 --------------------------------------------------------------------------------\n\
 %1$s\n\
 --------------------------------------------------------------------------------\n\
-Copyright (c) 2008-2014  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>\n\
 Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
 Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
 \n\
@@ -4378,7 +4452,7 @@ version(int argc, char *argv[])
 %1$s (OpenSS7 %2$s) %3$s\n\
 Written by Brian Bidulock.\n\
 \n\
-Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014  Monavacon Limited.\n\
+Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016  Monavacon Limited.\n\
 Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
 Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
@@ -4454,7 +4528,7 @@ get_defaults(void)
 int
 main(int argc, char *argv[])
 {
-	CommandType command = COMMAND_DEFAULT;
+	Command command = CommandDefault;
 
 	setlocale(LC_ALL, "");
 
@@ -4500,25 +4574,25 @@ main(int argc, char *argv[])
 			goto bad_usage;
 
 		case '1':	/* --proxy */
-			if (options.command != COMMAND_DEFAULT)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			if (command == COMMAND_DEFAULT)
-				command = COMMAND_PROXY;
-			options.command = COMMAND_PROXY;
+			if (command == CommandDefault)
+				command = CommandProxy;
+			options.command = CommandProxy;
 			break;
 		case '2':	/* --restart */
-			if (options.command != COMMAND_DEFAULT)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			if (command == COMMAND_DEFAULT)
-				command = COMMAND_REPLACE;
-			options.command = COMMAND_REPLACE;
+			if (command == CommandDefault)
+				command = CommandReplace;
+			options.command = CommandReplace;
 			break;
 		case '3':	/* --quit */
-			if (options.command != COMMAND_DEFAULT)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			if (command == COMMAND_DEFAULT)
-				command = COMMAND_QUIT;
-			options.command = COMMAND_QUIT;
+			if (command == CommandDefault)
+				command = CommandQuit;
+			options.command = CommandQuit;
 			break;
 
 		case 'n':	/* -n, --dry-run */
@@ -4551,21 +4625,21 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			command = COMMAND_HELP;
+			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (options.command != COMMAND_DEFAULT)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			if (command == COMMAND_DEFAULT)
-				command = COMMAND_VERSION;
-			options.command = COMMAND_VERSION;
+			if (command == CommandDefault)
+				command = CommandVersion;
+			options.command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (options.command != COMMAND_DEFAULT)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			if (command == COMMAND_DEFAULT)
-				command = COMMAND_COPYING;
-			options.command = COMMAND_COPYING;
+			if (command == CommandDefault)
+				command = CommandCopying;
+			options.command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -4600,33 +4674,33 @@ main(int argc, char *argv[])
 	}
 	get_defaults();
 	switch (command) {
-	case COMMAND_DEFAULT:
-	case COMMAND_PROXY:
+	case CommandDefault:
+	case CommandProxy:
 		if (options.debug)
 			fprintf(stderr, "%s: running proxy\n", argv[0]);
 		run_proxy(argc, argv);
 		break;
-	case COMMAND_REPLACE:
+	case CommandReplace:
 		if (options.debug)
 			fprintf(stderr, "%s: replace proxy\n", argv[0]);
 		run_replace(argc, argv);
 		break;
-	case COMMAND_QUIT:
+	case CommandQuit:
 		if (options.debug)
 			fprintf(stderr, "%s: quitting proxy\n", argv[0]);
 		run_quit(argc, argv);
 		break;
-	case COMMAND_HELP:
+	case CommandHelp:
 		if (options.debug)
 			fprintf(stderr, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
-	case COMMAND_VERSION:
+	case CommandVersion:
 		if (options.debug)
 			fprintf(stderr, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
-	case COMMAND_COPYING:
+	case CommandCopying:
 		if (options.debug)
 			fprintf(stderr, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);

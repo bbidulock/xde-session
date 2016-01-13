@@ -1,6 +1,6 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2014  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>
  Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
@@ -46,7 +46,76 @@
 #define _XOPEN_SOURCE 600
 #endif
 
-#include "xde-login.h"
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
+#endif
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/timerfd.h>
+#include <sys/ioctl.h>
+#include <sys/wait.h>
+#include <sys/poll.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <time.h>
+#include <signal.h>
+#include <syslog.h>
+#include <sys/utsname.h>
+
+#include <assert.h>
+#include <locale.h>
+#include <stdarg.h>
+#include <strings.h>
+#include <regex.h>
+
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xproto.h>
+#include <X11/Xutil.h>
+#include <X11/Xresource.h>
+#ifdef XRANDR
+#include <X11/extensions/Xrandr.h>
+#include <X11/extensions/randr.h>
+#endif
+#ifdef XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+#ifdef STARTUP_NOTIFICATION
+#define SN_API_NOT_YET_FROZEN
+#include <libsn/sn.h>
+#endif
+#include <gtk/gtk.h>
+#include <cairo.h>
+#include <X11/SM/SMlib.h>
+
+#define XPRINTF(args...) do { } while (0)
+#define OPRINTF(args...) do { if (options.output > 1) { \
+	fprintf(stderr, "I: "); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define DPRINTF(args...) do { if (options.debug) { \
+	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define EPRINTF(args...) do { \
+	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr);   } while (0)
+#define DPRINT() do { if (options.debug) { \
+	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fflush(stderr); } } while (0)
+
 
 #include <dbus/dbus-glib.h>
 #include <pwd.h>
@@ -394,7 +463,7 @@ copying(int argc, char *argv[])
 --------------------------------------------------------------------------------\n\
 %1$s\n\
 --------------------------------------------------------------------------------\n\
-Copyright (c) 2008-2014  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>\n\
 Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
 Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
 \n\
@@ -438,7 +507,7 @@ version(int argc, char *argv[])
 %1$s (OpenSS7 %2$s) %3$s\n\
 Written by Brian Bidulock.\n\
 \n\
-Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014  Monavacon Limited.\n\
+Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016  Monavacon Limited.\n\
 Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
 Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
 This is free software; see the source for copying conditions.  There is NO\n\

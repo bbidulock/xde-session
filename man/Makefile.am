@@ -4,6 +4,7 @@ xde_man_files = \
 	xde-chooser.man \
 	xde-dockmgr.man \
 	xde-input.man \
+	xde-login.man \
 	xde-logout.man \
 	xde-session.man \
 	xde-sm.man \
@@ -24,6 +25,7 @@ EXTRA_DIST = \
 	xde-chooser.pod \
 	xde-dockmgr.pod \
 	xde-input.pod \
+	xde-login.pod \
 	xde-logout.pod \
 	xde-session.pod \
 	xde-sm.pod \

@@ -1,0 +1,24 @@
+=pod
+
+=head1 NAME
+
+xde-login - Log into an X Session
+
+=head1 SYNOPSIS
+
+B<xde-login> [I<OPTIONS>]
+
+=head1 AUTHOR
+
+Brian Bidulock L<mailto:bidulock@cpan.org>
+
+See B<--copying> for full copyright notice and copying permissions.
+
+=head1 SEE ALSO
+
+L<fbsession(1)>, L<lxsession(1)>, L<lxsession-logout(1)>,
+L<lxde-logout(1)>.
+
+=cut
+
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
