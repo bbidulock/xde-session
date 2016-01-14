@@ -131,20 +131,17 @@ L<xdm(1)> will only supply B<FamilyInternet>(0) or B<FamilyInternet6>(6).
 B<xde-xchooser> provides a set of general options that are not supported
 by the L<xdm(1)> greeter or chooser.  To supply these options requires
 an intermediate script that specifies them and echoes the L<xdm(1)>
-chooser options listed above under L</XDM OPTIONS>.  So that an
-intermediate script is not necessary, L<xdm(1)> provides an
-F<XResources> files containing X resources that are used instead of
-command line options to tailor the look and feel of the greeter and
-chooser.  As a result, the use of the following command line options are
-not necessary and are really only used for testing.
+chooser options.  So that an intermediate script is not necessary,
+L<xdm(1)> provides an F<Xresources> files containing X resources that
+are used instead of command line options to tailor the look and feel of
+the greeter and chooser.  As a result, the use of the following command
+line options are not necessary and are really only used for testing.
 
 The following are the more general options:
 
 =over 4
 
-=item B<-welcome> I<TEXT>
-
-=item B<-prompt> I<PROMPT>
+=item B<-welcome> I<MARKUP>
 
 Specifies the pango markup text that is to be displayed in the title
 area of the host menu.  As with the B<-banner> option, this option can
@@ -169,7 +166,8 @@ For example:
  /usr/bin/xde-xchooser -banner /usr/lib/X11/xdm/xde/banner.png $@
 
 When unspecified, the program searches for an image file named
-F<${XDG_VENDOR_ID--}banner.png>.
+F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the subdirectory
+F<images> in XDG data directories.
 
 =item B<-splash> I<JPGFILE>
 
@@ -182,7 +180,8 @@ example:
  /usr/bin/xde-xchooser -splash /usr/lib/X11/xdm/xde/splash.jpg $@
 
 When unspecified, the program searches for an image file named
-F<${XDG_VENDOR_ID:--}splash.jpg>.
+F<${XDG_VENDOR_ID:--}splash.{xpm,png,jpg,svg}> in the subdirectory
+F<images> in XDG data directories.
 
 =item B<-side> {B<top>|B<left>|B<bottom>|B<right>}
 
@@ -348,7 +347,11 @@ command line option.
 =item B<xde-xchooser>.B<banner>: I<PATH>
 
 Provides the banner to use for the branding logo in the same fashion as
-the B<-banner> command line option.
+the B<-banner> command line option.  Specifies the I<PATH> to the banner
+graphic to display in the left pane of the host menu.  When unspecified,
+the program searches for an image file name
+F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the subdirectory
+F<images> in XDG data directories.
 
 =item B<xde-xchooser>.B<splash>: I<PATH>
 
@@ -358,7 +361,9 @@ as the B<-splash> command line option.
 =item B<xde-xchooser>.B<welcome>: I<MARKUP>
 
 Provides the welcome message to use for the root window in the same
-fashion as the B<-welcome> command line option.
+fashion as the B<-welcome> command line option.  Specifies the F<pango>
+markup text, I<MARKUP>, that is to be display in the title area of the
+host menu.
 
 =item B<xde-xchooser>.B<charset>: I<CHARSET>
 
@@ -486,9 +491,9 @@ L<xdm(1)>, as follows:
 
 =back
 
-When specific B<xde-xchooser> resources are not specified, B<xde-xchooser>
-falls back the using the resources specified for the greeter by
-L<xdm(1)>, as follows:
+When specific B<xde-xchooser> resources are not specified,
+B<xde-xchooser> falls back the using the resources specified for its
+default greeter by L<xdm(1)>, as follows:
 
 =over 4
 
@@ -538,121 +543,216 @@ This resource not used by B<xde-xchooser>.
 
 =item B<xlogin>.B<Login.greeting>: I<STRING>
 
+A string that identifies this window.  The L<xdm(1)> default is C<X
+Window System>.
 The default is the value specified by command line option B<-welcome>,
 or C<Welcome to CLIENTHOST>.
 
 =item B<xlogin>.B<Login.unsecureGreeting>: I<STRING>
 
+When X authorization is requested in the configuration file for this
+display and none is in use, this greeting replaces the standard
+greeting.
 The default is C<This is an unsecure session>.
 
 =item B<xlogin>.B<Login.greetFace>: I<XFTFONT>
 
+The face used to display the greeting when built with Xft support.  The
+L<xdm(1)> default is C<Serif-24:italic>.
 The default is C<Sans:size=12:bold>.
 
 =item B<xlogin>.B<Login.greetFont>: I<XFONT>
 
+The font used to display the greeting when not built with Xft support.
 This resource not used by B<xde-xchooser>.
 
 =item B<xlogin>.B<Login.greetColor>: I<XCOLOR>
 
+The color used to display the greeting.
 The default is C<grey20>.
 
 =item B<xlogin>.B<Login.namePrompt>: I<STRING>
 
+The string display to prompt for a user name.  L<xrdb(1)> strips
+trailing white space from resource values, so to add spaces at the end
+of the prompt (usually a nice thing), add spaces escaped with
+backslashes.  The L<xdm(1)> default is C<Login:  >.
 The default is C<Username:  >.
 
 =item B<xlogin>.B<Login.passwdPrompt>: I<STRING>
 
+The string displayed to prompt for a password, when not using an
+authentication system such as PAM that provides its own prompts.  The
+L<xdm(1)> default is C<Password:  >.
 The default is C<Password:  >.
 
 =item B<xlogin>.B<Login.promptFace>: I<XFTFONT>
 
+The face used to display prompts when build with Xft support.  The
+L<xdm(1)> default is C<Serif-18:bold>.
 The default is C<Sans:size=12:bold>.
 
 =item B<xlogin>.B<Login.promptFont>: I<XFONT>
 
+The font used to display prompts when not built with Xft support.
+This resource not used by B<xde-xchooser>.
+
 =item B<xlogin>.B<Login.promptColor>: I<XCOLOR>
 
+The color used to display prompts.
 The default is C<grey20>.
 
 =item B<xlogin>.B<Login.inputFace>: I<XFTFONT>
 
+The face used to display user input when built with Xft support.
 The default is C<Sans:size=12:bold>.
+
+=item B<xlogin>.B<Login.inputFont>: I<XFONT>
+
+The font used to display user input when not built with Xft support.
+This resource not used by B<xde-xchooser>.
 
 =item B<xlogin>.B<Login.inputColor>: I<XCOLOR>
 
+The color used to display user input.
 The default is C<grey20>.
 
 =item B<xlogin>.B<Login.changePasswdMessage>: I<STRING>
 
-The default is C<Password Change Required>.
+A message that is displayed when the user's password has expired.  The
+L<xdm(1)> default is C<Password Change Required>.
+The default is supplied by the PAM subsystem.
 
 =item B<xlogin>.B<Login.fail>: I<STRING>
 
+A message that is displayed when the authentication fails, when not
+using an authentication system such as PAM that provides its own
+prompts.  The L<xdm(1)> default is C<Login incorrect>.
+The default is supplied by the PAM subsystem.
+
 =item B<xlogin>.B<Login.failFace>: I<XFTFONT>
 
+The face used to display the failure message when built with Xft
+suppport.  The L<xdm(1)> default is C<Serif-18:bold>.
 The default is C<Sans:size=12:bold>.
 
 =item B<xlogin>.B<Login.failFont>: I<XFONT>
 
+The font used to display the failure message when not built with Xft
+support.
+This resource not used by B<xde-xchooser>.
+
 =item B<xlogin>.B<Login.failColor>: I<XCOLOR>
 
+The default color used to display the failure message.
 The default is C<red>.
 
 =item B<xlogin>.B<Login.failTimeout>: I<INTEGER>
 
-The default is C<10>.
+The number of seconds that the failure message is displayed, before
+another login attempt is permitted.
+The L<xdm(1)> default is C<10>.
+The PAM subsystem provides this delay.
 
 =item B<xlogin>.B<Login.logoFileName>: I<PATH>
 
+Name of an XPM format pixmap to display in the greeter window, if built
+with XPM support.  The L<xdm(1)> default is no pixmap.
 The default is F</etc/X11/xdm/xde/banner.png>.
 
 =item B<xlogin>.B<Login.logoPadding>: I<INTEGER>
 
+The number of pixels of space between the logo pixmap and other elements
+of the greeter window, if the pixmap is displayed.  The L<xdm(1)>
+default is C<5>.
 The default is C<8>.
 
 =item B<xlogin>.B<Login.useShape>: {B<true>|B<false>}
 
+If set to C<true>, when built with XPM support, attempt to use the X
+Non-Rectangular window Shape Extension to set the window shape.  The
+L<xdm(1)> default is C<true>.
 The default is C<true>.
 
 =item B<xlogin>.B<Login.hiColor>: I<XCOLOR>
 
+Raised appearance bezels may be drawn around the greeter frame and text
+input boxes by setting this resource.
+B<hiColor> is the highlight color, used on the top and left sides of the
+frame, and the bottom and right sides of the text input areas.
+The L<xdm(1)> default is the foreground color, providing a flat
+appearance.
 The default is C<grey80>.
+This GTK+ version defaults to the active GTK theme.
 
 =item B<xlogin>.B<Login.shdColor>: I<XCOLOR>
 
+Raised appearance bezels may be drawn around the greeter frame and text
+input boxes by setting this resource.
+B<shdColor> is the shadow color, used on the bottom and right sides of
+the frame, and the top and left sides of the text input areas.
+The L<xdm(1)> default is the foreground color, providing a flat
+appearance.
 The default is C<grey20>.
+This GTK+ version defaults to the active GTK theme.
 
 =item B<xlogin>.B<Login.frameWidth>: I<INTEGER>
 
+The width in pixels of the area around the greeter frame drawn in
+B<hiColor> and B<shdColor>.
+For GTK, when set to C<0>, the frame will be drawn flat; otherwise, it
+will be drawn raised.
 The default is C<2>.
 
 =item B<xlogin>.B<Login.innerFrameWidth>: I<INTEGER>
 
+The width in pixels of the area around text input areas drawn in
+B<hiColor> and B<shdColor>.
 The default is C<2>.
+For GTK, when set to C<0>, the text areas will be drawn flat; otherwise,
+they will be drawn sunken.
 
 =item B<xlogin>.B<Login.sepWidth>: I<INTEGER>
 
+The width in pixels of the bezel line between the greeting and input
+areas drawn in B<hiColor> and B<shdColor>.
+For GTK, when set to C<0>, the line will be drawn flat; otherwise it
+will be drawn etched.
 The default is C<2>.
 
 =item B<xlogin>.B<Login.allowRootLogin>: {B<true>|B<false>}
 
+When set to C<false>, do not allow root (and any other user with uid of
+zero) to log in directly.
+This setting is only checked by some authentication back-ends at this
+time.
 The default is C<true>.
+This option is better set using the C<xdm-login> PAM service settings.
 
 =item B<xlogin>.B<Login.allowNullPasswd>: {B<true>|B<false>}
 
-The default is C<false>.
+If set to C<true>, allow an otherwise failing password match to succeed
+if the account does not require a password at all.  The default is
+C<false>, so only users that have passwords assigned can log in.
+This option is better set using the C<xdm-login> PAM service settings.
 
 =item B<xlogin>.B<Login.echoPasswd>: {B<true>|B<false>}
 
+When set C<true>, a placeholder character (B<echoPasswdChar>) will be
+shown for fields normally set to not echo, such as password input.  The
+L<xdm(1)> default is C<false>.
 The default is C<true>.
 
 =item B<xlogin>.B<Login.echoPasswdChar>: I<STRING>
 
-The default is C<*>.
+Character to display if B<echoPasswd> is C<true>.  The default is C<*>.
+When set to an empty value, the cursor will advance for each character
+input, but no text will be drawn.
 
 =item B<xlogin>.B<Login.borderWidth>: I<INTEGER>
 
+The width in pixels between the edge of the greeter frame and its
+content.
 The default is C<3>.
 
 =item B<xlogin>.B<Login.translations>: I<STRING>
@@ -698,7 +798,10 @@ The default location of the banner graphic.
 
 =item F</etc/X11/xdm/Xresources>
 
-The normal location of the X resources file for L<xdm(1)>.
+The normal location of the X resources file for L<xdm(1)>.  Normally,
+L<xdm(1)> will merge the resources found in this file into the X display
+B<RESOURCE_MANAGER> property on the root window before launching the
+greeter or chooser programs.
 
 =item F</etc/X11/xdm/xde/Xresources>
 
@@ -711,6 +814,12 @@ for security.
 =item F</usr/share/X11/app-defaults/XDE-XChooser>
 
 X resource defaults for B<xde-xchooser>.
+The program will load the default resources from this file and then
+merge the resources specified in the B<RESOURCE_MANAGER> property on the
+X display.  L<xdm(1)> will normally use L<xrdb(1)> to merge the
+resources from the F</etc/X11/xdm/Xresources> into the
+B<RESOURCE_MANAGER> property on the X display before launching the login
+or greeter program.
 
 =back
 
@@ -767,18 +876,16 @@ L<xqproxy(1)>,
 L<xde-xlogin(1)>,
 L<xde-xchooser(1)>,
 L<slim(1)>,
-L<xde-xlock(1)>.
+L<xde-xlock(1)>,
+L<Xnest(1)>,
+L<Xephyr(1)>,
+L<X Display Manager Control Protocol>.
 
 =head1 AUTHOR
 
 Brian Bidulock L<mailto:bidulock@cpan.org>
 
 See B<--copying> for full copyright notice and copying permissions.
-
-=head1 SEE ALSO
-
-L<xdm(1)>, L<Xnest(1)>, L<Xephyr(1)>, X Display Manager Control Protocol
-Specification.
 
 =head1 LICENSE
 

@@ -6,21 +6,58 @@ xde-login - Log into an X Session
 
 =head1 SYNOPSIS
 
-B<xde-login> [I<OPTIONS>]
+B<xde-login> [I<OPTIONS>] [[-e|--exec|--] I<COMMAND> [I<ARGUMENT> [...]]
 
 =head1 DESCRIPTION
 
+B<xde-login> is a simple C<C> language program the establishes a user
+X session.
+
+=head1 ARGUMENTS
+
+=over
+
+=item [B<-e>, B<--exec>, B<-->] I<COMMAND> [I<ARGUMENT> [...]]
+
+When specified, this sequence must be the last portion of the command
+line.  I<COMMAND> is the command to execute and I<ARGUMENT>s are the
+arguments for I<COMMAND>.  B<xde-login> will L<execvpe(3)> the command
+and arguments with the PAM environment.
+
+When unspecified, defaults to
+
+ /bin/sh -ls -C $HOME/.xinitrc
+
+when F<$HOME/.xinitrc> exists and is executable.  Otherwise, defaults to
+
+ /bin/sh -l /etc/X11/xinit/xinitrc
+
+=back
+
 =head1 OPTIONS
 
+The options that are detailed below are recognized by B<xdg-login>.
+B<xdg-login> uses L<getopt_long_only(3)>, so unambiguous abbreviations
+of long options and long options with a single dash are also supported.
+
 =head2 COMMAND OPTIONS
+
+The default is to login the user given the other options and execute the
+I<COMMAND> and I<ARGUMENT>s within the user session.
 
 =over
 
 =item B<-h>, B<--help>, B<-?>, B<--?>
 
+Prints usage information to standard output and exits.
+
 =item B<-V>, B<--version>
 
+Prints detailed version information and exits.
+
 =item B<-C>, B<--copying>
+
+Prints detailed copying permissions and exits.
 
 =back
 
@@ -28,78 +65,126 @@ B<xde-login> [I<OPTIONS>]
 
 =over
 
+=item B<-d>, B<--display> I<DISPLAY>
+
+The display to use, I<DISPLAY>.
+Defaults to the contents of the B<DISPLAY> environment variable.
+When set, the B<DISPLAY> environment variable will be set in the user
+session.  The PAM environment variables B<XDISPLAY> and B<DISPLAY> will
+also be set to the display for the user session.  When B<--tty> is not
+set, the PAM environment variable B<TTY> will also be set to this value
+for the user session.
+
 =item B<-A>, B<--authfile> I<AUTHFILE>
 
-The X authority file, I<AUTHFILE>.
+The X authority file, I<AUTHFILE>.  The default when unspecified is the
+X Authority filename returned by L<XauFileName(3)>, which first checks
+the B<XAUTHORITY> environment variable and otherwise defaults to
+F<$HOME/.Xauthority>.
+When set, the B<XAUTHORITY> environment variable will be set to the file
+name in the user session.  The PAM environment variable B<XAUTHORITY>
+will also be set to the file name in the user session.
 
 =item B<-E>, B<--desktop> I<DESKTOP>
 
-The target XDG desktop environment.
-
-=item B<-u>, B<--user> I<USER>
-
-User of session to create, I<USER>.
-
-=item B<-s>, B<--seat> I<SEAT>
-
-The seat number, I<SEAT>.
+The target XDG desktop environment.  When unspecified, defaults to the
+contents of the B<XDG_CURRENT_DESKTOP> environment variable.
+When set, the B<XDG_SESSION_DESKTOP> environment variable will be set to
+the desktop name in the user session.
 
 =item B<-S>, B<--service> I<SERVICE>
 
-The PAM service to use for login, I<SERVICE>.
+The PAM service to use for login, I<SERVICE>.  When unspecified,
+defaults to C<login>.
 
 =item B<-T>, B<--vt> I<VTNUMBER>
 
 The virtual terminal number, I<VTNUMBER>.
+Defaults to C<auto>.
+When set to C<auto>, the B<XFree86_VT> property on the X server root
+window is used.
+When set, the B<XDG_VTNR> environment variable will be set to the VT
+number in the user session.
+
+=item B<-s>, B<--seat> I<SEAT>
+
+The seat number, I<SEAT>.
+Defaults to C<auto>.
+When set to C<auto>, the B<Xorg_Seat> property on the X server root
+window is used.  When no B<Xorg_Seat> property exists on the X server,
+and the B<--vt> option is specified or defaults to a value, C<seat0> is
+used.
+When set, the B<XDG_SEAT> environment variable will be set to the seat
+name in the user session.  The PAM environment variable B<WINDOWPATH>
+will also be set to the seat name in the user session.
 
 =item B<-y>, B<--tty> I<TTY>
 
 The tty device, I<TTY>.
+Defaults to C<auto>.
+When set to C<auto> and a B<--vt> option or default is available,
+defaults to C<tty%d>, where C<%d> is the VT number.
+When set, the PAM environment variable B<TTY> will be set to the tty
+name in the user session.
 
 =item B<-c>, B<--class> I<CLASS>
 
 The B<XDG_SESSION_CLASS>, I<CLASS>.
+Defaults to C<user>.
+When set, the B<XDG_SESSION_CLASS> environment variable will be set to
+the session class name in the user session.
 
 =item B<-t>, B<--type> I<TYPE>
 
 The B<XDG_SESSION_TYPE>, I<TYPE>.
+Defaults to C<x11>.
+When set, the B<XDG_SESSION_TYPE> environment variable will be set to
+the session type name in the user session.
 
-=item B<-e>, B<--exec>
+=item B<-u>, B<--user> I<USER>
+
+User of session to create, I<USER>.
+Defaults to the user name associated with the calling process.
+When set, the B<RUSER> environment variable will be set to the user name
+in the user session.  The PAM environment variables B<USER> and
+B<LOGNAME> will also be set to the user name in the user session.
 
 =back
 
 =head2 GENERAL OPTIONS
 
+The following general options are recognized:
+
 =over
-
-=item B<-d>, B<--display> I<DISPLAY>
-
-The display to use, I<DISPLAY>, instead of the C<$DISPLAY> environment variable.
 
 =item B<-n>, B<--dry-run>
 
-Do not do anything, just print what would be done to standard output.
+Do not execute anything, just print what would be done to standard output.
 
 =item B<-v>, B<--verbose> [I<LEVEL>]
 
-Increment or set output verbosity level, I<LEVEL>.
+Increment or set output verbosity level, I<LEVEL>.  This option can be
+repeated.  Defaults to C<1>.
 
 =item B<-D>, B<--debug> [I<LEVEL>]
 
-Increment or set debug level, I<LEVEL>.
+Increment or set debug level, I<LEVEL>.  This option can be repeated.
+Defaults to C<0>.
 
 =back
 
-=head1 AUTHOR
-
-Brian Bidulock L<mailto:bidulock@cpan.org>
-
-See B<--copying> for full copyright notice and copying permissions.
+=head1 HISTORY
 
 =head1 SEE ALSO
 
 L<fbsession(1)>, L<lxsession(1)>, L<lxsession-logout(1)>,
 L<lxde-logout(1)>.
+
+=head1 AUTHOR
+
+Brian Bidulock L<mailto:bidulock@openss7.org>.
+
+See B<--copying> for full copyright notice and copying permissions.
 
 =cut
 
