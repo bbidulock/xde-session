@@ -67,6 +67,9 @@
 #include <sys/wait.h>
 #include <sys/poll.h>
 #include <fcntl.h>
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
 #include <dirent.h>
 #include <time.h>
 #include <signal.h>
@@ -99,6 +102,8 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 #include <glib.h>
+
+#include <pwd.h>
 
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
@@ -139,6 +144,9 @@ typedef struct {
 	int debug;
 	Bool dryrun;
 	Command command;
+	Time guard;
+	char *clientId;
+	char *saveFile;
 } Options;
 
 Options options = {
@@ -146,6 +154,9 @@ Options options = {
 	.debug = 0,
 	.dryrun = False,
 	.command = CommandDefault,
+	.guard = 15000,
+	.clientId = NULL,
+	.saveFile = NULL,
 };
 
 typedef enum {
@@ -171,6 +182,31 @@ typedef enum {
 	FIELD_OFFSET_FILE,
 	FIELD_OFFSET_URL,
 } FieldOffset;
+
+static const char *StartupNotifyFields[] = {
+	"LAUNCHER",
+	"LAUNCHEE",
+	"SEQUENCE",
+	"ID",
+	"NAME",
+	"ICON",
+	"BIN",
+	"DESCRIPTION",
+	"WMCLASS",
+	"SILENT",
+	"APPLICATION_ID",
+	"DESKTOP",
+	"SCREEN",
+	"MONITOR",
+	"TIMESTAMP",
+	"PID",
+	"HOSTNAME",
+	"COMMAND",
+	"ACTION",
+	"FILE",
+	"URL",
+	NULL
+};
 
 struct fields {
 	char *launcher;
@@ -1312,7 +1348,7 @@ add_fields(Sequence * seq, char *msg)
   *
   * We do not really use this in this program...
   */
-static void
+void
 send_new(Sequence * seq)
 {
 	char *msg, *p;
@@ -1333,7 +1369,7 @@ send_new(Sequence * seq)
   * update information determined about the client (if a client is associated)
   * before closing or waiting for the closure of the sequence.
   */
-static void
+void
 send_change(Sequence * seq)
 {
 	char *msg, *p;
@@ -3732,6 +3768,7 @@ handle_event(XEvent *e)
 }
 
 Bool sent_save_done;
+static void proxySaveYourselfPhase2CB(SmcConn smcConn, SmPointer data);
 
 static void
 proxyRequestSaveYourselfPhase2(SmcConn smcConn, SmPointer data)
@@ -3750,7 +3787,7 @@ sendSaveYourself(Client *c)
 
 	ev.xclient.type = ClientMessage;
 	ev.xclient.serial = 0;
-	ev.xclient.send_event = false;
+	ev.xclient.send_event = False;
 	ev.xclient.display = dpy;
 	ev.xclient.window = c->win;
 	ev.xclient.message_type = _XA_WM_PROTOCOLS;
@@ -3834,8 +3871,8 @@ proxySaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown
 
 	for (i = 0, s = screens; i < nscr; i++, s++) {
 		for (c = s->clients; c; c = c->next) {
-			Atoms *atoms;
-			int n;
+			Atom *atoms;
+			long n;
 
 			if (!c->win)
 				continue;
@@ -3906,7 +3943,7 @@ proxyShutdownCancelledCB(SmcConn smcConn, SmPointer data)
   * not do this for DockApp or TrayIcon which are not fully proxied, we save the
   * information associated with DockApps and TrayIcons ourselves.
   */
-static void
+void
 clientSetProperties(Client *c)
 {
 }
@@ -3915,7 +3952,7 @@ clientSetProperties(Client *c)
   *
   * Set the properties of the proxy.  That is us.  Provide our information here.
   */
-static void
+void
 proxySetProperties(SmcConn smcConn, SmPointer data)
 {
 	char procID[20], userID[20];
@@ -3971,8 +4008,8 @@ proxySetProperties(SmcConn smcConn, SmPointer data)
 	/* CurrentDirectory: On POSIX-based systems, specifies the value of the 
 	   current directory that needs to be set up prior to starting the
 	   program and should be of type ARRAY8. */
-	propval[1].value = calloc(PATH_MAX + 1, sizeof(propval[].value[]));
-	getcwd(propval[1].value, PATH_MAX);
+	propval[1].value = calloc(PATH_MAX + 1, sizeof(*propval[1].value));
+	if (getcwd(propval[1].value, PATH_MAX)) ;
 	propval[1].length = strlen(propval[1].value);
 
 	/* DiscardCommand: The discard command contains a command that when
@@ -4087,7 +4124,7 @@ proxySetProperties(SmcConn smcConn, SmPointer data)
 	   contain the user's name (the pw_name field of struct passwd).  */
 	errno = 0;
 	if ((pw = getpwuid(getuid())))
-		strncpy(userID, sizeof(userID) - 1, pw->pw_name);
+		strncpy(userID, pw->pw_name, sizeof(userID) - 1);
 	else {
 		EPRINTF("%s: %s\n", "getpwuid()", strerror(errno));
 		snprintf(userID, sizeof(userID), "%ld", (long) getuid());
@@ -4112,13 +4149,13 @@ proxyIceIOErrorHandler(IceConn iceConn)
 		(*prev_handler) (iceConn);
 }
 
-static void
+void
 installIOErrorHandler(void)
 {
 	IceIOErrorHandler default_handler;
 
 	prev_handler = IceSetIOErrorHandler(NULL);
-	default_handler = IceSetErrorHander(proxyIceIOErrorHandler);
+	default_handler = IceSetIOErrorHandler(proxyIceIOErrorHandler);
 	if (prev_handler == default_handler)
 		prev_handler = NULL;
 }
@@ -4149,8 +4186,8 @@ static SmcCallbacks cb = {
 static void
 init_smclient(void)
 {
-	const char *env;
-	char *err[256] = { 0, };
+	char *env;
+	char err[256] = { 0, };
 
 	if (smcConn) {
 		DPRINTF("already connected!\n");
@@ -4165,7 +4202,7 @@ init_smclient(void)
 
 	smcConn = SmcOpenConnection(env, NULL, SmProtoMajor, SmProtoMinor,
 				    cb_mask, &cb, options.clientId, &options.clientId,
-				    sizeof(err), &err);
+				    sizeof(err), err);
 	if (!smcConn) {
 		EPRINTF("SmcOpenConnection: %s\n", err);
 		exit(EXIT_FAILURE);
@@ -4174,6 +4211,14 @@ init_smclient(void)
 }
 
 Bool running;
+
+volatile int signum = 0;
+
+void
+sighandler(int sig)
+{
+	signum = sig;
+}
 
 static void
 main_loop(void)
@@ -4207,7 +4252,7 @@ main_loop(void)
 		pfd[0].revents = 0;
 		pfd[1].revents = 0;
 
-		if (poll(&pfd, 2, -1) == -1) {
+		if (poll(pfd, 2, -1) == -1) {
 			switch (errno) {
 			case EINTR:
 			case EAGAIN:
@@ -4298,7 +4343,7 @@ run_proxy(int argc, char *argv[])
 	init_display();
 
 	for (s = 0; s < nscr; s++) {
-		scr = screen + s;
+		scr = screens + s;
 		scr->selwin =
 		    XCreateSimpleWindow(dpy, scr->root, DisplayWidth(dpy, s),
 					DisplayHeight(dpy, s), 1, 1, 0,
@@ -4392,7 +4437,7 @@ run_quit(int argc, char *argv[])
 			XSync(dpy, False);
 			selcount++;
 		}
-		XUnGrabServer(dpy);
+		XUngrabServer(dpy);
 	}
 	/* sure, wait for them all to destroy */
 	while (selcount)
@@ -4508,7 +4553,7 @@ General Options:\n\
         increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
 "               , argv[0]
-		, options.dryrun ? "true" : "false",
+		, options.dryrun ? "true" : "false"
 		, options.debug
 		, options.output
         );
@@ -4597,7 +4642,6 @@ main(int argc, char *argv[])
 
 		case 'n':	/* -n, --dry-run */
 			options.dryrun = True;
-			optargs.dryrun = "true";
 			break;
 		case 'D':	/* -D, --debug [level] */
 			if (options.debug)
@@ -4605,7 +4649,6 @@ main(int argc, char *argv[])
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
-				optargs.debug = optarg;
 				if ((val = strtol(optarg, NULL, 0)) < 0)
 					goto bad_option;
 				options.debug = val;
@@ -4617,7 +4660,6 @@ main(int argc, char *argv[])
 			if (optarg == NULL) {
 				options.output++;
 			} else {
-				optargs.output = optarg;
 				if ((val = strtol(optarg, NULL, 0)) < 0)
 					goto bad_option;
 				options.output = val;

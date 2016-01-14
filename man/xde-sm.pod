@@ -564,7 +564,6 @@ L<xde-autostart(1)>,
 L<xde-autostart(1)>.
 L<xde-dockmgr(1)>,
 L<xde-smproxy(1)>,
-L<xde-smproxy(1)>,
 L<xde-traymgr(1)>,
 L<xde-wmproxy(1)>,
 L<xsm(1)>.

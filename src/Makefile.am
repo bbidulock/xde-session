@@ -2,8 +2,7 @@
 AM_CFLAGS = $(X11_CFLAGS) $(XEXT_CFLAGS) $(XSCRNSAVER_CFLAGS) $(XINERAMA_CFLAGS) $(XRANDR_CFLAGS) $(CAIRO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS) $(WNCK_CFLAGS)
 AM_LDFLAGS = $(WNCK_LIBS) $(GTK_LIBS) $(GDK_LIBS) $(CAIRO_LIBS) $(XINERAMA_LIBS) $(XRANDR_LIBS) $(XSCRNSAVER_LIBS) $(XEXT_LIBS) $(X11_LIBS)
 
-EXTRA_PROGRAMS = \
-	xde-smproxy
+EXTRA_PROGRAMS =
 
 bin_PROGRAMS = \
 	test-login \
@@ -16,6 +15,7 @@ bin_PROGRAMS = \
 	xde-logout \
 	xde-session \
 	xde-sm \
+	xde-smproxy \
 	xde-traymgr \
 	xde-wait \
 	xde-wmproxy \
