@@ -268,7 +268,7 @@ discovering that L<lxinput(1)> incorrectly sets the rate to the interval
 
 =head1 AUTHOR
 
-Brian Bidulock L<mailto:bidulock@cpan.org>
+Brian Bidulock L<mailto:bidulock@openss7.org>.
 
 See B<--copying> for full copyright notice and copying permissions.
 

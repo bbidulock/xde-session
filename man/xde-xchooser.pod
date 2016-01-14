@@ -883,7 +883,7 @@ L<X Display Manager Control Protocol>.
 
 =head1 AUTHOR
 
-Brian Bidulock L<mailto:bidulock@cpan.org>
+Brian Bidulock L<mailto:bidulock@openss7.org>.
 
 See B<--copying> for full copyright notice and copying permissions.
 
