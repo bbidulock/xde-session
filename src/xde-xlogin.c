@@ -5395,11 +5395,11 @@ get_resources(int argc, char *argv[])
 		getXrmColor(val, &resources.greetColor);
 	}
 	// xlogin.namePrompt:		Username:
-	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username: "))) {
+	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username:  "))) {
 		getXrmString(val, &resources.namePrompt);
 	}
 	// xlogin.passwdPrompt:		Password:
-	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password: "))) {
+	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password:  "))) {
 		getXrmString(val, &resources.passwdPrompt);
 	}
 	// xlogin.promptFace:		Sans-12:bold
@@ -5411,9 +5411,12 @@ get_resources(int argc, char *argv[])
 	if ((val = get_any_resource(rdb, "promptColor", "grey20"))) {
 		getXrmColor(val, &resources.promptColor);
 	}
+	// xlogin.inputFace:		Sans-12:bold
+	// xlogin.inputFont:
 	if ((val = get_any_resource(rdb, "inputFace", "Sans:size=12:bold"))) {
 		getXrmFont(val, &resources.inputFace);
 	}
+	// xlogin.inputColor:		grey20
 	if ((val = get_any_resource(rdb, "inputColor", "grey20"))) {
 		getXrmColor(val, &resources.inputColor);
 	}

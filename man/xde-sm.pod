@@ -15,6 +15,53 @@ for the historical L<xsm(1)>.
 
 =head1 OPTIONS
 
+The program uses L<getopt_long_only(3)> to parse options, so abbreviated
+or single-dash long options are recognized when not ambiguous.  The
+program accepts the following options:
+
+=head2 COMMAND OPTIONS
+
+Command options affect the major operating mode of the program.  Only
+one command option may be specified (with the exception that B<--help>
+can be specified in conjunction with any other command option).  When no
+command option is specified, B<--startup> is assumed.  The command
+options recognized by the program are as follows:
+
+=over
+
+=item [B<--startup>, B<-b>]
+
+Assume normal operation.  Launch window for the user to select from
+available saved sessions.  When no saved sessions are available, move
+directly to selection of a new X Session.
+
+=item B<--checkpoint>, B<-c>
+
+Ask a running instance of the session manager to checkpoint the session.
+This has the same effect as sending the running session manager a
+B<SIGUSR1> signal (see L</SIGNALS>).  This is also the default when the
+program is run with an C<argv[0]> of C<xde-sm-checkpoint>.
+
+=item B<--shutdown>, B<-q>
+
+Ask a running instance of the session manager to shutdown the session.
+This has the same effect as sending the running session manager a
+B<SIGTERM> signal (see L</SIGNALS>).  This is also the default when the
+program is run with an C<argv[0]> of C<xde-sm-shutdown>.
+
+=item B<--edit>, B<-e>
+
+Ask a running instance of the session manager to launch the session task
+editor.  This is also the default when the program is run with an
+C<argv[0]> of C<xde-sm-edit>.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+The following general options can be used with most of the command
+options listed above:
+
 =over 4
 
 =item B<--display> I<DISPLAY>
@@ -50,7 +97,24 @@ Provide a menu to choose from the available sessions: saved and default.
 
 =back
 
-=item B<--verbose> [I<LEVEL>]
+=item B<-n>, B<--dry-run>
+
+Don't do anything, just print what would be done on standard error.
+
+=item B<-D>, B<--debug> [I<LEVEL>]
+
+Increase, or set to I<LEVEL>, the debugging verbosity.  The default
+debugging verbosity level is zero (0), which means to output no
+debugging information.  When non-zero, debugging information will be
+printed to standard error.
+
+=item B<-v>, B<--verbose> [I<LEVEL>]
+
+Increase, or set to I<LEVEL>, the output verbosity.  The default output
+verbosity level is one (1), which means to output normal information to
+standard output.  When set to zero (0), no output will be printed to
+standard output. 
+
 
 =back
 

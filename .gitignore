@@ -49,6 +49,7 @@ src/xde-input
 src/xde-login
 src/xde-logout
 src/xde-session
+src/xde-sm
 src/xde-smproxy
 src/xde-traymgr
 src/xde-wait

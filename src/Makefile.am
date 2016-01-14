@@ -15,13 +15,14 @@ bin_PROGRAMS = \
 	xde-login \
 	xde-logout \
 	xde-session \
+	xde-sm \
 	xde-traymgr \
 	xde-wait \
 	xde-wmproxy \
 	xde-xchooser \
 	xde-xlock \
 	xde-xlogin \
-        xde-xsession
+	xde-xsession
 
 
 xde_autostart_CPPFLAGS = -DNAME=\"xde-autostart\"
@@ -63,6 +64,11 @@ xde_smproxy_CPPFLAGS = -DNAME=\"xde-smproxy\"
 xde_smproxy_SOURCES = xde-smproxy.c
 xde_smproxy_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
 xde_smproxy_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
+
+xde_sm_CPPFLAGS = -DNAME=\"xde-sm\"
+xde_sm_SOURCES = xde-sm.c
+xde_sm_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
+xde_sm_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
 
 xde_traymgr_CPPFLAGS = -DNAME=\"xde-traymgr\"
 xde_traymgr_SOURCES = xde-traymgr.c
