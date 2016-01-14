@@ -128,6 +128,7 @@
 -Thash_tab_t
 -T_HEAD_DECLARATION
 -Tht_link_t
+-TIceAuthDataEntry
 -Ticlpkt_t
 -Tifunc_t
 -Tinline
@@ -232,6 +233,8 @@
 -Tsl_ulong
 -Tsl_ushort
 -TSmClient
+-TSmPointer
+-TSmsCallbacks
 -TSmsCallbacks
 -Tspinlock_t
 -Tssize_t

@@ -67,6 +67,9 @@
 #include <sys/wait.h>
 #include <sys/poll.h>
 #include <fcntl.h>
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
 #include <dirent.h>
 #include <time.h>
 #include <signal.h>
@@ -78,6 +81,8 @@
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <wordexp.h>
+#include <execinfo.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -100,27 +105,34 @@
 
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stderr, "I: "); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
+	fprintf(stdout, "I: "); \
+	fprintf(stdout, args); \
+	fflush(stdout); } } while (0)
 #define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "E: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr);   } while (0)
 #define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
+	fflush(stderr); } } while (0)
+#define PTRACE() do { if (options.debug > 0 || options.output > 2) { \
+	fprintf(stderr, "T: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
 #include <X11/ICE/ICEutil.h>
 #include <X11/SM/SMlib.h>
 
-#ifdef _GNU_SOURCE
-#include <getopt.h>
-#endif
+#undef EXIT_SUCCESS
+#undef EXIT_FAILURE
+#undef EXIT_SYNTAXERR
+
+#define EXIT_SUCCESS	0
+#define EXIT_FAILURE	1
+#define EXIT_SYNTAXERR	2
 
 enum {
 	OBEYSESS_DISPLAY, /* obey multipleSessions resource */
@@ -150,6 +162,48 @@ Options options = {
 	.saveFile = NULL,
 };
 
+/*
+ * There are two state machines: one for the overall session manager, another
+ * for the state of a given SM client as viewed by the session manager.
+ */
+
+typedef enum {
+	SMS_Start,
+	SMS_ProtocolSetup,
+	SMS_Register,
+	SMS_AckRegister,
+	SMS_Idle,
+	SMS_SaveYourself,
+	SMS_GetProperties,
+	SMS_SavingGetProperties,
+	SMS_SavingYourself,
+	SMS_StartPhase2,
+	SMS_Phase2,
+	SMS_SaveYourselfDone,
+	SMS_Die,
+} SMS_State;
+
+SMS_State managerState;
+
+typedef enum {
+	SMC_Start,
+	SMC_Register,
+	SMC_CollectId,
+	SMC_ShutdownCancelled,
+	SMC_Idle,
+	SMC_Die,
+	SMC_FreezeInteraction,
+	SMC_SaveYourself,
+	SMC_WaitingForPhase2,
+	SMC_Phase2,
+	SMC_InteractRequest,
+	SMC_Interact,
+	SMC_SaveYourselfDone,
+	SMC_ConnectionClosed,
+} SMC_State;
+
+static Bool shutting_down;
+
 typedef struct {
 	char *id;
 	char *hostname;
@@ -163,19 +217,21 @@ typedef struct {
 	char *discardCommand;
 	char *saveDiscardCommand;
 	int restartHint;
-} Client;
+	SMC_State state;
+} SmClient;
 
-SmcConn smc;
-GHashTable *initialClients;
-GHashTable *pendingClients;
-GHashTable *anywaysClients;
-GHashTable *restartClients;
-GHashTable *failureClients;
-GHashTable *savselfClients;
-GHashTable *wphase2Clients;
+static SmcConn smc;
 
-GSList *interacClients;
-GSList *runningClients;
+static GHashTable *initialClients; /* initializing clients */
+static GHashTable *pendingClients; /* pending clients */
+static GHashTable *anywaysClients;
+static GHashTable *restartClients;
+static GHashTable *failureClients;
+static GHashTable *savselfClients;
+static GHashTable *wphase2Clients;
+
+static GSList *interacClients;
+static GSList *runningClients;
 
 void
 wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
@@ -458,13 +514,13 @@ relax()
 }
 
 void
-setInitialProperties(Client *c, SmProp *props[])
+setInitialProperties(SmClient *c, SmProp *props[])
 {
 	/* FIXME !!!! */
 }
 
 void
-freeClient(Client *c)
+freeClient(SmClient *c)
 {
 	/* FIXME !!!! */
 }
@@ -491,7 +547,7 @@ freeClient(Client *c)
 Status
 registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 	gpointer found;
 	int send_save;
 
@@ -503,7 +559,7 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 		c->id = SmsGenerateClientID(smsConn);
 	} else
 		do {
-			Client *p;
+			SmClient *p;
 
 			if ((p = (typeof(p)) g_hash_table_lookup(pendingClients, previousId))) {
 				g_hash_table_remove(pendingClients, previousId);
@@ -529,11 +585,13 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 			free(previousId);
 			return (0);
 		} while (0);
+	c->state = SMC_Idle;
 	SmsRegisterClientReply(smsConn, c->id);
 	free(c->hostname);
 	c->hostname = SmsClientHostName(smsConn);
 	c->restarted = (previousId != NULL);
 	if (!previousId) {
+		c->state = SMC_SaveYourself;
 		SmsSaveYourself(smsConn, SmSaveLocal, False, SmInteractStyleNone, False);
 		g_hash_table_insert(initialClients, c->id, (gpointer) c);
 	} else {
@@ -564,7 +622,7 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 void
 interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 }
 
 void
@@ -618,7 +676,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 	int success = 0; /* FIXME */
 	int checkpoint_from_signal = 0; /* FIXME */
 
-	Client *c = (typeof(c)) data, *p;
+	SmClient *c = (typeof(c)) data, *p;
 
 	if ((p = g_hash_table_lookup(savselfClients, c->id))) {
 		g_hash_table_remove(savselfClients, c->id);
@@ -648,7 +706,7 @@ void
 saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
 		  int style, Bool fast, Bool global)
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 }
 
 /** @brief save yourself phase 2 request callback
@@ -661,7 +719,7 @@ saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
 void
 saveYourselfP2ReqCB(SmsConn smsConn, SmPointer data)
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 }
 
 /** @brief save yourself done callback
@@ -674,7 +732,7 @@ saveYourselfP2ReqCB(SmsConn smsConn, SmPointer data)
 void
 saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 }
 
 /** @brief close connection callback
@@ -689,7 +747,7 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 void
 closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reason)
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 }
 
 /** @brief set properties callback
@@ -704,7 +762,7 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reason)
 void
 setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp * props[])
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 }
 
 /** @brief delete properties callback
@@ -715,7 +773,7 @@ setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp * props[])
 void
 deletePropertiesCB(SmsConn smsConn, SmPointer data, int num, char *names[])
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 }
 
 /** @brief get properties callback
@@ -727,13 +785,13 @@ deletePropertiesCB(SmsConn smsConn, SmPointer data, int num, char *names[])
 void
 getPropertiesCB(SmsConn smsConn, SmPointer data)
 {
-	Client *c = (typeof(c)) data;
+	SmClient *c = (typeof(c)) data;
 }
 
-Status
-newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks * cb, char **reason)
+static Status
+newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *cb, char **reason)
 {
-	Client *c;
+	SmClient *c;
 
 	if (!(c = calloc(1, sizeof(*c)))) {
 		fprintf(stderr, "Memory allocation failed\n");
@@ -753,6 +811,7 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	c->discardCommand = NULL;
 	c->saveDiscardCommand = NULL;
 	c->restartHint = SmRestartIfRunning;
+	c->state = SMC_Start;
 
 	runningClients = g_slist_append(runningClients, c);
 
@@ -799,23 +858,28 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	return (1);
 }
 
-int shutting_down;
-
 gboolean
-on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
+on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
 	IceConn ice;
 	IceAcceptStatus status;
 	IceConnectStatus cstatus;
 	IceListenObj obj = (typeof(obj)) data;
 
+	/* IceIOErrorHandler should handle this ... */
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
+		EPRINTF("poll failed: %s %s %s\n",
+			(cond & G_IO_NVAL) ? "NVAL" : "",
+			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
+		return G_SOURCE_REMOVE;
+	}
 	if (shutting_down)
-		return FALSE;
+		return G_SOURCE_REMOVE;
 
 	if (!(ice = IceAcceptConnection(obj, &status))) {
 		if (options.debug)
 			EPRINTF("IceAcceptConnection: failed\n");
-		return FALSE;
+		return G_SOURCE_REMOVE;
 	}
 	while ((cstatus = IceConnectionStatus(ice)) == IceConnectPending)
 		relax();
@@ -824,8 +888,9 @@ on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 			int ifd = IceConnectionNumber(ice);
 			char *connstr = IceConnectionString(ice);
 
-			EPRINTF("ICE connection opened by client, fd = %d, accepted at networkId %s\n",
-				ifd, connstr);
+			DPRINTF
+			    ("ICE connection opened by client, fd = %d, accepted at networkId %s\n",
+			     ifd, connstr);
 			free(connstr);
 		}
 	} else {
@@ -835,7 +900,7 @@ on_lfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 			EPRINTF("ICE connection rejected\n");
 		IceCloseConnection(ice);
 	}
-	return TRUE;		/* keep event source */
+	return G_SOURCE_CONTINUE;		/* keep event source */
 }
 
 Bool
@@ -848,9 +913,9 @@ int numTransports;
 IceListenObj *listenObjs;
 
 void
-closeListeners(void)
+CloseListeners(void)
 {
-	/* FIXME */
+	IceFreeListenObjs(numTransports, listenObjs);
 }
 
 static void
@@ -859,16 +924,12 @@ write_iceauth(FILE *addfp, FILE *removefp, IceAuthDataEntry *entry)
 	int i;
 
 	fprintf(addfp, "add %s \"\" %s %s ",
-			entry->protocol_name,
-			entry->network_id,
-			entry->auth_name);
+		entry->protocol_name, entry->network_id, entry->auth_name);
 	for (i = 0; i < entry->auth_data_length; i++)
 		fprintf(addfp, "%02x", (char) entry->auth_data[i]);
 	fprintf(addfp, "\n");
 	fprintf(removefp, "remove protoname=%s protodata=\"\" netid=%s authname=%s\n",
-			entry->protocol_name,
-			entry->network_id,
-			entry->auth_name);
+		entry->protocol_name, entry->network_id, entry->auth_name);
 }
 
 static char *
@@ -894,6 +955,11 @@ static char *remAuthFile;
 
 #define MAGIC_COOKIE_LEN 16
 
+/** @brief set authentication
+  *
+  * NOTE: this is a strange way to do this: I don't know why we do not simply
+  * use the iceauth library and write the file directly with correct locking.
+  */
 Status
 SetAuthentication(int count, IceListenObj * listenObjs, IceAuthDataEntry **authDataEntries)
 {
@@ -960,37 +1026,62 @@ SetAuthentication(int count, IceListenObj * listenObjs, IceAuthDataEntry **authD
 	return (0);
 }
 
+static IceIOErrorHandler prev_handler;
+
+static void
+ManagerIOErrorHandler(IceConn ice)
+{
+	if (prev_handler)
+		(*prev_handler) (ice);
+}
+
+static void
+InstallIOErrorHandler(void)
+{
+	IceIOErrorHandler default_handler;
+
+	prev_handler = IceSetIOErrorHandler(NULL);
+	default_handler = IceSetIOErrorHandler(ManagerIOErrorHandler);
+	if (prev_handler == default_handler)
+		prev_handler = NULL;
+}
+
 IceAuthDataEntry *authDataEntries;
 char *networkIds;
 
 void
-smpInitSessionManager()
+smpInitSessionManager(void)
 {
 	char err[256] = { 0, };
 	int i;
 	gint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
 
+	InstallIOErrorHandler();
+
 	if (!SmsInitialize(NAME, VERSION, newClientCB, NULL, hostBasedAuthCB, sizeof(err), err)) {
-		fprintf(stderr, "SmsInitialize: %s\n", err);
+		EPRINTF("SmsInitialize: %s\n", err);
 		exit(EXIT_FAILURE);
 	}
 	if (!IceListenForConnections(&numTransports, &listenObjs, sizeof(err), err)) {
-		fprintf(stderr, "IceListenForConnections: %s\n", err);
+		EPRINTF("IceListenForConnections: %s\n", err);
 		exit(EXIT_FAILURE);
 	}
-	atexit(closeListeners);
+	atexit(CloseListeners);
 	if (!SetAuthentication(numTransports, listenObjs, &authDataEntries)) {
-		fprintf(stderr, "SetAuthentication: could not set authorization\n");
+		EPRINTF("SetAuthentication: could not set authorization\n");
 		exit(EXIT_FAILURE);
 	}
 	for (i = 0; i < numTransports; i++) {
 		int lfd = IceGetListenConnectionNumber(listenObjs[i]);
 		GIOChannel *chan = g_io_channel_unix_new(lfd);
 		gint srce = g_io_add_watch(chan, mask, on_lfd_watch, (gpointer) listenObjs[i]);
+
 		(void) srce;
 	}
 	networkIds = IceComposeNetworkIdList(numTransports, listenObjs);
 	setenv("SESSION_MANAGER", networkIds, TRUE);
+
+	managerState = SMS_Start;
 }
 
 void
@@ -1072,7 +1163,7 @@ on_alrm_signal(int signum)
 }
 
 int
-handler(Display *display, XErrorEvent *xev)
+handler(Display *dpy, XErrorEvent *xev)
 {
 	if (options.debug) {
 		char msg[80], req[80], num[80], def[80];
@@ -1091,13 +1182,12 @@ void
 startup(int argc, char *argv[])
 {
 	static const char *suffix = "/.gtkrc-2.0.xde";
-	int xfd, ifd;
+	int xfd;
 	GIOChannel *chan;
 	gint srce;
 	const char *home;
 	char *file;
 	int len;
-	IceConn ice;
 	gint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
 
 	initialClients = g_hash_table_new(g_str_hash, g_str_equal);
@@ -1137,7 +1227,12 @@ startup(int argc, char *argv[])
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 
+	smpInitSessionManager();
+
 	if ((smc = wmpConnectToSessionManager())) {
+		IceConn ice;
+		int ifd;
+
 		ice = SmcGetIceConnection(smc);
 		ifd = IceConnectionNumber(ice);
 		chan = g_io_channel_unix_new(ifd);
@@ -1231,6 +1326,7 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
+	/* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [options] COMMAND ARG ...\n\
@@ -1257,7 +1353,13 @@ Options:\n\
     -v, --verbose [LEVEL]\n\
         increment or set output verbosity LEVEL [default: %3$d]\n\
         this option may be repeated.\n\
-", argv[0], options.debug, options.output, options.clientId, options.saveFile);
+", argv[0]
+	, options.debug
+	, options.output
+	, options.clientId
+	, options.saveFile
+);
+	/* *INDENT-ON* */
 }
 
 void

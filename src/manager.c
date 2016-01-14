@@ -1,6 +1,6 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2014  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>
  Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
@@ -519,7 +519,7 @@ CloseListeners(void)
 }
 
 static void
-write_iceauth(FILE *addfp, FILE *removefp, IceAuthDataEntry * entry)
+write_iceauth(FILE *addfp, FILE *removefp, IceAuthDataEntry *entry)
 {
 	int i;
 
@@ -561,7 +561,7 @@ static char *remAuthFile;
   * use the iceauth library and write the file directly with correct locking.
   */
 Status
-SetAuthentication(int count, IceListenObj * listenObjs, IceAuthDataEntry ** authDataEntries)
+SetAuthentication(int count, IceListenObj * listenObjs, IceAuthDataEntry **authDataEntries)
 {
 	FILE *addfp = NULL;
 	FILE *removefp = NULL;
@@ -667,7 +667,7 @@ smpInitSessionManager(void)
 		exit(EXIT_FAILURE);
 	}
 	atexit(CloseListeners);
-	if (!SetAuthentication(numTransports, listenObjs, &autDataEntries)) {
+	if (!SetAuthentication(numTransports, listenObjs, &authDataEntries)) {
 		EPRINTF("SetAuthentication: could not set authorization\n");
 		exit(EXIT_FAILURE);
 	}
