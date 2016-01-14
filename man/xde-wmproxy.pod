@@ -174,6 +174,11 @@ Brian Bidulock L<mailto:bidulock@openss7.org>.
 
 See B<--copying> for full copyright notice and copying permissions.
 
+=head1 LICENSE
+
+See the F<COPYING> file in the distribution or use the B<--copying> flag
+to display copying permissions.
+
 =cut
 
 # vim: set sw=4 tw=72 nocin spell spelllang=en_ca:

@@ -13,6 +13,52 @@ B<xde-sm> [I<OPTIONS>]
 B<xde-sm> is an X11 Session Manager.  It is a more beautiful replacement
 for the historical L<xsm(1)>.
 
+B<xde-sm> provides a master X11R6 Session Manager.  It is not intended
+to be too fancy.  There are six session management programs in the XDE
+suite as follows:
+
+=over
+
+=item 1.
+
+L<xde-sm(1)>:-
+Provide support for X11R6 Session Management.
+
+=item 2.
+
+L<xde-smproxy(1)>:-
+Provide support for non-session aware applications in the spirit of
+L<smproxy(1)>.
+
+=item 2.
+
+L<xde-wmproxy(1)>:-
+Provide support for window managers that do not support session
+management directly.
+
+=item 4.
+
+L<xde-autostart(1)>:-
+Provides support for applications that are automatically launched at
+startup (in accordance with XDG specifications).
+
+=item 5.
+
+L<xde-dockmgr(1)>:-
+Provides a proxy X11R6 Session Manager for managing L<wmaker(1)> dock
+applications.
+This proxy manager is responsible for managing L<wmaker(1)> dock
+applications, which are typically not session-management-aware.
+
+=item 6.
+
+L<xde-traymgr(1)>:-
+Provides a proxy X11R6 Session Manager for managing system tray icons.
+This proxy manager is responsible for managing system tray icons, which
+sometimes are or are not session-management-aware.
+
+=back
+
 =head1 OPTIONS
 
 The program uses L<getopt_long_only(3)> to parse options, so abbreviated
@@ -510,13 +556,18 @@ I wrote B<xde-sm> to mitigate these issues as described, above.
 
 =head1 SEE ALSO
 
-L<xsm(1)>,
+L<rstart(1)>,
 L<smproxy(1)>,
 L<ssh(1)>,
 L<sshd(1)>,
-L<xde-smproxy(1)>,
-L<rstart(1)>,
+L<xde-autostart(1)>,
 L<xde-autostart(1)>.
+L<xde-dockmgr(1)>,
+L<xde-smproxy(1)>,
+L<xde-smproxy(1)>,
+L<xde-traymgr(1)>,
+L<xde-wmproxy(1)>,
+L<xsm(1)>.
 
 =head1 AUTHOR
 

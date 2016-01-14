@@ -371,6 +371,11 @@ L<getopt_long_only(3)>, L<xde-logout(1)>, L<xde-session(1)>,
 L<xde-startup(1)>, L<xdg-launch(1)>, L<lxsession-logout(1)>,
 L<lxsession(1)>.
 
+=head1 LICENSE
+
+See the F<COPYING> file in the distribution or use the B<--copying> flag
+to display copying permissions.
+
 =cut
 
 # vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
