@@ -1056,3 +1056,4 @@ main(int argc, char *argv[])
 	exit(0);
 }
 
+// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:

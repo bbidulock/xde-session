@@ -344,3 +344,4 @@ setInitialProperties(Client *c, SmProp *props[])
 	/* FIXME !!!! */
 }
 
+// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:

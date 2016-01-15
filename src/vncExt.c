@@ -382,3 +382,5 @@ static Bool XVncExtQueryConnectNotifyWireToEvent(Display* dpy, XEvent* e,
   ev->window = wire->window;
   return True;
 }
+
+// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
