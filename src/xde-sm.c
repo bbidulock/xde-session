@@ -931,7 +931,7 @@ IceAuthDataEntry *authDataEntries;
 char *networkIds;
 
 void
-smpInitSessionManager(void)
+SmpInitSessionManager(void)
 {
 	char err[256] = { 0, };
 	int i;
@@ -1108,7 +1108,7 @@ do_startup(int argc, char *argv[])
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 
-	smpInitSessionManager();
+	SmpInitSessionManager();
 }
 
 static void

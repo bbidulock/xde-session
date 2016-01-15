@@ -1050,7 +1050,7 @@ IceAuthDataEntry *authDataEntries;
 char *networkIds;
 
 void
-smpInitSessionManager(void)
+SmpInitSessionManager(void)
 {
 	char err[256] = { 0, };
 	int i;
@@ -1227,7 +1227,7 @@ startup(int argc, char *argv[])
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 
-	smpInitSessionManager();
+	SmpInitSessionManager();
 
 	if ((smc = wmpConnectToSessionManager())) {
 		IceConn ice;
