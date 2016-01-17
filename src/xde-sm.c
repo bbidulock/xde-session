@@ -601,6 +601,7 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 		c->state = SMC_SaveYourself;
 		SmsSaveYourself(smsConn, SmSaveLocal, False, SmInteractStyleNone, False);
 
+		initialClients = g_list_remove(initialClients, c);
 		initialClients = g_list_append(initialClients, c);
 	} else {
 		/* TODO: update client GtkListStore */
@@ -749,8 +750,10 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 		SmsSaveComplete(smsConn);
 		return;
 	}
-	if (!success)
+	if (!success) {
+		failureClients = g_list_remove(failureClients, c);
 		failureClients = g_list_append(failureClients, c);
+	}
 	if (!savselfClients) {
 		if (failureClients && !manager.checkpoint_from_signal)
 			popupBadSave();
@@ -802,6 +805,7 @@ saveYourselfP2ReqCB(SmsConn smsConn, SmPointer data)
 	if (!manager.saveInProgress) {
 		SmsSaveYourselfPhase2(smsConn);
 	} else {
+		wphase2Clients = g_list_remove(wphase2Clients, c);
 		wphase2Clients = g_list_append(wphase2Clients, c);
 		if (interacClients && okToEnterInteractPhase()) {
 			letClientInteract();
@@ -835,8 +839,10 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 		}
 		return;
 	}
-	if (!success)
+	if (!success) {
+		failureClients = g_list_remove(failureClients, c);
 		failureClients = g_list_append(failureClients, c);
+	}
 
 	if (!savselfClients) {
 		if (failureClients && !manager.checkpoint_from_signal)
@@ -897,6 +903,7 @@ closeDownClient(SmClient *c)
 
 	if (manager.saveInProgress) {
 		if ((link = g_list_find(savselfClients, c))) {
+			failureClients = g_list_remove(failureClients, c);
 			failureClients = g_list_append(failureClients, c);
 			c->freeafter = True;
 		}
@@ -916,8 +923,10 @@ closeDownClient(SmClient *c)
 	}
 	if (c->restartHint == SmRestartImmediately && !manager.shutdownInProgress) {
 		cloneClient(c, True);
+		restartClients = g_list_remove(restartClients, c);
 		restartClients = g_list_append(restartClients, c);
 	} else if (c->restartHint == SmRestartAnyway) {
+		anywaysClients = g_list_remove(anywaysClients, c);
 		anywaysClients = g_list_append(anywaysClients, c);
 	} else if (!c->freeafter) {
 		freeClient(c);
@@ -1025,6 +1034,34 @@ void
 deletePropertiesCB(SmsConn smsConn, SmPointer data, int num, char *names[])
 {
 	SmClient *c = (typeof(c)) data;
+	int i;
+
+	OPRINTF("Client Id = %s, received DELETE PROPERTIES [Num props = %d]\n", c->id, num);
+
+	for (i = 0; i < num; i++) {
+		char *name = names[i];
+		int j, k;
+
+		OPRINTF("    Property name: %s\n", name);
+
+		for (j = 0; j < c->num_props; j++)
+			if (!strcmp(name, c->props[j]->name))
+				break;
+		if (j < c->num_props) {
+			SmFreeProperty(c->props[j]);
+			for (k = j; k + 1 < c->num_props; k++)
+				c->props[k] = c->props[k + 1];
+			c->num_props--;
+			if (!strcmp(name, SmDiscardCommand)) {
+				free(c->discardCommand);
+				c->discardCommand = NULL;
+				free(c->saveDiscardCommand);
+				c->saveDiscardCommand = NULL;
+			}
+		}
+		free(name);
+	}
+	free(names);
 }
 
 /** @brief get properties callback
@@ -1037,6 +1074,9 @@ void
 getPropertiesCB(SmsConn smsConn, SmPointer data)
 {
 	SmClient *c = (typeof(c)) data;
+
+	OPRINTF("CLient Id = %s, received GET PROPERTIES\n", c->id);
+	SmsReturnProperties(smsConn, c->num_props, c->props);
 }
 
 static Status
@@ -1064,6 +1104,7 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	c->restartHint = SmRestartIfRunning;
 	c->state = SMC_Start;
 
+	runningClients = g_list_remove(runningClients, c);
 	runningClients = g_list_append(runningClients, c);
 
 	*mask |= SmsRegisterClientProcMask;
