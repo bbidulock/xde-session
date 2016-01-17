@@ -263,7 +263,8 @@ typedef enum {
 
 typedef struct {
 	Bool saveInProgress;
-	Bool shuttingDown;
+	Bool shutting_down;
+	Bool checkpoint_from_signal;
 	SMS_State state;
 } SmManager;
 
@@ -616,10 +617,30 @@ letClientInteract()
 	}
 }
 
+/** @brief start save-yourself phase2
+  *
+  * During save-yourself phase2, a SaveYourselfPhase2 message is sent to all
+  * clients that requested phase 2.  We have no more need for the wphase2Clients
+  * list at this time, but must mark the manager state as in phase2.
+  *
+  * XXX: It is not clear what happens when there are no clients requesting
+  * phase 2.
+  */
 void
 startPhase2()
 {
-	/* FIXME */
+	GList *link;
+
+	for (link = wphase2Clients; link; link = link->next) {
+		SmClient *c = link->data;
+
+		DPRINTF("Client %s sending SaveYourselfPhase2\n", c->id);
+		SmsSaveYourselfPhase2(c->sms);
+	}
+
+	g_list_free(wphase2Clients);
+	wphase2Clients = NULL;
+	manager.state = SMS_Phase2;
 }
 
 /** @brief ok to enter interaction phase
@@ -645,8 +666,8 @@ startPhase2()
 Bool
 okToEnterInteractPhase()
 {
-	/* FIXME */
-	return False;
+	return (g_list_length(interacClients) + g_list_length(wphase2Clients)
+		== g_list_length(savselfClients));
 }
 
 /** @brief
@@ -654,8 +675,7 @@ okToEnterInteractPhase()
 Bool
 okToEnterPhase2()
 {
-	/* FIXME */
-	return False;
+	return (g_list_length(wphase2Clients) == g_list_length(savselfClients));
 }
 
 /** @brief interact request callback
@@ -706,7 +726,6 @@ void
 interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 {
 	int success = 0; /* FIXME */
-	int checkpoint_from_signal = 0; /* FIXME */
 	SmClient *c = (typeof(c)) data;
 	GList *link;
 
@@ -718,7 +737,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 	if (!success)
 		failureClients = g_list_append(failureClients, c);
 	if (!savselfClients) {
-		if (failureClients && !checkpoint_from_signal)
+		if (failureClients && !manager.checkpoint_from_signal)
 			popupBadSave();
 		else
 			finishUpSave();
@@ -788,6 +807,31 @@ void
 saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 {
 	SmClient *c = (typeof(c)) data;
+	GList *link;
+
+	OPRINTF("Client Id = %s, received SAVE YOURSELF DONE [Success = %s]\n",
+		c->id, success ? "true" : "false");
+
+	if ((link = g_list_find(savselfClients, c))) {
+		savselfClients = g_list_delete_link(savselfClients, link);
+		if ((link = g_list_find(initialClients, c))) {
+			initialClients = g_list_delete_link(initialClients, link);
+			SmsSaveComplete(c->sms);
+		}
+		return;
+	}
+	if (!success)
+		failureClients = g_list_append(failureClients, c);
+
+	if (!savselfClients) {
+		if (failureClients && !manager.checkpoint_from_signal)
+			popupBadSave();
+		else
+			finishUpSave();
+	} else if (interacClients && okToEnterInteractPhase())
+		letClientInteract();
+	else if (wphase2Clients && okToEnterPhase2())
+		startPhase2();
 }
 
 /** @brief close connection callback
@@ -930,7 +974,7 @@ on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
 		return G_SOURCE_REMOVE;
 	}
-	if (manager.shuttingDown)
+	if (manager.shutting_down)
 		return G_SOURCE_REMOVE;
 
 	if (!(ice = IceAcceptConnection(obj, &status))) {
