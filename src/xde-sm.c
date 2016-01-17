@@ -174,8 +174,79 @@ Window root = None;
  * for the state of a given SM client as viewed by the session manager.
  */
 
+
+/*
+ * Session Manager State Diagram
+ *
+ * start:
+ *	receive ProtocolSetup		--> protocol-setup
+ *
+ * protocol-setup:
+ *	send ProtocolSetupReply		--> register
+ *
+ * register:
+ *	receive RegisterClient		--> acknowledge-register
+ *
+ * acknowledge-register:
+ *	send RegisterClientReply	--> idle
+ *
+ * idle:
+ *	receive SetProperties		--> idle
+ *	receive DeleteProperties	--> idle
+ *	receive ConnectionClosed	--> start
+ *	receive GetProperties		--> get-properties
+ *	receive SaveYourselfRequest	--> save-yourself
+ *	send SaveYourself		--> saving-yourself
+ *
+ * save-yourself:
+ *	send SaveYourself		--> saving-yourself
+ *
+ * get-properties:
+ *	send GetPropertiesReply		--> saving-yourself
+ *
+ * saving-yourself:
+ *	receive InteractRequest		--> saving-yourself
+ *	send Interact			--> saving-yourself
+ *	send ShutdownCancelled		--> idle
+ *	receive InteractDone		--> saving-yourself
+ *	receive SetProperties		--> saving-yourself
+ *	receive DeleteProperties	--> saving-yourself
+ *	receive GetProperties		--> saving-get-properties
+ *	receive SaveYourselfPhase2Request --> start-phase2
+ *	receive SaveYourselfDone	--> save-yourself-done
+ *
+ * start-phase2:
+ *   If all clients have sent either SaveYourselfPhase2Request or SaveYourselfDone
+ *	send SaveYourselfPhase2		--> phase2
+ *   else				--> saving-yourself
+ *				    
+ * phase2:
+ *	receive InteractRequest		--> saving-yourself
+ *	send Interact			--> saving-yourself
+ *	send ShutdownCancelled		--> idle
+ *	receive InteractDone		--> saving-yourself
+ *	receive SetProperties		--> saving-yourself
+ *	receive DeleteProperties	--> saving-yourself
+ *	receive GetProperties		--> saving-get-properties
+ *	receive SaveYourselfPhase2Request --> start-phase2
+ *	receive SaveYourselfDone	--> save-yourself-done
+ *
+ * save-yourself-done:
+ *	If all clients are saved:
+ *	    If shutting down:
+ *	        send Die		--> die
+ *	    otherwise
+ *		send SaveComplete	--> idle
+ *
+ *	If some clients are not saved:
+ *					--> saving-yourself
+ * 
+ * die:
+ *	SM stops accepting connections.
+ *
+ */
 typedef enum {
-	SMS_Start,
+	SMS_Start,		/* the manager is starting */
 	SMS_ProtocolSetup,
 	SMS_Register,
 	SMS_AckRegister,
@@ -193,14 +264,14 @@ typedef enum {
 SMS_State managerState;
 
 typedef enum {
-	SMC_Start,
+	SMC_Start,			/* the client connection is forming */
 	SMC_Register,
 	SMC_CollectId,
 	SMC_ShutdownCancelled,
-	SMC_Idle,
+	SMC_Idle,			/* the client is idle */
 	SMC_Die,
 	SMC_FreezeInteraction,
-	SMC_SaveYourself,
+	SMC_SaveYourself,		/* save-yourself issued */
 	SMC_WaitingForPhase2,
 	SMC_Phase2,
 	SMC_InteractRequest,
@@ -227,7 +298,8 @@ typedef struct {
 	SMC_State state;
 } SmClient;
 
-static GHashTable *initialClients; /* initializing clients */
+static GHashTable *initialClients; /* initializing clients (before fist
+				      saveyourselfdone) */
 static GHashTable *pendingClients; /* pending clients */
 static GHashTable *anywaysClients;
 static GHashTable *restartClients;
@@ -235,8 +307,8 @@ static GHashTable *failureClients;
 static GHashTable *savselfClients;
 static GHashTable *wphase2Clients;
 
-static GSList *interacClients;
-static GSList *runningClients;
+static GList *interacClients = NULL;	/* client requesting interaction */
+static GList *runningClients = NULL;	/* running clients */
 
 void
 wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
@@ -424,6 +496,11 @@ freeClient(SmClient *c)
   * Otherwise, the session manager should register the client with a unique client
   * ID by calling the SmsRegisterClientReply function, and the callback should
   * return a status of one.
+  *
+  * When #previousId is NULL and the registration is successful, SmsSaveYourself
+  * should be called with a saveType of SmSaveLocal, shudown False,
+  * interactStyle SmInteractStyleNone, and fast False to generate the initial
+  * state information for the client under the protocol.
   */
 Status
 registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
@@ -466,44 +543,23 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 			free(previousId);
 			return (0);
 		} while (0);
+
 	c->state = SMC_Idle;
 	SmsRegisterClientReply(smsConn, c->id);
+
 	free(c->hostname);
 	c->hostname = SmsClientHostName(smsConn);
 	c->restarted = (previousId != NULL);
 	if (!previousId) {
+
 		c->state = SMC_SaveYourself;
 		SmsSaveYourself(smsConn, SmSaveLocal, False, SmInteractStyleNone, False);
+
 		g_hash_table_insert(initialClients, c->id, (gpointer) c);
 	} else {
 		/* TODO: update client GtkListStore */
 	}
 	return (1);
-}
-
-/** @brief interact request callback
-  *
-  * When a client receives a SaveYourself message with an interation style of
-  * SmInteractStyleErrors or SmInteractStyleAny, the client may choose to interact
-  * with the user.  Because only one client can interact with the user at a time,
-  * the client must request to interact with the user.  The session manager should
-  * keep a queue of all clients wishing to interact.  It should send a Interact
-  * message to one client at a time and wait for an InteractDone message before
-  * contining with the next client.
-  *
-  * The dialogType argument specifies either SmDialogError indicating that the
-  * client wants to start an error dialog, or SmDialogNormal meaning that the
-  * client wishes to start a nonerror dialog.
-  *
-  * If a shutdown is in progress, the use may have the option of cancelling the
-  * shutdown.  If the shutdown is cancelled (specified in the InteractDone
-  * message), the session manager should send a ShutdownCancelled message to each
-  * client that requested to interact.
-  */
-void
-interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
-{
-	SmClient *c = (typeof(c)) data;
 }
 
 void
@@ -521,7 +577,12 @@ finishUpSave()
 void
 letClientInteract()
 {
-	/* FIXME */
+	if (interacClients) {
+		SmClient *c = interacClients->data;
+
+		interacClients = g_list_remove(interacClients, c);
+		SmsInteract(c->sms);
+	}
 }
 
 void
@@ -530,6 +591,26 @@ startPhase2()
 	/* FIXME */
 }
 
+/** @brief ok to enter interaction phase
+  *
+  * Tests whether it is ok to enter the interaction phase.  There are basically
+  * three phases to a checkpoint or shutdown:
+  *
+  * 1. SM asks each client to save itself and waits for one of three responses
+  *    from each client:
+  *
+  *    1. SaveYourselfDone:		the client is done saving itself.
+  *    2. InteractRequest:		the client requests interaction with the user
+  *    3. SaveYourselfPhase2Request:	the client requests a save-yourself phase2
+  *
+  * 2. Once a response has been received from each client, the interaction phase
+  *    can be entered.  In the interaction phase, each client that requested
+  *    interaction will be allowed to interact before the phase is complete.
+  *
+  * 3. Once the interaction phase is complete, save-yourself phase 2 can begin
+  *    if it was requested.
+  *    
+  */
 Bool
 okToEnterInteractPhase()
 {
@@ -537,11 +618,50 @@ okToEnterInteractPhase()
 	return False;
 }
 
+/** @brief
+  */
 Bool
 okToEnterPhase2()
 {
 	/* FIXME */
 	return False;
+}
+
+/** @brief interact request callback
+  *
+  * When a client receives a SaveYourself message with an interation style of
+  * SmInteractStyleErrors or SmInteractStyleAny, the client may choose to interact
+  * with the user.  Because only one client can interact with the user at a time,
+  * the client must request to interact with the user.  The session manager should
+  * keep a queue of all clients wishing to interact.  It should send a Interact
+  * message to one client at a time and wait for an InteractDone message before
+  * contining with the next client.
+  *
+  * The #dialogType argument specifies either SmDialogError indicating that the
+  * client wants to start an error dialog, or SmDialogNormal meaning that the
+  * client wishes to start a nonerror dialog.
+  *
+  * If a shutdown is in progress, the user may have the option of cancelling the
+  * shutdown.  If the shutdown is cancelled (specified in the InteractDone
+  * message), the session manager should send a ShutdownCancelled message to each
+  * client that requested to interact.
+  *
+  * It is necessary to wait to enter the interaction phase of the checkpoint or
+  * shutdown until after each client has sent SaveYourselfDone,
+  * SaveYourselfPhase2Request, or IntractRequest.  So, like xsm(1), we
+  * basically keep three lists: one for each.  The clients waiting for
+  * interaction are in the interacClients list.  The clients waiting for
+  * phase2 are in 
+  */
+void
+interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
+{
+	SmClient *c = (typeof(c)) data;
+
+	interacClients = g_list_remove(interacClients, c);
+	interacClients = g_list_append(interacClients, c);
+	if (okToEnterInteractPhase())
+		letClientInteract();
 }
 
 /** @brief interact done callback
@@ -571,7 +691,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 			popupBadSave();
 		else
 			finishUpSave();
-	} else if (g_slist_length(interacClients) > 0 && okToEnterInteractPhase())
+	} else if (interacClients && okToEnterInteractPhase())
 		letClientInteract();
 	else if (g_hash_table_size(wphase2Clients) > 0 && okToEnterPhase2())
 		startPhase2();
@@ -588,6 +708,12 @@ saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
 		  int style, Bool fast, Bool global)
 {
 	SmClient *c = (typeof(c)) data;
+
+	if (!global) {
+		c->state = SMC_SaveYourself;
+		/* XXX: should likely save arguments in client structure... */
+		SmsSaveYourself(smsConn, type, shutdown, style, fast);
+	}
 }
 
 /** @brief save yourself phase 2 request callback
@@ -624,6 +750,8 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
   * contains a list of null-terminated compound text strings representing the
   * reason for termination.  The session manager should display these reason
   * messages to the user.  Call SmsFreeReasons to free the #reason messages.
+  *
+  * We use dbus libnotify notifications (typically resulting in pop-ups) to 
   */
 void
 closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reason)
@@ -694,7 +822,7 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	c->restartHint = SmRestartIfRunning;
 	c->state = SMC_Start;
 
-	runningClients = g_slist_append(runningClients, c);
+	runningClients = g_list_append(runningClients, c);
 
 	*mask |= SmsRegisterClientProcMask;
 	cb->register_client.callback = registerClientCB;
@@ -931,7 +1059,7 @@ IceAuthDataEntry *authDataEntries;
 char *networkIds;
 
 void
-SmpInitSessionManager(void)
+smpInitSessionManager(void)
 {
 	char err[256] = { 0, };
 	int i;
@@ -1108,7 +1236,7 @@ do_startup(int argc, char *argv[])
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 
-	SmpInitSessionManager();
+	smpInitSessionManager();
 }
 
 static void
@@ -1467,3 +1595,4 @@ main(int argc, char *argv[])
 	exit(EXIT_SUCCESS);
 }
 
+// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:

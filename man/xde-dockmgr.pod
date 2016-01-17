@@ -62,13 +62,6 @@ Print the program version to standard output and exit.
 
 Print copying permissions to standard output and exit.
 
-=item B<--client-id> I<CLIENTID>
-
-Tells the program to restore X Session Management settings saved using
-the client identifier, I<CLIENTID>.  This is an internal option used for
-communicating with an X Session Manager and should not be specified on
-the command line.  See L</USAGE>, below.
-
 =back
 
 =head2 GENERAL OPTIONS
@@ -109,9 +102,140 @@ standard output.
 
 =back
 
+=head2 SESSION MANAGEMENT OPTIONS
+
+Session management options are meant for communication with an X11R6
+Session Manager and are not for use by users on the command line.
+
+=over
+
+=item B<--client-id> I<CLIENTID>
+
+Tells the program to restore X Session Management settings saved using
+the client identifier, I<CLIENTID>.  This is an internal option used for
+communicating with an X Session Manager and should not be specified on
+the command line.  See L</USAGE>, below.
+
+=item B<--save-file> I<FILENAME>
+
+Tells the program that persistent information was saved in the file with
+path I<FILENAME>.  This is an internal option used for communicating
+with an X Session Manager and should not be specified on the command
+line.  See L</USAGE>, below.
+
+=back
+
 =head1 USAGE
 
+B<xde-dockmgr> expects to be launched before the window manager.  It can
+be launched by XDG autostart entry, but when launched in this fashion it
+must be launched in the C<Intializing> phase of autostart.  That is, to
+be effective, it must be launched before the window manager and before
+the first dock application is launched.
+
+B<xde-dockmgr> assumes a session manager that provides total ordering of
+clients on restoration.  That is the only way of ensuring that dock
+applications are restored in the correct order for docks that do not
+provide an ordering mechanism of their own.  The L<xde-sm(1)> session
+manager provide total ordering on restoration.  Under this assumption,
+it is not necessary that dock applications be launched from within
+B<xde-dockmgr>.
+
+Because of these assumptions, on session initialization, dock
+applications can be launched by any means expedient.  A mechanism
+whereby dock applications are launched by XDG autostart entries is still
+appropriate.  However, if dock applications are launched by window
+manager setup scripts (as is the classical case for L<fluxbox(1)>,
+L<blackbox(1)> and some other light-weight window managers), or by the
+window manager itself (as is the default case for L<wmaker(1)>), the
+setup script or auto startup must be bypassed during session
+restoration, or B<xde-dock> must be started with the B<--nolaunch>
+option.
+
+B<xde-dockmgr> does not harmfully interact with session manager proxies
+(such as L<smproxy(1)> and L<xde-smproxy(1)>).  This is because dock
+applications are not normally assigned a B<WM_STATE> property by the
+window manager dock, so the normal session manager proxy does not see
+dock applications.  L<xde-smproxy(1)>, however, can be given a flag that
+allows it to perform the same functions as B<xde-dockmgr>.
+
+If dock applications are launched with XDG startup notification, or
+startup notification assistance (see L<xdg-launch(1)>), B<xde-dockmgr>
+can provide additional information when registering with the session
+manager than is normally available strictly from ICCCM window
+properties.
+
 =head1 BEHAVIOR
+
+=head2 SESSION MANAGEMENT
+
+A Window Maker dock application is a top-level window that has the
+following characteristics:
+
+=over
+
+=item 1.
+
+The top-level window contains a B<WM_HINTS> property.  The property
+specifies an initial state of C<WithdrawnState>; or,
+
+=item 2.
+
+in support of post 2.4.0 GTK+ dock applications, has any initial state
+but has the C<StateHint>, C<WindowGroupHint> and C<IconWindowHint> (and
+possibly the C<IconPositionHint>) flags set; or,
+
+=item 3.
+
+has the B<WM_CLASS> property set with a I<res_class> field of
+C<DockApp>.
+
+=back
+
+The B<WM_STATE> property must not be added to these windows (when the
+window manager supports dock applications), otherwise they are treated
+as non-dock application windows.  Dock applications typically also have
+the B<WM_PROTOCOLS>, B<WM_CLASS>, B<WM_NAME>, B<WM_COMMAND>,
+B<WM_CLIENT_MACHINE> and B<WM_CLIENT_LEADER> properties set.
+
+In many light-weight window managers supporting Window Maker dock
+applications, the order of the applications in the dock depends largely
+on the order of execution (i.e. client list order): largely, because
+clients may have raced for position.  This additional information is
+saved by the dock applications manager as would a window manager (in
+save-yourself phase 2).
+
+Dock applications that support the B<WM_SAVE_YOURSELF> protocol will
+receive a B<WM_SAVE_YOURSELF> client message each time the session
+manager issues a checkpoint or shutdown.  This allows applications to
+save state.  If a dock application does not support he
+B<WM_SAVE_YOURSELF> protocol, the dock manager will provide enough
+information to the session manager to restart the application (using
+B<WM_COMMAND>), but no state will be restored.
+
+B<xde-dockmgr> tracks the full life cycle of each dock application.
+During initial startup or restoration of a session, when dock
+applications are re-parented by the window manager to the dock, it
+establishes a proxy connection to the session manager on behalf of each
+dock application.  There are not really any dock applications that
+support X11R6/ICCCM 2.0 session management (they all use the older
+X11R5/ICCCM 1.0 procedures).  Because of this, there is no risk that a
+dock application registers with the session manager external to
+B<xde-dockmgr>.  That is not the case with system tray applications.
+
+=head2 CHECKPOINT & SHUTDOWN
+
+When the session managers sends a save yourself, B<xde-dockmgr> requests
+a save-yourself phase 2.  When phase 2 begins, B<xde-dockmgr> examines
+the state and position of all dock applications and stores their primary
+ICCCM 2.0 properties as well as any present WMH/WinWM, EWMH/NetWM window
+manager hints.
+
+=head2 SAVED STATE
+
+=head2 RESTORATION
+
+=head2 EDITING
 
 =head1 ENVIRONMENT
 

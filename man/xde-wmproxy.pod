@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-xde-wmproxy - provide a session management proxy for an EWMH window manager
+xde-wmproxy - provide a session management proxy for a window manager
 
 =head1 SYNOPSIS
 
@@ -88,13 +88,12 @@ Management.  It performs this action as a meta-WM in parallel or in lieue
 of session management performed by the window manager itself.  For known
 window managers it can enhance session management by detecting and
 managing windowmaker dock applications and system tray icons. (Note that
-L<xde-dock(1)> can do this too.)
+L<xde-dock(1)> and L<xde-dockmgr(1)> can do this too.)
 
 =item 2.
 
-Provides the services of L<smproxy(1)>, but interrogating windows
-present on the display and performing old-style session management as
-necessary.
+Provides the services of L<smproxy(1)>, by interrogating windows present
+on the display and performing old-style session management as necessary.
 
 =item 3.
 
@@ -107,7 +106,7 @@ There is no reason why it should not be able to provide multiple session
 management for styles, themes, menus, primary window manager
 configuration files, and other session configuration for known window
 managers.  XDE has an impressive list of known window managers.  (Note
-that L<xde-theme(1)> can do this too).
+that L<xde-theme(1)> should be able to do this too).
 
 =item 5.
 
@@ -119,6 +118,8 @@ the window manager itself.
 =item 6.
 
 It can perform startup notification assistance for window managers.
+Note that L<xdg-launch(1)> and L<xdg-assist(1)> can perform startup
+notification assistance for window managers too.
 
 =back
 
@@ -167,6 +168,16 @@ launch the window manager.
 B<xde-wmproxy> had no known bugs at the time of release.  Please report
 bugs for current versions to the source code repository at
 L<https://github.com/bbidulock/xde-session/issues>.
+
+=head1 SEE ALSO
+
+L<xde-dock(1)>,
+L<xde-dockmgr(1)>,
+L<smproxy(1)>,
+L<xde-theme(1)>,
+L<xde-autostart(1)>,
+L<xdg-launch(1)>,
+L<xdg-assist(1)>.
 
 =head1 AUTHOR
 

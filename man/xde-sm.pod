@@ -59,6 +59,13 @@ sometimes are or are not session-management-aware.
 
 =back
 
+Of these, only B<xde-sm> is necessary.  B<xde-sm> has options that will
+perform the functions of other components.  One of the reasons for
+integrating functionality into the primary session manager, is that it
+is the only session manager with which we can guarantee connectivity
+(vie the B<SESSION_MANAGER> environment variable set for the entire
+session at startup).
+
 =head1 OPTIONS
 
 The program uses L<getopt_long_only(3)> to parse options, so abbreviated
