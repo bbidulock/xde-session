@@ -314,15 +314,22 @@ typedef struct {
 	SMC_State state;
 } SmClient;
 
-static GList *initialClients = NULL;	/* intializing clients (before first save) */
-static GList *pendingClients = NULL;	/* pending clients */
-static GList *anywaysClients = NULL;
-static GList *restartClients = NULL;
-static GList *failureClients = NULL;
-static GList *savselfClients = NULL;
-static GList *wphase2Clients = NULL;
-static GList *interacClients = NULL;	/* client requesting interaction */
-static GList *runningClients = NULL;	/* running clients */
+/** @brief initializing clients
+  *
+  * Clients are placed on this list when they first register and are sent the
+  * initial SaveYourself message.  When they send a SaveYourselfDone, they are
+  * removed from this list.  They are not allowed to interact on the initial
+  * SaveYourself.
+  */
+static GQueue *initialClients = NULL;	/* intializing clients (before first save) */
+static GQueue *pendingClients = NULL;	/* pending clients */
+static GQueue *anywaysClients = NULL;
+static GQueue *restartClients = NULL;
+static GQueue *failureClients = NULL;
+static GQueue *savselfClients = NULL;
+static GQueue *wphase2Clients = NULL;
+static GQueue *interacClients = NULL;	/* client requesting interaction */
+static GQueue *runningClients = NULL;	/* running clients */
 
 void
 wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
@@ -550,10 +557,10 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 			SmClient *p;
 			GList *link;
 
-			for (link = pendingClients; link; link = link->next) {
+			for (link = g_queue_peek_head_link(pendingClients); link; link = link->next) {
 				p = link->data;
 				if (!strcmp(p->id, previousId)) {
-					pendingClients = g_list_delete_link(pendingClients, link);
+					g_queue_delete_link(pendingClients, link);
 					setInitialProperties(c, p->props);
 					p->props = NULL;
 					freeClient(p);
@@ -562,10 +569,10 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 			}
 			if (link)
 				break;
-			for (link = anywaysClients; link; link = link->next) {
+			for (link = g_queue_peek_head_link(anywaysClients); link; link = link->next) {
 				p = link->data;
 				if (!strcmp(p->id, previousId)) {
-					anywaysClients = g_list_delete_link(anywaysClients, link);
+					g_queue_delete_link(anywaysClients, link);
 					setInitialProperties(c, p->props);
 					p->props = NULL;
 					freeClient(p);
@@ -574,10 +581,10 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 			}
 			if (link)
 				break;
-			for (link = restartClients; link; link = link->next) {
+			for (link = g_queue_peek_head_link(restartClients); link; link = link->next) {
 				p = link->data;
 				if (!strcmp(p->id, previousId)) {
-					restartClients = g_list_delete_link(restartClients, link);
+					g_queue_delete_link(restartClients, link);
 					setInitialProperties(c, p->props);
 					p->props = NULL;
 					freeClient(p);
@@ -601,8 +608,8 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 		c->state = SMC_SaveYourself;
 		SmsSaveYourself(smsConn, SmSaveLocal, False, SmInteractStyleNone, False);
 
-		initialClients = g_list_remove(initialClients, c);
-		initialClients = g_list_append(initialClients, c);
+		g_queue_remove(initialClients, c);
+		g_queue_push_tail(initialClients, c);
 	} else {
 		/* TODO: update client GtkListStore */
 	}
@@ -624,11 +631,10 @@ finishUpSave()
 void
 letClientInteract()
 {
-	if (interacClients) {
-		SmClient *c = interacClients->data;
+	GList *link;
 
-		/* don't remove until done!!! */
-		interacClients = g_list_remove(interacClients, c);
+	if ((link = g_queue_peek_head_link(interacClients))) {
+		SmClient *c = link->data;
 		SmsInteract(c->sms);
 	}
 }
@@ -645,17 +651,12 @@ letClientInteract()
 void
 startPhase2()
 {
-	GList *link;
+	SmClient *c;
 
-	for (link = wphase2Clients; link; link = link->next) {
-		SmClient *c = link->data;
-
+	while ((c = g_queue_pop_head(wphase2Clients))) {
 		DPRINTF("Client %s sending SaveYourselfPhase2\n", c->id);
 		SmsSaveYourselfPhase2(c->sms);
 	}
-
-	g_list_free(wphase2Clients);
-	wphase2Clients = NULL;
 	manager.state = SMS_Phase2;
 }
 
@@ -682,8 +683,8 @@ startPhase2()
 Bool
 okToEnterInteractPhase()
 {
-	return (g_list_length(interacClients) + g_list_length(wphase2Clients)
-		== g_list_length(savselfClients));
+	return (g_queue_get_length(interacClients) + g_queue_get_length(wphase2Clients)
+		== g_queue_get_length(savselfClients));
 }
 
 /** @brief
@@ -691,7 +692,7 @@ okToEnterInteractPhase()
 Bool
 okToEnterPhase2()
 {
-	return (g_list_length(wphase2Clients) == g_list_length(savselfClients));
+	return (g_queue_get_length(wphase2Clients) == g_queue_get_length(savselfClients));
 }
 
 /** @brief interact request callback
@@ -724,9 +725,16 @@ void
 interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 {
 	SmClient *c = (typeof(c)) data;
+	GList *link;
 
-	interacClients = g_list_remove(interacClients, c);
-	interacClients = g_list_append(interacClients, c);
+	OPRINTF("Client Id = %s, received INTERACT REQUEST\n", c->id);
+
+	if ((link = g_queue_find(initialClients, c))) {
+		EPRINTF("Client Id = %s, cannot send INTERACT REQUEST when style is none\n", c->id);
+		return;
+	}
+	g_queue_remove(interacClients, c);
+	g_queue_push_tail(interacClients, c);
 	if (okToEnterInteractPhase())
 		letClientInteract();
 }
@@ -745,23 +753,23 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 	SmClient *c = (typeof(c)) data;
 	GList *link;
 
-	if ((link = g_list_find(savselfClients, c))) {
-		savselfClients = g_list_delete_link(savselfClients, link);
+	if ((link = g_queue_find(savselfClients, c))) {
+		g_queue_delete_link(savselfClients, link);
 		SmsSaveComplete(smsConn);
 		return;
 	}
 	if (!success) {
-		failureClients = g_list_remove(failureClients, c);
-		failureClients = g_list_append(failureClients, c);
+		g_queue_remove(failureClients, c);
+		g_queue_push_tail(failureClients, c);
 	}
-	if (!savselfClients) {
-		if (failureClients && !manager.checkpoint_from_signal)
+	if (g_queue_is_empty(savselfClients)) {
+		if (!g_queue_is_empty(failureClients) && !manager.checkpoint_from_signal)
 			popupBadSave();
 		else
 			finishUpSave();
-	} else if (interacClients && okToEnterInteractPhase())
+	} else if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase())
 		letClientInteract();
-	else if (wphase2Clients && okToEnterPhase2())
+	else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
 		startPhase2();
 }
 
@@ -769,7 +777,11 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
   *
   * The save yourself request prompts the session manager to initiate a checkpoint
   * or shutdown.  If #global is set to False then the SaveYourself should only be
-  * sent to the client that requested it.
+  * sent to the client that requested it.  Otherwise, it should be sent to all
+  * running clients.
+  *
+  * Note that in the classical xsm(1), this procedure is not supported.  Which
+  * is strange.  It is in fact quite easy to support.
   */
 void
 saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
@@ -777,11 +789,23 @@ saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
 {
 	SmClient *c = (typeof(c)) data;
 
-	if (!global) {
+	if (global) {
+		GList *link;
+
+		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+			c = link->data;
+			SmsSaveYourself(c->sms, type, shutdown, style, fast);
+			g_queue_remove(savselfClients, c);
+			g_queue_push_tail(savselfClients, c);
+		}
+	} else {
 		c->state = SMC_SaveYourself;
 		/* XXX: should likely save arguments in client structure... */
 		SmsSaveYourself(smsConn, type, shutdown, style, fast);
+		g_queue_remove(savselfClients, c);
+		g_queue_push_tail(savselfClients, c);
 	}
+	manager.state = SMS_SavingYourself;
 }
 
 /** @brief save yourself phase 2 request callback
@@ -805,9 +829,9 @@ saveYourselfP2ReqCB(SmsConn smsConn, SmPointer data)
 	if (!manager.saveInProgress) {
 		SmsSaveYourselfPhase2(smsConn);
 	} else {
-		wphase2Clients = g_list_remove(wphase2Clients, c);
-		wphase2Clients = g_list_append(wphase2Clients, c);
-		if (interacClients && okToEnterInteractPhase()) {
+		g_queue_remove(wphase2Clients, c);
+		g_queue_push_tail(wphase2Clients, c);
+		if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase()) {
 			letClientInteract();
 		} else if (okToEnterPhase2()) {
 			startPhase2();
@@ -831,27 +855,27 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 	OPRINTF("Client Id = %s, received SAVE YOURSELF DONE [Success = %s]\n",
 		c->id, success ? "true" : "false");
 
-	if ((link = g_list_find(savselfClients, c))) {
-		savselfClients = g_list_delete_link(savselfClients, link);
-		if ((link = g_list_find(initialClients, c))) {
-			initialClients = g_list_delete_link(initialClients, link);
+	if ((link = g_queue_find(savselfClients, c))) {
+		g_queue_delete_link(savselfClients, link);
+		if ((link = g_queue_find(initialClients, c))) {
+			g_queue_delete_link(initialClients, link);
 			SmsSaveComplete(c->sms);
 		}
 		return;
 	}
 	if (!success) {
-		failureClients = g_list_remove(failureClients, c);
-		failureClients = g_list_append(failureClients, c);
+		g_queue_remove(failureClients, c);
+		g_queue_push_tail(failureClients, c);
 	}
 
-	if (!savselfClients) {
-		if (failureClients && !manager.checkpoint_from_signal)
+	if (g_queue_is_empty(savselfClients)) {
+		if (!g_queue_is_empty(failureClients) && !manager.checkpoint_from_signal)
 			popupBadSave();
 		else
 			finishUpSave();
-	} else if (interacClients && okToEnterInteractPhase())
+	} else if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase())
 		letClientInteract();
-	else if (wphase2Clients && okToEnterPhase2())
+	else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
 		startPhase2();
 }
 
@@ -899,40 +923,40 @@ closeDownClient(SmClient *c)
 	c->ice = NULL;
 	c->sms = NULL;
 
-	runningClients = g_list_remove(runningClients, c);
+	g_queue_remove(runningClients, c);
 
 	if (manager.saveInProgress) {
-		if ((link = g_list_find(savselfClients, c))) {
-			failureClients = g_list_remove(failureClients, c);
-			failureClients = g_list_append(failureClients, c);
+		if ((link = g_queue_find(savselfClients, c))) {
+			g_queue_remove(failureClients, c);
+			g_queue_push_tail(failureClients, c);
 			c->freeafter = True;
 		}
 
-		interacClients = g_list_remove(interacClients, c);
-		wphase2Clients = g_list_remove(wphase2Clients, c);
+		g_queue_remove(interacClients, c);
+		g_queue_remove(wphase2Clients, c);
 
-		if (link && !savselfClients) {
-			if (failureClients && !manager.checkpoint_from_signal)
+		if (link && g_queue_is_empty(savselfClients)) {
+			if (!g_queue_is_empty(failureClients) && !manager.checkpoint_from_signal)
 				popupBadSave();
 			else
 				finishUpSave();
-		} else if (interacClients && okToEnterInteractPhase())
+		} else if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase())
 			letClientInteract();
-		else if (wphase2Clients && okToEnterPhase2())
+		else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
 			startPhase2();
 	}
 	if (c->restartHint == SmRestartImmediately && !manager.shutdownInProgress) {
 		cloneClient(c, True);
-		restartClients = g_list_remove(restartClients, c);
-		restartClients = g_list_append(restartClients, c);
+		g_queue_remove(restartClients, c);
+		g_queue_push_tail(restartClients, c);
 	} else if (c->restartHint == SmRestartAnyway) {
-		anywaysClients = g_list_remove(anywaysClients, c);
-		anywaysClients = g_list_append(anywaysClients, c);
+		g_queue_remove(anywaysClients, c);
+		g_queue_push_tail(anywaysClients, c);
 	} else if (!c->freeafter) {
 		freeClient(c);
 	}
 	if (manager.shutdownInProgress) {
-		if (!runningClients)
+		if (g_queue_is_empty(runningClients))
 			endSession(0);
 	}
 	/* FIXME: update GtkListStore */
@@ -1104,8 +1128,8 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	c->restartHint = SmRestartIfRunning;
 	c->state = SMC_Start;
 
-	runningClients = g_list_remove(runningClients, c);
-	runningClients = g_list_append(runningClients, c);
+	g_queue_remove(runningClients, c);
+	g_queue_push_tail(runningClients, c);
 
 	*mask |= SmsRegisterClientProcMask;
 	cb->register_client.callback = registerClientCB;
@@ -1347,6 +1371,16 @@ smpInitSessionManager(void)
 	char err[256] = { 0, };
 	int i;
 	gint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
+
+	initialClients = g_queue_new();
+	pendingClients = g_queue_new();
+	anywaysClients = g_queue_new();
+	restartClients = g_queue_new();
+	failureClients = g_queue_new();
+	savselfClients = g_queue_new();
+	wphase2Clients = g_queue_new();
+	interacClients = g_queue_new();
+	runningClients = g_queue_new();
 
 	InstallIOErrorHandler();
 
