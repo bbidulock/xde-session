@@ -261,7 +261,15 @@ typedef enum {
 	SMS_Die,
 } SMS_State;
 
-SMS_State managerState;
+typedef struct {
+	Bool saveInProgress;
+	Bool shuttingDown;
+	SMS_State state;
+} SmManager;
+
+SmManager manager = {
+	.state = SMS_Start,
+};
 
 typedef enum {
 	SMC_Start,			/* the client connection is forming */
@@ -280,8 +288,6 @@ typedef enum {
 	SMC_ConnectionClosed,
 } SMC_State;
 
-static Bool shutting_down;
-
 typedef struct {
 	char *id;
 	char *hostname;
@@ -298,15 +304,13 @@ typedef struct {
 	SMC_State state;
 } SmClient;
 
-static GHashTable *initialClients; /* initializing clients (before fist
-				      saveyourselfdone) */
-static GHashTable *pendingClients; /* pending clients */
-static GHashTable *anywaysClients;
-static GHashTable *restartClients;
-static GHashTable *failureClients;
-static GHashTable *savselfClients;
-static GHashTable *wphase2Clients;
-
+static GList *initialClients = NULL;	/* intializing clients (before first save) */
+static GList *pendingClients = NULL;	/* pending clients */
+static GList *anywaysClients = NULL;
+static GList *restartClients = NULL;
+static GList *failureClients = NULL;
+static GList *savselfClients = NULL;
+static GList *wphase2Clients = NULL;
 static GList *interacClients = NULL;	/* client requesting interaction */
 static GList *runningClients = NULL;	/* running clients */
 
@@ -478,6 +482,16 @@ freeClient(SmClient *c)
 	/* FIXME !!!! */
 }
 
+gint
+idCompareFunc(gconstpointer a, gconstpointer b)
+{
+	const SmClient *ca = a;
+	const SmClient *cb = b;
+
+	return strcmp(ca->id, cb->id);
+}
+
+
 /** @brief register client callback
   *
   * Before any further interaction takes place with the client, the client must be
@@ -518,28 +532,44 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 	} else
 		do {
 			SmClient *p;
+			GList *link;
 
-			if ((p = (typeof(p)) g_hash_table_lookup(pendingClients, previousId))) {
-				g_hash_table_remove(pendingClients, previousId);
-				setInitialProperties(c, p->props);
-				p->props = NULL;
-				freeClient(p);
-				break;
+			for (link = pendingClients; link; link = link->next) {
+				p = link->data;
+				if (!strcmp(p->id, previousId)) {
+					pendingClients = g_list_delete_link(pendingClients, link);
+					setInitialProperties(c, p->props);
+					p->props = NULL;
+					freeClient(p);
+					break;
+				}
 			}
-			if ((p = (typeof(p)) g_hash_table_lookup(anywaysClients, previousId))) {
-				g_hash_table_remove(anywaysClients, previousId);
-				setInitialProperties(c, p->props);
-				p->props = NULL;
-				freeClient(p);
+			if (link)
 				break;
+			for (link = anywaysClients; link; link = link->next) {
+				p = link->data;
+				if (!strcmp(p->id, previousId)) {
+					anywaysClients = g_list_delete_link(anywaysClients, link);
+					setInitialProperties(c, p->props);
+					p->props = NULL;
+					freeClient(p);
+					break;
+				}
 			}
-			if ((p = (typeof(p)) g_hash_table_lookup(restartClients, previousId))) {
-				g_hash_table_remove(restartClients, previousId);
-				setInitialProperties(c, p->props);
-				p->props = NULL;
-				freeClient(p);
+			if (link)
 				break;
+			for (link = restartClients; link; link = link->next) {
+				p = link->data;
+				if (!strcmp(p->id, previousId)) {
+					restartClients = g_list_delete_link(restartClients, link);
+					setInitialProperties(c, p->props);
+					p->props = NULL;
+					freeClient(p);
+					break;
+				}
 			}
+			if (link)
+				break;
 			free(previousId);
 			return (0);
 		} while (0);
@@ -555,7 +585,7 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 		c->state = SMC_SaveYourself;
 		SmsSaveYourself(smsConn, SmSaveLocal, False, SmInteractStyleNone, False);
 
-		g_hash_table_insert(initialClients, c->id, (gpointer) c);
+		initialClients = g_list_append(initialClients, c);
 	} else {
 		/* TODO: update client GtkListStore */
 	}
@@ -580,6 +610,7 @@ letClientInteract()
 	if (interacClients) {
 		SmClient *c = interacClients->data;
 
+		/* don't remove until done!!! */
 		interacClients = g_list_remove(interacClients, c);
 		SmsInteract(c->sms);
 	}
@@ -676,24 +707,24 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 {
 	int success = 0; /* FIXME */
 	int checkpoint_from_signal = 0; /* FIXME */
+	SmClient *c = (typeof(c)) data;
+	GList *link;
 
-	SmClient *c = (typeof(c)) data, *p;
-
-	if ((p = g_hash_table_lookup(savselfClients, c->id))) {
-		g_hash_table_remove(savselfClients, c->id);
+	if ((link = g_list_find(savselfClients, c))) {
+		savselfClients = g_list_delete_link(savselfClients, link);
 		SmsSaveComplete(smsConn);
 		return;
 	}
 	if (!success)
-		g_hash_table_insert(failureClients, c->id, c);
-	if (g_hash_table_size(savselfClients) == 0) {
-		if (g_hash_table_size(failureClients) > 0 && !checkpoint_from_signal)
+		failureClients = g_list_append(failureClients, c);
+	if (!savselfClients) {
+		if (failureClients && !checkpoint_from_signal)
 			popupBadSave();
 		else
 			finishUpSave();
 	} else if (interacClients && okToEnterInteractPhase())
 		letClientInteract();
-	else if (g_hash_table_size(wphase2Clients) > 0 && okToEnterPhase2())
+	else if (wphase2Clients && okToEnterPhase2())
 		startPhase2();
 }
 
@@ -722,11 +753,28 @@ saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
   * manager, workspace managers, and so on).  Such managers must make sure that all
   * of the clients that are being managed are in an idle state so that their state
   * can be saved.
+  *
+  * When received during an initial client save-yourself cycle (that is, this is
+  * a response to the initial SaveYourself message sent immediately after client
+  * registration), we simply send the SaveYourselfPhase2 message now.  If, on
+  * the other hand, we are performing a checkpoint or shutdown, we must wait for
+  * the conditions of entering save-yourself phase2 state before sending.
   */
 void
 saveYourselfP2ReqCB(SmsConn smsConn, SmPointer data)
 {
 	SmClient *c = (typeof(c)) data;
+
+	if (!manager.saveInProgress) {
+		SmsSaveYourselfPhase2(smsConn);
+	} else {
+		wphase2Clients = g_list_append(wphase2Clients, c);
+		if (interacClients && okToEnterInteractPhase()) {
+			letClientInteract();
+		} else if (okToEnterPhase2()) {
+			startPhase2();
+		}
+	}
 }
 
 /** @brief save yourself done callback
@@ -882,7 +930,7 @@ on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
 		return G_SOURCE_REMOVE;
 	}
-	if (shutting_down)
+	if (manager.shuttingDown)
 		return G_SOURCE_REMOVE;
 
 	if (!(ice = IceAcceptConnection(obj, &status))) {
@@ -1090,7 +1138,7 @@ smpInitSessionManager(void)
 	networkIds = IceComposeNetworkIdList(numTransports, listenObjs);
 	setenv("SESSION_MANAGER", networkIds, TRUE);
 
-	managerState = SMS_Start;
+	manager.state = SMS_Start;
 }
 
 void
@@ -1198,11 +1246,6 @@ do_startup(int argc, char *argv[])
 	char *file;
 	int len;
 	gint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
-
-	initialClients = g_hash_table_new(g_str_hash, g_str_equal);
-	pendingClients = g_hash_table_new(g_str_hash, g_str_equal);
-	anywaysClients = g_hash_table_new(g_str_hash, g_str_equal);
-	restartClients = g_hash_table_new(g_str_hash, g_str_equal);
 
 	home = getenv("HOME") ? : ".";
 	len = strlen(home) + strlen(suffix) + 1;
