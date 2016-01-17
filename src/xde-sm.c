@@ -168,6 +168,7 @@ Options options = {
 Display *dpy = NULL;
 int screen = 0;
 Window root = None;
+Bool shutting_down;
 
 /*
  * There are two state machines: one for the overall session manager, another
@@ -262,8 +263,14 @@ typedef enum {
 } SMS_State;
 
 typedef struct {
+	struct {
+		char *display;
+		char *session;
+		char *audio;
+	} local, remote;
+	char *session_name;
 	Bool saveInProgress;
-	Bool shutting_down;
+	Bool shutdownInProgress;
 	Bool checkpoint_from_signal;
 	SMS_State state;
 } SmManager;
@@ -294,11 +301,13 @@ typedef struct {
 	char *hostname;
 	SmsConn sms;
 	IceConn ice;
+	int num_props;
 	SmProp **props;
 	Bool restarted;
 	Bool checkpoint;
 	Bool discard;
 	Bool freeafter;
+	Bool receiveDiscardCommand;
 	char *discardCommand;
 	char *saveDiscardCommand;
 	int restartHint;
@@ -479,6 +488,12 @@ setInitialProperties(SmClient *c, SmProp *props[])
 
 void
 freeClient(SmClient *c)
+{
+	/* FIXME !!!! */
+}
+
+void
+cloneClient(SmClient *c, Bool useSavedState)
 {
 	/* FIXME !!!! */
 }
@@ -834,21 +849,110 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 		startPhase2();
 }
 
+void
+unlockSession(char *session_name)
+{
+}
+
+void
+endSession(int status)
+{
+	OPRINTF("SESSION MANAGER EXITING [status = %d]\n", status);
+
+	if (manager.session_name) {
+		unlockSession(manager.session_name);
+		free(manager.session_name);
+		manager.session_name = NULL;
+	}
+	free(manager.local.display);
+	manager.local.display = NULL;
+	free(manager.local.session);
+	manager.local.session = NULL;
+	free(manager.local.audio);
+	manager.local.audio = NULL;
+	free(manager.remote.display);
+	manager.remote.display = NULL;
+	free(manager.remote.session);
+	manager.remote.session = NULL;
+	free(manager.remote.audio);
+	manager.remote.audio = NULL;
+
+}
+
+void
+closeDownClient(SmClient *c)
+{
+	GList *link;
+
+	OPRINTF("ICE Connection closed, fd = %d\n", IceConnectionNumber(c->ice));
+
+	SmsCleanUp(c->sms);
+	IceSetShutdownNegotiation(c->ice, False);
+	IceCloseConnection(c->ice);
+
+	c->ice = NULL;
+	c->sms = NULL;
+
+	runningClients = g_list_remove(runningClients, c);
+
+	if (manager.saveInProgress) {
+		if ((link = g_list_find(savselfClients, c))) {
+			failureClients = g_list_append(failureClients, c);
+			c->freeafter = True;
+		}
+
+		interacClients = g_list_remove(interacClients, c);
+		wphase2Clients = g_list_remove(wphase2Clients, c);
+
+		if (link && !savselfClients) {
+			if (failureClients && !manager.checkpoint_from_signal)
+				popupBadSave();
+			else
+				finishUpSave();
+		} else if (interacClients && okToEnterInteractPhase())
+			letClientInteract();
+		else if (wphase2Clients && okToEnterPhase2())
+			startPhase2();
+	}
+	if (c->restartHint == SmRestartImmediately && !manager.shutdownInProgress) {
+		cloneClient(c, True);
+		restartClients = g_list_append(restartClients, c);
+	} else if (c->restartHint == SmRestartAnyway) {
+		anywaysClients = g_list_append(anywaysClients, c);
+	} else if (!c->freeafter) {
+		freeClient(c);
+	}
+	if (manager.shutdownInProgress) {
+		if (!runningClients)
+			endSession(0);
+	}
+	/* FIXME: update GtkListStore */
+}
+
 /** @brief close connection callback
   *
   * If the client properly terminates (that is, it calls SmcCloseConnection) this
-  * callback is invoked.  The #reason argument will most likely be NULL and the
+  * callback is invoked.  The #reasons argument will most likely be NULL and the
   * #count argument zero (0) if resignation is expected by the user.  Otherwise, it
   * contains a list of null-terminated compound text strings representing the
   * reason for termination.  The session manager should display these reason
-  * messages to the user.  Call SmsFreeReasons to free the #reason messages.
+  * messages to the user.  Call SmsFreeReasons to free the #reasons messages.
   *
   * We use dbus libnotify notifications (typically resulting in pop-ups) to 
   */
 void
-closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reason)
+closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 {
 	SmClient *c = (typeof(c)) data;
+	int i;
+
+	OPRINTF("Client Id = %s, received CONNECTION CLOSED\n", c->id);
+	for (i = 0; i < count; i++)
+		OPRINTF("   Reason string %d: %s\n", i, reasons[i]);
+
+	/* XXX: should save reason messages against closed client for display */
+	SmFreeReasons(count, reasons);
+	closeDownClient(c);
 }
 
 /** @brief set properties callback
@@ -861,9 +965,55 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reason)
   * actual array of pointers with free().
   */
 void
-setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp * props[])
+setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp *props[])
 {
 	SmClient *c = (typeof(c)) data;
+	int i;
+
+	OPRINTF("Client Id = %s, receive SET PROPERTIES [Numb props = %d]\n", c->id, num);
+
+	for (i = 0; i < num; i++) {
+		SmProp *prop = props[i];
+		int j;
+
+		for (j = 0; j < c->num_props; j++)
+			if (!strcmp(prop->name, c->props[j]->name)
+			    && !strcmp(prop->type, c->props[j]->type))
+				break;
+		if (j < c->num_props)
+			SmFreeProperty(c->props[j]);
+		else {
+			c->num_props++;
+			c->props = realloc(c->props, c->num_props * sizeof(*c->props));
+		}
+		c->props[j] = prop;
+
+		if (!strcmp(prop->name, SmDiscardCommand)) {
+			if (manager.saveInProgress) {
+				/* We are in the middle of save yourself.  We save the
+				   discard command whe get now, and make it the current
+				   discard command when the save is over. */
+				free(c->saveDiscardCommand);
+				c->saveDiscardCommand = strdup(prop->vals[0].value);
+				c->receiveDiscardCommand = True;
+			} else {
+				free(c->discardCommand);
+				c->discardCommand = strdup(prop->vals[0].value);
+			}
+		} else if (!strcmp(prop->name, SmRestartStyleHint)) {
+			int hint = *((char *) prop->vals[0].value);
+
+			switch (hint) {
+			case SmRestartIfRunning:
+			case SmRestartAnyway:
+			case SmRestartImmediately:
+			case SmRestartNever:
+				c->restartHint = hint;
+				break;
+			}
+		}
+	}
+	free(props);
 }
 
 /** @brief delete properties callback
@@ -974,7 +1124,7 @@ on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
 		return G_SOURCE_REMOVE;
 	}
-	if (manager.shutting_down)
+	if (shutting_down) /* XXX: ???? */
 		return G_SOURCE_REMOVE;
 
 	if (!(ice = IceAcceptConnection(obj, &status))) {

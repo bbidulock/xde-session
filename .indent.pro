@@ -232,9 +232,11 @@
 -Tsl_long
 -Tsl_ulong
 -Tsl_ushort
+-TSmcCloseStatus
 -TSmClient
 -TSmPointer
--TSmsCallbacks
+-TSmProp
+-TSmPropValue
 -TSmsCallbacks
 -Tspinlock_t
 -Tssize_t
