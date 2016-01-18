@@ -321,19 +321,96 @@ typedef struct {
 
 /** @brief initializing clients
   *
-  * Clients are placed on this list when they first register and are sent the
+  * Clients are placed on this queue when they first register and are sent the
   * initial SaveYourself message.  When they send a SaveYourselfDone, they are
-  * removed from this list.  They are not allowed to interact on the initial
+  * removed from this queue.  They are not allowed to interact on the initial
   * SaveYourself.
   */
-static GQueue *initialClients = NULL;	/* intializing clients (before first save) */
+static GQueue *initialClients = NULL;
+
+/** @brief pending clients
+  *
+  * When a session is restored, executed clients are added to this queue a
+  * pending.  When the client registers with the restoration client id, they are
+  * removed from this queue and added to the runningClients and initialClients
+  * queues.
+  *
+  * Note that the classical xsm(1) executes all pending clients on restoration
+  * in parallel.  This is not necessarily efficient nor ideal.  For example,
+  * dock applications may race for order of appearance in the dock.  A better
+  * approach is to execute them one after the other and wait for them to
+  * establish a session or fail before proceeding with the next client.  A guard
+  * timer should also be used to determine whether restart was successful or
+  * not.
+  */
 static GQueue *pendingClients = NULL;	/* pending clients */
+
+/** @brief restart anyways clients
+  *
+  * When a client shuts down and removes its connection from the session manager
+  * and has a restart hint of restart-anyways, the client is placed on this
+  * list.  These clients will be added to the save file when the session is
+  * restored even thought client is not connected to the session manager at the
+  * imte of the checkpoint or shutdown.
+  */
 static GQueue *anywaysClients = NULL;
+
+/** @brief restart immediately clients
+  *
+  * When a client disconnects from the session manager with a restart hint of
+  * restart-immediately and the session manager is not shutting down, it is
+  * placed on this queue and the clone command executed to restart the client.
+  */
 static GQueue *restartClients = NULL;
+
+/** @brief failed save clients
+  *
+  * During a checkpoint or shutdown, when a client sends a SaveYourselfDone
+  * indicating a failure, they are placed on this list.  The classical xsm(1)
+  * indicates failure back to the user and gives the user the opportunity to
+  * cancel saving state to the session file for the checkpoint or shutdown.
+  * Otherwise, if no user interaction with the session manager exists (e.g. the
+  * checkpoint or shutdown was as a result of a signal being sent to the session
+  * manager), the save is completed even though clients have failed.
+  */
 static GQueue *failureClients = NULL;
+
+/** @brief save-yourself clients
+  *
+  * Clients are placed on this queue when they have been sent a SaveYourself
+  * message as part of a checkpoint or shutdown.  They stay on this queue until
+  * they send a SaveYourselfDone message to the session manager.
+  */
+
 static GQueue *savselfClients = NULL;
-static GQueue *wphase2Clients = NULL;
+/** @brief interaction requested clients
+  *
+  * Clients that request interaction are placed on this queue when they send an
+  * InteractRequest message.  Only the client at the head of the queue is sent
+  * an Interact message and removed from the queue when the client sends an
+  * InteractDone message.  When the number of clients on the savselfClients
+  * queue is equal to the sum of the number of clients on this queue and the
+  * wphase2Clients queue, it is ok to enter the interaction phase.
+  */
 static GQueue *interacClients = NULL;	/* client requesting interaction */
+
+/** @brief wait for phase 2 clients
+  *
+  * Clients that send a SaveYourselfPhase2Request message are placed on this
+  * queue.  During Phase 2, the clients on this queue are sent a
+  * SaveYourselfPhase2 message.  Clients are removed from this queue when they
+  * send a SaveYourselfDone message.  When the number of clients on the
+  * savselfClients client queue and this queue are the same, the session manager
+  * is ok to enter Phase 2.
+  */
+static GQueue *wphase2Clients = NULL;
+
+/** @brief running clients
+  *
+  * Clients that are connected to the session manager and assigned a client id
+  * are added to this queue when they connect.  When the client disconnects from
+  * the session manager, they are removed from this queue.
+  */
 static GQueue *runningClients = NULL;	/* running clients */
 
 void
@@ -725,58 +802,9 @@ okToEnterPhase2()
 	return (g_queue_get_length(wphase2Clients) == g_queue_get_length(savselfClients));
 }
 
-void
-closeDownClient(SmClient *c)
-{
-	GList *link;
-
-	OPRINTF("ICE Connection closed, fd = %d\n", IceConnectionNumber(c->ice));
-
-	SmsCleanUp(c->sms);
-	IceSetShutdownNegotiation(c->ice, False);
-	IceCloseConnection(c->ice);
-
-	c->ice = NULL;
-	c->sms = NULL;
-
-	g_queue_remove(runningClients, c);
-
-	if (manager.saveInProgress) {
-		if ((link = g_queue_find(savselfClients, c))) {
-			g_queue_remove(failureClients, c);
-			g_queue_push_tail(failureClients, c);
-			c->freeafter = True;
-		}
-
-		g_queue_remove(interacClients, c);
-		g_queue_remove(wphase2Clients, c);
-
-		if (link && g_queue_is_empty(savselfClients)) {
-			if (!g_queue_is_empty(failureClients) && !manager.checkpoint_from_signal)
-				popupBadSave();
-			else
-				finishUpSave();
-		} else if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase())
-			letClientInteract();
-		else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
-			startPhase2();
-	}
-	if (c->restartHint == SmRestartImmediately && !manager.shutdownInProgress) {
-		cloneClient(c, True);
-		g_queue_remove(restartClients, c);
-		g_queue_push_tail(restartClients, c);
-	} else if (c->restartHint == SmRestartAnyway) {
-		g_queue_remove(anywaysClients, c);
-		g_queue_push_tail(anywaysClients, c);
-	} else if (!c->freeafter) {
-		freeClient(c);
-	}
-	if (manager.shutdownInProgress) {
-		if (g_queue_is_empty(runningClients))
-			endSession(0);
-	}
-	/* FIXME: update GtkListStore */
-}
+/** @section client callbacks
+  *
+  * @{ */
 
 
 /** @brief register client callback
@@ -1095,6 +1123,7 @@ void
 closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 {
 	SmClient *c = (typeof(c)) data;
+	GList *link;
 	int i;
 
 	OPRINTF("Client Id = %s, received CONNECTION CLOSED\n", c->id);
@@ -1103,7 +1132,53 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 
 	/* XXX: should save reason messages against closed client for display */
 	SmFreeReasons(count, reasons);
-	closeDownClient(c);
+
+	OPRINTF("ICE Connection closed, fd = %d\n", IceConnectionNumber(c->ice));
+
+	SmsCleanUp(c->sms);
+	IceSetShutdownNegotiation(c->ice, False);
+	IceCloseConnection(c->ice);
+
+	c->ice = NULL;
+	c->sms = NULL;
+
+	g_queue_remove(runningClients, c);
+
+	if (manager.saveInProgress) {
+		if ((link = g_queue_find(savselfClients, c))) {
+			g_queue_remove(failureClients, c);
+			g_queue_push_tail(failureClients, c);
+			c->freeafter = True;
+		}
+
+		g_queue_remove(interacClients, c);
+		g_queue_remove(wphase2Clients, c);
+
+		if (link && g_queue_is_empty(savselfClients)) {
+			if (!g_queue_is_empty(failureClients) && !manager.checkpoint_from_signal)
+				popupBadSave();
+			else
+				finishUpSave();
+		} else if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase())
+			letClientInteract();
+		else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
+			startPhase2();
+	}
+	if (c->restartHint == SmRestartImmediately && !manager.shutdownInProgress) {
+		cloneClient(c, True);
+		g_queue_remove(restartClients, c);
+		g_queue_push_tail(restartClients, c);
+	} else if (c->restartHint == SmRestartAnyway) {
+		g_queue_remove(anywaysClients, c);
+		g_queue_push_tail(anywaysClients, c);
+	} else if (!c->freeafter) {
+		freeClient(c);
+	}
+	if (manager.shutdownInProgress) {
+		if (g_queue_is_empty(runningClients))
+			endSession(0);
+	}
+	/* FIXME: update GtkListStore */
 }
 
 /** @brief set properties callback
@@ -1293,6 +1368,8 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 
 	return (1);
 }
+
+/** @} */
 
 gboolean
 on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
