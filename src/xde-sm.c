@@ -275,6 +275,8 @@ typedef struct {
 	Bool shutdownCancelled;
 	Bool phase2InProgress;
 	Bool wantShutdown;
+	Bool shutdown;			/* shutdown setting of sent SaveYourself */
+	int interact_style;		/* interaction style of sent SaveYourself */
 	SMS_State state;
 } SmManager;
 
@@ -517,6 +519,265 @@ idCompareFunc(gconstpointer a, gconstpointer b)
 	return strcmp(ca->id, cb->id);
 }
 
+void
+popupBadSave()
+{
+	/* FIXME */
+}
+
+void
+writeSave()
+{
+	/* FIXME */
+}
+
+void
+unlockSession(char *session_name)
+{
+}
+
+void
+endSession(int status)
+{
+	OPRINTF("SESSION MANAGER EXITING [status = %d]\n", status);
+
+	if (manager.session_name) {
+		unlockSession(manager.session_name);
+		free(manager.session_name);
+		manager.session_name = NULL;
+	}
+	free(manager.local.display);
+	manager.local.display = NULL;
+	free(manager.local.session);
+	manager.local.session = NULL;
+	free(manager.local.audio);
+	manager.local.audio = NULL;
+	free(manager.remote.display);
+	manager.remote.display = NULL;
+	free(manager.remote.session);
+	manager.remote.session = NULL;
+	free(manager.remote.audio);
+	manager.remote.audio = NULL;
+
+}
+
+void
+finishUpSave()
+{
+	GList *link;
+
+	OPRINTF("All clients isseud SAVE YOURSELF DONE\n");
+
+	manager.saveInProgress = False;
+	manager.phase2InProgress = False;
+
+	/* Execute discard commands.  Not too sure at the moment why this is being done
+	   here. */
+	for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+		SmClient *c = link->data;
+
+		if (!c->receiveDiscardCommand)
+			continue;
+
+		if (c->discardCommand) {
+			/* execute discard command */
+			free(c->discardCommand);
+			c->discardCommand = NULL;
+		}
+		if (c->saveDiscardCommand) {
+			c->discardCommand = c->saveDiscardCommand;
+			c->saveDiscardCommand = NULL;
+		}
+	}
+	/* write save file */
+	writeSave();
+
+	if (manager.wantShutdown && manager.shutdownCancelled) {
+		/* shutdown was cancelled, do no more */
+		manager.shutdownCancelled = False;
+	} else if (manager.wantShutdown) {
+		if (g_queue_is_empty(runningClients)) {
+			/* when there are no running clients we can simply exit now */
+			endSession(0);
+		}
+		/* When shutting down with running clients, send each client a Die
+		   message and wait for them all to disconnect from the session manager
+		   before exiting.  The shutdownInProgress flag accomplishes this;
+		   however, it would be better handled as a manager state. */
+		manager.shutdownInProgress = True;
+		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+			SmClient *c = link->data;
+
+			SmsDie(c->sms);
+			OPRINTF("Client Id = %s, send DIE\n", c->id);
+		}
+	} else {
+		/* When checkpointing (without shutdown), send all clients a SaveComplete 
+		   message so that they can continue to alter their internal state. */
+		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+			SmClient *c = link->data;
+
+			SmsSaveComplete(c->sms);
+			OPRINTF("Client Id = %s, sent SAVE COMPLETE\n", c->id);
+		}
+	}
+	/* If these were handled using a state variable, the logic would be more
+	   apparent. */
+	if (!manager.shutdownInProgress) {
+		/* remove popups */
+		if (manager.checkpoint_from_signal)
+			manager.checkpoint_from_signal = False;
+	}
+}
+
+/** @brief let a client interact
+  *
+  * Let the client at the head of the interact request queue interact with the
+  * user.  The client will be removed from the queue when it issues an
+  * InteractDone message.  The management state should be set to indicate
+  * interaction.
+  */
+void
+letClientInteract()
+{
+	SmClient *c;
+
+	if ((c = g_queue_peek_head(interacClients)))
+		SmsInteract(c->sms);
+}
+
+/** @brief start save-yourself phase2
+  *
+  * During save-yourself phase2, a SaveYourselfPhase2 message is sent to all
+  * clients that requested phase 2.  We have no more need for the wphase2Clients
+  * list at this time, but must mark the manager state as in phase2.
+  *
+  * XXX: It is not clear what happens when there are no clients requesting
+  * phase 2.  This function is simply not called when the wphase2Clients queue
+  * is empty.
+  *
+  * XXX: This function issues a SaveYourselfPhase2 message to all clients
+  * requesting a phase 2.  I'm not sure whether they should be permitted to all
+  * run at the same time: that is, consider smproxy(1)-like sub-managers.
+  */
+void
+startPhase2()
+{
+	SmClient *c;
+
+	while ((c = g_queue_pop_head(wphase2Clients))) {
+		DPRINTF("Client %s sending SAVE YOURSELF PHASE 2\n", c->id);
+		SmsSaveYourselfPhase2(c->sms);
+	}
+	manager.state = SMS_Phase2;
+}
+
+/** @brief ok to enter interaction phase
+  *
+  * Tests whether it is ok to enter the interaction phase.  There are basically
+  * three phases to a checkpoint or shutdown:
+  *
+  * 1. SM asks each client to save itself and waits for one of three responses
+  *    from each client:
+  *
+  *    1. SaveYourselfDone:		the client is done saving itself.
+  *    2. InteractRequest:		the client requests interaction with the user
+  *    3. SaveYourselfPhase2Request:	the client requests a save-yourself phase2
+  *
+  * 2. Once a response has been received from each client, the interaction phase
+  *    can be entered.  In the interaction phase, each client that requested
+  *    interaction will be allowed to interact before the phase is complete.
+  *
+  * 3. Once the interaction phase is complete, save-yourself phase 2 can begin
+  *    if it was requested.
+  *    
+  */
+Bool
+okToEnterInteractPhase()
+{
+	return (g_queue_get_length(interacClients) + g_queue_get_length(wphase2Clients)
+		== g_queue_get_length(savselfClients));
+}
+
+/** @brief ok to enter save-yourself phase 2
+  *
+  * Tests whether it is ok to enter save-yourself phase 2.  There are basically
+  * three phases to a checkpoint or shutdown:
+  *
+  * 1. SM asks each client to save itself and waits for one of three responses
+  *    from each client:
+  *
+  *    1. SaveYourselfDone:		the client is done saving itself.
+  *    2. InteractRequest:		the client requests interaction with the user
+  *    3. SaveYourselfPhase2Request:	the client requests a save-yourself phase2
+  *
+  * 2. Once a response has been received from each client, the interaction phase
+  *    can be entered.  In the interaction phase, each client that requested
+  *    interaction will be allowed to interact (one at a time) before the phase
+  *    is complete.
+  *
+  * 3. Once the interaction phase is complete, save-yourself phase 2 can begin
+  *    if it was requested.
+  */
+Bool
+okToEnterPhase2()
+{
+	return (g_queue_get_length(wphase2Clients) == g_queue_get_length(savselfClients));
+}
+
+void
+closeDownClient(SmClient *c)
+{
+	GList *link;
+
+	OPRINTF("ICE Connection closed, fd = %d\n", IceConnectionNumber(c->ice));
+
+	SmsCleanUp(c->sms);
+	IceSetShutdownNegotiation(c->ice, False);
+	IceCloseConnection(c->ice);
+
+	c->ice = NULL;
+	c->sms = NULL;
+
+	g_queue_remove(runningClients, c);
+
+	if (manager.saveInProgress) {
+		if ((link = g_queue_find(savselfClients, c))) {
+			g_queue_remove(failureClients, c);
+			g_queue_push_tail(failureClients, c);
+			c->freeafter = True;
+		}
+
+		g_queue_remove(interacClients, c);
+		g_queue_remove(wphase2Clients, c);
+
+		if (link && g_queue_is_empty(savselfClients)) {
+			if (!g_queue_is_empty(failureClients) && !manager.checkpoint_from_signal)
+				popupBadSave();
+			else
+				finishUpSave();
+		} else if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase())
+			letClientInteract();
+		else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
+			startPhase2();
+	}
+	if (c->restartHint == SmRestartImmediately && !manager.shutdownInProgress) {
+		cloneClient(c, True);
+		g_queue_remove(restartClients, c);
+		g_queue_push_tail(restartClients, c);
+	} else if (c->restartHint == SmRestartAnyway) {
+		g_queue_remove(anywaysClients, c);
+		g_queue_push_tail(anywaysClients, c);
+	} else if (!c->freeafter) {
+		freeClient(c);
+	}
+	if (manager.shutdownInProgress) {
+		if (g_queue_is_empty(runningClients))
+			endSession(0);
+	}
+	/* FIXME: update GtkListStore */
+}
+
 
 /** @brief register client callback
   *
@@ -619,182 +880,15 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 	return (1);
 }
 
-void
-popupBadSave()
-{
-	/* FIXME */
-}
-
-void
-writeSave()
-{
-	/* FIXME */
-}
-
-void
-unlockSession(char *session_name)
-{
-}
-
-void
-endSession(int status)
-{
-	OPRINTF("SESSION MANAGER EXITING [status = %d]\n", status);
-
-	if (manager.session_name) {
-		unlockSession(manager.session_name);
-		free(manager.session_name);
-		manager.session_name = NULL;
-	}
-	free(manager.local.display);
-	manager.local.display = NULL;
-	free(manager.local.session);
-	manager.local.session = NULL;
-	free(manager.local.audio);
-	manager.local.audio = NULL;
-	free(manager.remote.display);
-	manager.remote.display = NULL;
-	free(manager.remote.session);
-	manager.remote.session = NULL;
-	free(manager.remote.audio);
-	manager.remote.audio = NULL;
-
-}
-
-void
-finishUpSave()
-{
-	GList *link;
-
-	OPRINTF("All clients isseud SAVE YOURSELF DONE\n");
-
-	manager.saveInProgress = False;
-	manager.phase2InProgress = False;
-
-	/* execute discard commands */
-	for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
-		SmClient *c = link->data;
-
-		if (!c->receiveDiscardCommand)
-			continue;
-
-		if (c->discardCommand) {
-			/* execute discard command */
-			free(c->discardCommand);
-			c->discardCommand = NULL;
-		}
-		if (c->saveDiscardCommand) {
-			c->discardCommand = c->saveDiscardCommand;
-			c->saveDiscardCommand = NULL;
-		}
-	}
-	/* write save file */
-	writeSave();
-
-	if (manager.wantShutdown && manager.shutdownCancelled)
-		manager.shutdownCancelled = False;
-	else if (manager.wantShutdown) {
-		if (g_queue_is_empty(runningClients))
-			endSession(0);
-		manager.shutdownInProgress = True;
-
-		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
-			SmClient *c = link->data;
-
-			SmsDie(c->sms);
-			OPRINTF("Client Id = %s, send DIE\n", c->id);
-		}
-	} else {
-		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
-			SmClient *c = link->data;
-
-			SmsSaveComplete(c->sms);
-			OPRINTF("Client Id = %s, sent SAVE COMPLETE\n", c->id);
-		}
-	}
-	if (!manager.shutdownInProgress) {
-		/* remove popups */
-		if (manager.checkpoint_from_signal)
-			manager.checkpoint_from_signal = False;
-	}
-}
-
-void
-letClientInteract()
-{
-	GList *link;
-
-	if ((link = g_queue_peek_head_link(interacClients))) {
-		SmClient *c = link->data;
-		SmsInteract(c->sms);
-	}
-}
-
-/** @brief start save-yourself phase2
-  *
-  * During save-yourself phase2, a SaveYourselfPhase2 message is sent to all
-  * clients that requested phase 2.  We have no more need for the wphase2Clients
-  * list at this time, but must mark the manager state as in phase2.
-  *
-  * XXX: It is not clear what happens when there are no clients requesting
-  * phase 2.
-  */
-void
-startPhase2()
-{
-	SmClient *c;
-
-	while ((c = g_queue_pop_head(wphase2Clients))) {
-		DPRINTF("Client %s sending SaveYourselfPhase2\n", c->id);
-		SmsSaveYourselfPhase2(c->sms);
-	}
-	manager.state = SMS_Phase2;
-}
-
-/** @brief ok to enter interaction phase
-  *
-  * Tests whether it is ok to enter the interaction phase.  There are basically
-  * three phases to a checkpoint or shutdown:
-  *
-  * 1. SM asks each client to save itself and waits for one of three responses
-  *    from each client:
-  *
-  *    1. SaveYourselfDone:		the client is done saving itself.
-  *    2. InteractRequest:		the client requests interaction with the user
-  *    3. SaveYourselfPhase2Request:	the client requests a save-yourself phase2
-  *
-  * 2. Once a response has been received from each client, the interaction phase
-  *    can be entered.  In the interaction phase, each client that requested
-  *    interaction will be allowed to interact before the phase is complete.
-  *
-  * 3. Once the interaction phase is complete, save-yourself phase 2 can begin
-  *    if it was requested.
-  *    
-  */
-Bool
-okToEnterInteractPhase()
-{
-	return (g_queue_get_length(interacClients) + g_queue_get_length(wphase2Clients)
-		== g_queue_get_length(savselfClients));
-}
-
-/** @brief
-  */
-Bool
-okToEnterPhase2()
-{
-	return (g_queue_get_length(wphase2Clients) == g_queue_get_length(savselfClients));
-}
-
 /** @brief interact request callback
   *
-  * When a client receives a SaveYourself message with an interation style of
-  * SmInteractStyleErrors or SmInteractStyleAny, the client may choose to interact
-  * with the user.  Because only one client can interact with the user at a time,
-  * the client must request to interact with the user.  The session manager should
-  * keep a queue of all clients wishing to interact.  It should send a Interact
-  * message to one client at a time and wait for an InteractDone message before
-  * contining with the next client.
+  * When a client receives a SaveYourself message with an interaction style of
+  * SmInteractStyleErrors or SmInteractStyleAny, the client may choose to
+  * interact with the user.  Because only one client can interact with the user
+  * at a time, the client must request to interact with the user.  The session
+  * manager should keep a queue of all clients wishing to interact.  It should
+  * send a Interact message to one client at a time and wait for an InteractDone
+  * message before contining with the next client.
   *
   * The #dialogType argument specifies either SmDialogError indicating that the
   * client wants to start an error dialog, or SmDialogNormal meaning that the
@@ -802,15 +896,14 @@ okToEnterPhase2()
   *
   * If a shutdown is in progress, the user may have the option of cancelling the
   * shutdown.  If the shutdown is cancelled (specified in the InteractDone
-  * message), the session manager should send a ShutdownCancelled message to each
-  * client that requested to interact.
+  * message), the session manager should send a ShutdownCancelled message to
+  * each client that requested to interact.
   *
   * It is necessary to wait to enter the interaction phase of the checkpoint or
   * shutdown until after each client has sent SaveYourselfDone,
-  * SaveYourselfPhase2Request, or IntractRequest.  So, like xsm(1), we
-  * basically keep three lists: one for each.  The clients waiting for
-  * interaction are in the interacClients list.  The clients waiting for
-  * phase2 are in 
+  * SaveYourselfPhase2Request, or IntractRequest.  So, like xsm(1), we basically
+  * keep three lists: one for each.  The clients waiting for interaction are in
+  * the interacClients list.  The clients waiting for phase2 are in 
   */
 void
 interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
@@ -832,10 +925,15 @@ interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 
 /** @brief interact done callback
   *
-  * When the client is done interacting with the user, the interact done callback
-  * will be invoked.  Note that the shutdown can be cancelled only if the
-  * corresponding SaveYourself specified True for shutdown and
+  * When the client is done interacting with the user, the interact done
+  * callback will be invoked.  Note that the shutdown can be cancelled only if
+  * the corresponding SaveYourself specified True for shutdown and
   * SmInteractStyleErrors or SmInteractStyleAny for the interact style.
+  *
+  * Note that the original xsm(1) does not check that the interact syte and
+  * shutdown sent with the SaveYourself message is consistent with the
+  * cancellation of shutdown flag received with the InteractDone message.  The
+  * spec says that if it is inconsistent it should be ignored.
   */
 void
 interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
@@ -982,59 +1080,6 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 		startPhase2();
 }
 
-void
-closeDownClient(SmClient *c)
-{
-	GList *link;
-
-	OPRINTF("ICE Connection closed, fd = %d\n", IceConnectionNumber(c->ice));
-
-	SmsCleanUp(c->sms);
-	IceSetShutdownNegotiation(c->ice, False);
-	IceCloseConnection(c->ice);
-
-	c->ice = NULL;
-	c->sms = NULL;
-
-	g_queue_remove(runningClients, c);
-
-	if (manager.saveInProgress) {
-		if ((link = g_queue_find(savselfClients, c))) {
-			g_queue_remove(failureClients, c);
-			g_queue_push_tail(failureClients, c);
-			c->freeafter = True;
-		}
-
-		g_queue_remove(interacClients, c);
-		g_queue_remove(wphase2Clients, c);
-
-		if (link && g_queue_is_empty(savselfClients)) {
-			if (!g_queue_is_empty(failureClients) && !manager.checkpoint_from_signal)
-				popupBadSave();
-			else
-				finishUpSave();
-		} else if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase())
-			letClientInteract();
-		else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
-			startPhase2();
-	}
-	if (c->restartHint == SmRestartImmediately && !manager.shutdownInProgress) {
-		cloneClient(c, True);
-		g_queue_remove(restartClients, c);
-		g_queue_push_tail(restartClients, c);
-	} else if (c->restartHint == SmRestartAnyway) {
-		g_queue_remove(anywaysClients, c);
-		g_queue_push_tail(anywaysClients, c);
-	} else if (!c->freeafter) {
-		freeClient(c);
-	}
-	if (manager.shutdownInProgress) {
-		if (g_queue_is_empty(runningClients))
-			endSession(0);
-	}
-	/* FIXME: update GtkListStore */
-}
-
 /** @brief close connection callback
   *
   * If the client properly terminates (that is, it calls SmcCloseConnection) this
@@ -1176,6 +1221,8 @@ getPropertiesCB(SmsConn smsConn, SmPointer data)
 	SmsReturnProperties(smsConn, c->num_props, c->props);
 }
 
+/** @brief new client callback
+  */
 static Status
 newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *cb, char **reason)
 {
