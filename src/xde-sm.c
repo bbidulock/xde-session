@@ -272,6 +272,7 @@ typedef struct {
 	Bool saveInProgress;
 	Bool shutdownInProgress;
 	Bool checkpoint_from_signal;
+	Bool shutdownCancelled;
 	SMS_State state;
 } SmManager;
 
@@ -749,28 +750,33 @@ interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 void
 interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 {
-	int success = 0; /* FIXME */
 	SmClient *c = (typeof(c)) data;
 	GList *link;
 
-	if ((link = g_queue_find(savselfClients, c))) {
-		g_queue_delete_link(savselfClients, link);
-		SmsSaveComplete(smsConn);
-		return;
+	OPRINTF("Client Id = %s, received INTERACT DONE [Cancel Shutdown = %s]\n",
+		c->id, cancelShutdown ? "true" : "false");
+
+	if (cancelShutdown) {
+		g_queue_clear(interacClients);
+		g_queue_clear(wphase2Clients);
+		if (manager.shutdownCancelled)
+			return;
+		manager.shutdownCancelled = True;
+		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+			c = link->data;
+			SmsShutdownCancelled(c->sms);
+			OPRINTF("Client Id = %s, sent SHUTDOWN CANCELLED\n", c->id);
+		}
+	} else {
+		g_queue_pop_head(interacClients);
+		if (!g_queue_is_empty(interacClients))
+			letClientInteract();
+		else {
+			OPRINTF("Done interacting with all clients.\n");
+			if (!g_queue_is_empty(wphase2Clients))
+				startPhase2();
+		}
 	}
-	if (!success) {
-		g_queue_remove(failureClients, c);
-		g_queue_push_tail(failureClients, c);
-	}
-	if (g_queue_is_empty(savselfClients)) {
-		if (!g_queue_is_empty(failureClients) && !manager.checkpoint_from_signal)
-			popupBadSave();
-		else
-			finishUpSave();
-	} else if (!g_queue_is_empty(interacClients) && okToEnterInteractPhase())
-		letClientInteract();
-	else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
-		startPhase2();
 }
 
 /** @brief save yourself request callback
