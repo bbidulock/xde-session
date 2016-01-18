@@ -273,6 +273,8 @@ typedef struct {
 	Bool shutdownInProgress;
 	Bool checkpoint_from_signal;
 	Bool shutdownCancelled;
+	Bool phase2InProgress;
+	Bool wantShutdown;
 	SMS_State state;
 } SmManager;
 
@@ -624,9 +626,97 @@ popupBadSave()
 }
 
 void
-finishUpSave()
+writeSave()
 {
 	/* FIXME */
+}
+
+void
+unlockSession(char *session_name)
+{
+}
+
+void
+endSession(int status)
+{
+	OPRINTF("SESSION MANAGER EXITING [status = %d]\n", status);
+
+	if (manager.session_name) {
+		unlockSession(manager.session_name);
+		free(manager.session_name);
+		manager.session_name = NULL;
+	}
+	free(manager.local.display);
+	manager.local.display = NULL;
+	free(manager.local.session);
+	manager.local.session = NULL;
+	free(manager.local.audio);
+	manager.local.audio = NULL;
+	free(manager.remote.display);
+	manager.remote.display = NULL;
+	free(manager.remote.session);
+	manager.remote.session = NULL;
+	free(manager.remote.audio);
+	manager.remote.audio = NULL;
+
+}
+
+void
+finishUpSave()
+{
+	GList *link;
+
+	OPRINTF("All clients isseud SAVE YOURSELF DONE\n");
+
+	manager.saveInProgress = False;
+	manager.phase2InProgress = False;
+
+	/* execute discard commands */
+	for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+		SmClient *c = link->data;
+
+		if (!c->receiveDiscardCommand)
+			continue;
+
+		if (c->discardCommand) {
+			/* execute discard command */
+			free(c->discardCommand);
+			c->discardCommand = NULL;
+		}
+		if (c->saveDiscardCommand) {
+			c->discardCommand = c->saveDiscardCommand;
+			c->saveDiscardCommand = NULL;
+		}
+	}
+	/* write save file */
+	writeSave();
+
+	if (manager.wantShutdown && manager.shutdownCancelled)
+		manager.shutdownCancelled = False;
+	else if (manager.wantShutdown) {
+		if (g_queue_is_empty(runningClients))
+			endSession(0);
+		manager.shutdownInProgress = True;
+
+		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+			SmClient *c = link->data;
+
+			SmsDie(c->sms);
+			OPRINTF("Client Id = %s, send DIE\n", c->id);
+		}
+	} else {
+		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+			SmClient *c = link->data;
+
+			SmsSaveComplete(c->sms);
+			OPRINTF("Client Id = %s, sent SAVE COMPLETE\n", c->id);
+		}
+	}
+	if (!manager.shutdownInProgress) {
+		/* remove popups */
+		if (manager.checkpoint_from_signal)
+			manager.checkpoint_from_signal = False;
+	}
 }
 
 void
@@ -851,6 +941,13 @@ saveYourselfP2ReqCB(SmsConn smsConn, SmPointer data)
   * this callback will be invoked.  Before the SaveYourselfDone was sent, the
   * client must have set each required property at least once since it registered
   * with the session manager.
+  *
+  * There is a little bit of a race condition here: if a client newly registers
+  * during a checkpoint or a shutdown there is the issue that they have not been
+  * sent the SaveYourself message associated with the checkpoint or shutdown at
+  * this point.  Also, we may have already entered the interact phase or
+  * save-yourself phase 2.  The original xsm(1) does not address this condition
+  * either.
   */
 void
 saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
@@ -883,36 +980,6 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 		letClientInteract();
 	else if (!g_queue_is_empty(wphase2Clients) && okToEnterPhase2())
 		startPhase2();
-}
-
-void
-unlockSession(char *session_name)
-{
-}
-
-void
-endSession(int status)
-{
-	OPRINTF("SESSION MANAGER EXITING [status = %d]\n", status);
-
-	if (manager.session_name) {
-		unlockSession(manager.session_name);
-		free(manager.session_name);
-		manager.session_name = NULL;
-	}
-	free(manager.local.display);
-	manager.local.display = NULL;
-	free(manager.local.session);
-	manager.local.session = NULL;
-	free(manager.local.audio);
-	manager.local.audio = NULL;
-	free(manager.remote.display);
-	manager.remote.display = NULL;
-	free(manager.remote.session);
-	manager.remote.session = NULL;
-	free(manager.remote.audio);
-	manager.remote.audio = NULL;
-
 }
 
 void
