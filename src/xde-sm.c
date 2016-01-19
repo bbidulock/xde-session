@@ -486,7 +486,7 @@ static GQueue *savselfClients = NULL;
   * queue is equal to the sum of the number of clients on this queue and the
   * wphase2Clients queue, it is ok to enter the interaction phase.
   */
-static GQueue *interacClients = NULL;	/* client requesting interaction */
+static GQueue *interacClients = NULL;
 
 /** @brief wait for phase 2 clients
   *
@@ -505,7 +505,15 @@ static GQueue *wphase2Clients = NULL;
   * are added to this queue when they connect.  When the client disconnects from
   * the session manager, they are removed from this queue.
   */
-static GQueue *runningClients = NULL;	/* running clients */
+static GQueue *runningClients = NULL;
+
+/** @brief checkpoint clients
+  *
+  * Clients that are being checkpointed are added to this list at the start of
+  * the checkpoint or shutdown cycle (along with savselfClients).  They are
+  * removed from the list when the SaveComplete or Die message is sent.
+  */
+static GQueue *checkptClients = NULL;
 
 /** @} */
 
@@ -746,7 +754,7 @@ finishUpSave()
 
 	/* Execute discard commands.  Not too sure at the moment why this is being done
 	   here. */
-	for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+	for (link = g_queue_peek_head_link(checkptClients); link; link = link->next) {
 		SmClient *c = link->data;
 
 		if (!c->receivedDiscardCommand)
@@ -778,18 +786,18 @@ finishUpSave()
 		   before exiting.  The shutdownInProgress flag accomplishes this;
 		   however, it would be better handled as a manager state. */
 		manager.shutdownInProgress = True;
-		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+		for (link = g_queue_peek_head_link(checkptClients); link; link = link->next) {
 			SmClient *c = link->data;
 
 			SmsDie(c->sms);
 			OPRINTF("Client Id = %s, send DIE\n", c->id);
 		}
 	} else {
+		SmClient *c;
+
 		/* When checkpointing (without shutdown), send all clients a SaveComplete 
 		   message so that they can continue to alter their internal state. */
-		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
-			SmClient *c = link->data;
-
+		while ((c = g_queue_pop_head(checkptClients))) {
 			SmsSaveComplete(c->sms);
 			OPRINTF("Client Id = %s, sent SAVE COMPLETE\n", c->id);
 		}
@@ -924,6 +932,8 @@ doSave(int saveType, int interactStyle, Bool fast)
 		SmsSaveYourself(c->sms, saveType, manager.wantShutdown, interactStyle, fast);
 		g_queue_remove(savselfClients, c);
 		g_queue_push_tail(savselfClients, c);
+		g_queue_remove(checkptClients, c);
+		g_queue_push_tail(checkptClients, c);
 
 		c->userIssuedCheckpoint = True;
 		c->receivedDiscardCommand = False;
@@ -1115,7 +1125,6 @@ void
 interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 {
 	SmClient *c = (typeof(c)) data;
-	GList *link;
 
 	OPRINTF("Client Id = %s, received INTERACT DONE [Cancel Shutdown = %s]\n",
 		c->id, cancelShutdown ? "true" : "false");
@@ -1126,8 +1135,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 		if (manager.shutdownCancelled)
 			return;
 		manager.shutdownCancelled = True;
-		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
-			c = link->data;
+		while ((c = g_queue_pop_head(checkptClients))) {
 			SmsShutdownCancelled(c->sms);
 			OPRINTF("Client Id = %s, sent SHUTDOWN CANCELLED\n", c->id);
 		}
@@ -1175,6 +1183,8 @@ saveYourselfReqCB(SmsConn smsConn, SmPointer data, int saveType, Bool shutdown,
 			c->sy.interactStyle = interactStyle;
 			c->sy.fast = fast;
 			SmsSaveYourself(c->sms, saveType, shutdown, interactStyle, fast);
+			g_queue_remove(checkptClients, c);
+			g_queue_push_tail(checkptClients, c);
 			g_queue_remove(savselfClients, c);
 			g_queue_push_tail(savselfClients, c);
 		}
@@ -1185,6 +1195,8 @@ saveYourselfReqCB(SmsConn smsConn, SmPointer data, int saveType, Bool shutdown,
 		c->sy.interactStyle = interactStyle;
 		c->sy.fast = fast;
 		SmsSaveYourself(smsConn, saveType, shutdown, interactStyle, fast);
+		g_queue_remove(checkptClients, c);
+		g_queue_push_tail(checkptClients, c);
 		g_queue_remove(savselfClients, c);
 		g_queue_push_tail(savselfClients, c);
 	}
@@ -1304,6 +1316,7 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 	c->sms = NULL;
 
 	g_queue_remove(runningClients, c);
+	g_queue_remove(checkptClients, c);
 
 	if (manager.saveInProgress) {
 		if ((link = g_queue_find(savselfClients, c))) {
@@ -1739,6 +1752,7 @@ smpInitSessionManager(void)
 	wphase2Clients = g_queue_new();
 	interacClients = g_queue_new();
 	runningClients = g_queue_new();
+	checkptClients = g_queue_new();
 
 	InstallIOErrorHandler();
 
