@@ -703,7 +703,32 @@ setInitialProperties(SmClient *c, int num, SmProp *props[])
 void
 freeClient(SmClient *c)
 {
-	/* FIXME !!!! */
+	int i;
+
+	free(c->id);
+	c->id = NULL;
+	free(c->hostname);
+	c->hostname = NULL;
+	c->sms = NULL;
+	c->ice = NULL;
+	for (i = 0; i < c->num_props; i++) {
+		SmFreeProperty(c->props[i]);
+		c->props[i] = NULL;
+	}
+	free(c->props);
+	c->restarted = False;
+	c->userIssuedCheckpoint = False;
+	c->freeAfterBadSavePopup = False;
+	c->receivedDiscardCommand = False;
+	free(c->discardCommand);
+	free(c->saveDiscardCommand);
+	c->restartHint = 0;
+	c->sy.saveType = 0;
+	c->sy.shutdown = False;
+	c->sy.interactStyle = 0;
+	c->sy.fast = False;
+	c->state = SMC_Start;
+	free(c);
 }
 
 void
