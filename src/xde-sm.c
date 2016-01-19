@@ -170,82 +170,81 @@ int screen = 0;
 Window root = None;
 Bool shutting_down;
 
-/*
- * There are two state machines: one for the overall session manager, another
- * for the state of a given SM client as viewed by the session manager.
- */
-
-
-/*
- * Session Manager State Diagram
- *
- * start:
- *	receive ProtocolSetup		--> protocol-setup
- *
- * protocol-setup:
- *	send ProtocolSetupReply		--> register
- *
- * register:
- *	receive RegisterClient		--> acknowledge-register
- *
- * acknowledge-register:
- *	send RegisterClientReply	--> idle
- *
- * idle:
- *	receive SetProperties		--> idle
- *	receive DeleteProperties	--> idle
- *	receive ConnectionClosed	--> start
- *	receive GetProperties		--> get-properties
- *	receive SaveYourselfRequest	--> save-yourself
- *	send SaveYourself		--> saving-yourself
- *
- * save-yourself:
- *	send SaveYourself		--> saving-yourself
- *
- * get-properties:
- *	send GetPropertiesReply		--> saving-yourself
- *
- * saving-yourself:
- *	receive InteractRequest		--> saving-yourself
- *	send Interact			--> saving-yourself
- *	send ShutdownCancelled		--> idle
- *	receive InteractDone		--> saving-yourself
- *	receive SetProperties		--> saving-yourself
- *	receive DeleteProperties	--> saving-yourself
- *	receive GetProperties		--> saving-get-properties
- *	receive SaveYourselfPhase2Request --> start-phase2
- *	receive SaveYourselfDone	--> save-yourself-done
- *
- * start-phase2:
- *   If all clients have sent either SaveYourselfPhase2Request or SaveYourselfDone
- *	send SaveYourselfPhase2		--> phase2
- *   else				--> saving-yourself
- *				    
- * phase2:
- *	receive InteractRequest		--> saving-yourself
- *	send Interact			--> saving-yourself
- *	send ShutdownCancelled		--> idle
- *	receive InteractDone		--> saving-yourself
- *	receive SetProperties		--> saving-yourself
- *	receive DeleteProperties	--> saving-yourself
- *	receive GetProperties		--> saving-get-properties
- *	receive SaveYourselfPhase2Request --> start-phase2
- *	receive SaveYourselfDone	--> save-yourself-done
- *
- * save-yourself-done:
- *	If all clients are saved:
- *	    If shutting down:
- *	        send Die		--> die
- *	    otherwise
- *		send SaveComplete	--> idle
- *
- *	If some clients are not saved:
- *					--> saving-yourself
- * 
- * die:
- *	SM stops accepting connections.
- *
- */
+/** @section manager structure
+  * @{
+  *
+  * There are two state machines: one for the overall session manager, another
+  * for the state of a given SM client as viewed by the session manager.
+  *
+  * Session Manager State Diagram
+  *
+  * start:
+  *	receive ProtocolSetup		--> protocol-setup
+  *
+  * protocol-setup:
+  *	send ProtocolSetupReply		--> register
+  *
+  * register:
+  *	receive RegisterClient		--> acknowledge-register
+  *
+  * acknowledge-register:
+  *	send RegisterClientReply	--> idle
+  *
+  * idle:
+  *	receive SetProperties		--> idle
+  *	receive DeleteProperties	--> idle
+  *	receive ConnectionClosed	--> start
+  *	receive GetProperties		--> get-properties
+  *	receive SaveYourselfRequest	--> save-yourself
+  *	send SaveYourself		--> saving-yourself
+  *
+  * save-yourself:
+  *	send SaveYourself		--> saving-yourself
+  *
+  * get-properties:
+  *	send GetPropertiesReply		--> saving-yourself
+  *
+  * saving-yourself:
+  *	receive InteractRequest		--> saving-yourself
+  *	send Interact			--> saving-yourself
+  *	send ShutdownCancelled		--> idle
+  *	receive InteractDone		--> saving-yourself
+  *	receive SetProperties		--> saving-yourself
+  *	receive DeleteProperties	--> saving-yourself
+  *	receive GetProperties		--> saving-get-properties
+  *	receive SaveYourselfPhase2Request --> start-phase2
+  *	receive SaveYourselfDone	--> save-yourself-done
+  *
+  * start-phase2:
+  *   If all clients have sent either SaveYourselfPhase2Request or SaveYourselfDone
+  *	send SaveYourselfPhase2		--> phase2
+  *   else				--> saving-yourself
+  *				    
+  * phase2:
+  *	receive InteractRequest		--> saving-yourself
+  *	send Interact			--> saving-yourself
+  *	send ShutdownCancelled		--> idle
+  *	receive InteractDone		--> saving-yourself
+  *	receive SetProperties		--> saving-yourself
+  *	receive DeleteProperties	--> saving-yourself
+  *	receive GetProperties		--> saving-get-properties
+  *	receive SaveYourselfPhase2Request --> start-phase2
+  *	receive SaveYourselfDone	--> save-yourself-done
+  *
+  * save-yourself-done:
+  *	If all clients are saved:
+  *	    If shutting down:
+  *	        send Die		--> die
+  *	    otherwise
+  *		send SaveComplete	--> idle
+  *
+  *	If some clients are not saved:
+  *					--> saving-yourself
+  * 
+  * die:
+  *	SM stops accepting connections.
+  *
+  */
 typedef enum {
 	SMS_Start,		/* the manager is starting */
 	SMS_ProtocolSetup,
@@ -275,14 +274,23 @@ typedef struct {
 	Bool shutdownCancelled;
 	Bool phase2InProgress;
 	Bool wantShutdown;
-	Bool shutdown;			/* shutdown setting of sent SaveYourself */
-	int interact_style;		/* interaction style of sent SaveYourself */
+	struct {
+		int saveType;		/* save type of sent SaveYourself */
+		int interactStyle;	/* interaction style of sent SaveYourself */
+		Bool fast;		/* fast setting from sent SaveYourself */
+		Bool shutdown;		/* shutdown setting of sent SaveYourself */
+	} sy;
 	SMS_State state;
 } SmManager;
 
 SmManager manager = {
 	.state = SMS_Start,
 };
+
+/** @} */
+
+/** @section client structure
+  * @{ */
 
 typedef enum {
 	SMC_Start,			/* the client connection is forming */
@@ -309,15 +317,25 @@ typedef struct {
 	int num_props;
 	SmProp **props;
 	Bool restarted;
-	Bool checkpoint;
-	Bool discard;
-	Bool freeafter;
-	Bool receiveDiscardCommand;
+	Bool userIssuedCheckpoint;
+	Bool freeAfterBadSavePopup;
+	Bool receivedDiscardCommand;
 	char *discardCommand;
 	char *saveDiscardCommand;
 	int restartHint;
+	struct {
+		int saveType;		/* save type of last sent SaveYourself */
+		int interactStyle;	/* interact style of sent SaveYourself */
+		Bool fast;		/* fast setting from sent SaveYourself */
+		Bool shutdown;		/* shutdown setting of sent SaveYourself */
+	} sy;
 	SMC_State state;
 } SmClient;
+
+/** @} */
+
+/** @section primary state queues
+  * @{ */
 
 /** @brief initializing clients
   *
@@ -412,6 +430,8 @@ static GQueue *wphase2Clients = NULL;
   * the session manager, they are removed from this queue.
   */
 static GQueue *runningClients = NULL;	/* running clients */
+
+/** @} */
 
 void
 wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
@@ -653,7 +673,7 @@ finishUpSave()
 	for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
 		SmClient *c = link->data;
 
-		if (!c->receiveDiscardCommand)
+		if (!c->receivedDiscardCommand)
 			continue;
 
 		if (c->discardCommand) {
@@ -800,6 +820,46 @@ Bool
 okToEnterPhase2()
 {
 	return (g_queue_get_length(wphase2Clients) == g_queue_get_length(savselfClients));
+}
+
+void
+doSave(int saveType, int interactStyle, Bool fast)
+{
+	GList *link;
+
+	manager.saveInProgress = True;
+	manager.shutdownCancelled = False;
+	manager.phase2InProgress = False;
+
+	if (g_queue_is_empty(runningClients))
+		finishUpSave();
+	manager.sy.saveType = saveType;
+	manager.sy.interactStyle = interactStyle;
+	manager.sy.fast = fast;
+	manager.sy.shutdown = manager.wantShutdown;
+	for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
+		SmClient *c = link->data;
+
+		SmsSaveYourself(c->sms, saveType, manager.wantShutdown, interactStyle, fast);
+		g_queue_remove(savselfClients, c);
+		g_queue_push_tail(savselfClients, c);
+
+		c->userIssuedCheckpoint = True;
+		c->receivedDiscardCommand = False;
+
+		OPRINTF("Client Id = %s, sent SAVE YOURSELF\n", c->id);
+		OPRINTF("    Save Type = %s\n",
+			saveType == SmSaveLocal ? "local" :
+			saveType == SmSaveGlobal ? "global" : "both");
+		OPRINTF("    Shutdown = %s\n", manager.wantShutdown ? "true" : "false");
+		OPRINTF("    Interact Style = %s\n",
+			interactStyle == SmInteractStyleNone ? "none" :
+			interactStyle == SmInteractStyleErrors ? "errors" : "any");
+		OPRINTF("    Fast = %s\n", fast ? "true" : "false");
+	}
+	OPRINTF("Sent SAVE YOURSELF to all clients.  Wiating for\n");
+	OPRINTF("SAVE YOURSELF DONE, INTERACT REQUEST or\n");
+	OPRINTF("SAVE YOURSELF PHASE 2 REQUEST from each client\n");
 }
 
 /** @section client callbacks
@@ -1148,7 +1208,7 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 		if ((link = g_queue_find(savselfClients, c))) {
 			g_queue_remove(failureClients, c);
 			g_queue_push_tail(failureClients, c);
-			c->freeafter = True;
+			c->freeAfterBadSavePopup = True;
 		}
 
 		g_queue_remove(interacClients, c);
@@ -1171,7 +1231,7 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 	} else if (c->restartHint == SmRestartAnyway) {
 		g_queue_remove(anywaysClients, c);
 		g_queue_push_tail(anywaysClients, c);
-	} else if (!c->freeafter) {
+	} else if (!c->freeAfterBadSavePopup) {
 		freeClient(c);
 	}
 	if (manager.shutdownInProgress) {
@@ -1221,7 +1281,7 @@ setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp *props[])
 				   discard command when the save is over. */
 				free(c->saveDiscardCommand);
 				c->saveDiscardCommand = strdup(prop->vals[0].value);
-				c->receiveDiscardCommand = True;
+				c->receivedDiscardCommand = True;
 			} else {
 				free(c->discardCommand);
 				c->discardCommand = strdup(prop->vals[0].value);
@@ -1314,9 +1374,9 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	c->id = NULL;
 	c->hostname = NULL;
 	c->restarted = False;
-	c->checkpoint = False;
-	c->discard = False;
-	c->freeafter = False;
+	c->userIssuedCheckpoint = False;
+	c->receivedDiscardCommand = False;
+	c->freeAfterBadSavePopup = False;
 	c->props = NULL;
 	c->discardCommand = NULL;
 	c->saveDiscardCommand = NULL;
