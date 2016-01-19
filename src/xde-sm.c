@@ -678,9 +678,26 @@ relax()
 }
 
 void
-setInitialProperties(SmClient *c, SmProp *props[])
+setInitialProperties(SmClient *c, int num, SmProp *props[])
 {
-	/* FIXME !!!! */
+	int i;
+
+	CPRINTF(c, "setting initial properties\n");
+	c->props = props;
+	c->num_props = num;
+
+	for (i = 0; i < c->num_props; i++) {
+		if (!strcmp(props[i]->name, SmDiscardCommand)) {
+			if (props[i]->num_vals && props[i]->vals && props[i]->vals[0].value) {
+				free(c->discardCommand);
+				c->discardCommand = strdup(props[i]->vals[0].value);
+			}
+		} else if (!strcmp(props[i]->name, SmRestartStyleHint)) {
+			if (props[i]->num_vals && props[i]->vals && props[i]->vals[0].value) {
+				c->restartHint = *((char *) props[i]->vals[0].value);
+			}
+		}
+	}
 }
 
 void
@@ -1005,7 +1022,8 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 				p = link->data;
 				if (!strcmp(p->id, previousId)) {
 					g_queue_delete_link(pendingClients, link);
-					setInitialProperties(c, p->props);
+					setInitialProperties(c, p->num_props, p->props);
+					p->num_props = 0;
 					p->props = NULL;
 					freeClient(p);
 					break;
@@ -1017,7 +1035,8 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 				p = link->data;
 				if (!strcmp(p->id, previousId)) {
 					g_queue_delete_link(anywaysClients, link);
-					setInitialProperties(c, p->props);
+					setInitialProperties(c, p->num_props, p->props);
+					p->num_props = 0;
 					p->props = NULL;
 					freeClient(p);
 					break;
@@ -1029,7 +1048,8 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 				p = link->data;
 				if (!strcmp(p->id, previousId)) {
 					g_queue_delete_link(restartClients, link);
-					setInitialProperties(c, p->props);
+					setInitialProperties(c, p->num_props, p->props);
+					p->num_props = 0;
 					p->props = NULL;
 					freeClient(p);
 					break;
@@ -1362,6 +1382,8 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 	if (manager.shutdownInProgress) {
 		if (g_queue_is_empty(runningClients))
 			endSession(0);
+		if (g_queue_is_empty(checkptClients))
+			manager.shutdownInProgress = False;
 	}
 	/* FIXME: update GtkListStore */
 }
@@ -1400,28 +1422,23 @@ setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp *props[])
 		c->props[j] = prop;
 
 		if (!strcmp(prop->name, SmDiscardCommand)) {
-			if (manager.saveInProgress) {
-				/* We are in the middle of save yourself.  We save the
-				   discard command whe get now, and make it the current
-				   discard command when the save is over. */
-				free(c->saveDiscardCommand);
-				c->saveDiscardCommand = strdup(prop->vals[0].value);
-				c->receivedDiscardCommand = True;
-			} else {
-				free(c->discardCommand);
-				c->discardCommand = strdup(prop->vals[0].value);
+			if (prop->num_vals && prop->vals && prop->vals[0].value) {
+				if (manager.saveInProgress) {
+					/* We are in the middle of save yourself.  We
+					   save the discard command whe get now, and make 
+					   it the current discard command when the save
+					   is over. */
+					free(c->saveDiscardCommand);
+					c->saveDiscardCommand = strdup(prop->vals[0].value);
+					c->receivedDiscardCommand = True;
+				} else {
+					free(c->discardCommand);
+					c->discardCommand = strdup(prop->vals[0].value);
+				}
 			}
 		} else if (!strcmp(prop->name, SmRestartStyleHint)) {
-			int hint = *((char *) prop->vals[0].value);
-
-			switch (hint) {
-			case SmRestartIfRunning:
-			case SmRestartAnyway:
-			case SmRestartImmediately:
-			case SmRestartNever:
-				c->restartHint = hint;
-				break;
-			}
+			if (prop->num_vals && prop->vals && prop->vals[0].value)
+				c->restartHint = *((char *) prop->vals[0].value);
 		}
 	}
 	free(props);
