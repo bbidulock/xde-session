@@ -276,9 +276,9 @@ typedef struct {
 	Bool wantShutdown;
 	struct {
 		int saveType;		/* save type of sent SaveYourself */
+		Bool shutdown;		/* shutdown setting of sent SaveYourself */
 		int interactStyle;	/* interaction style of sent SaveYourself */
 		Bool fast;		/* fast setting from sent SaveYourself */
-		Bool shutdown;		/* shutdown setting of sent SaveYourself */
 	} sy;
 	SMS_State state;
 } SmManager;
@@ -290,6 +290,82 @@ SmManager manager = {
 /** @} */
 
 /** @section client structure
+  *
+  * State machine:
+  *
+  * start:
+  *	ICE protocol setup complete	--> register
+  *
+  * register:
+  *	send RegisterClient		--> collect-id
+  *
+  * collect-id:
+  *	receive RegisterClientReply	--> idle
+  *
+  * shutdown-cancelled:
+  *	send SaveYourselfDone		--> idle
+  *
+  * idle:
+  *	receive Die			--> die
+  *	receive SaveYourself		--> freeze-interaction
+  *	send GetProperties		--> idle
+  *	receive GetPropertiesReply	--> idle
+  *	send SetProperties		--> idle
+  *	send DeleteProperties		--> idle
+  *	send ConnectionClosed		--> connection-closed
+  *	send SaveYourselfRequest	--> idle
+  *
+  * die:
+  *	send COnnectionClosed		--> connection-closed
+  *
+  * freeze-interaction:
+  *	freeze interaction with user	--> save-yourself
+  *
+  * save-yourself:
+  *	receive ShutdownCancelled	--> shutdown-cancelled
+  *	send SetProperties		--> save-yourself
+  *	send DeleteProperties		--> save-yourself
+  *	send GetProperties		--> save-yourself
+  *	receive GetPropertiesReply	--> save-yourself
+  *	send InteractRequest		--> interact-request
+  *	send SaveYourselfPhase2Request	--> waiting-for-phase2
+  *	if shutdown mode
+  *	    send SaveYourselfDone	--> save-yourself-done
+  *	else
+  *	    send SaveYourselfDone	--> idle
+  *
+  * waiting-for-phase2:
+  *	receive ShutdownCancelled	--> shutdown-cancelled
+  *	receive SaveYourselfPhase2	--> phase2
+  *
+  * phase2:
+  *	receive ShutdownCancelled	--> shutdown-cancelled
+  *	send SetProperties		--> save-yourself
+  *	send DeleteProperties		--> save-yourself
+  *	send GetProperties		--> save-yourself
+  *	receive GetPropertiesReply	--> save-yourself
+  *	send InteractRequest		--> interact-request (errors only)
+  *	if shutdown mode
+  *	    send SaveYourselfDone	--> save-yourself-done
+  *	else
+  *	    send SaveYourselfDone	--> idle
+  *
+  * interact-request:
+  *	receive Interact		--> interact
+  *	receive ShutdownCancelled	--> shutdown-cancelled
+  *
+  * interact:
+  *	send InteractDone		--> save-yourself
+  *	receive ShutdownCancelled	--> shutdown-cancelled
+  *
+  * save-yourself-done: (changing state is forbidden)
+  *	receive SaveComplete		--> idle
+  *	receive Die			--> die
+  *	receive ShutdownCancelled	--> idle
+  *
+  * connection-closed:
+  *	client stops participating in session
+  *	
   * @{ */
 
 typedef enum {
@@ -325,9 +401,9 @@ typedef struct {
 	int restartHint;
 	struct {
 		int saveType;		/* save type of last sent SaveYourself */
+		Bool shutdown;		/* shutdown setting of sent SaveYourself */
 		int interactStyle;	/* interact style of sent SaveYourself */
 		Bool fast;		/* fast setting from sent SaveYourself */
-		Bool shutdown;		/* shutdown setting of sent SaveYourself */
 	} sy;
 	SMC_State state;
 } SmClient;
@@ -834,12 +910,17 @@ doSave(int saveType, int interactStyle, Bool fast)
 	if (g_queue_is_empty(runningClients))
 		finishUpSave();
 	manager.sy.saveType = saveType;
+	manager.sy.shutdown = manager.wantShutdown;
 	manager.sy.interactStyle = interactStyle;
 	manager.sy.fast = fast;
-	manager.sy.shutdown = manager.wantShutdown;
 	for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
 		SmClient *c = link->data;
 
+		c->state = SMC_SaveYourself;
+		c->sy.saveType = saveType;
+		c->sy.shutdown = manager.wantShutdown;
+		c->sy.interactStyle = interactStyle;
+		c->sy.fast = fast;
 		SmsSaveYourself(c->sms, saveType, manager.wantShutdown, interactStyle, fast);
 		g_queue_remove(savselfClients, c);
 		g_queue_push_tail(savselfClients, c);
@@ -895,11 +976,8 @@ Status
 registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 {
 	SmClient *c = (typeof(c)) data;
-	gpointer found;
-	int send_save;
 
-	(void) send_save; /* FIXME */
-	(void) found; /* FIXME */
+	c->state = SMC_CollectId;
 
 	if (!previousId) {
 		free(c->id);
@@ -958,6 +1036,10 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
 	if (!previousId) {
 
 		c->state = SMC_SaveYourself;
+		c->sy.saveType = SmSaveLocal;
+		c->sy.shutdown = False;
+		c->sy.interactStyle = SmInteractStyleNone;
+		c->sy.fast = False;
 		SmsSaveYourself(smsConn, SmSaveLocal, False, SmInteractStyleNone, False);
 
 		g_queue_remove(initialClients, c);
@@ -990,19 +1072,25 @@ registerClientCB(SmsConn smsConn, SmPointer data, char *previousId)
   * It is necessary to wait to enter the interaction phase of the checkpoint or
   * shutdown until after each client has sent SaveYourselfDone,
   * SaveYourselfPhase2Request, or IntractRequest.  So, like xsm(1), we basically
-  * keep three lists: one for each.  The clients waiting for interaction are in
-  * the interacClients list.  The clients waiting for phase2 are in 
+  * keep three queues: one for each.  The clients waiting for interaction are in
+  * the interacClients queue.  The clients waiting for phase2 are in
+  * wphase2Clients queue.  All clients awaiting SaveYourselfDone are in
+  * savselfClients queue.
   */
 void
 interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 {
 	SmClient *c = (typeof(c)) data;
-	GList *link;
 
-	OPRINTF("Client Id = %s, received INTERACT REQUEST\n", c->id);
+	OPRINTF("Client Id = %s, received INTERACT REQUEST [Dialog Type %s]\n", c->id,
+		dialogType == SmDialogNormal ? "normal" : "errors");
 
-	if ((link = g_queue_find(initialClients, c))) {
-		EPRINTF("Client Id = %s, cannot send INTERACT REQUEST when style is none\n", c->id);
+	if (c->state != SMC_SaveYourself) {
+		EPRINTF("Client Id = %s, received INTERACT REQUEST out of state\n", c->id);
+		return;
+	}
+	if (c->sy.interactStyle == SmInteractStyleNone) {
+		EPRINTF("Client Id = %s, received INTERACT REQUEST when style as none\n", c->id);
 		return;
 	}
 	g_queue_remove(interacClients, c);
@@ -1066,24 +1154,37 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
   * is strange.  It is in fact quite easy to support.
   */
 void
-saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
-		  int style, Bool fast, Bool global)
+saveYourselfReqCB(SmsConn smsConn, SmPointer data, int saveType, Bool shutdown,
+		  int interactStyle, Bool fast, Bool global)
 {
 	SmClient *c = (typeof(c)) data;
+
+	manager.sy.saveType = saveType;
+	manager.sy.shutdown = shutdown;
+	manager.sy.interactStyle = interactStyle;
+	manager.sy.fast = fast;
 
 	if (global) {
 		GList *link;
 
 		for (link = g_queue_peek_head_link(runningClients); link; link = link->next) {
 			c = link->data;
-			SmsSaveYourself(c->sms, type, shutdown, style, fast);
+			c->state = SMC_SaveYourself;
+			c->sy.saveType = saveType;
+			c->sy.shutdown = shutdown;
+			c->sy.interactStyle = interactStyle;
+			c->sy.fast = fast;
+			SmsSaveYourself(c->sms, saveType, shutdown, interactStyle, fast);
 			g_queue_remove(savselfClients, c);
 			g_queue_push_tail(savselfClients, c);
 		}
 	} else {
 		c->state = SMC_SaveYourself;
-		/* XXX: should likely save arguments in client structure... */
-		SmsSaveYourself(smsConn, type, shutdown, style, fast);
+		c->sy.saveType = saveType;
+		c->sy.shutdown = shutdown;
+		c->sy.interactStyle = interactStyle;
+		c->sy.fast = fast;
+		SmsSaveYourself(smsConn, saveType, shutdown, interactStyle, fast);
 		g_queue_remove(savselfClients, c);
 		g_queue_push_tail(savselfClients, c);
 	}
