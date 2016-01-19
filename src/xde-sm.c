@@ -108,6 +108,10 @@
 	fprintf(stdout, "I: "); \
 	fprintf(stdout, args); \
 	fflush(stdout); } } while (0)
+#define CPRINTF(c, args...) do { if (options.output > 1) { \
+	fprintf(stdout, "I: Client Id = %s, ", c->id); \
+	fprintf(stdout, args); \
+	fflush(stdout); } } while (0)
 #define DPRINTF(args...) do { if (options.debug) { \
 	fprintf(stderr, "D: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
@@ -790,7 +794,7 @@ finishUpSave()
 			SmClient *c = link->data;
 
 			SmsDie(c->sms);
-			OPRINTF("Client Id = %s, send DIE\n", c->id);
+			CPRINTF(c, "sent DIE\n");
 		}
 	} else {
 		SmClient *c;
@@ -799,7 +803,7 @@ finishUpSave()
 		   message so that they can continue to alter their internal state. */
 		while ((c = g_queue_pop_head(checkptClients))) {
 			SmsSaveComplete(c->sms);
-			OPRINTF("Client Id = %s, sent SAVE COMPLETE\n", c->id);
+			CPRINTF(c, "sent SAVE COMPLETE\n");
 		}
 	}
 	/* If these were handled using a state variable, the logic would be more
@@ -938,15 +942,15 @@ doSave(int saveType, int interactStyle, Bool fast)
 		c->userIssuedCheckpoint = True;
 		c->receivedDiscardCommand = False;
 
-		OPRINTF("Client Id = %s, sent SAVE YOURSELF\n", c->id);
-		OPRINTF("    Save Type = %s\n",
+		CPRINTF(c, "send SAVE YOURSELF\n");
+		CPRINTF(c, "    Save Type = %s\n",
 			saveType == SmSaveLocal ? "local" :
 			saveType == SmSaveGlobal ? "global" : "both");
-		OPRINTF("    Shutdown = %s\n", manager.wantShutdown ? "true" : "false");
-		OPRINTF("    Interact Style = %s\n",
+		CPRINTF(c, "    Shutdown = %s\n", manager.wantShutdown ? "true" : "false");
+		CPRINTF(c, "    Interact Style = %s\n",
 			interactStyle == SmInteractStyleNone ? "none" :
 			interactStyle == SmInteractStyleErrors ? "errors" : "any");
-		OPRINTF("    Fast = %s\n", fast ? "true" : "false");
+		CPRINTF(c, "    Fast = %s\n", fast ? "true" : "false");
 	}
 	OPRINTF("Sent SAVE YOURSELF to all clients.  Wiating for\n");
 	OPRINTF("SAVE YOURSELF DONE, INTERACT REQUEST or\n");
@@ -1092,15 +1096,20 @@ interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 {
 	SmClient *c = (typeof(c)) data;
 
-	OPRINTF("Client Id = %s, received INTERACT REQUEST [Dialog Type %s]\n", c->id,
-		dialogType == SmDialogNormal ? "normal" : "errors");
+	CPRINTF(c, "received INTERACT REQUEST [Dialog Type %s]\n", dialogType == SmDialogNormal ? "normal" : "errors");
 
 	if (c->state != SMC_SaveYourself) {
 		EPRINTF("Client Id = %s, received INTERACT REQUEST out of state\n", c->id);
+		/* XXX: must do more than just return??? */
 		return;
 	}
 	if (c->sy.interactStyle == SmInteractStyleNone) {
-		EPRINTF("Client Id = %s, received INTERACT REQUEST when style as none\n", c->id);
+		EPRINTF("Client Id = %s, received INTERACT REQUEST when style was none\n", c->id);
+		/* XXX: must do more than just return??? */
+		return;
+	} else if (c->sy.interactStyle == SmInteractStyleErrors && dialogType == SmDialogNormal) {
+		EPRINTF("Client Id = %s, received INTERACT REQUEST normal when style was errors\n", c->id);
+		/* XXX: must do more than just return??? */
 		return;
 	}
 	g_queue_remove(interacClients, c);
@@ -1126,8 +1135,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 {
 	SmClient *c = (typeof(c)) data;
 
-	OPRINTF("Client Id = %s, received INTERACT DONE [Cancel Shutdown = %s]\n",
-		c->id, cancelShutdown ? "true" : "false");
+	CPRINTF(c, "received INTERACT DONE [Cancel Shutdown = %s]\n", cancelShutdown ? "true" : "false");
 
 	if (cancelShutdown) {
 		g_queue_clear(interacClients);
@@ -1137,7 +1145,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 		manager.shutdownCancelled = True;
 		while ((c = g_queue_pop_head(checkptClients))) {
 			SmsShutdownCancelled(c->sms);
-			OPRINTF("Client Id = %s, sent SHUTDOWN CANCELLED\n", c->id);
+			CPRINTF(c, "sent SHUTDOWN CANCELLED\n");
 		}
 	} else {
 		g_queue_pop_head(interacClients);
@@ -1159,7 +1167,11 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
   * running clients.
   *
   * Note that in the classical xsm(1), this procedure is not supported.  Which
-  * is strange.  It is in fact quite easy to support.
+  * is strange.  It is in fact quite easy to support.  Also, this is the only
+  * way for a SmRestartImmediately restart hint client to shut down.  If it
+  * exits on its own it will be restarted by the session manager.  It must issue
+  * a non-global SaveYourselfRequest with shutdown to get the session manager to
+  * send it a Die message and shut it down.
   */
 void
 saveYourselfReqCB(SmsConn smsConn, SmPointer data, int saveType, Bool shutdown,
@@ -1254,8 +1266,7 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 	SmClient *c = (typeof(c)) data;
 	GList *link;
 
-	OPRINTF("Client Id = %s, received SAVE YOURSELF DONE [Success = %s]\n",
-		c->id, success ? "true" : "false");
+	CPRINTF(c, "received SAVE YOURSELF DONE [Success = %s]\n", success ? "true" : "false");
 
 	if ((link = g_queue_find(savselfClients, c))) {
 		g_queue_delete_link(savselfClients, link);
@@ -1299,7 +1310,7 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 	GList *link;
 	int i;
 
-	OPRINTF("Client Id = %s, received CONNECTION CLOSED\n", c->id);
+	CPRINTF(c, "received CONNECTION CLOSED\n");
 	for (i = 0; i < count; i++)
 		OPRINTF("   Reason string %d: %s\n", i, reasons[i]);
 
@@ -1370,7 +1381,7 @@ setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp *props[])
 	SmClient *c = (typeof(c)) data;
 	int i;
 
-	OPRINTF("Client Id = %s, receive SET PROPERTIES [Numb props = %d]\n", c->id, num);
+	CPRINTF(c, "receive SET PROPERTIES [Numb props = %d]\n", num);
 
 	for (i = 0; i < num; i++) {
 		SmProp *prop = props[i];
@@ -1427,7 +1438,7 @@ deletePropertiesCB(SmsConn smsConn, SmPointer data, int num, char *names[])
 	SmClient *c = (typeof(c)) data;
 	int i;
 
-	OPRINTF("Client Id = %s, received DELETE PROPERTIES [Num props = %d]\n", c->id, num);
+	CPRINTF(c, "received DELETE PROPERTIES [Num props = %d]\n", num);
 
 	for (i = 0; i < num; i++) {
 		char *name = names[i];
@@ -1466,7 +1477,7 @@ getPropertiesCB(SmsConn smsConn, SmPointer data)
 {
 	SmClient *c = (typeof(c)) data;
 
-	OPRINTF("CLient Id = %s, received GET PROPERTIES\n", c->id);
+	CPRINTF(c, "received GET PROPERTIES\n");
 	SmsReturnProperties(smsConn, c->num_props, c->props);
 }
 
@@ -1478,7 +1489,7 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	SmClient *c;
 
 	if (!(c = calloc(1, sizeof(*c)))) {
-		fprintf(stderr, "Memory allocation failed\n");
+		EPRINTF("%s\n", strerror(errno));
 		return (0);
 	}
 	*mask = 0;
