@@ -272,6 +272,7 @@ typedef struct {
 		char *audio;
 	} local, remote;
 	char *session_name;
+	Bool remote_allowed;
 	Bool saveInProgress;
 	Bool shutdownInProgress;
 	Bool checkpoint_from_signal;
@@ -290,6 +291,9 @@ typedef struct {
 SmManager manager = {
 	.state = SMS_Start,
 };
+
+const char *non_local_display_env = NULL;
+const char *non_local_session_env = NULL;
 
 /** @} */
 
@@ -519,6 +523,14 @@ static GQueue *runningClients = NULL;
   */
 static GQueue *checkptClients = NULL;
 
+/** @brief session clients
+  *
+  * Clients that are involved in the session.  All clients are added to this
+  * list once identified and are only removed from the list once they have
+  * disconnected with a restart hint of never.
+  */
+static GQueue *sessionClients = NULL;
+
 /** @} */
 
 void
@@ -705,6 +717,48 @@ freeClient(SmClient *c)
 {
 	int i;
 
+	if (g_queue_find(initialClients, c)) {
+		EPRINTF("Client Id = %s, still on iniitalClients queue at deletion\n", c->id);
+		g_queue_remove(initialClients, c);
+	}
+	if (g_queue_find(pendingClients, c)) {
+		EPRINTF("Client Id = %s, still on pendingClients queue at deletion\n", c->id);
+		g_queue_remove(pendingClients, c);
+	}
+	if (g_queue_find(anywaysClients, c)) {
+		EPRINTF("Client Id = %s, still on anywaysClients queue at deletion\n", c->id);
+		g_queue_remove(anywaysClients, c);
+	}
+	if (g_queue_find(restartClients, c)) {
+		EPRINTF("Client Id = %s, still on restartClients queue at deletion\n", c->id);
+		g_queue_remove(restartClients, c);
+	}
+	if (g_queue_find(failureClients, c)) {
+		EPRINTF("Client Id = %s, still on failureClients queue at deletion\n", c->id);
+		g_queue_remove(failureClients, c);
+	}
+	if (g_queue_find(savselfClients, c)) {
+		EPRINTF("Client Id = %s, still on savselfClients queue at deletion\n", c->id);
+		g_queue_remove(savselfClients, c);
+	}
+	if (g_queue_find(wphase2Clients, c)) {
+		EPRINTF("Client Id = %s, still on wphase2Clients queue at deletion\n", c->id);
+		g_queue_remove(wphase2Clients, c);
+	}
+	if (g_queue_find(interacClients, c)) {
+		EPRINTF("Client Id = %s, still on inetracClients queue at deletion\n", c->id);
+		g_queue_remove(interacClients, c);
+	}
+	if (g_queue_find(runningClients, c)) {
+		EPRINTF("Client Id = %s, still on runningClients queue at deletion\n", c->id);
+		g_queue_remove(runningClients, c);
+	}
+	if (g_queue_find(checkptClients, c)) {
+		EPRINTF("Client Id = %s, still on checkptClients queue at deletion\n", c->id);
+		g_queue_remove(checkptClients, c);
+	}
+	g_queue_remove(sessionClients, c);
+
 	free(c->id);
 	c->id = NULL;
 	free(c->hostname);
@@ -732,9 +786,115 @@ freeClient(SmClient *c)
 }
 
 void
+remote_start(const char *restart_protocol, const char *restart_machine, const char *program,
+	     char **args, const char *cwd, char **env, const char *non_local_display_env,
+	     const char *non_local_session_env)
+{
+	/* FIXME: port this function */
+}
+
+void
+getRestartInfo(const char *restart_service_prop, const char *client_host_name,
+		Bool *run_local, char **restart_protocol, char **restart_machine)
+{
+	/* FIXME: port this function */
+}
+
+Bool
+checkIsManager(const char *program)
+{
+	static const char *names[] = { "twm", "ctwm", "etwm", NULL };
+	const char **pp = names;
+
+	while (*pp)
+		if (!strcmp(program, *pp++))
+			return True;
+	return False;
+}
+
+void
 cloneClient(SmClient *c, Bool useSavedState)
 {
-	/* FIXME !!!! */
+	const char *cwd = NULL, *program = NULL;
+	char **args = NULL, **env = NULL, **pp, *p;
+	const char *restart_service_prop;
+	char *restart_protocol = NULL, *restart_machine = NULL;
+	Bool run_local = True;
+	int i, j;
+
+	for (i = 0; i < c->num_props; i++) {
+		SmProp *prop = c->props[i];
+
+		if (!strcmp(prop->name, SmProgram)) {
+			program = (char *) prop->vals[0].value;
+		} else if (!strcmp(prop->name, SmCurrentDirectory)) {
+			cwd = (char *) prop->vals[0].value;
+		} else if (!strcmp(prop->name, "_XC_RestartService")) {
+			restart_service_prop = (char *) prop->vals[0].value;
+		} else if ((!useSavedState && !strcmp(prop->name, SmCloneCommand)) ||
+			   !strcmp(prop->name, SmRestartCommand)) {
+			args = calloc(prop->num_vals + 1, sizeof(*args));
+			for (j = 0, pp = args; j < prop->num_vals; j++)
+				*pp++ = (char *) prop->vals[j].value;
+		} else if (!strcmp(prop->name, SmEnvironment)) {
+			env = calloc(prop->num_vals + 3 + 1, sizeof(*env));
+			for (j = 0, pp = env; j < prop->num_vals; j++) {
+				p = prop->vals[j].value;
+				if ((manager.local.display && strstr(p, "DISPLAY=") == p) ||
+				    (manager.local.session && strstr(p, "SESSION_MANAGER=") == p) ||
+				    (manager.local.audio && strstr(p, "AUDIOSERVER=") == p))
+					continue;
+				*pp++ = p;
+			}
+			if (manager.local.display)
+				*pp++ = manager.local.display;
+			if (manager.local.session)
+				*pp++ = manager.local.session;
+			if (manager.local.audio)
+				*pp++ = manager.local.audio;
+			*pp = NULL;
+		}
+	}
+	if (program && args) {
+		if (options.output > 1) {
+			OPRINTF("\t%s\n", program);
+			fprintf(stdout, "I:\t");
+			for (pp = args; *pp; pp++)
+				fprintf(stdout, "%s ", *pp);
+			fprintf(stdout, "\n");
+			fflush(stdout);
+		}
+		getRestartInfo(restart_service_prop, c->hostname, &run_local, &restart_protocol,
+			       &restart_machine);
+		if (run_local) {
+			/* clone on the local host */
+			switch (fork()) {
+			case -1:	/* error */
+				EPRINTF("cannot fork(): %s\n", strerror(errno));
+				break;
+			case 0:	/* the child */
+				if (chdir(cwd)) ;
+				execvpe(program, args, env);
+				EPRINTF("cannot execvpe %s\n", program);
+				_exit(255);
+			case 1:	/* the parent */
+				break;
+			}
+		} else if (!manager.remote_allowed) {
+			EPRINTF("Cannot remote clone client id %s\n", c->id);
+		} else {
+			/* clone on remote machine */
+			remote_start(restart_protocol, restart_machine,
+				     program, args, cwd, env,
+				     non_local_display_env, non_local_session_env);
+		}
+		free(restart_protocol);
+		free(restart_machine);
+	} else {
+		EPRINTF("Cannot restart client id = %s: no program or args\n", c->id);
+	}
+	free(args);
+	free(env);
 }
 
 gint
@@ -1550,7 +1710,7 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 	c->restartHint = SmRestartIfRunning;
 	c->state = SMC_Start;
 
-	g_queue_remove(runningClients, c);
+	g_queue_push_tail(sessionClients, c);
 	g_queue_push_tail(runningClients, c);
 
 	*mask |= SmsRegisterClientProcMask;
@@ -1806,6 +1966,7 @@ smpInitSessionManager(void)
 	interacClients = g_queue_new();
 	runningClients = g_queue_new();
 	checkptClients = g_queue_new();
+	sessionClients = g_queue_new();
 
 	InstallIOErrorHandler();
 
