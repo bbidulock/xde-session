@@ -793,11 +793,74 @@ remote_start(const char *restart_protocol, const char *restart_machine, const ch
 	/* FIXME: port this function */
 }
 
+#if 0
+#define DEFAULT_RSTART_PROTOCOL	"rstart-rsh"
+#else
+#define DEFAULT_RSTART_PROTOCOL	"rstart-ssh"
+#endif
+
+/** @brief determine method to restart a client
+  *
+  * The #restart_service_prop argument is a string valued property set by the
+  * client, or NULL when the client has not set the property.  The property is
+  * the non-standard property, _XC_RestartService.  The format of the property
+  * is "remote_start_protocol/remote_start_data".  An example is
+  * "rstart-rsh/hostname".  This is a non-standard property, which is the whoe
+  * reason we need this function to dtermine the restart method.  The proxy uses
+  * this property to override the 'client_host_name' from the ICE connection
+  * (the proxy is connected to the SM via a local connection, but the proxy may
+  * be acting as a proxy for a remote client).
+  *
+  * 'client_host_name' is the connection info obtained from the ICE connection.
+  * It's format is "transport/host_info".  An example is "tcp/machine-port".
+  *
+  * If #resetart_service_prop is NULL, we use 'client_host_name' to determine
+  * the restart method.  If the transport is "local", we do a local restart.
+  * Otherwise, we use the default "rstart-rsh" method.
+  *
+  * If #restart_service_prop is non-NULL, we check the #remote_start_protocol
+  * field.  "local" means a local restart.  Currently, the only remote protocol
+  * we recognize is "rstart-rsh".  If the remote protocol is "rstart-rsh" but
+  * the hostname in the #restart_service_prop matches client_host_name, we do a
+  * local restart.
+  *
+  * On return, set the run_local flag, restart_protocol and restart_machine.
+  */
 void
 getRestartInfo(const char *restart_service_prop, const char *client_host_name,
-		Bool *run_local, char **restart_protocol, char **restart_machine)
+	       Bool *run_local, char **restart_protocol, char **restart_machine)
 {
-	/* FIXME: port this function */
+	*run_local = False;
+	*restart_protocol = NULL;
+	*restart_machine = NULL;
+
+	if (restart_service_prop) {
+		char hostname[256];
+		const char *p;
+
+		if ((p = strchr(restart_service_prop, '/'))) {
+			*restart_machine = strdup(p + 1);
+			*restart_protocol = strndup(restart_service_prop, p - restart_service_prop);
+		} else {
+			*restart_protocol = strdup(DEFAULT_RSTART_PROTOCOL);
+			*restart_machine = strdup(restart_service_prop);
+		}
+		gethostname(hostname, sizeof(hostname));
+		if (!strcmp(*restart_machine, hostname) || !strcmp(*restart_protocol, "local"))
+			*run_local = True;
+	} else {
+		const char *p;
+
+		if (strncmp(client_host_name, "tcp/", 4) && strncmp(client_host_name, "decnet/", 7))
+			*run_local = True;
+		else {
+			*restart_protocol = strdup(DEFAULT_RSTART_PROTOCOL);
+			if ((p = strchr(client_host_name, '/')))
+				*restart_machine = strdup(p + 1);
+			else
+				*restart_machine = strdup(client_host_name);
+		}
+	}
 }
 
 Bool
@@ -817,7 +880,7 @@ cloneClient(SmClient *c, Bool useSavedState)
 {
 	const char *cwd = NULL, *program = NULL;
 	char **args = NULL, **env = NULL, **pp, *p;
-	const char *restart_service_prop;
+	const char *restart_service_prop = NULL;
 	char *restart_protocol = NULL, *restart_machine = NULL;
 	Bool run_local = True;
 	int i, j;
