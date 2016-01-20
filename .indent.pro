@@ -129,6 +129,7 @@
 -T_HEAD_DECLARATION
 -Tht_link_t
 -TIceAuthDataEntry
+-TIceListenObj
 -Ticlpkt_t
 -Tifunc_t
 -Tinline
