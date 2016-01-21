@@ -981,35 +981,7 @@ writeSave()
 	/* FIXME */
 }
 
-void
-unlockSession(char *session_name)
-{
-}
-
-void
-endSession(int status)
-{
-	OPRINTF("SESSION MANAGER EXITING [status = %d]\n", status);
-
-	if (manager.session_name) {
-		unlockSession(manager.session_name);
-		free(manager.session_name);
-		manager.session_name = NULL;
-	}
-	free(manager.local.display);
-	manager.local.display = NULL;
-	free(manager.local.session);
-	manager.local.session = NULL;
-	free(manager.local.audio);
-	manager.local.audio = NULL;
-	free(manager.remote.display);
-	manager.remote.display = NULL;
-	free(manager.remote.session);
-	manager.remote.session = NULL;
-	free(manager.remote.audio);
-	manager.remote.audio = NULL;
-
-}
+void endSession(int status);
 
 void
 finishUpSave()
@@ -1937,7 +1909,7 @@ SetAuthentication(int count, IceListenObj *listenObjs, IceAuthDataEntry **authDa
 	const char *path;
 	mode_t original_umask;
 	char command[256] = { 0, };
-	int i, j, status;
+	int i, j;
 	int fd;
 
 	original_umask = umask(0077);
@@ -1975,8 +1947,7 @@ SetAuthentication(int count, IceListenObj *listenObjs, IceAuthDataEntry **authDa
 	fclose(removefp);
 	umask(original_umask);
 	snprintf(command, sizeof(command), "iceauth source %s", addAuthFile);
-	status = system(command);
-	(void) status;
+	if (system(command)) ;
 	remove(addAuthFile);
 	return (1);
       bad:
@@ -1993,6 +1964,24 @@ SetAuthentication(int count, IceListenObj *listenObjs, IceAuthDataEntry **authDa
 		free(remAuthFile);
 	}
 	return (0);
+}
+
+void
+FreeAuthenticationData(int count, IceAuthDataEntry *authDataEntries)
+{
+	char command[BUFSIZ];
+	int i;
+
+	for (i = 0; i < count * 2; i++) {
+		free(authDataEntries[i].network_id);
+		free(authDataEntries[i].auth_data);
+	}
+	free(authDataEntries);
+	snprintf(command, sizeof(command), "iceauth source %s", remAuthFile);
+	if (system(command)) ;
+	remove(remAuthFile);
+	free(addAuthFile);
+	free(remAuthFile);
 }
 
 static IceIOErrorHandler prev_handler;
@@ -2063,6 +2052,38 @@ smpInitSessionManager(void)
 	setenv("SESSION_MANAGER", networkIds, TRUE);
 
 	manager.state = SMS_Start;
+}
+
+void
+unlockSession(char *session_name)
+{
+}
+
+void
+endSession(int status)
+{
+	OPRINTF("SESSION MANAGER EXITING [status = %d]\n", status);
+
+	FreeAuthenticationData(numTransports, authDataEntries);
+
+	if (manager.session_name) {
+		unlockSession(manager.session_name);
+		free(manager.session_name);
+		manager.session_name = NULL;
+	}
+	free(manager.local.display);
+	manager.local.display = NULL;
+	free(manager.local.session);
+	manager.local.session = NULL;
+	free(manager.local.audio);
+	manager.local.audio = NULL;
+	free(manager.remote.display);
+	manager.remote.display = NULL;
+	free(manager.remote.session);
+	manager.remote.session = NULL;
+	free(manager.remote.audio);
+	manager.remote.audio = NULL;
+
 }
 
 void
