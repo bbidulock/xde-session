@@ -1907,6 +1907,11 @@ unique_filename(const char *path, const char *prefix, int *pFd)
 	return (ptr);
 }
 
+/** @brief host based authentication
+  *
+  * Host-based authentication is rather a bad idea.  Even the classical xsm(1)
+  * does not permit host-hased authentication.
+  */
 Bool
 HostBasedAuthProc(char *hostname)
 {
@@ -1921,10 +1926,11 @@ static char *remAuthFile;
 /** @brief set authentication
   *
   * NOTE: this is a strange way to do this: I don't know why we do not simply
-  * use the iceauth library and write the file directly with correct locking.
+  * use the ICE library (see /usr/include/X11/ICE/ICEutil.h) and write the file
+  * directly with correct locking.
   */
 Status
-SetAuthentication(int count, IceListenObj * listenObjs, IceAuthDataEntry **authDataEntries)
+SetAuthentication(int count, IceListenObj *listenObjs, IceAuthDataEntry **authDataEntries)
 {
 	FILE *addfp = NULL;
 	FILE *removefp = NULL;
@@ -2066,7 +2072,7 @@ handle_events(void)
 }
 
 gboolean
-on_xfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
+on_xfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		fprintf(stderr, "ERROR: poll failed: %s %s %s\n",
@@ -2080,7 +2086,7 @@ on_xfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 }
 
 gboolean
-on_ifd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
+on_ifd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		fprintf(stderr, "ERROR: poll failed: %s %s %s\n",
