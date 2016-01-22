@@ -1,0 +1,35 @@
+=pod
+
+=head1 NAME
+
+xmproxy - X11 Session Management proxy
+
+=head1 SYNOPSIS
+
+B<xmproxy> [I<OPTIONS>]
+
+=head1 DESCRIPTION
+
+B<xmproxy> provides a X11 Session Management proxy that can be used to
+remote start an X client with session management forwarding.
+
+=head1 OPTIONS
+
+=head1 BEHAVIOR
+
+On startup, B<xmproxy> establishes
+
+=head1 USAGE
+
+B<xmproxy> can be used with L<ssh(1)> to start X clients on remote
+machines with full transparent X11 Session Management forwarding.  This
+is accomplished by establishing a L<ssh(1)> connection with port
+forwarding.  The encrypted tunnel forwards packets to the local session
+manager from the remote session manager established by B<xmproxy> on the
+remote machine.  Remote launched X clients communicate with the remote
+session manager proxy as normal using the B<SESSION_MANAGER> environment
+variable that is appropriately set by B<xmproxy> on the remote machine.
+
+=cut
+
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
