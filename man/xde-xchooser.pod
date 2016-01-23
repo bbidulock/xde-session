@@ -53,17 +53,17 @@ of running the program.
 
 =over 4
 
-=item B<-help>
+=item B<-H>, B<-help>
 
 Instead of operating normally, the program prints usage information to
 standard output and exits.
 
-=item B<-version>
+=item B<-V>, B<--version>
 
 Instead of operating normally, the program prints detailed version
 information and exits.
 
-=item B<-copying>
+=item B<-C>, B<--copying>
 
 Instead of operating normally, the program prints detailed copying
 permissions and exits.
@@ -250,22 +250,24 @@ Specifies that the login panel should be transparent and that the
 widgets should be embedded in the background image.  The default is to
 paint the login panel.
 
-=item B<-dry-run>
+=item B<-n>, B<--dry-run>
 
 Specifies that the program should not perform any actions but should
 simply print intentions to standard output.  This option is for testing.
 
-=item B<-debug> [I<LEVEL>]
+=item B<-D>, B<--debug> [I<LEVEL>]
 
-Prints debugging information to standard error during operation.  This
-option can be repeated to increase the debugging level.  The default
-level is 0.
+Increase, or set to I<LEVEL>, the debugging verbosity.  The default
+debugging verbosity level is zero (0), which means to output no
+debugging information.  When non-zero, debugging information will be
+printed to standard error.
 
-=item B<-verbose> [I<LEVEL>]
+=item B<-v>, B<--verbose> [I<LEVEL>]
 
-Print diagnostic information to standard error during operation.  This
-option can be repeated to increase the verbosity of output.  The default
-level is 1.
+Increase, or set to I<LEVEL>, the output verbosity.  The default output
+verbosity level is one (1), which means to output normal information to
+standard output.  When set to zero (0), no output will be printed to
+standard output. 
 
 =back
 
