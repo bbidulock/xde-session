@@ -12,7 +12,18 @@ B<xde-wmproxy> [I<OPTIONS>] COMMAND ARG ...
 
 B<xde-wmproxy> provides an X Session Management proxy for an NetWM/EWMH,
 WinWM/WMH or ICCCM compliant window managers that do not provide support
-for X Session Management on their own.
+for X Session Management on their own, or that provide inferior session
+management support.
+
+Although some light-weight window managers provide X11R6 session
+management support, many do not save their own configuration files nor
+their own state during a checkpoint or shutdown.  Because the XDE
+environment establishes window manager configuration files in
+B<$XDG_RUNTIME_DIR> before invoking the window manager, the window
+manager is not often aware of the conditions necessary to re-establish
+the necessary configuration.  B<xde-wmproxy> serves to also provides the
+ability to re-establish window manager configuration before the window
+manager is restored.
 
 =head1 OPTIONS
 
@@ -37,7 +48,12 @@ upper layer session manager.
 B<xde-wmproxy> allows X window managers that do not support X11R6
 session management to participate in an X11R6 session.  For
 B<xde-wmproxy> to act as a proxy for a window manager, B<xde-wmproxy>
-must be used to launch the window manager.
+must be used to launch the window manager and, when restored by a
+session manager, must be restored before the window manager.  This
+assumes a session manager that is capable of maintaining the total order
+of processes on restart.  Classical L<xsm(1)> is not capable of
+restoring processes in the same order that they were originally
+launched.  L<xde-sm(1)> is capable of total ordering on restoration.
 
 ICCCM 2.0 says the following:
 
@@ -47,11 +63,11 @@ ICCCM 2.0 says the following:
     the session manager and obtain its own client-ID.  The window
     manager should save and restore information such as WM_STATE, the
     layout of windows on the screen, and their stacking order, for every
-    client window that havs a valid SM_CLIENT_ID property (on itself, or
+    client window that have a valid SM_CLIENT_ID property (on itself, or
     on the window managed by WM_CLIENT_LEADER) and that can be uniquely
     identified.  Clients are allowed to change this state during the
     first phase of the session checkpoint process.  Therefore, window
-    managers shouldr request a second checkpoint phase and save clients'
+    managers should request a second checkpoint phase and save clients'
     state only during that phase.
 
 Should the window manager not register with B<xde-wmproxy> to obtain its
@@ -61,7 +77,6 @@ actions on behalf of the window manager.
 Should the window manager register, B<xde-wmproxy> will still perform
 actions on behalf of the window manager to the extent possible.
 
-
 =head1 BEHAVIOUR
 
 =head2 SESSION MANAGEMENT
@@ -69,8 +84,7 @@ actions on behalf of the window manager to the extent possible.
 When B<xde-wmproxy> starts, it observes the C<SESSION_MANAGER>
 environment variable and establishes a client connection to the session
 manager.  If the C<SESSION_MANAGER> environment variable is not set, it
-becomes its own session manager and populates the C<SESSION_MANAGER>
-environment variable before launching any window manager.
+does not participate in session management.
 
 In either event, when managing the window manager from a session point
 of view, B<xde-wmproxy> manages X11 Session Management of the window
@@ -87,13 +101,15 @@ Provides ICCCM 2.0 Section 5.2 Window Manager Support for Session
 Management.  It performs this action as a meta-WM in parallel or in lieue
 of session management performed by the window manager itself.  For known
 window managers it can enhance session management by detecting and
-managing windowmaker dock applications and system tray icons. (Note that
-L<xde-dock(1)> and L<xde-dockmgr(1)> can do this too.)
+managing window maker dock applications and system tray icons. (Note that
+L<xde-dock(1)>, L<xde-dockmgr(1)> and L<xde-traymgr(1)> can do this too.)
 
 =item 2.
 
 Provides the services of L<smproxy(1)>, by interrogating windows present
 on the display and performing old-style session management as necessary.
+Note that L<xde-smproxy(1)> can also be used on its own to provide this
+capability.
 
 =item 3.
 
@@ -162,6 +178,68 @@ C<SubstructureRedirect> input selection mask on the root window of the
 managed screen.  Such a second window manager can still be run from
 outside of the first by invoking it using B<xde-wmproxy> as a wrapper to
 launch the window manager.
+
+=head2 XSESSION DESKTOP ENTRIES
+
+B<xde-wmproxy> uses C<XSession> desktop entries to launch the window
+manager.  To avoid hard-coding too much information in the program
+binary executable, additional fields of the C<XSession> F<.desktop> file
+are used to control B<xde-wmproxy>.
+
+=over
+
+=item B<[Desktop Entry]>
+
+B<xde-wmproxy> looks for the following additional key fields in the
+desktop entry section:
+
+=over
+
+=item B<DesktopNames>=I<STRING>
+
+=item B<X-GNOME-DesktopNames>=I<STRING>
+
+The desktop environment to set in the B<$XDG_CURRENT_DESKTOP>
+environment variable and to use for autostart and application launching
+when examining C<OnlyShowIn> and C<NotShowIn> key-value pairs in desktop
+entry files.
+
+=item B<SessionManage>=I<BOOLEAN>
+
+=item B<SessionManageProxy>=I<BOOLEAN>
+
+=item B<SessionManageDockApps>=I<BOOLEAN>
+
+=item B<SessionManageSysTray>=I<BOOLEAN>
+
+=item B<AutoStart>=I<BOOLEAN>
+
+=item B<StartupNotificationAssist>=I<BOOLEAN>
+
+=item B<XSettings>=I<BOOLEAN>
+
+=item B<XInput>=I<BOOLEAN>
+
+=back
+
+=item B<[Window Manager]>
+
+B<xde-wmproxy> looks for the following additional key fields in the
+window manager section:
+
+=over
+
+=item B<Name>=I<STRING>
+
+=item B<SessionManaged>=I<BOOLEAN>
+
+=item B<StartupNotification>=I<BOOLEAN>
+
+=item B<X-XDE-Managed>=I<BOOLEAN>
+
+=back
+
+=back
 
 =head1 BUGS
 
