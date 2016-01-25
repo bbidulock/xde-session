@@ -47,9 +47,13 @@ L<xdm(1)> work-alike as a chooser.  See L</USAGE> for more information.
 
 =head2 COMMAND OPTIONS
 
+Command options affect the major operating mode of the program.  Only
+one command option may be specified (with the exception that B<--help>
+can be specified in conjunction with any other command option).
 When no command option is specified, B<xde-xchooser> executes the program.
 The following command options, when specified, print information instead
 of running the program.
+The command options recognized by the program are as follows:
 
 =over 4
 
@@ -302,6 +306,8 @@ L<XOpenDisplay(1x)> failed, retry.
 
 =back
 
+=head1 USAGE
+
 =head1 X RESOURCES
 
 Most values that affect the look and feel of B<xde-xchooser> may also be
@@ -315,7 +321,7 @@ specified resources.
 Note that L<xdm(1)> usually adds the resources contained in the
 F</etc/X11/xdm/Xresources> file that is loaded by L<xdm(1)> on startup
 to the resource database on the X server.  Chooser resource defaults
-(see also L<xdm(1)> and L<xde-xlogin(1)>) are contained in the
+(see also L<xdm(1)> and L<xde-xchooser(1)>) are contained in the
 F</usr/share/X11/app-defaults/Chooser> file.  Likewise, B<xde-xchooser>
 specific resource defaults are contained in the
 F</usr/share/X11/app-defaults/XDE-XChooser> file, in accordance with the
@@ -430,7 +436,7 @@ Provides a vendor identifier as a menu prefix (C<XDG_MENU_PREFIX>)
 instead of as a plain identifier.  The prefix normally has a dash (C<->)
 appended.
 
-=item B<xde-xchooser>.B<login.permit>: {B<true>|B<false>}
+=item B<xde-xchooser>.B<login>.B<permit>: {B<true>|B<false>}
 
 The XDMCP Chooser has control of an X Display in the same manner as the
 XDMCP Greeter program and may provide an immediate login option in
@@ -438,7 +444,7 @@ addition to a list of XDMCP hosts.  When I<true>, this option specifies
 that this login is to be presented as an option to users of the XDMCP
 Chooser.
 
-=item B<xde-xchooser>.B<login.remote>: {B<true>|B<false>}
+=item B<xde-xchooser>.B<login>.B<remote>: {B<true>|B<false>}
 
 The XDMCP Chooser may provide a direct login option to the user of the
 chooser.  When I<true>, this option specifies that remote displays will
@@ -456,13 +462,77 @@ Specifies the value of the B<-xsession> option.
 
 Specifies the value of the B<-default> option.
 
-=item B<xde-xchooser>.B<xsession.setbg>: {B<true>|B<false>}
+=item B<xde-xchooser>.B<setbg>: {B<true>|B<false>}
 
 Specifies the value of the B<-nosetbg> option.
 
-=item B<xde-xchooser>.B<xsession.transparent>: {B<true>|B<false>}
+=item B<xde-xchooser>.B<transparent>: {B<true>|B<false>}
 
 Specifies the value of the B<-transparent> option.
+
+=item B<xde-xchooser>.B<face>: I<XFTFONT>
+
+The typeface used to display the input typed by the user.
+The default is C<Sans:size=12:bold>.
+If this resource is not specified, the
+B<xlogin>.B<Login.face>
+resource is used instead.
+
+=item B<xde-xchooser>.B<greetFace>
+
+The default is C<Sans:size=12:bold>.
+If this resource is not specified, the
+B<xlogin>.B<Login.greetFace>
+resource is used instead.
+
+=item B<xde-xchooser>.B<greetColor>
+
+The default is C<grey20>.
+If this resource is not specified, the
+B<xlogin>.B<Login.greetColor>
+resource is used instead.
+
+=item B<xde-xchooser>.B<promptFace>
+
+The default is C<Sans:size=12:bold>.
+If this resource is not specified, the
+B<xlogin>.B<Login.promptFace>
+resource is used instead.
+
+=item B<xde-xchooser>.B<promptColor>
+
+The default is C<grey20>.
+If this resource is not specified, the
+B<xlogin>.B<Login.promptColor>
+resource is used instead.
+
+=item B<xde-xchooser>.B<inputFace>
+
+The default is C<Sans:size=12:bold>.
+If this resource is not specified, the
+B<xlogin>.B<Login.inputFace>
+resource is used instead.
+
+=item B<xde-xchooser>.B<inputColor>
+
+The default is C<grey20>.
+If this resource is not specified, the
+B<xlogin>.B<Login.inputColor>
+resource is used instead.
+
+=item B<xde-xchooser>.B<failFace>
+
+The default is C<Sans:size=12:bold>.
+If this resource is not specified, the
+B<xlogin>.B<Login.failFace>
+resource is used instead.
+
+=item B<xde-xchooser>.B<failColor>
+
+The default is C<red>.
+If this resource is not specified, the
+B<xlogin>.B<Login.failColor>
+resource is used instead.
 
 
 =back
@@ -635,7 +705,7 @@ The default is supplied by the PAM subsystem.
 =item B<xlogin>.B<Login.failFace>: I<XFTFONT>
 
 The face used to display the failure message when built with Xft
-suppport.  The L<xdm(1)> default is C<Serif-18:bold>.
+support.  The L<xdm(1)> default is C<Serif-18:bold>.
 The default is C<Sans:size=12:bold>.
 
 =item B<xlogin>.B<Login.failFont>: I<XFONT>
@@ -786,6 +856,8 @@ F</usr/bin/xde-xchooser>.  See L<xdm(1)/AUTHENTICATION WIDGET>.
 
 =head1 FILES
 
+The following files are used by the program:
+
 =over 4
 
 =item F</usr/lib/X11/xdm/xde-xchooser>
@@ -825,7 +897,38 @@ or greeter program.
 
 =back
 
-=head1 USAGE
+=head1 ENVIRONMENT
+
+The following environment variables are considered by the program:
+
+=over 4
+
+=item B<XDG_VENDOR_ID>
+
+When specified in the environment, the program will use the value of
+this environment variable to form the default names of the B<--banner>
+and B<--splash> files by prefixing it and a dash (C<->) to the default
+banner or splash name.  This environment variable will be used in
+preference to B<XDG_MENU_PREFIX> but can be overridden with the
+B<--vendor> option.
+
+=item B<XDG_MENU_PREFIX>
+
+When specified in the environment, and neither the B<XDG_VENDOR_ID>
+environment variable nor the B<--vendor> option are specified, the
+program will use the value of this environment variable to form the
+default names of the B<--banner> and B<--splash> files by prefixing it
+to the default banner or splash name.  This environment variable will be
+overridden by either of the B<XDG_VENDOR_ID> environment variable or
+B<--vendor> option.
+
+=item B<XDG_DATA_DIRS>
+
+When specified, specifies the path of XDG data directories that will be
+searched for banner or splash files.  When unspecified, defaults to
+F</usr/local/share:/usr/share> in accordance with XDG specifications.
+
+=back
 
 =head1 BUGS
 

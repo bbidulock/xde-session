@@ -28,9 +28,13 @@ L<xdm(1)> work-alike as a chooser.  See L</USAGE> for more information.
 
 =head2 COMMAND OPTIONS
 
+Command options affect the major operating mode of the program.  Only
+one command option may be specified (with the exception that B<--help>
+can be specified in conjunction with any other command option).
 When no command option is specified, B<xde-xlogin> executes the program.
 The following command options, when specified, print information instead
 of running the program.
+The command options recognized by the program are as follows:
 
 =over 4
 
@@ -50,6 +54,8 @@ Instead of operating normally, the program prints detailed copying
 permissions and exits.
 
 =back
+
+=head2 XDM OPTIONS
 
 
 =head2 GENERAL OPTIONS
@@ -228,6 +234,8 @@ L<XOpenDisplay(1x)> failed, retry.
 
 =back
 
+=head1 USAGE
+
 =head1 X RESOURCES
 
 Most values that affect the look and feel of B<xde-xlogin> may also be
@@ -356,7 +364,7 @@ Provides a vendor identifier as a menu prefix (C<XDG_MENU_PREFIX>)
 instead of as a plain identifier.  The prefix normally has a dash (C<->)
 appended.
 
-=item B<xde-xlogin>.B<login>*B<permit>: {B<true>|B<false>}
+=item B<xde-xlogin>.B<login>.B<permit>: {B<true>|B<false>}
 
 The XDMCP Chooser has control of an X Display in the same manner as the
 XDMCP Greeter program and may provide an immediate login option in
@@ -364,7 +372,7 @@ addition to a list of XDMCP hosts.  When I<true>, this option specifies
 that this login is to be presented as an option to users of the XDMCP
 Chooser.
 
-=item B<xde-xlogin>.B<login>*B<remote>: {B<true>|B<false>}
+=item B<xde-xlogin>.B<login>.B<remote>: {B<true>|B<false>}
 
 The XDMCP Chooser may provide a direct login option to the user of the
 chooser.  When I<true>, this option specifies that remote displays will
@@ -598,7 +606,7 @@ The default is supplied by the PAM subsystem.
 =item B<xlogin>.B<Login.failFace>: I<XFTFONT>
 
 The face used to display the failure message when built with Xft
-suppport.  The L<xdm(1)> default is C<Serif-18:bold>.
+support.  The L<xdm(1)> default is C<Serif-18:bold>.
 The default is C<Sans:size=12:bold>.
 
 =item B<xlogin>.B<Login.failFont>: I<XFONT>
@@ -749,6 +757,8 @@ F</usr/lib/X11/xdm/xde-xlogin>.  See L<xdm(1)/AUTHENTICATION WIDGET>.
 
 =head1 FILES
 
+The following files are used by the program:
+
 =over 4
 
 =item F</usr/lib/X11/xdm/xde-xlogin>
@@ -788,7 +798,38 @@ or greeter program.
 
 =back
 
-=head1 USAGE
+=head1 ENVIRONMENT
+
+The following environment variables are considered by the program:
+
+=over 4
+
+=item B<XDG_VENDOR_ID>
+
+When specified in the environment, the program will use the value of
+this environment variable to form the default names of the B<--banner>
+and B<--splash> files by prefixing it and a dash (C<->) to the default
+banner or splash name.  This environment variable will be used in
+preference to B<XDG_MENU_PREFIX> but can be overridden with the
+B<--vendor> option.
+
+=item B<XDG_MENU_PREFIX>
+
+When specified in the environment, and neither the B<XDG_VENDOR_ID>
+environment variable nor the B<--vendor> option are specified, the
+program will use the value of this environment variable to form the
+default names of the B<--banner> and B<--splash> files by prefixing it
+to the default banner or splash name.  This environment variable will be
+overridden by either of the B<XDG_VENDOR_ID> environment variable or
+B<--vendor> option.
+
+=item B<XDG_DATA_DIRS>
+
+When specified, specifies the path of XDG data directories that will be
+searched for banner or splash files.  When unspecified, defaults to
+F</usr/local/share:/usr/share> in accordance with XDG specifications.
+
+=back
 
 =head1 BUGS
 
