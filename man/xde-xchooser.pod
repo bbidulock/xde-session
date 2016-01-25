@@ -145,104 +145,109 @@ The following are the more general options:
 
 =over 4
 
-=item B<-welcome> I<MARKUP>
+=item B<-w>, B<--welcome> I<MARKUP>
 
-Specifies the pango markup text that is to be displayed in the title
-area of the host menu.  As with the B<-banner> option, this option can
-easily be supplied by a shell script between L<xdm(1)> and
-B<xde-xchooser> that adds the options:
+Specifies the F<pango> markup text that is to be displayed in the title
+area of the panel.
+When unspecified, the default welcome text is C<Welcome to %s!>, where C<%s>
+is the fully qualified domain name of the local host.
+
+As with the B<-banner> option, this option can easily be supplied by a
+shell script between L<xdm(1)> and B<xde-xchooser> that adds the
+options:
 
  #!/bin/sh
  /usr/bin/xde-xchooser -welcome "Welcome to X!" \
          -banner /usr/lib/X11/xdm/banner.png $@
 
-When unspecified, the default welcome text is C<Welcome to %s!>, where C<%s>
-is the fully qualified domain name of the local host.
+=item B<-b>, B<--banner> I<BANNER>
 
-=item B<-banner> I<PNGFILE>
-
-Specifies the banner graphic to display in the left pane of the host
-menu.  L<xdm(1)> does not provide this option, but it can easily be
+Specifies the banner graphic to display in the left pane of the panel.
+L<xdm(1)> does not provide this option, but it can easily be
 invoked by a shell script invoked by L<xdm(1)> that adds the options.
 For example:
 
  #!/bin/sh
  /usr/bin/xde-xchooser -banner /usr/lib/X11/xdm/xde/banner.png $@
 
-When unspecified, the program searches for an image file named
-F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the subdirectory
-F<images> in XDG data directories.
+The default is obtained by looking for the file
+F<${XDG_MENU_PREFIX}banner.{xpm,png,jpg,svg}> in the F<images>
+subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
+L</ENVIRONMENT>.
 
-=item B<-splash> I<JPGFILE>
+=item B<-S>, B<--splash> I<SPLASH>
 
-Specifies the graphic to use as the root window background for the
-greeter and chooser.  L<xdm(1)> does not provide this option, but it can easily be
+Specifies the background image, I<SPLASH>, to display on the screen.
+The default is to use the background image currently installed on the
+screen, and if no background image is installed on the screen, to search
+for the background image file in the file named
+F<${XDG_MENU_PREFIX}splash.{xpm,png,jpg,svg}> in the F<images>
+subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
+L</ENVIRONMENT>.
+
+L<xdm(1)> does not provide this option, but it can easily be
 invoked by a shell script by L<xdm(1)> that adds the options.  For
 example:
 
  #!/bin/sh
  /usr/bin/xde-xchooser -splash /usr/lib/X11/xdm/xde/splash.jpg $@
 
-When unspecified, the program searches for an image file named
-F<${XDG_VENDOR_ID:--}splash.{xpm,png,jpg,svg}> in the subdirectory
-F<images> in XDG data directories.
-
-=item B<-side> {B<top>|B<left>|B<bottom>|B<right>}
+=item B<-s>, B<--side> {B<left>|B<top>|B<right>|B<bottom>}
 
 Specifies the side on which to display branding (the banner graphic).
 Can be one of I<top>, I<left>, I<bottom> or I<right>.  When unspecified,
 the default is I<left>.
 
-=item B<-charset> I<CHARSET>
+=item B<--charset> I<CHARSET>
 
 Specifies the character set to use.  When unspecified, the character
 set is determined using the current locale: see L<locale(7)>.
 
-=item B<-language> I<LANGUAGE>
+=item B<--language> I<LANGUAGE>
 
 Specifies the language to use.  When unspecified, the language is
 determined using the current locale: see L<locale(7)>.
 
-=item B<-icons> I<ICON-THEME>
+=item B<-i>, B<--icons> I<ICON-THEME>
 
 Specifies the GTK+ icon theme to use.  When unspecified, the icon theme
 is automatically determined using desktop and toolkit files.
 
-=item B<-theme> I<GTK2-THEME>
+=item B<-T>, B<--theme> I<GTK2-THEME>
 
 Specifies the GTK+ theme name to use.  When unspecified, the GTK2 theme
 is automatically determined using desktop and toolkit files.
 
-=item B<-xde-theme>
+=item B<-u>, B<--xde-theme>
 
 Specifies that the GTK+ icon theme and theme name to be used are those
 of the X Desktop Environment (XDE) rather than the system default theme.
 The default is to specify this flag.
 
-=item B<-vendor> I<VENDOR>
+=item B<--vendor> I<VENDOR>
 
 Specifies the vendor identifier for branding.  The default, when
 unspecified, is to used the value of environment variables
 B<XDG_VENDOR_ID> and B<XDG_MENU_PREFIX> to determine the vendor name and
 prefix.
 
-=item B<-xsessions>
+=item B<-X>, B<--xsessions>
 
 Specifies that available X sessions (window managers) should be provided
 as a menu on the login window.  This allows a user to select an
 available session before logging in.
 
-=item B<-default> I<DEFAULT>
+=item B<--default> I<DEFAULT>
 
 Specifies the default X session (window manager) name that should be
 used when no X session is selected by the user.  This default is fed as
 an argument to F<~/.xinitrc>.
 
-=item B<-username> I<USERNAME>
+=item B<--username> I<USERNAME>
 
 Specifies the default user name for login.
 
-=item B<-nosetbg>
+=item B<--nosetbg>
 
 Specifies that the background image should not be set by the program.
 The default behaviour is to set the background in accordance with the
@@ -369,29 +374,29 @@ as the B<-splash> command line option.
 =item B<xde-xchooser>.B<welcome>: I<MARKUP>
 
 Provides the welcome message to use for the root window in the same
-fashion as the B<-welcome> command line option.  Specifies the F<pango>
+fashion as the B<--welcome> command line option.  Specifies the F<pango>
 markup text, I<MARKUP>, that is to be display in the title area of the
 host menu.
 
 =item B<xde-xchooser>.B<charset>: I<CHARSET>
 
-Provides the character set in the same fashion as the B<-charset>
+Provides the character set in the same fashion as the B<--charset>
 command line option.
 
 =item B<xde-xchooser>.B<language>: I<LANG>
 
-Provides the language in the same fashion as the B<-language> command
+Provides the language in the same fashion as the B<--language> command
 line option.
 
 =item B<xde-xchooser>.B<theme.icon>: I<NAME>
 
 Provides the XDG icon theme name.
-Specifies the value of the B<-icons> option.
+Specifies the value of the B<--icons> option.
 
 =item B<xde-xchooser>.B<theme.name>: I<NAME>
 
 Provides the XDG theme name (for GTK+).
-Specifies the value of the B<-theme> option.
+Specifies the value of the B<--theme> option.
 
 =item B<xde-xchooser>.B<theme.cursor>: I<NAME>
 
@@ -401,7 +406,7 @@ Provides the XDG cursor theme name.
 
 When I<true>, specifies that the system XDE desktop theme should be used
 instead of the system GTK+ theme.
-Specifies the value of the B<-xde-theme> option.
+Specifies the value of the B<--xde-theme> option.
 
 =item B<xde-xchooser>.B<side>: {B<left>|B<right>|B<top>|B<bottom>}
 
@@ -414,7 +419,7 @@ Specifies the value of the B<-side> option.
 Specifies a default use name to use for the login (when a login is
 provided).  Note that a default user name will not be presented when it
 can be detected that the display is remote from the current host.
-Specifies the value of the B<-username> option.
+Specifies the value of the B<--username> option.
 
 =item B<xde-xchooser>.B<autologin>: {B<true>|B<false>}
 
@@ -428,7 +433,7 @@ current host.
 =item B<xde-xchooser>.B<vendor>: I<VENDOR-ID>
 
 Provides a vendor identifier for use in lookup up banners and
-backgrounds automatically, as with the B<-vendor> command line option.
+backgrounds automatically, as with the B<--vendor> command line option.
 
 =item B<xde-xchooser>.B<prefix>: I<MENU-PREFIX>
 
@@ -454,17 +459,17 @@ direct login.
 
 =item B<xde-xchooser>.B<xsession.chooser>: {B<true>|B<false>}
 
-Specifies the value of the B<-xsession> option.
+Specifies the value of the B<--xsessions> option.
 
 =item B<xde-xchooser>.B<xsession.execute>: {B<true>|B<false>}
 
 =item B<xde-xchooser>.B<xsession.default>: I<APPID>
 
-Specifies the value of the B<-default> option.
+Specifies the value of the B<--default> option.
 
 =item B<xde-xchooser>.B<setbg>: {B<true>|B<false>}
 
-Specifies the value of the B<-nosetbg> option.
+Specifies the value of the B<--nosetbg> option.
 
 =item B<xde-xchooser>.B<transparent>: {B<true>|B<false>}
 
@@ -617,7 +622,7 @@ This resource not used by B<xde-xchooser>.
 
 A string that identifies this window.  The L<xdm(1)> default is C<X
 Window System>.
-The default is the value specified by command line option B<-welcome>,
+The default is the value specified by command line option B<--welcome>,
 or C<Welcome to CLIENTHOST>.
 
 =item B<xlogin>.B<Login.unsecureGreeting>: I<STRING>
