@@ -801,38 +801,27 @@ setup_systemd(void)
 	dbus_g_proxy_connect_signal(sd_session, "Unlock",
 				    G_CALLBACK(on_session_unlock), NULL, NULL);
 
-	if (!(sd_prox_manager = g_dbus_proxy_new_for_bus_sync(
-					G_BUS_TYPE_SYSTEM,
-					0,
-					NULL,
-					"org.freedesktop.login1",
-					"/org/freedesktop/login1",
-					"org.freedesktop.login1.Manager",
-					NULL,
-					&err)) || err) {
+	if (!(sd_prox_manager =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
+					    "/org/freedesktop/login1",
+					    "org.freedesktop.login1.Manager", NULL, &err)) || err) {
 		EPRINTF("could not create DBUS proxy: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
 	g_signal_connect(G_OBJECT(sd_prox_manager), "g-signal",
-			G_CALLBACK(on_sd_prox_manager_signal), NULL);
-	if (!(sd_prox_session = g_dbus_proxy_new_for_bus_sync(
-					G_BUS_TYPE_SYSTEM,
-					0,
-					NULL,
-					"org.freedesktop.login1",
-					s,
-					"org.freedesktop.login1.Session",
-					NULL,
-					&err)) || err) {
+			 G_CALLBACK(on_sd_prox_manager_signal), NULL);
+	if (!(sd_prox_session =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
+					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
 		EPRINTF("could not create DBUS proxy: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
 	g_signal_connect(G_OBJECT(sd_prox_session), "g-signal",
-			G_CALLBACK(on_sd_prox_session_signal), NULL);
+			 G_CALLBACK(on_sd_prox_session_signal), NULL);
 	g_signal_connect(G_OBJECT(sd_prox_session), "g-properties-changed",
-			G_CALLBACK(on_sd_prox_session_props_changed), NULL);
+			 G_CALLBACK(on_sd_prox_session_props_changed), NULL);
 	g_free(s);
 }
 
@@ -841,7 +830,19 @@ setidlehint(gboolean flag)
 {
 	GError *err = NULL;
 	gboolean ok;
+	GVariant *result;
 
+	if (!sd_prox_session) {
+		EPRINTF("No session proxy!\n");
+		return;
+	}
+	if (!(result =
+	      g_dbus_proxy_call_sync(sd_prox_session, "SetIdleHint", g_variant_new("(b)", flag),
+				     G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err)) || err) {
+		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+			err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 	if (!sd_session) {
 		EPRINTF("No session proxy!\n");
 		return;
