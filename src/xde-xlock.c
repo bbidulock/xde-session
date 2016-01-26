@@ -706,52 +706,60 @@ on_sd_prox_session_signal(GDBusProxy *proxy,
 }
 
 void
-on_sd_prox_session_props_changed(GDBusProxy *proxy,
-		GVariant *changed_properties,
-		GStrv invalidated_properties,
-		gpointer user_data)
+on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties,
+				 GStrv invalidated_properties, gpointer user_data)
 {
 	GVariantIter iter;
-	GVariant *child;
+	GVariant *prop;
 
 	DPRINTF("received session proxy properties changed signal ( %s )\n",
-			g_variant_get_type_string(changed_properties));
+		g_variant_get_type_string(changed_properties));
 
 	g_variant_iter_init(&iter, changed_properties);
-	while ((child = g_variant_iter_next_value(&iter))) {
-		const gchar *type = g_variant_get_type_string(child);
-
-		DPRINTF("signal child: %s\n", type);
-		if (g_variant_is_container(child)) {
+	while ((prop = g_variant_iter_next_value(&iter))) {
+		if (g_variant_is_container(prop)) {
 			GVariantIter iter2;
-			GVariant *child2;
+			GVariant *key;
+			GVariant *val;
+			GVariant *boxed;
+			const gchar *name;
 
-			g_variant_iter_init(&iter2, child);
-			while ((child2 = g_variant_iter_next_value(&iter2))) {
-				const gchar *type2 = g_variant_get_type_string(child2);
-
-				DPRINTF("signal child: %s child: %s\n", type, type2);
-				if (g_variant_is_of_type(child2, G_VARIANT_TYPE_STRING)) {
-					DPRINTF("signal child: %s child: %s %s\n", type, type2,
-							g_variant_get_string(child2,
-								NULL));
-				} else if (g_variant_is_of_type(child2, G_VARIANT_TYPE_BOOLEAN)) {
-					DPRINTF("signal child: %s child: %s %s\n", type, type2,
-							g_variant_get_boolean(child2) ? "true" : "false");
-				} else if (g_variant_is_of_type(child2, G_VARIANT_TYPE_VARIANT)) {
-					GVariant *boxed;
-
-					boxed = g_variant_get_variant(child2);
-					if (g_variant_is_of_type(boxed, G_VARIANT_TYPE_BOOLEAN)) {
-						DPRINTF("signal child: %s child: %s [%s]\n", type, type2,
-								g_variant_get_boolean(boxed) ? "true" : "false");
-					}
-					g_variant_unref(boxed);
-				}
-				g_variant_unref(child2);
+			g_variant_iter_init(&iter2, prop);
+			if (!(key = g_variant_iter_next_value(&iter2))) {
+				EPRINTF("no key!\n");
+				continue;
 			}
+			if (!(name = g_variant_get_string(key, NULL))) {
+				EPRINTF("no name!\n");
+				g_variant_unref(key);
+				continue;
+			}
+			if (strcmp(name, "Active")) {
+				DPRINTF("not looking for %s\n", name);
+				g_variant_unref(key);
+				continue;
+			}
+			if (!(val = g_variant_iter_next_value(&iter2))) {
+				EPRINTF("no val!\n");
+				g_variant_unref(key);
+				continue;
+			}
+			if (!(boxed = g_variant_get_variant(val))) {
+				EPRINTF("no value!\n");
+				g_variant_unref(key);
+				g_variant_unref(val);
+				continue;
+			}
+			if (!g_variant_get_boolean(boxed)) {
+				DPRINTF("went inactive, locking screen\n");
+				LockScreen();
+			}
+			g_variant_unref(key);
+			g_variant_unref(val);
+			g_variant_unref(boxed);
+			break;
 		}
-		g_variant_unref(child);
+		g_variant_unref(prop);
 	}
 }
 

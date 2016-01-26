@@ -76,6 +76,7 @@
 -Tgboolean
 -Tgchar
 -TGClosure
+-TGDBusProxy
 -TGdkDisplay
 -TGdkEvent
 -TGdkManager
@@ -99,6 +100,7 @@
 -Tgpointer
 -Tgroupview_t
 -Tgsize
+-TGStrv
 -TGtkAllocation
 -TGtkBox
 -TGtkButton
@@ -123,6 +125,9 @@
 -TGtkTreeViewColumn
 -TGtkWidget
 -TGtkWindow
+-TGVariant
+-TGVariantIter
+-TGVariantType
 -Tgwatch_fp_t
 -Thash_fp_t
 -Thash_tab_t
