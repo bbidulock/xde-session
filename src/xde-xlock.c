@@ -108,7 +108,12 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
+#define USE_GDBUS
+
+#ifndef USE_GDBUS
 #include <dbus/dbus-glib.h>
+#endif
+
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
@@ -151,8 +156,6 @@
 
 static int saveArgc;
 static char **saveArgv;
-
-#define USE_GDBUS
 
 #undef DO_XCHOOSER
 #define DO_XLOCKING 1
@@ -647,43 +650,10 @@ GDBusProxy *sd_prox_session = NULL;
 static void LockScreen(void);
 static void UnlockScreen(void);
 
+#ifdef USE_GDBUS
 void
-on_prepare_for_shutdown(DBusGProxy *proxy, gboolean flag, gpointer data)
-{
-	DPRINT();
-	if (flag)
-		UnlockScreen();
-}
-
-void
-on_prepare_for_sleep(DBusGProxy *proxy, gboolean flag, gpointer data)
-{
-	DPRINT();
-	if (flag)
-		LockScreen();
-}
-
-void
-on_session_lock(DBusGProxy *proxy, gpointer data)
-{
-	DPRINT();
-	LockScreen();
-}
-
-
-void
-on_session_unlock(DBusGProxy *proxy, gpointer data)
-{
-	DPRINT();
-	UnlockScreen();
-}
-
-void
-on_sd_prox_manager_signal(GDBusProxy *proxy,
-		gchar *sender_name,
-		gchar *signal_name,
-		GVariant *parameters,
-		gpointer user_data)
+on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
+			  GVariant *parameters, gpointer user_data)
 {
 	DPRINTF("received manager proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
@@ -694,11 +664,8 @@ on_sd_prox_manager_signal(GDBusProxy *proxy,
 }
 
 void
-on_sd_prox_session_signal(GDBusProxy *proxy,
-		gchar *sender_name,
-		gchar *signal_name,
-		GVariant *parameters,
-		gpointer user_data)
+on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
+			  GVariant *parameters, gpointer user_data)
 {
 	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
@@ -766,6 +733,38 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 		g_variant_unref(prop);
 	}
 }
+#else
+void
+on_prepare_for_shutdown(DBusGProxy *proxy, gboolean flag, gpointer data)
+{
+	DPRINT();
+	if (flag)
+		UnlockScreen();
+}
+
+void
+on_prepare_for_sleep(DBusGProxy *proxy, gboolean flag, gpointer data)
+{
+	DPRINT();
+	if (flag)
+		LockScreen();
+}
+
+void
+on_session_lock(DBusGProxy *proxy, gpointer data)
+{
+	DPRINT();
+	LockScreen();
+}
+
+
+void
+on_session_unlock(DBusGProxy *proxy, gpointer data)
+{
+	DPRINT();
+	UnlockScreen();
+}
+#endif
 
 void
 setup_systemd(void)
