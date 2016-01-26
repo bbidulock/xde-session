@@ -5338,9 +5338,24 @@ do_lock(int argc, char *argv[])
 	char selection[32] = { 0, };
 	Bool found = False;
 
-#if 0
+#if 1
 	/* unfortunately, these are privileged */
 	setup_systemd();
+#ifdef USE_GDBUS
+	if (sd_prox_session) {
+		GError *err = NULL;
+		GVariant *result;
+
+		result = g_dbus_proxy_call_sync(sd_prox_session, "Lock",
+				NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+		if (!result || err) {
+			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+				err ? err->message : NULL);
+			g_clear_error(&err);
+		} else
+			g_variant_unref(result);
+	}
+#else
 	if (sd_session) {
 		GError *err = NULL;
 		gboolean ok;
@@ -5352,6 +5367,7 @@ do_lock(int argc, char *argv[])
 			g_clear_error(&err);
 		}
 	}
+#endif
 #endif
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
@@ -5417,9 +5433,24 @@ do_unlock(int argc, char *argv[])
 	char selection[32] = { 0, };
 	Bool found = False;
 
-#if 0
+#if 1
 	/* unfortunately, these are privileged */
 	setup_systemd();
+#ifdef USE_GDBUS
+	if (sd_prox_session) {
+		GError *err = NULL;
+		GVariant *result;
+
+		result = g_dbus_proxy_call_sync(sd_prox_session, "Unlock",
+				NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+		if (!result || err) {
+			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+				err ? err->message : NULL);
+			g_clear_error(&err);
+		} else
+			g_variant_unref(result);
+	}
+#else
 	if (sd_session) {
 		GError *err = NULL;
 		gboolean ok;
@@ -5431,6 +5462,7 @@ do_unlock(int argc, char *argv[])
 			g_clear_error(&err);
 		}
 	}
+#endif
 #endif
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
