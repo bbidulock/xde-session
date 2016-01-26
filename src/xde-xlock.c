@@ -638,17 +638,21 @@ setup_screensaver(void)
 	}
 }
 
-#ifndef USE_GDBUS
+#endif /* DO_XLOCKING */
+
+#ifdef USE_GDBUS
+GDBusProxy *sd_prox_manager = NULL;
+GDBusProxy *sd_prox_session = NULL;
+#else
 DBusGProxy *sd_manager = NULL;
 DBusGProxy *sd_session = NULL;
 DBusGProxy *sd_seprops = NULL;
 #endif
 
-GDBusProxy *sd_prox_manager = NULL;
-GDBusProxy *sd_prox_session = NULL;
-
+#ifdef DO_XLOCKING
 static void LockScreen(void);
 static void UnlockScreen(void);
+#endif
 
 #ifdef USE_GDBUS
 void
@@ -669,11 +673,13 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 {
 	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
+#ifdef DO_XLOCKING
 	if (!strcmp(signal_name, "Lock")) {
 		LockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
 		UnlockScreen();
 	}
+#endif
 }
 
 void
@@ -722,8 +728,10 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 				continue;
 			}
 			if (!g_variant_get_boolean(boxed)) {
+#ifdef DO_XLOCKING
 				DPRINTF("went inactive, locking screen\n");
 				LockScreen();
+#endif
 			}
 			g_variant_unref(key);
 			g_variant_unref(val);
@@ -738,23 +746,29 @@ void
 on_prepare_for_shutdown(DBusGProxy *proxy, gboolean flag, gpointer data)
 {
 	DPRINT();
+#ifdef DO_XLOCKING
 	if (flag)
 		UnlockScreen();
+#endif
 }
 
 void
 on_prepare_for_sleep(DBusGProxy *proxy, gboolean flag, gpointer data)
 {
 	DPRINT();
+#ifdef DO_XLOCKING
 	if (flag)
 		LockScreen();
+#endif
 }
 
 void
 on_session_lock(DBusGProxy *proxy, gpointer data)
 {
 	DPRINT();
+#ifdef DO_XLOCKING
 	LockScreen();
+#endif
 }
 
 
@@ -762,7 +776,9 @@ void
 on_session_unlock(DBusGProxy *proxy, gpointer data)
 {
 	DPRINT();
+#ifdef DO_XLOCKING
 	UnlockScreen();
+#endif
 }
 #endif
 
@@ -834,6 +850,8 @@ setup_systemd(void)
 	g_free(s);
 #endif
 }
+
+#ifdef DO_XLOCKING
 
 void
 setidlehint(gboolean flag)
@@ -1011,9 +1029,6 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
-static void UnlockScreen(void);
-static void LockScreen(void);
-
 static GdkFilterReturn
 event_handler_ClientMessage(Display *dpy, XEvent *xev)
 {
@@ -1052,6 +1067,7 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 		reparse(dpy, xev->xclient.window);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
+#ifdef DO_XLOCKING
 	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
 		switch (xev->xclient.data.l[0]) {
 		case LockCommandLock:
@@ -1066,6 +1082,7 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 			break;
 		}
 	}
+#endif
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
@@ -1914,9 +1931,21 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 		DPRINTF("wrong connection type\n");
 		return False;
 	}
-	if (getnameinfo(sa, salen, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
-		DPRINTF("getnameinfo: %s\n", strerror(errno));
-		return False;
+	/* We really do not want to do this for IPv4LL addresses, beause they
+	 * can take 5 seconds to fail on reverse DNS lookups. */
+	if (scope == SocketScopeLinklocal) {
+		struct servent *serv;
+
+		strncpy(remotename, ipaddr, NI_MAXHOST);
+		if ((serv = getservbyport(port, "udp")))
+			strncpy(service, serv->s_name, NIMAXSERV);
+	} else {
+		DPRINTF("beg calling getnameinfo ...\n");
+		if (getnameinfo(sa, salen, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
+			DPRINTF("getnameinfo: %s\n", strerror(errno));
+			return False;
+		}
+		DPRINTF("... calling getnameinfo end\n");
 	}
 
 	GtkTreeIter iter;
@@ -2264,9 +2293,11 @@ PingHosts(gpointer data)
 				   (XdmcpNetaddr) &ha->addr, ha->addrlen);
 		}
 	}
-	if (++pingTry < PING_TRIES)
+	if (++pingTry < PING_TRIES) {
+		DPRINTF("adding timer\n");
 		pingid = g_timeout_add_seconds(PING_INTERVAL, PingHosts, (gpointer) NULL);
-	return TRUE;
+	}
+	return G_SOURCE_REMOVE;
 }
 
 gint srce4, srce6;
@@ -5179,6 +5210,7 @@ authenticate(void)
 	const char *uname = NULL;
 	int status = 0;
 
+	DPRINTF("starting PAM\n");
 	pam_start("system-login", NULL, &xde_pam_conv, &pamh);
 	if (options.username) {
 		pam_set_item(pamh, PAM_USER, options.username);
@@ -5226,6 +5258,7 @@ authenticate(void)
 			break;
 	}
       done:
+	DPRINTF("closing PAM\n");
 	pam_end(pamh, status);
 	return (status);
 }
@@ -5277,9 +5310,7 @@ do_run(int argc, char *argv[])
 	int status;
 
 	startup(argc, argv);
-#ifdef DO_XLOCKING
 	setup_systemd();
-#endif
 	top = GetWindow(True);
 #ifdef DO_XLOCKING
 	setup_screensaver();
@@ -5287,16 +5318,24 @@ do_run(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	InitXDMCP(argv, argc);
 #endif
+#ifdef DO_XLOCKING
 	if (options.command != CommandLock)
 		UnlockScreen();
+#endif
 	for (;;) {
+#ifdef DO_XLOCKING
 		DPRINT();
 		ShowWindow();
+#endif
 		DPRINT();
 		status = authenticate();
 		DPRINT();
 		if (login_result == LoginResultLogout) {
+#ifdef DO_XLOCKING
 			RelockScreen();
+#else
+			exit(EXIT_FAILURE);
+#endif
 			continue;
 		}
 		DPRINT();
@@ -5307,11 +5346,19 @@ do_run(int argc, char *argv[])
 		case PAM_MAXTRIES:
 		default:
 			DPRINT();
+#ifdef DO_XLOCKING
 			RelockScreen();
+#else
+			exit(EXIT_FAILURE);
+#endif
 			continue;
 		case PAM_SUCCESS:
 			DPRINT();
+#ifdef DO_XLOCKING
 			UnlockScreen();
+#else
+			exit(EXIT_SUCCESS);
+#endif
 			continue;
 		}
 		break;
@@ -5896,13 +5943,13 @@ get_resources(int argc, char *argv[])
 	XrmInitialize();
 	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
 	rdb = XrmGetStringDatabase((char *) xtp.value);
+	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	XFree(xtp.value);
 	if (!rdb) {
 		DPRINTF("no resource manager database allocated\n");
 		XCloseDisplay(dpy);
 		return;
 	}
-	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	if ((val = get_resource(rdb, "debug", "0"))) {
 		getXrmInt(val, &options.debug);
 	}
@@ -5988,11 +6035,11 @@ get_resources(int argc, char *argv[])
 		getXrmColor(val, &resources.greetColor);
 	}
 	// xlogin.namePrompt:		Username:
-	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username: "))) {
+	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username:  "))) {
 		getXrmString(val, &resources.namePrompt);
 	}
 	// xlogin.passwdPrompt:		Password:
-	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password: "))) {
+	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password:  "))) {
 		getXrmString(val, &resources.passwdPrompt);
 	}
 	// xlogin.promptFace:		Sans-12:bold
@@ -6004,9 +6051,12 @@ get_resources(int argc, char *argv[])
 	if ((val = get_any_resource(rdb, "promptColor", "grey20"))) {
 		getXrmColor(val, &resources.promptColor);
 	}
+	// xlogin.inputFace:		Sans-12:bold
+	// xlogin.inputFont:
 	if ((val = get_any_resource(rdb, "inputFace", "Sans:size=12:bold"))) {
 		getXrmFont(val, &resources.inputFace);
 	}
+	// xlogin.inputColor:		grey20
 	if ((val = get_any_resource(rdb, "inputColor", "grey20"))) {
 		getXrmColor(val, &resources.inputColor);
 	}
@@ -7028,10 +7078,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "rlUqb:S:s:p:i:T:unD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "rlUqb:S:s:p:i:T:unDvhVCH?");
+		c = getopt(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);

@@ -102,12 +102,18 @@
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
 #include <X11/SM/SMlib.h>
+#include <gio/gio.h>
 #include <gdk/gdkx.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
 
+#define USE_GDBUS
+
+#ifndef USE_GDBUS
 #include <dbus/dbus-glib.h>
+#endif
+
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
@@ -121,21 +127,34 @@
 #include <langinfo.h>
 #include <locale.h>
 
+const char *
+timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
+
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
 	fprintf(stderr, "I: "); \
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "E: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr);   } while (0)
 #define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
 #include <ctype.h>
@@ -214,6 +233,7 @@ typedef enum {
 	CommandReplace,			/* replace any running instance */
 	CommandLock,			/* ask running instance to lock */
 	CommandQuit,			/* ask running instance to quit */
+	CommandUnlock,			/* ask running instance to unlock */
 } CommandType;
 
 enum {
@@ -440,6 +460,13 @@ typedef enum {
 } LockState;
 
 LockState lock_state = LockStateLocked;
+
+typedef enum {
+	LockCommandLock,
+	LockCommandUnlock,
+	LockCommandQuit,
+} LockCommand;
+
 #endif				/* DO_XLOCKING */
 
 typedef enum {
@@ -451,6 +478,7 @@ LoginResult login_result;
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
+Atom _XA_XDE_XLOCK_COMMAND;
 Atom _XA_XROOTPMAP_ID;
 Atom _XA_ESETROOT_PMAP_ID;
 
@@ -599,7 +627,7 @@ setup_screensaver(void)
 	}
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
-		if (True || options.debug > 1) {
+		if (options.debug > 1) {
 			fprintf(stderr, "Before:\n");
 			fprintf(stderr, "\twindow:\t\t0x%08lx\n", xscr->info.window);
 			fprintf(stderr, "\tstate:\t\t%s\n", show_state(xscr->info.state));
@@ -611,7 +639,7 @@ setup_screensaver(void)
 		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
 					ScreenSaverNotifyMask | ScreenSaverCycleMask);
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
-		if (True || options.debug > 1) {
+		if (options.debug > 1) {
 			fprintf(stderr, "After:\n");
 			fprintf(stderr, "\twindow:\t\t0x%08lx\n", xscr->info.window);
 			fprintf(stderr, "\tstate:\t\t%s\n", show_state(xscr->info.state));
@@ -623,7 +651,258 @@ setup_screensaver(void)
 	}
 }
 
+#endif /* DO_XLOCKING */
+
+#ifdef USE_GDBUS
+GDBusProxy *sd_prox_manager = NULL;
+GDBusProxy *sd_prox_session = NULL;
+#else
+DBusGProxy *sd_manager = NULL;
+DBusGProxy *sd_session = NULL;
+DBusGProxy *sd_seprops = NULL;
+#endif
+
+#ifdef DO_XLOCKING
 static void LockScreen(void);
+static void UnlockScreen(void);
+#endif
+
+#ifdef USE_GDBUS
+void
+on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
+			  GVariant *parameters, gpointer user_data)
+{
+	DPRINTF("received manager proxy signal %s( %s )\n", signal_name,
+		g_variant_get_type_string(parameters));
+
+	if (!strcmp(signal_name, "PrepareForSleep")) {
+	} else if (!strcmp(signal_name, "PrepareForShutdown")) {
+	}
+}
+
+void
+on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
+			  GVariant *parameters, gpointer user_data)
+{
+	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
+		g_variant_get_type_string(parameters));
+#ifdef DO_XLOCKING
+	if (!strcmp(signal_name, "Lock")) {
+		LockScreen();
+	} else if (!strcmp(signal_name, "Unlock")) {
+		UnlockScreen();
+	}
+#endif
+}
+
+void
+on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties,
+				 GStrv invalidated_properties, gpointer user_data)
+{
+	GVariantIter iter;
+	GVariant *prop;
+
+	DPRINTF("received session proxy properties changed signal ( %s )\n",
+		g_variant_get_type_string(changed_properties));
+
+	g_variant_iter_init(&iter, changed_properties);
+	while ((prop = g_variant_iter_next_value(&iter))) {
+		if (g_variant_is_container(prop)) {
+			GVariantIter iter2;
+			GVariant *key;
+			GVariant *val;
+			GVariant *boxed;
+			const gchar *name;
+
+			g_variant_iter_init(&iter2, prop);
+			if (!(key = g_variant_iter_next_value(&iter2))) {
+				EPRINTF("no key!\n");
+				continue;
+			}
+			if (!(name = g_variant_get_string(key, NULL))) {
+				EPRINTF("no name!\n");
+				g_variant_unref(key);
+				continue;
+			}
+			if (strcmp(name, "Active")) {
+				DPRINTF("not looking for %s\n", name);
+				g_variant_unref(key);
+				continue;
+			}
+			if (!(val = g_variant_iter_next_value(&iter2))) {
+				EPRINTF("no val!\n");
+				g_variant_unref(key);
+				continue;
+			}
+			if (!(boxed = g_variant_get_variant(val))) {
+				EPRINTF("no value!\n");
+				g_variant_unref(key);
+				g_variant_unref(val);
+				continue;
+			}
+			if (!g_variant_get_boolean(boxed)) {
+#ifdef DO_XLOCKING
+				DPRINTF("went inactive, locking screen\n");
+				LockScreen();
+#endif
+			}
+			g_variant_unref(key);
+			g_variant_unref(val);
+			g_variant_unref(boxed);
+			break;
+		}
+		g_variant_unref(prop);
+	}
+}
+#else
+void
+on_prepare_for_shutdown(DBusGProxy *proxy, gboolean flag, gpointer data)
+{
+	DPRINT();
+#ifdef DO_XLOCKING
+	if (flag)
+		UnlockScreen();
+#endif
+}
+
+void
+on_prepare_for_sleep(DBusGProxy *proxy, gboolean flag, gpointer data)
+{
+	DPRINT();
+#ifdef DO_XLOCKING
+	if (flag)
+		LockScreen();
+#endif
+}
+
+void
+on_session_lock(DBusGProxy *proxy, gpointer data)
+{
+	DPRINT();
+#ifdef DO_XLOCKING
+	LockScreen();
+#endif
+}
+
+
+void
+on_session_unlock(DBusGProxy *proxy, gpointer data)
+{
+	DPRINT();
+#ifdef DO_XLOCKING
+	UnlockScreen();
+#endif
+}
+#endif
+
+void
+setup_systemd(void)
+{
+	GError *err = NULL;
+	gchar *s;
+
+	DPRINT();
+#ifdef USE_GDBUS
+	if (!(sd_prox_manager =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
+					    "/org/freedesktop/login1",
+					    "org.freedesktop.login1.Manager", NULL, &err)) || err) {
+		EPRINTF("could not create DBUS proxy sd_prox_manager: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_signal_connect(G_OBJECT(sd_prox_manager), "g-signal",
+			 G_CALLBACK(on_sd_prox_manager_signal), NULL);
+	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
+	if (!(sd_prox_session =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
+					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
+		EPRINTF("could not create DBUS proxy sd_prox_session: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_signal_connect(G_OBJECT(sd_prox_session), "g-signal",
+			 G_CALLBACK(on_sd_prox_session_signal), NULL);
+	g_signal_connect(G_OBJECT(sd_prox_session), "g-properties-changed",
+			 G_CALLBACK(on_sd_prox_session_props_changed), NULL);
+	g_free(s);
+#else
+	DBusGConnection *bus;
+
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
+		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	if (!(sd_manager =
+	      dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", "/org/freedesktop/login1",
+					"org.freedesktop.login1.Manager"))) {
+		EPRINTF("could not create DBUS proxy sd_manager\n");
+		return;
+	}
+	dbus_g_proxy_add_signal(sd_manager, "PrepareForShutdown", G_TYPE_BOOLEAN, G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal(sd_manager, "PrepareForShutdown",
+				    G_CALLBACK(on_prepare_for_shutdown), NULL, NULL);
+	dbus_g_proxy_add_signal(sd_manager, "PrepareForSleep", G_TYPE_BOOLEAN, G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal(sd_manager, "PrepareForSleep",
+				    G_CALLBACK(on_prepare_for_sleep), NULL, NULL);
+
+	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
+	if (!(sd_session = dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", s,
+						     "org.freedesktop.login1.Session"))) {
+		EPRINTF("could not create DBUS proxy sd_session\n");
+		return;
+	}
+	dbus_g_proxy_add_signal(sd_session, "Lock", G_TYPE_INVALID);
+	dbus_g_proxy_add_signal(sd_session, "Unlock", G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal(sd_session, "Lock", G_CALLBACK(on_session_lock), NULL, NULL);
+	dbus_g_proxy_connect_signal(sd_session, "Unlock",
+				    G_CALLBACK(on_session_unlock), NULL, NULL);
+	g_free(s);
+#endif
+}
+
+#ifdef DO_XLOCKING
+
+void
+setidlehint(gboolean flag)
+{
+	GError *err = NULL;
+
+#ifdef USE_GDBUS
+	GVariant *result;
+
+	if (!sd_prox_session) {
+		EPRINTF("No session proxy!\n");
+		return;
+	}
+	if (!(result =
+	      g_dbus_proxy_call_sync(sd_prox_session, "SetIdleHint", g_variant_new("(b)", flag),
+				     G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err)) || err) {
+		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_variant_unref(result);
+#else
+	gboolean ok;
+
+	if (!sd_session) {
+		EPRINTF("No session proxy!\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(sd_session, "SetIdleHint", &err, G_TYPE_BOOLEAN,
+			       flag, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok || err) {
+		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+			err ? err->message : NULL);
+		g_clear_error(&err);
+	}
+#endif
+}
 
 GdkFilterReturn
 handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
@@ -644,12 +923,18 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		fprintf(stderr, "<== XScreenSaverNotify:\n");
 	}
 	switch (ev->state) {
-	case ScreenSaverCycle:
 	case ScreenSaverDisabled:
-	case ScreenSaverOn:
 	default:
 		break;
 	case ScreenSaverOff:
+		setidlehint(FALSE);
+		LockScreen();
+		break;
+	case ScreenSaverOn:
+		setidlehint(TRUE);
+		LockScreen();
+		break;
+	case ScreenSaverCycle:
 		LockScreen();
 		break;
 	}
@@ -795,6 +1080,22 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 		reparse(dpy, xev->xclient.window);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
+#ifdef DO_XLOCKING
+	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
+		switch (xev->xclient.data.l[0]) {
+		case LockCommandLock:
+			LockScreen();
+			return GDK_FILTER_REMOVE;
+		case LockCommandUnlock:
+			UnlockScreen();
+			return GDK_FILTER_REMOVE;
+		case LockCommandQuit:
+			exit(EXIT_SUCCESS);
+		default:
+			break;
+		}
+	}
+#endif
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
@@ -817,7 +1118,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 #ifdef DO_XLOCKING
 		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify)
 			return handle_XScreenSaverNotify(dpy, xev);
-		EPRINTF("unknown event type %d\n", xev->type);
+		DPRINTF("unknown event type %d\n", xev->type);
 #endif				/* DO_XLOCKING */
 		break;
 	}
@@ -863,8 +1164,12 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	switch (xev->type) {
 	case SelectionClear:
 		return event_handler_SelectionClear(dpy, xev, xscr);
+	case ClientMessage:
+		break;
+	default:
+		EPRINTF("wrong message type for handler %d\n", xev->type);
+		break;
 	}
-	EPRINTF("wrong message type for handler %d\n", xev->type);
 	return GDK_FILTER_CONTINUE;
 }
 #endif
@@ -1639,9 +1944,21 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 		DPRINTF("wrong connection type\n");
 		return False;
 	}
-	if (getnameinfo(sa, salen, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
-		DPRINTF("getnameinfo: %s\n", strerror(errno));
-		return False;
+	/* We really do not want to do this for IPv4LL addresses, beause they
+	 * can take 5 seconds to fail on reverse DNS lookups. */
+	if (scope == SocketScopeLinklocal) {
+		struct servent *serv;
+
+		strncpy(remotename, ipaddr, NI_MAXHOST);
+		if ((serv = getservbyport(port, "udp")))
+			strncpy(service, serv->s_name, NI_MAXSERV);
+	} else {
+		DPRINTF("beg calling getnameinfo ...\n");
+		if (getnameinfo(sa, salen, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
+			DPRINTF("getnameinfo: %s\n", strerror(errno));
+			return False;
+		}
+		DPRINTF("... calling getnameinfo end\n");
 	}
 
 	GtkTreeIter iter;
@@ -1989,9 +2306,11 @@ PingHosts(gpointer data)
 				   (XdmcpNetaddr) &ha->addr, ha->addrlen);
 		}
 	}
-	if (++pingTry < PING_TRIES)
+	if (++pingTry < PING_TRIES) {
+		DPRINTF("adding timer\n");
 		pingid = g_timeout_add_seconds(PING_INTERVAL, PingHosts, (gpointer) NULL);
-	return TRUE;
+	}
+	return G_SOURCE_REMOVE;
 }
 
 gint srce4, srce6;
@@ -2677,7 +2996,9 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
+			DPRINTF("running main loop...\n");
 			gtk_main();
+			DPRINTF("...running main loop\n");
 			if (login_result == LoginResultLogout)
 				return (PAM_CONV_ERR);
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(user)));
@@ -2697,7 +3018,9 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
+			DPRINTF("running main loop...\n");
 			gtk_main();
+			DPRINTF("...running main loop\n");
 			if (login_result == LoginResultLogout)
 				return (PAM_CONV_ERR);
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(pass)));
@@ -2852,31 +3175,33 @@ static void
 append_power_actions(GtkMenu *menu)
 {
 	GError *err = NULL;
-	DBusGConnection *bus;
-	DBusGProxy *proxy;
-	gchar *value = NULL;
+	const gchar *value = NULL;
 	gboolean ok;
 	GtkWidget *submenu, *power, *imag, *item;
 	gboolean gotone = FALSE;
 	Bool islocal;
 
+#ifdef USE_GDBUS
+	GVariant *result;
+	GVariantIter iter;
+	GVariant *var;
+#endif
+
 	if (!menu)
 		return;
+#ifdef USE_GDBUS
+	if (!sd_prox_manager) {
+		EPRINTF("no session DBUS proxy!\n");
+		return;
+	}
+#else
+	if (!sd_manager) {
+		EPRINTF("no session DBUS proxy!\n");
+		return;
+	}
+#endif
 
 	islocal = isLocal();
-
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
-		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-		return;
-	}
-	if (!(proxy = dbus_g_proxy_new_for_name(bus,
-						"org.freedesktop.login1",
-						"/org/freedesktop/login1",
-						"org.freedesktop.login1.Manager"))) {
-		EPRINTF("could not create DBUS proxy\n");
-		return;
-	}
 
 	power = gtk_image_menu_item_new_with_label(GTK_STOCK_EXECUTE);
 	gtk_image_menu_item_set_use_stock(GTK_IMAGE_MENU_ITEM(power), TRUE);
@@ -2884,16 +3209,27 @@ append_power_actions(GtkMenu *menu)
 
 	submenu = gtk_menu_new();
 
-	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanPowerOff",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanPowerOff",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanPowerOff status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Power Off");
 		imag = gtk_image_new_from_icon_name("system-shutdown", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_poweroff), value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_poweroff), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -2901,21 +3237,36 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	ok = dbus_g_proxy_call(proxy, "CanReboot",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanReboot",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanReboot",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanReboot status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Reboot");
 		imag = gtk_image_new_from_icon_name("system-reboot", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_reboot), value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_reboot), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -2923,21 +3274,36 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanReboot call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	ok = dbus_g_proxy_call(proxy, "CanSuspend",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanSuspend",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanSuspend",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Suspend");
 		imag = gtk_image_new_from_icon_name("system-suspend", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_suspend), value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_suspend), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -2945,21 +3311,36 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanSuspend call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	ok = dbus_g_proxy_call(proxy, "CanHibernate",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanHibernate",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanHibernate",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanHibernate status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hibernate");
 		imag = gtk_image_new_from_icon_name("system-suspend-hibernate", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_hibernate), value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_hibernate), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -2967,22 +3348,36 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanHibernate call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanHybridSleep",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanHybridSleep",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanHybridSleep status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hybrid Sleep");
 		imag = gtk_image_new_from_icon_name("system-sleep", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_hybridsleep),
-				      value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_hybridsleep), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -2990,12 +3385,15 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	g_object_unref(proxy);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(power), submenu);
 	if (gotone)
 		gtk_widget_show_all(power);
@@ -3021,31 +3419,40 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 {
 	gchar *session = data;
 	GError *err = NULL;
-	DBusGConnection *bus;
-	DBusGProxy *proxy;
-	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
-		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+#ifdef USE_GDBUS
+	GVariant *result;
+
+	if (!sd_prox_manager) {
+		EPRINTF("no session DBUS proxy\n");
+		return;
+	}
+	if (!
+	    (result =
+	     g_dbus_proxy_call_sync(sd_prox_manager, "ActivateSession",
+				    g_variant_new("(s)", session), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+				    &err)) || err) {
+		EPRINTF("ActivateSession: %s: call failed: %s\n", session,
+			err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
-	proxy = dbus_g_proxy_new_for_name(bus,
-					  "org.freedesktop.login1",
-					  "/org/freedesktop/login1",
-					  "org.freedesktop.login1.Manager");
-	if (!proxy) {
-		EPRINTF("Could not create DBUS proxy\n");
+	g_variant_unref(result);
+#else
+	gboolean ok;
+
+	if (!sd_manager) {
+		EPRINTF("no session DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(proxy, "ActivateSession", &err, G_TYPE_STRING,
+	ok = dbus_g_proxy_call(sd_manager, "ActivateSession", &err, G_TYPE_STRING,
 			       session, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok || err) {
 		EPRINTF("ActivateSession: %s: call failed: %s\n", session,
 			err ? err->message : NULL);
 		g_clear_error(&err);
 	}
-	g_object_unref(G_OBJECT(proxy));
+#endif
 }
 
 static void
@@ -4719,6 +5126,9 @@ startup(int argc, char *argv[])
 	atom = gdk_atom_intern_static_string("_GTK_READ_RCFILES");
 	_XA_GTK_READ_RCFILES = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+	atom = gdk_atom_intern_static_string("_XDE_XLOCK_COMMAND");
+	_XA_XDE_XLOCK_COMMAND = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
 	atom = gdk_atom_intern_static_string("_XROOTPMAP_ID");
 	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
@@ -4747,6 +5157,7 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, TRUE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			DPRINTF("grabbing password entry widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
 		} else {
@@ -4754,6 +5165,7 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, FALSE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			DPRINTF("grabbing username entry widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 		}
@@ -4804,18 +5216,14 @@ HideWindow(void)
 	HideScreens();
 }
 
-static void
-do_run(int argc, char *argv[])
+static int
+authenticate(void)
 {
 	pam_handle_t *pamh = NULL;
 	const char *uname = NULL;
 	int status = 0;
 
-	startup(argc, argv);
-	top = GetWindow(False);
-#ifdef DO_XCHOOSER
-	InitXDMCP(argv, argc);
-#endif
+	DPRINTF("starting PAM\n");
 	pam_start("system-login", NULL, &xde_pam_conv, &pamh);
 	if (options.username) {
 		pam_set_item(pamh, PAM_USER, options.username);
@@ -4830,42 +5238,42 @@ do_run(int argc, char *argv[])
 		switch (status) {
 		case PAM_ABORT:
 			EPRINTF("PAM_ABORT\n");
-			pam_end(pamh, status);
-			exit(EXIT_FAILURE);
+			goto done;
 		case PAM_AUTH_ERR:
 			EPRINTF("PAM_AUTH_ERR\n");
 			pam_set_item(pamh, PAM_USER, uname);
 			continue;
 		case PAM_CRED_INSUFFICIENT:
 			EPRINTF("PAM_CRED_INSUFFICIENT\n");
-			pam_end(pamh, status);
-			exit(EXIT_FAILURE);
+			goto done;
 		case PAM_AUTHINFO_UNAVAIL:
 			EPRINTF("PAM_AUTHINFO_UNAVAIL\n");
 			pam_set_item(pamh, PAM_USER, uname);
 			continue;
 		case PAM_MAXTRIES:
 			EPRINTF("PAM_MAXTRIES\n");
-			pam_end(pamh, status);
-			exit(EXIT_FAILURE);
+			goto done;
 		case PAM_SUCCESS:
 			DPRINTF("PAM_SUCCESS\n");
-			/* for now */
-			pam_end(pamh, status);
-			return;
+			goto done;
 		case PAM_USER_UNKNOWN:
 			EPRINTF("PAM_USER_UNKNOWN\n");
 			pam_set_item(pamh, PAM_USER, uname);
 			continue;
 		default:
 			EPRINTF("Unexpected pam error\n");
-			exit(EXIT_FAILURE);
+			goto done;
 		}
+		DPRINTF("running main loop...\n");
 		gtk_main();
+		DPRINTF("...running main loop\n");
 		if (login_result == LoginResultLogout)
 			break;
 	}
+      done:
+	DPRINTF("closing PAM\n");
 	pam_end(pamh, status);
+	return (status);
 }
 
 #ifdef DO_XLOCKING
@@ -4889,7 +5297,9 @@ RelockScreen(void)
 
 	XForceScreenSaver(dpy, ScreenSaverActive);
 	lock_state = LockStateLocked;
+	DPRINTF("running main loop...\n");
 	gtk_main();
+	DPRINTF("...running main loop\n");
 }
 
 static void
@@ -4901,9 +5311,73 @@ UnlockScreen(void)
 	}
 	HideWindow();
 	lock_state = LockStateUnlocked;
+	DPRINTF("running main loop...\n");
 	gtk_main();
+	DPRINTF("...running main loop\n");
 }
 #endif				/* DO_XLOCKING */
+
+static void
+do_run(int argc, char *argv[])
+{
+	int status;
+
+	startup(argc, argv);
+	setup_systemd();
+	top = GetWindow(False);
+#ifdef DO_XLOCKING
+	setup_screensaver();
+#endif
+#ifdef DO_XCHOOSER
+	InitXDMCP(argv, argc);
+#endif
+#ifdef DO_XLOCKING
+	if (options.command != CommandLock)
+		UnlockScreen();
+#endif
+	for (;;) {
+#ifdef DO_XLOCKING
+		DPRINT();
+		ShowWindow();
+#endif
+		DPRINT();
+		status = authenticate();
+		DPRINT();
+		if (login_result == LoginResultLogout) {
+#ifdef DO_XLOCKING
+			RelockScreen();
+#else
+			exit(EXIT_FAILURE);
+#endif
+			continue;
+		}
+		DPRINT();
+		switch (status) {
+		case PAM_ABORT:
+			break;
+		case PAM_CRED_INSUFFICIENT:
+		case PAM_MAXTRIES:
+		default:
+			DPRINT();
+#ifdef DO_XLOCKING
+			RelockScreen();
+#else
+			exit(EXIT_FAILURE);
+#endif
+			continue;
+		case PAM_SUCCESS:
+			DPRINT();
+#ifdef DO_XLOCKING
+			UnlockScreen();
+#else
+			exit(EXIT_SUCCESS);
+#endif
+			continue;
+		}
+		break;
+	}
+	DPRINT();
+}
 
 #ifdef DO_XLOCKING
 /** @brief quit the running background locker
@@ -4927,7 +5401,187 @@ do_quit(int argc, char *argv[])
 static void
 do_lock(int argc, char *argv[])
 {
-	startup(argc, argv);
+	Display *dpy;
+	int s, nscr;
+	char selection[32] = { 0, };
+	Bool found = False;
+
+#if 0
+	/* unfortunately, these are privileged */
+	setup_systemd();
+#ifdef USE_GDBUS
+	if (sd_prox_session) {
+		GError *err = NULL;
+		GVariant *result;
+
+		result = g_dbus_proxy_call_sync(sd_prox_session, "Lock",
+				NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+		if (!result || err) {
+			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+				err ? err->message : NULL);
+			g_clear_error(&err);
+		} else
+			g_variant_unref(result);
+	}
+#else
+	if (sd_session) {
+		GError *err = NULL;
+		gboolean ok;
+
+		ok = dbus_g_proxy_call(sd_session, "Lock", &err, G_TYPE_INVALID, G_TYPE_INVALID);
+		if (!ok || err) {
+			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+				err ? err->message : NULL);
+			g_clear_error(&err);
+		}
+	}
+#endif
+#endif
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
+		exit(EXIT_FAILURE);
+	}
+	nscr = ScreenCount(dpy);
+	for (s = 0; s < nscr; s++) {
+		Window owner;
+		XEvent ev;
+		Atom atom;
+
+		snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
+		atom = XInternAtom(dpy, selection, True);
+		if (!atom) {
+			DPRINTF("No '%s' atom on display\n", selection);
+			continue;
+		}
+		owner = XGetSelectionOwner(dpy, atom);
+		if (!owner) {
+			DPRINTF("No '%s' owner on display\n", selection);
+			continue;
+		}
+		atom = XInternAtom(dpy, "_XDE_XLOCK_COMMAND", False);
+		if (!atom) {
+			EPRINTF("Could not assign atom _XDE_XLOCK_COMMAND\n");
+			continue;
+		}
+		found = True;
+
+		ev.xclient.type = ClientMessage;
+		ev.xclient.serial = 0;
+		ev.xclient.send_event = False;
+		ev.xclient.display = dpy;
+		ev.xclient.window = owner;
+		ev.xclient.message_type = atom;
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = LockCommandLock;
+		ev.xclient.data.l[1] = 0;
+		ev.xclient.data.l[2] = 0;
+		ev.xclient.data.l[3] = 0;
+		ev.xclient.data.l[4] = 0;
+
+		XSendEvent(dpy, owner, False, StructureNotifyMask, &ev);
+		XFlush(dpy);
+	}
+	XSync(dpy, True);
+	XCloseDisplay(dpy);
+	if (!found) {
+		DPRINTF("no background instance found\n");
+		options.replace = True;
+		if (fork() == 0)
+			do_run(argc, argv);
+	}
+}
+
+/** @brief ask running background locker to unlock (or just quit)
+  */
+static void
+do_unlock(int argc, char *argv[])
+{
+	Display *dpy;
+	int s, nscr;
+	char selection[32] = { 0, };
+	Bool found = False;
+
+#if 0
+	/* unfortunately, these are privileged */
+	setup_systemd();
+#ifdef USE_GDBUS
+	if (sd_prox_session) {
+		GError *err = NULL;
+		GVariant *result;
+
+		result = g_dbus_proxy_call_sync(sd_prox_session, "Unlock",
+				NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+		if (!result || err) {
+			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+				err ? err->message : NULL);
+			g_clear_error(&err);
+		} else
+			g_variant_unref(result);
+	}
+#else
+	if (sd_session) {
+		GError *err = NULL;
+		gboolean ok;
+
+		ok = dbus_g_proxy_call(sd_session, "Unlock", &err, G_TYPE_INVALID, G_TYPE_INVALID);
+		if (!ok || err) {
+			EPRINTF("Unlock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+				err ? err->message : NULL);
+			g_clear_error(&err);
+		}
+	}
+#endif
+#endif
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
+		exit(EXIT_FAILURE);
+	}
+	nscr = ScreenCount(dpy);
+	for (s = 0; s < nscr; s++) {
+		Window owner;
+		XEvent ev;
+		Atom atom;
+
+		snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
+		atom = XInternAtom(dpy, selection, True);
+		if (!atom) {
+			DPRINTF("No '%s' atom on display\n", selection);
+			continue;
+		}
+		owner = XGetSelectionOwner(dpy, atom);
+		if (!owner) {
+			DPRINTF("No '%s' owner on display\n", selection);
+			continue;
+		}
+		atom = XInternAtom(dpy, "_XDE_XLOCK_COMMAND", False);
+		if (!atom) {
+			EPRINTF("Could not assign atom _XDE_XLOCK_COMMAND\n");
+			continue;
+		}
+		found = True;
+
+		ev.xclient.type = ClientMessage;
+		ev.xclient.serial = 0;
+		ev.xclient.send_event = False;
+		ev.xclient.display = dpy;
+		ev.xclient.window = owner;
+		ev.xclient.message_type = atom;
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = LockCommandUnlock;
+		ev.xclient.data.l[1] = 0;
+		ev.xclient.data.l[2] = 0;
+		ev.xclient.data.l[3] = 0;
+		ev.xclient.data.l[4] = 0;
+
+		XSendEvent(dpy, owner, False, StructureNotifyMask, &ev);
+		XFlush(dpy);
+	}
+	XSync(dpy, True);
+	XCloseDisplay(dpy);
+	if (!found) {
+		EPRINTF("no background instance found\n");
+		exit(EXIT_FAILURE);
+	}
 }
 #endif				/* DO_XLOCKING */
 
@@ -5395,11 +6049,11 @@ get_resources(int argc, char *argv[])
 		getXrmColor(val, &resources.greetColor);
 	}
 	// xlogin.namePrompt:		Username:
-	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username: "))) {
+	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username:  "))) {
 		getXrmString(val, &resources.namePrompt);
 	}
 	// xlogin.passwdPrompt:		Password:
-	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password: "))) {
+	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password:  "))) {
 		getXrmString(val, &resources.passwdPrompt);
 	}
 	// xlogin.promptFace:		Sans-12:bold
@@ -5411,9 +6065,12 @@ get_resources(int argc, char *argv[])
 	if ((val = get_any_resource(rdb, "promptColor", "grey20"))) {
 		getXrmColor(val, &resources.promptColor);
 	}
+	// xlogin.inputFace:		Sans-12:bold
+	// xlogin.inputFont:
 	if ((val = get_any_resource(rdb, "inputFace", "Sans:size=12:bold"))) {
 		getXrmFont(val, &resources.inputFace);
 	}
+	// xlogin.inputColor:		grey20
 	if ((val = get_any_resource(rdb, "inputColor", "grey20"))) {
 		getXrmColor(val, &resources.inputColor);
 	}
@@ -6403,6 +7060,7 @@ main(int argc, char *argv[])
 #ifdef DO_XLOCKING
 			{"replace",	    no_argument,	NULL, 'r'},
 			{"lock",	    no_argument,	NULL, 'l'},
+			{"unlock",	    no_argument,	NULL, 'U'},
 			{"quit",	    no_argument,	NULL, 'q'},
 #endif					/* DO_XLOCKING */
 
@@ -6434,10 +7092,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "x:c:t:b:S:s:w:i:T:unD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "x:c:t:b:S:s:w:i:T:unDvhVCH?");
+		c = getopt(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -6673,6 +7331,10 @@ main(int argc, char *argv[])
 	case CommandLock:
 		DPRINTF("%s: running lock\n", argv[0]);
 		do_lock(argc, argv);
+		break;
+	case CommandUnlock:
+		DPRINTF("%s: running unlock\n", argv[0]);
+		do_unlock(argc, argv);
 		break;
 #endif				/* DO_XLOCKING */
 	case CommandHelp:
