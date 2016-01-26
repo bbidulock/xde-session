@@ -635,9 +635,11 @@ setup_screensaver(void)
 	}
 }
 
+#ifndef USE_GDBUS
 DBusGProxy *sd_manager = NULL;
 DBusGProxy *sd_session = NULL;
 DBusGProxy *sd_seprops = NULL;
+#endif
 
 GDBusProxy *sd_prox_manager = NULL;
 GDBusProxy *sd_prox_session = NULL;
@@ -769,10 +771,38 @@ void
 setup_systemd(void)
 {
 	GError *err = NULL;
-	DBusGConnection *bus;
 	gchar *s;
 
 	DPRINT();
+#ifdef USE_GDBUS
+	if (!(sd_prox_manager =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
+					    "/org/freedesktop/login1",
+					    "org.freedesktop.login1.Manager", NULL, &err)) || err) {
+		EPRINTF("could not create DBUS proxy sd_prox_manager: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_signal_connect(G_OBJECT(sd_prox_manager), "g-signal",
+			 G_CALLBACK(on_sd_prox_manager_signal), NULL);
+	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
+	if (!(sd_prox_session =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
+					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
+		EPRINTF("could not create DBUS proxy sd_prox_session: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_signal_connect(G_OBJECT(sd_prox_session), "g-signal",
+			 G_CALLBACK(on_sd_prox_session_signal), NULL);
+	g_signal_connect(G_OBJECT(sd_prox_session), "g-properties-changed",
+			 G_CALLBACK(on_sd_prox_session_props_changed), NULL);
+	g_free(s);
+#else
+	DBusGConnection *bus;
+
 	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
 		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
@@ -802,29 +832,8 @@ setup_systemd(void)
 	dbus_g_proxy_connect_signal(sd_session, "Lock", G_CALLBACK(on_session_lock), NULL, NULL);
 	dbus_g_proxy_connect_signal(sd_session, "Unlock",
 				    G_CALLBACK(on_session_unlock), NULL, NULL);
-
-	if (!(sd_prox_manager =
-	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
-					    "/org/freedesktop/login1",
-					    "org.freedesktop.login1.Manager", NULL, &err)) || err) {
-		EPRINTF("could not create DBUS proxy sd_prox_manager: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-		return;
-	}
-	g_signal_connect(G_OBJECT(sd_prox_manager), "g-signal",
-			 G_CALLBACK(on_sd_prox_manager_signal), NULL);
-	if (!(sd_prox_session =
-	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
-					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
-		EPRINTF("could not create DBUS proxy sd_prox_session: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-		return;
-	}
-	g_signal_connect(G_OBJECT(sd_prox_session), "g-signal",
-			 G_CALLBACK(on_sd_prox_session_signal), NULL);
-	g_signal_connect(G_OBJECT(sd_prox_session), "g-properties-changed",
-			 G_CALLBACK(on_sd_prox_session_props_changed), NULL);
 	g_free(s);
+#endif
 }
 
 void
@@ -5338,7 +5347,7 @@ do_lock(int argc, char *argv[])
 	char selection[32] = { 0, };
 	Bool found = False;
 
-#if 1
+#if 0
 	/* unfortunately, these are privileged */
 	setup_systemd();
 #ifdef USE_GDBUS
@@ -5433,7 +5442,7 @@ do_unlock(int argc, char *argv[])
 	char selection[32] = { 0, };
 	Bool found = False;
 
-#if 1
+#if 0
 	/* unfortunately, these are privileged */
 	setup_systemd();
 #ifdef USE_GDBUS
