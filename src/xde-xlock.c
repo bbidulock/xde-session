@@ -102,6 +102,7 @@
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
 #include <X11/SM/SMlib.h>
+#include <gio/gio.h>
 #include <gdk/gdkx.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
@@ -632,7 +633,219 @@ setup_screensaver(void)
 	}
 }
 
+DBusGProxy *sd_manager = NULL;
+DBusGProxy *sd_session = NULL;
+DBusGProxy *sd_seprops = NULL;
+
+GDBusProxy *sd_prox_manager = NULL;
+GDBusProxy *sd_prox_session = NULL;
+
 static void LockScreen(void);
+static void UnlockScreen(void);
+
+void
+on_prepare_for_shutdown(DBusGProxy *proxy, gboolean flag, gpointer data)
+{
+	DPRINT();
+	if (flag)
+		UnlockScreen();
+}
+
+void
+on_prepare_for_sleep(DBusGProxy *proxy, gboolean flag, gpointer data)
+{
+	DPRINT();
+	if (flag)
+		LockScreen();
+}
+
+void
+on_session_lock(DBusGProxy *proxy, gpointer data)
+{
+	DPRINT();
+	LockScreen();
+}
+
+
+void
+on_session_unlock(DBusGProxy *proxy, gpointer data)
+{
+	DPRINT();
+	UnlockScreen();
+}
+
+void
+on_sd_prox_manager_signal(GDBusProxy *proxy,
+		gchar *sender_name,
+		gchar *signal_name,
+		GVariant *parameters,
+		gpointer user_data)
+{
+	DPRINTF("received manager proxy signal %s( %s )\n", signal_name,
+		g_variant_get_type_string(parameters));
+
+	if (!strcmp(signal_name, "PrepareForSleep")) {
+	} else if (!strcmp(signal_name, "PrepareForShutdown")) {
+	}
+}
+
+void
+on_sd_prox_session_signal(GDBusProxy *proxy,
+		gchar *sender_name,
+		gchar *signal_name,
+		GVariant *parameters,
+		gpointer user_data)
+{
+	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
+		g_variant_get_type_string(parameters));
+	if (!strcmp(signal_name, "Lock")) {
+		LockScreen();
+	} else if (!strcmp(signal_name, "Unlock")) {
+		UnlockScreen();
+	}
+}
+
+void
+on_sd_prox_session_props_changed(GDBusProxy *proxy,
+		GVariant *changed_properties,
+		GStrv invalidated_properties,
+		gpointer user_data)
+{
+	GVariantIter iter;
+	GVariant *child;
+
+	DPRINTF("received session proxy properties changed signal ( %s )\n",
+			g_variant_get_type_string(changed_properties));
+
+	g_variant_iter_init(&iter, changed_properties);
+	while ((child = g_variant_iter_next_value(&iter))) {
+		const gchar *type = g_variant_get_type_string(child);
+
+		DPRINTF("signal child: %s\n", type);
+		if (g_variant_is_container(child)) {
+			GVariantIter iter2;
+			GVariant *child2;
+
+			g_variant_iter_init(&iter2, child);
+			while ((child2 = g_variant_iter_next_value(&iter2))) {
+				const gchar *type2 = g_variant_get_type_string(child2);
+
+				DPRINTF("signal child: %s child: %s\n", type, type2);
+				if (g_variant_is_of_type(child2, G_VARIANT_TYPE_STRING)) {
+					DPRINTF("signal child: %s child: %s %s\n", type, type2,
+							g_variant_get_string(child2,
+								NULL));
+				} else if (g_variant_is_of_type(child2, G_VARIANT_TYPE_BOOLEAN)) {
+					DPRINTF("signal child: %s child: %s %s\n", type, type2,
+							g_variant_get_boolean(child2) ? "true" : "false");
+				} else if (g_variant_is_of_type(child2, G_VARIANT_TYPE_VARIANT)) {
+					GVariant *boxed;
+
+					boxed = g_variant_get_variant(child2);
+					if (g_variant_is_of_type(boxed, G_VARIANT_TYPE_BOOLEAN)) {
+						DPRINTF("signal child: %s child: %s [%s]\n", type, type2,
+								g_variant_get_boolean(boxed) ? "true" : "false");
+					}
+					g_variant_unref(boxed);
+				}
+				g_variant_unref(child2);
+			}
+		}
+		g_variant_unref(child);
+	}
+}
+
+void
+setup_systemd(void)
+{
+	GError *err = NULL;
+	DBusGConnection *bus;
+	gchar *s;
+
+	DPRINT();
+	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
+		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	if (!(sd_manager =
+	      dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", "/org/freedesktop/login1",
+					"org.freedesktop.login1.Manager"))) {
+		EPRINTF("could not create DBUS proxy\n");
+		return;
+	}
+	dbus_g_proxy_add_signal(sd_manager, "PrepareForShutdown", G_TYPE_BOOLEAN, G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal(sd_manager, "PrepareForShutdown",
+				    G_CALLBACK(on_prepare_for_shutdown), NULL, NULL);
+	dbus_g_proxy_add_signal(sd_manager, "PrepareForSleep", G_TYPE_BOOLEAN, G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal(sd_manager, "PrepareForSleep",
+				    G_CALLBACK(on_prepare_for_sleep), NULL, NULL);
+
+	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
+	if (!(sd_session = dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", s,
+						     "org.freedesktop.login1.Session"))) {
+		EPRINTF("could not create DBUS proxy\n");
+		return;
+	}
+	dbus_g_proxy_add_signal(sd_session, "Lock", G_TYPE_INVALID);
+	dbus_g_proxy_add_signal(sd_session, "Unlock", G_TYPE_INVALID);
+	dbus_g_proxy_connect_signal(sd_session, "Lock", G_CALLBACK(on_session_lock), NULL, NULL);
+	dbus_g_proxy_connect_signal(sd_session, "Unlock",
+				    G_CALLBACK(on_session_unlock), NULL, NULL);
+
+	if (!(sd_prox_manager = g_dbus_proxy_new_for_bus_sync(
+					G_BUS_TYPE_SYSTEM,
+					0,
+					NULL,
+					"org.freedesktop.login1",
+					"/org/freedesktop/login1",
+					"org.freedesktop.login1.Manager",
+					NULL,
+					&err)) || err) {
+		EPRINTF("could not create DBUS proxy: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_signal_connect(G_OBJECT(sd_prox_manager), "g-signal",
+			G_CALLBACK(on_sd_prox_manager_signal), NULL);
+	if (!(sd_prox_session = g_dbus_proxy_new_for_bus_sync(
+					G_BUS_TYPE_SYSTEM,
+					0,
+					NULL,
+					"org.freedesktop.login1",
+					s,
+					"org.freedesktop.login1.Session",
+					NULL,
+					&err)) || err) {
+		EPRINTF("could not create DBUS proxy: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_signal_connect(G_OBJECT(sd_prox_session), "g-signal",
+			G_CALLBACK(on_sd_prox_session_signal), NULL);
+	g_signal_connect(G_OBJECT(sd_prox_session), "g-properties-changed",
+			G_CALLBACK(on_sd_prox_session_props_changed), NULL);
+	g_free(s);
+}
+
+void
+setidlehint(gboolean flag)
+{
+	GError *err = NULL;
+	gboolean ok;
+
+	if (!sd_session) {
+		EPRINTF("No session proxy!\n");
+		return;
+	}
+	ok = dbus_g_proxy_call(sd_session, "SetIdleHint", &err, G_TYPE_BOOLEAN,
+			       flag, G_TYPE_INVALID, G_TYPE_INVALID);
+	if (!ok || err) {
+		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+			err ? err->message : NULL);
+		g_clear_error(&err);
+	}
+}
 
 GdkFilterReturn
 handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
@@ -653,12 +866,18 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		fprintf(stderr, "<== XScreenSaverNotify:\n");
 	}
 	switch (ev->state) {
-	case ScreenSaverCycle:
 	case ScreenSaverDisabled:
-	case ScreenSaverOn:
 	default:
 		break;
 	case ScreenSaverOff:
+		setidlehint(FALSE);
+		LockScreen();
+		break;
+	case ScreenSaverOn:
+		setidlehint(TRUE);
+		LockScreen();
+		break;
+	case ScreenSaverCycle:
 		LockScreen();
 		break;
 	}
@@ -766,8 +985,8 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
-static void UnlockScreen();
-static void LockScreen();
+static void UnlockScreen(void);
+static void LockScreen(void);
 
 static GdkFilterReturn
 event_handler_ClientMessage(Display *dpy, XEvent *xev)
@@ -4951,6 +5170,7 @@ do_run(int argc, char *argv[])
 	top = GetWindow(True);
 #ifdef DO_XLOCKING
 	setup_screensaver();
+	setup_systemd();
 #endif
 #ifdef DO_XCHOOSER
 	InitXDMCP(argv, argc);
@@ -5014,6 +5234,21 @@ do_lock(int argc, char *argv[])
 	char selection[32] = { 0, };
 	Bool found = False;
 
+#if 0
+	/* unfortunately, these are privileged */
+	setup_systemd();
+	if (sd_session) {
+		GError *err = NULL;
+		gboolean ok;
+
+		ok = dbus_g_proxy_call(sd_session, "Lock", &err, G_TYPE_INVALID, G_TYPE_INVALID);
+		if (!ok || err) {
+			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+				err ? err->message : NULL);
+			g_clear_error(&err);
+		}
+	}
+#endif
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
 		exit(EXIT_FAILURE);
@@ -5078,6 +5313,21 @@ do_unlock(int argc, char *argv[])
 	char selection[32] = { 0, };
 	Bool found = False;
 
+#if 0
+	/* unfortunately, these are privileged */
+	setup_systemd();
+	if (sd_session) {
+		GError *err = NULL;
+		gboolean ok;
+
+		ok = dbus_g_proxy_call(sd_session, "Unlock", &err, G_TYPE_INVALID, G_TYPE_INVALID);
+		if (!ok || err) {
+			EPRINTF("Unlock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+				err ? err->message : NULL);
+			g_clear_error(&err);
+		}
+	}
+#endif
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
 		exit(EXIT_FAILURE);
