@@ -152,6 +152,8 @@
 static int saveArgc;
 static char **saveArgv;
 
+#define USE_GDBUS
+
 #undef DO_XCHOOSER
 #define DO_XLOCKING 1
 #undef DO_ONIDLE
@@ -779,7 +781,7 @@ setup_systemd(void)
 	if (!(sd_manager =
 	      dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", "/org/freedesktop/login1",
 					"org.freedesktop.login1.Manager"))) {
-		EPRINTF("could not create DBUS proxy\n");
+		EPRINTF("could not create DBUS proxy sd_manager\n");
 		return;
 	}
 	dbus_g_proxy_add_signal(sd_manager, "PrepareForShutdown", G_TYPE_BOOLEAN, G_TYPE_INVALID);
@@ -792,7 +794,7 @@ setup_systemd(void)
 	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
 	if (!(sd_session = dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", s,
 						     "org.freedesktop.login1.Session"))) {
-		EPRINTF("could not create DBUS proxy\n");
+		EPRINTF("could not create DBUS proxy sd_session\n");
 		return;
 	}
 	dbus_g_proxy_add_signal(sd_session, "Lock", G_TYPE_INVALID);
@@ -805,7 +807,7 @@ setup_systemd(void)
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
 					    "/org/freedesktop/login1",
 					    "org.freedesktop.login1.Manager", NULL, &err)) || err) {
-		EPRINTF("could not create DBUS proxy: %s\n", err ? err->message : NULL);
+		EPRINTF("could not create DBUS proxy sd_prox_manager: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
@@ -814,7 +816,7 @@ setup_systemd(void)
 	if (!(sd_prox_session =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
 					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
-		EPRINTF("could not create DBUS proxy: %s\n", err ? err->message : NULL);
+		EPRINTF("could not create DBUS proxy sd_prox_session: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
@@ -829,7 +831,8 @@ void
 setidlehint(gboolean flag)
 {
 	GError *err = NULL;
-	gboolean ok;
+
+#ifdef USE_GDBUS
 	GVariant *result;
 
 	if (!sd_prox_session) {
@@ -842,7 +845,12 @@ setidlehint(gboolean flag)
 		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
 			err ? err->message : NULL);
 		g_clear_error(&err);
+		return;
 	}
+	g_variant_unref(result);
+#else
+	gboolean ok;
+
 	if (!sd_session) {
 		EPRINTF("No session proxy!\n");
 		return;
@@ -854,6 +862,7 @@ setidlehint(gboolean flag)
 			err ? err->message : NULL);
 		g_clear_error(&err);
 	}
+#endif
 }
 
 GdkFilterReturn
@@ -3114,31 +3123,33 @@ static void
 append_power_actions(GtkMenu *menu)
 {
 	GError *err = NULL;
-	DBusGConnection *bus;
-	DBusGProxy *proxy;
-	gchar *value = NULL;
+	const gchar *value = NULL;
 	gboolean ok;
 	GtkWidget *submenu, *power, *imag, *item;
 	gboolean gotone = FALSE;
 	Bool islocal;
 
+#ifdef USE_GDBUS
+	GVariant *result;
+	GVariantIter iter;
+	GVariant *var;
+#endif
+
 	if (!menu)
 		return;
+#ifdef USE_GDBUS
+	if (!sd_prox_manager) {
+		EPRINTF("no session DBUS proxy!\n");
+		return;
+	}
+#else
+	if (!sd_manager) {
+		EPRINTF("no session DBUS proxy!\n");
+		return;
+	}
+#endif
 
 	islocal = isLocal();
-
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
-		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-		return;
-	}
-	if (!(proxy = dbus_g_proxy_new_for_name(bus,
-						"org.freedesktop.login1",
-						"/org/freedesktop/login1",
-						"org.freedesktop.login1.Manager"))) {
-		EPRINTF("could not create DBUS proxy\n");
-		return;
-	}
 
 	power = gtk_image_menu_item_new_with_label(GTK_STOCK_EXECUTE);
 	gtk_image_menu_item_set_use_stock(GTK_IMAGE_MENU_ITEM(power), TRUE);
@@ -3146,16 +3157,27 @@ append_power_actions(GtkMenu *menu)
 
 	submenu = gtk_menu_new();
 
-	ok = dbus_g_proxy_call(proxy, "CanPowerOff",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanPowerOff",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanPowerOff",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanPowerOff status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Power Off");
 		imag = gtk_image_new_from_icon_name("system-shutdown", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_poweroff), value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_poweroff), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -3163,21 +3185,36 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	ok = dbus_g_proxy_call(proxy, "CanReboot",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanReboot",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanReboot",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanReboot status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Reboot");
 		imag = gtk_image_new_from_icon_name("system-reboot", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_reboot), value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_reboot), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -3185,21 +3222,36 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanReboot call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	ok = dbus_g_proxy_call(proxy, "CanSuspend",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanSuspend",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanSuspend",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanSuspend status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Suspend");
 		imag = gtk_image_new_from_icon_name("system-suspend", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_suspend), value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_suspend), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -3207,21 +3259,36 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanSuspend call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	ok = dbus_g_proxy_call(proxy, "CanHibernate",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanHibernate",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanHibernate",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanHibernate status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hibernate");
 		imag = gtk_image_new_from_icon_name("system-suspend-hibernate", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_hibernate), value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_hibernate), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -3229,22 +3296,36 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanHibernate call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	ok = dbus_g_proxy_call(proxy, "CanHybridSleep",
+#ifdef USE_GDBUS
+	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanHybridSleep",
+			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+#else
+	ok = dbus_g_proxy_call(sd_manager, "CanHybridSleep",
 			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
+#endif
 	if (ok && !err) {
+#ifdef USE_GDBUS
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+#endif
 		DPRINTF("CanHybridSleep status is %s\n", value);
 		item = gtk_image_menu_item_new_with_label("Hybrid Sleep");
 		imag = gtk_image_new_from_icon_name("system-sleep", GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_hybridsleep),
-				      value, free_value, G_CONNECT_AFTER);
+				      G_CALLBACK(on_hybridsleep), (gpointer)value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
 			gtk_widget_set_sensitive(item, TRUE);
 			gotone = TRUE;
@@ -3252,12 +3333,15 @@ append_power_actions(GtkMenu *menu)
 			gtk_widget_set_sensitive(item, FALSE);
 		gtk_widget_show(item);
 		value = NULL;
+#ifdef USE_GDBUS
+		g_variant_unref(var);
+		g_variant_unref(result);
+#endif
 	} else {
 		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-	g_object_unref(proxy);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(power), submenu);
 	if (gotone)
 		gtk_widget_show_all(power);
@@ -3283,31 +3367,40 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 {
 	gchar *session = data;
 	GError *err = NULL;
-	DBusGConnection *bus;
-	DBusGProxy *proxy;
-	gboolean ok;
 
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
-		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
+#ifdef USE_GDBUS
+	GVariant *result;
+
+	if (!sd_prox_manager) {
+		EPRINTF("no session DBUS proxy\n");
+		return;
+	}
+	if (!
+	    (result =
+	     g_dbus_proxy_call_sync(sd_prox_manager, "ActivateSession",
+				    g_variant_new("(s)", session), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+				    &err)) || err) {
+		EPRINTF("ActivateSession: %s: call failed: %s\n", session,
+			err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
-	proxy = dbus_g_proxy_new_for_name(bus,
-					  "org.freedesktop.login1",
-					  "/org/freedesktop/login1",
-					  "org.freedesktop.login1.Manager");
-	if (!proxy) {
-		EPRINTF("Could not create DBUS proxy\n");
+	g_variant_unref(result);
+#else
+	gboolean ok;
+
+	if (!sd_manager) {
+		EPRINTF("no session DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(proxy, "ActivateSession", &err, G_TYPE_STRING,
+	ok = dbus_g_proxy_call(sd_manager, "ActivateSession", &err, G_TYPE_STRING,
 			       session, G_TYPE_INVALID, G_TYPE_INVALID);
 	if (!ok || err) {
 		EPRINTF("ActivateSession: %s: call failed: %s\n", session,
 			err ? err->message : NULL);
 		g_clear_error(&err);
 	}
-	g_object_unref(G_OBJECT(proxy));
+#endif
 }
 
 static void
@@ -5176,10 +5269,12 @@ do_run(int argc, char *argv[])
 	int status;
 
 	startup(argc, argv);
+#ifdef DO_XLOCKING
+	setup_systemd();
+#endif
 	top = GetWindow(True);
 #ifdef DO_XLOCKING
 	setup_screensaver();
-	setup_systemd();
 #endif
 #ifdef DO_XCHOOSER
 	InitXDMCP(argv, argc);
