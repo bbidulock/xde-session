@@ -3191,12 +3191,12 @@ append_power_actions(GtkMenu *menu)
 		return;
 #ifdef USE_GDBUS
 	if (!sd_prox_manager) {
-		EPRINTF("no session DBUS proxy!\n");
+		EPRINTF("no manager DBUS proxy!\n");
 		return;
 	}
 #else
 	if (!sd_manager) {
-		EPRINTF("no session DBUS proxy!\n");
+		EPRINTF("no manager DBUS proxy!\n");
 		return;
 	}
 #endif

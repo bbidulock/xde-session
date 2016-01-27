@@ -127,21 +127,34 @@
 #include <langinfo.h>
 #include <locale.h>
 
+const char *
+timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
+
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
 	fprintf(stderr, "I: "); \
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "E: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr);   } while (0)
 #define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
 #include <ctype.h>
@@ -1938,7 +1951,7 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 
 		strncpy(remotename, ipaddr, NI_MAXHOST);
 		if ((serv = getservbyport(port, "udp")))
-			strncpy(service, serv->s_name, NIMAXSERV);
+			strncpy(service, serv->s_name, NI_MAXSERV);
 	} else {
 		DPRINTF("beg calling getnameinfo ...\n");
 		if (getnameinfo(sa, salen, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
@@ -3178,12 +3191,12 @@ append_power_actions(GtkMenu *menu)
 		return;
 #ifdef USE_GDBUS
 	if (!sd_prox_manager) {
-		EPRINTF("no session DBUS proxy!\n");
+		EPRINTF("no manager DBUS proxy!\n");
 		return;
 	}
 #else
 	if (!sd_manager) {
-		EPRINTF("no session DBUS proxy!\n");
+		EPRINTF("no manager DBUS proxy!\n");
 		return;
 	}
 #endif
