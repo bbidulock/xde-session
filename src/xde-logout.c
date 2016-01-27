@@ -104,12 +104,6 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#define USE_GDBUS
-
-#ifndef USE_GDBUS
-#include <dbus/dbus-glib.h>
-#endif
-
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
@@ -885,16 +879,9 @@ get_config_dirs(int *np)
 	return (xdg_dirs);
 }
 
-#ifdef USE_GDBUS
-GDBusProxy *sd_prox_manager = NULL;
-GDBusProxy *sd_prox_session = NULL;
-GDBusProxy *sd_prox_display = NULL;
-#else
-DBusGProxy *sd_manager = NULL;
-DBusGProxy *sd_session = NULL;
-DBusGProxy *sd_seprops = NULL;
-DBusGProxy *sd_display = NULL;
-#endif
+GDBusProxy *sd_manager = NULL;
+GDBusProxy *sd_session = NULL;
+GDBusProxy *sd_display = NULL;
 
 void
 setup_systemd(void)
@@ -904,64 +891,22 @@ setup_systemd(void)
 	const char *env;
 
 	DPRINT();
-#ifdef USE_GDBUS
-	if (!(sd_prox_manager =
+	if (!(sd_manager =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
 					    "/org/freedesktop/login1",
 					    "org.freedesktop.login1.Manager", NULL, &err)) || err) {
-		EPRINTF("could not create DBUS proxy sd_prox_manager: %s\n",
+		EPRINTF("could not create DBUS proxy sd_manager: %s\n",
 			err ? err->message : NULL);
 		g_clear_error(&err);
-		return;
-	}
-	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
-	if (!(sd_prox_session =
-	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
-					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
-		EPRINTF("could not create DBUS proxy sd_prox_session: %s\n",
-			err ? err->message : NULL);
-		g_clear_error(&err);
-		g_free(s);
-		return;
-	}
-	g_free(s);
-	if ((env = getenv("XDG_SEAT_PATH")))
-		s = g_strdup(env);
-	else if ((env = getenv("XDG_SEAT")))
-		s = g_strdup_printf("/org/freedesktop/DisplayManager/%s", env);
-	else
-		s = g_strdup("/org/freedesktop/DisplayManager/Seat0");
-	if (!(sd_prox_display =
-	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL,
-					    "org.freedesktop.DisplayManager", s,
-					    "org.freedesktop.DisplayManager.Seat", NULL, &err))
-	    || err) {
-		EPRINTF("counld not create DBUS proxy sd_prox_display: %s\n",
-			err ? err->message : NULL);
-		g_clear_error(&err);
-		g_free(s);
-		return;
-	}
-	g_free(s);
-#else
-	DBusGConnection *bus;
-
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
-		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-		return;
-	}
-	if (!(sd_manager =
-	      dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", "/org/freedesktop/login1",
-					"org.freedesktop.login1.Manager"))) {
-		EPRINTF("could not create DBUS proxy sd_manager\n");
 		return;
 	}
 	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
 	if (!(sd_session =
-	      dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", s,
-					"org.freedesktop.login1.Session"))) {
-		EPRINTF("could not create DBUS proxy sd_session\n");
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
+					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
+		EPRINTF("could not create DBUS proxy sd_session: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
 		g_free(s);
 		return;
 	}
@@ -973,14 +918,17 @@ setup_systemd(void)
 	else
 		s = g_strdup("/org/freedesktop/DisplayManager/Seat0");
 	if (!(sd_display =
-	      dbus_g_proxy_new_for_name(bus, "org.freedesktop.DisplayManager", path,
-					"org.freedesktop.DisplayManager.Seat"))) {
-		EPRINTF("could not create DBUS proxy sd_display\n");
-		return;
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL,
+					    "org.freedesktop.DisplayManager", s,
+					    "org.freedesktop.DisplayManager.Seat", NULL, &err))
+	    || err) {
+		EPRINTF("counld not create DBUS proxy sd_display: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
 		g_free(s);
+		return;
 	}
 	g_free(s);
-#endif
 }
 
 /*
@@ -1005,17 +953,10 @@ lxsession_check()
 void
 test_session_lock()
 {
-#ifdef USE_GDBUS
-	if (!sd_prox_manager) {
-		EPRINTF("no manager DBUS proxy\n");
-		return;
-	}
-#else
 	if (!sd_manager) {
 		EPRINTF("no manager DBUS proxy\n");
 		return;
 	}
-#endif
 	action_can[LOGOUT_ACTION_LOCKSCREEN] = AvailStatusYes;
 }
 
@@ -1124,25 +1065,16 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 	GError *err = NULL;
 	gboolean ok;
 
-#ifdef USE_GDBUS
 	GVariant *result;
 
-	if (!sd_prox_manager) {
-		EPRINTF("no manager DBUS proxy\n");
-		return;
-	}
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "ActivateSession",
-					g_variant_new("(s)", session), G_DBUS_CALL_FLAGS_NONE,
-					-1, NULL, &err);
-	ok = (result != NULL);
-#else
 	if (!sd_manager) {
 		EPRINTF("no manager DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(sd_manager, "ActivateSession", &err, G_TYPE_STRING,
-			       session, G_TYPE_INVALID, G_TYPE_INVALID);
-#endif
+	result = g_dbus_proxy_call_sync(sd_manager, "ActivateSession",
+					g_variant_new("(s)", session), G_DBUS_CALL_FLAGS_NONE,
+					-1, NULL, &err);
+	ok = (result != NULL);
 	if (!ok || err) {
 		DPRINTF("ActivateSession: %s: call failed: %s\n", session,
 			err ? err->message : NULL);
@@ -1430,17 +1362,10 @@ isLocal(void)
 void
 test_manager_functions()
 {
-#ifdef USE_GDBUS
-	if (!sd_prox_display) {
-		EPRINTF("no display DBUS proxy\n");
-		return;
-	}
-#else
 	if (!sd_display) {
 		EPRINTF("no display DBUS proxy\n");
 		return;
 	}
-#endif
 }
 
 /** @brief test availability of power functions
@@ -1456,166 +1381,101 @@ test_power_functions()
 	const gchar *value = NULL;
 	gboolean ok;
 	Bool islocal;
-
-#ifdef USE_GDBUS
 	GVariant *result;
 	GVariantIter iter;
 	GVariant *var;
-#endif
 
-#ifdef USE_GDBUS
-	if (!sd_prox_manager) {
-		EPRINTF("no manager DBUS proxy!\n");
-		return;
-	}
-#else
 	if (!sd_manager) {
 		EPRINTF("no manager DBUS proxy!\n");
 		return;
 	}
-#endif
 
 	islocal = isLocal();
 
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanPowerOff",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanPowerOff",
 					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanPowerOff",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
 	if (ok && !err) {
-#ifdef USE_GDBUS
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-#endif
 		DPRINTF("CanPowerOff status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_POWEROFF] = status_of_string(value);
-#ifdef USE_GDBUS
 		g_variant_unref(var);
 		g_variant_unref(result);
-#else
-		g_free(value);
-#endif
 		value = NULL;
 	} else {
 		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanReboot",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanReboot",
 					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanReboot",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
 	if (ok && !err) {
-#ifdef USE_GDBUS
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-#endif
 		DPRINTF("CanReboot status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_REBOOT] = status_of_string(value);
-#ifdef USE_GDBUS
 		g_variant_unref(var);
 		g_variant_unref(result);
-#else
-		g_free(value);
-#endif
 		value = NULL;
 	} else {
 		EPRINTF("CanReboot call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanSuspend",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanSuspend",
 					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanSuspend",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
 	if (ok && !err) {
-#ifdef USE_GDBUS
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-#endif
 		DPRINTF("CanSuspend status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_SUSPEND] = status_of_string(value);
-#ifdef USE_GDBUS
 		g_variant_unref(var);
 		g_variant_unref(result);
-#else
-		g_free(value);
-#endif
 		value = NULL;
 	} else {
 		EPRINTF("CanSuspend call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanHibernate",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanHibernate",
 					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanHibernate",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
 	if (ok && !err) {
-#ifdef USE_GDBUS
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-#endif
 		DPRINTF("CanHibernate status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_HIBERNATE] = status_of_string(value);
-#ifdef USE_GDBUS
 		g_variant_unref(var);
 		g_variant_unref(result);
-#else
-		g_free(value);
-#endif
 		value = NULL;
 	} else {
 		EPRINTF("CanHibernate call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanHybridSleep",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanHybridSleep",
 					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanHybridSleep",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
 	if (ok && !err) {
-#ifdef USE_GDBUS
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-#endif
 		DPRINTF("CanHybridSleep status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_HYBRIDSLEEP] = status_of_string(value);
-#ifdef USE_GDBUS
 		g_variant_unref(var);
 		g_variant_unref(result);
-#else
-		g_free(value);
-#endif
 		value = NULL;
 	} else {
 		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
@@ -3435,32 +3295,21 @@ action_power(const char *action)
 	GError *err = NULL;
 	gboolean ok;
 
-#ifdef USE_GDBUS
 	GVariant *result;
 
-	if (!sd_prox_manager) {
-		EPRINTF("no manager DBUS proxy\n");
-		return;
-	}
-	result = g_dbus_proxy_call_sync(sd_prox_manager, action,
-					g_variant_new("(b)", TRUE), G_DBUS_CALL_FLAGS_NONE, -1,
-					NULL, &err);
-	ok = (result != NULL);
-#else
 	if (!sd_manager) {
 		EPRINTF("no manager DBUS proxy\n");
 		return;
 	}
-	ok = dbus_g_proxy_call(sd_manager, action, &err,
-			       G_TYPE_BOOLEAN, TRUE, G_TYPE_INVALID, G_TYPE_INVALID);
-#endif
+	result = g_dbus_proxy_call_sync(sd_manager, action,
+					g_variant_new("(b)", TRUE), G_DBUS_CALL_FLAGS_NONE, -1,
+					NULL, &err);
+	ok = (result != NULL);
 	if (!ok) {
 		EPRINTF("call to %s failed: %s\n", action, err ? err->message : NULL);
 		g_clear_error(&err);
 	}
-#ifdef USE_GDBUS
 	g_variant_unref(result);
-#endif
 }
 
 static void

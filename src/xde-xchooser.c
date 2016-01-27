@@ -654,8 +654,8 @@ setup_screensaver(void)
 #endif /* DO_XLOCKING */
 
 #ifdef USE_GDBUS
-GDBusProxy *sd_prox_manager = NULL;
-GDBusProxy *sd_prox_session = NULL;
+GDBusProxy *sd_manager = NULL;
+GDBusProxy *sd_session = NULL;
 #else
 DBusGProxy *sd_manager = NULL;
 DBusGProxy *sd_session = NULL;
@@ -803,29 +803,29 @@ setup_systemd(void)
 
 	DPRINT();
 #ifdef USE_GDBUS
-	if (!(sd_prox_manager =
+	if (!(sd_manager =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
 					    "/org/freedesktop/login1",
 					    "org.freedesktop.login1.Manager", NULL, &err)) || err) {
-		EPRINTF("could not create DBUS proxy sd_prox_manager: %s\n",
+		EPRINTF("could not create DBUS proxy sd_manager: %s\n",
 			err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
-	g_signal_connect(G_OBJECT(sd_prox_manager), "g-signal",
+	g_signal_connect(G_OBJECT(sd_manager), "g-signal",
 			 G_CALLBACK(on_sd_prox_manager_signal), NULL);
 	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
-	if (!(sd_prox_session =
+	if (!(sd_session =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
 					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
-		EPRINTF("could not create DBUS proxy sd_prox_session: %s\n",
+		EPRINTF("could not create DBUS proxy sd_session: %s\n",
 			err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
 	}
-	g_signal_connect(G_OBJECT(sd_prox_session), "g-signal",
+	g_signal_connect(G_OBJECT(sd_session), "g-signal",
 			 G_CALLBACK(on_sd_prox_session_signal), NULL);
-	g_signal_connect(G_OBJECT(sd_prox_session), "g-properties-changed",
+	g_signal_connect(G_OBJECT(sd_session), "g-properties-changed",
 			 G_CALLBACK(on_sd_prox_session_props_changed), NULL);
 	g_free(s);
 #else
@@ -874,12 +874,12 @@ setidlehint(gboolean flag)
 #ifdef USE_GDBUS
 	GVariant *result;
 
-	if (!sd_prox_session) {
+	if (!sd_session) {
 		EPRINTF("No session proxy!\n");
 		return;
 	}
 	if (!(result =
-	      g_dbus_proxy_call_sync(sd_prox_session, "SetIdleHint", g_variant_new("(b)", flag),
+	      g_dbus_proxy_call_sync(sd_session, "SetIdleHint", g_variant_new("(b)", flag),
 				     G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err)) || err) {
 		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
 			err ? err->message : NULL);
@@ -3190,7 +3190,7 @@ append_power_actions(GtkMenu *menu)
 	if (!menu)
 		return;
 #ifdef USE_GDBUS
-	if (!sd_prox_manager) {
+	if (!sd_manager) {
 		EPRINTF("no manager DBUS proxy!\n");
 		return;
 	}
@@ -3210,7 +3210,7 @@ append_power_actions(GtkMenu *menu)
 	submenu = gtk_menu_new();
 
 #ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanPowerOff",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanPowerOff",
 			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
 #else
@@ -3247,7 +3247,7 @@ append_power_actions(GtkMenu *menu)
 	}
 
 #ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanReboot",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanReboot",
 			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
 #else
@@ -3284,7 +3284,7 @@ append_power_actions(GtkMenu *menu)
 	}
 
 #ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanSuspend",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanSuspend",
 			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
 #else
@@ -3321,7 +3321,7 @@ append_power_actions(GtkMenu *menu)
 	}
 
 #ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanHibernate",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanHibernate",
 			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
 #else
@@ -3358,7 +3358,7 @@ append_power_actions(GtkMenu *menu)
 	}
 
 #ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_prox_manager, "CanHybridSleep",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanHybridSleep",
 			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
 #else
@@ -3423,13 +3423,13 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 #ifdef USE_GDBUS
 	GVariant *result;
 
-	if (!sd_prox_manager) {
+	if (!sd_manager) {
 		EPRINTF("no session DBUS proxy\n");
 		return;
 	}
 	if (!
 	    (result =
-	     g_dbus_proxy_call_sync(sd_prox_manager, "ActivateSession",
+	     g_dbus_proxy_call_sync(sd_manager, "ActivateSession",
 				    g_variant_new("(s)", session), G_DBUS_CALL_FLAGS_NONE, -1, NULL,
 				    &err)) || err) {
 		EPRINTF("ActivateSession: %s: call failed: %s\n", session,
@@ -5410,11 +5410,11 @@ do_lock(int argc, char *argv[])
 	/* unfortunately, these are privileged */
 	setup_systemd();
 #ifdef USE_GDBUS
-	if (sd_prox_session) {
+	if (sd_session) {
 		GError *err = NULL;
 		GVariant *result;
 
-		result = g_dbus_proxy_call_sync(sd_prox_session, "Lock",
+		result = g_dbus_proxy_call_sync(sd_session, "Lock",
 				NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 		if (!result || err) {
 			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
@@ -5505,11 +5505,11 @@ do_unlock(int argc, char *argv[])
 	/* unfortunately, these are privileged */
 	setup_systemd();
 #ifdef USE_GDBUS
-	if (sd_prox_session) {
+	if (sd_session) {
 		GError *err = NULL;
 		GVariant *result;
 
-		result = g_dbus_proxy_call_sync(sd_prox_session, "Unlock",
+		result = g_dbus_proxy_call_sync(sd_session, "Unlock",
 				NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 		if (!result || err) {
 			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),

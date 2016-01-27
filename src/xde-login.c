@@ -116,8 +116,6 @@
 	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
-
-#include <dbus/dbus-glib.h>
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
