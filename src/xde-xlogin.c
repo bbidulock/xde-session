@@ -3052,6 +3052,48 @@ test_remote_user(void)
 	return True;
 }
 
+gboolean
+append_power_action(GtkWidget *submenu, Bool islocal, const char *name, const char *label,
+		    const char *icon, GCallback callback)
+{
+	GError *err = NULL;
+	gchar *value = NULL;
+	GtkWidget *imag, *item;
+	gboolean gotone = FALSE;
+	GVariant *result;
+	GVariantIter iter;
+	GVariant *var;
+
+	result = g_dbus_proxy_call_sync(sd_manager, name,
+					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	if (result && !err) {
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_dup_string(var, NULL);
+		DPRINTF("%s status is %s\n", name, value);
+		item = gtk_image_menu_item_new_with_label(label);
+		imag = gtk_image_new_from_icon_name(icon, GTK_ICON_SIZE_MENU);
+		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
+		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
+		g_signal_connect_data(G_OBJECT(item), "activate",
+				      callback, (gpointer) value, free_value, G_CONNECT_AFTER);
+		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
+			gtk_widget_set_sensitive(item, TRUE);
+			gotone = TRUE;
+		} else
+			gtk_widget_set_sensitive(item, FALSE);
+		gtk_widget_show(item);
+		value = NULL;
+		g_variant_unref(var);
+		g_variant_unref(result);
+	} else {
+		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
+	return gotone;
+
+}
+
 /** @brief add a power actions submenu to the actions menu
   *
   * We can provide power management actions to the user on the following
@@ -3069,15 +3111,9 @@ test_remote_user(void)
 static void
 append_power_actions(GtkMenu *menu)
 {
-	GError *err = NULL;
-	const gchar *value = NULL;
-	gboolean ok;
-	GtkWidget *submenu, *power, *imag, *item;
+	GtkWidget *submenu, *power;
 	gboolean gotone = FALSE;
 	Bool islocal;
-	GVariant *result;
-	GVariantIter iter;
-	GVariant *var;
 
 	if (!menu)
 		return;
@@ -3094,145 +3130,21 @@ append_power_actions(GtkMenu *menu)
 
 	submenu = gtk_menu_new();
 
-	result = g_dbus_proxy_call_sync(sd_manager, "CanPowerOff",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-	if (ok && !err) {
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanPowerOff status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Power Off");
-		imag = gtk_image_new_from_icon_name("system-shutdown", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_poweroff), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-		g_variant_unref(var);
-		g_variant_unref(result);
-	} else {
-		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-
-	result = g_dbus_proxy_call_sync(sd_manager, "CanReboot",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-	if (ok && !err) {
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanReboot status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Reboot");
-		imag = gtk_image_new_from_icon_name("system-reboot", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_reboot), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-		g_variant_unref(var);
-		g_variant_unref(result);
-	} else {
-		EPRINTF("CanReboot call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-
-	result = g_dbus_proxy_call_sync(sd_manager, "CanSuspend",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-	if (ok && !err) {
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanSuspend status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Suspend");
-		imag = gtk_image_new_from_icon_name("system-suspend", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_suspend), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-		g_variant_unref(var);
-		g_variant_unref(result);
-	} else {
-		EPRINTF("CanSuspend call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-
-	result = g_dbus_proxy_call_sync(sd_manager, "CanHibernate",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-	if (ok && !err) {
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanHibernate status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Hibernate");
-		imag = gtk_image_new_from_icon_name("system-suspend-hibernate", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_hibernate), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-		g_variant_unref(var);
-		g_variant_unref(result);
-	} else {
-		EPRINTF("CanHibernate call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-
-	result = g_dbus_proxy_call_sync(sd_manager, "CanHybridSleep",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-	if (ok && !err) {
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanHybridSleep status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Hybrid Sleep");
-		imag = gtk_image_new_from_icon_name("system-sleep", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_hybridsleep), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-		g_variant_unref(var);
-		g_variant_unref(result);
-	} else {
-		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
+	if (append_power_action(submenu, islocal, "CanPowerOff", "Power Off",
+				"system-shutdown", G_CALLBACK(on_poweroff)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanReboot", "Reboot",
+				"system-reboot", G_CALLBACK(on_reboot)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanSuspend", "Suspend",
+				"system-suspend", G_CALLBACK(on_suspend)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanHibernate", "Hibernate",
+				"system-suspend-hibernate", G_CALLBACK(on_hibernate)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanHybridSleep", "Hybrid Sleep",
+				"system-sleep", G_CALLBACK(on_hybridsleep)))
+		gotone = TRUE;
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(power), submenu);
 	if (gotone)

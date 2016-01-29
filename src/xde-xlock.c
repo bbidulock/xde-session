@@ -108,12 +108,6 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#define USE_GDBUS
-
-#ifndef USE_GDBUS
-#include <dbus/dbus-glib.h>
-#endif
-
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
@@ -653,21 +647,14 @@ setup_screensaver(void)
 
 #endif /* DO_XLOCKING */
 
-#ifdef USE_GDBUS
 GDBusProxy *sd_manager = NULL;
 GDBusProxy *sd_session = NULL;
-#else
-DBusGProxy *sd_manager = NULL;
-DBusGProxy *sd_session = NULL;
-DBusGProxy *sd_seprops = NULL;
-#endif
 
 #ifdef DO_XLOCKING
 static void LockScreen(void);
 static void UnlockScreen(void);
 #endif
 
-#ifdef USE_GDBUS
 void
 on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
 			  GVariant *parameters, gpointer user_data)
@@ -754,46 +741,6 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 		g_variant_unref(prop);
 	}
 }
-#else
-void
-on_prepare_for_shutdown(DBusGProxy *proxy, gboolean flag, gpointer data)
-{
-	DPRINT();
-#ifdef DO_XLOCKING
-	if (flag)
-		UnlockScreen();
-#endif
-}
-
-void
-on_prepare_for_sleep(DBusGProxy *proxy, gboolean flag, gpointer data)
-{
-	DPRINT();
-#ifdef DO_XLOCKING
-	if (flag)
-		LockScreen();
-#endif
-}
-
-void
-on_session_lock(DBusGProxy *proxy, gpointer data)
-{
-	DPRINT();
-#ifdef DO_XLOCKING
-	LockScreen();
-#endif
-}
-
-
-void
-on_session_unlock(DBusGProxy *proxy, gpointer data)
-{
-	DPRINT();
-#ifdef DO_XLOCKING
-	UnlockScreen();
-#endif
-}
-#endif
 
 void
 setup_systemd(void)
@@ -802,7 +749,6 @@ setup_systemd(void)
 	gchar *s;
 
 	DPRINT();
-#ifdef USE_GDBUS
 	if (!(sd_manager =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
 					    "/org/freedesktop/login1",
@@ -828,40 +774,6 @@ setup_systemd(void)
 	g_signal_connect(G_OBJECT(sd_session), "g-properties-changed",
 			 G_CALLBACK(on_sd_prox_session_props_changed), NULL);
 	g_free(s);
-#else
-	DBusGConnection *bus;
-
-	if (!(bus = dbus_g_bus_get(DBUS_BUS_SYSTEM, &err)) || err) {
-		EPRINTF("cannot access system bus: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-		return;
-	}
-	if (!(sd_manager =
-	      dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", "/org/freedesktop/login1",
-					"org.freedesktop.login1.Manager"))) {
-		EPRINTF("could not create DBUS proxy sd_manager\n");
-		return;
-	}
-	dbus_g_proxy_add_signal(sd_manager, "PrepareForShutdown", G_TYPE_BOOLEAN, G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal(sd_manager, "PrepareForShutdown",
-				    G_CALLBACK(on_prepare_for_shutdown), NULL, NULL);
-	dbus_g_proxy_add_signal(sd_manager, "PrepareForSleep", G_TYPE_BOOLEAN, G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal(sd_manager, "PrepareForSleep",
-				    G_CALLBACK(on_prepare_for_sleep), NULL, NULL);
-
-	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
-	if (!(sd_session = dbus_g_proxy_new_for_name(bus, "org.freedesktop.login1", s,
-						     "org.freedesktop.login1.Session"))) {
-		EPRINTF("could not create DBUS proxy sd_session\n");
-		return;
-	}
-	dbus_g_proxy_add_signal(sd_session, "Lock", G_TYPE_INVALID);
-	dbus_g_proxy_add_signal(sd_session, "Unlock", G_TYPE_INVALID);
-	dbus_g_proxy_connect_signal(sd_session, "Lock", G_CALLBACK(on_session_lock), NULL, NULL);
-	dbus_g_proxy_connect_signal(sd_session, "Unlock",
-				    G_CALLBACK(on_session_unlock), NULL, NULL);
-	g_free(s);
-#endif
 }
 
 #ifdef DO_XLOCKING
@@ -870,8 +782,6 @@ void
 setidlehint(gboolean flag)
 {
 	GError *err = NULL;
-
-#ifdef USE_GDBUS
 	GVariant *result;
 
 	if (!sd_session) {
@@ -887,21 +797,6 @@ setidlehint(gboolean flag)
 		return;
 	}
 	g_variant_unref(result);
-#else
-	gboolean ok;
-
-	if (!sd_session) {
-		EPRINTF("No session proxy!\n");
-		return;
-	}
-	ok = dbus_g_proxy_call(sd_session, "SetIdleHint", &err, G_TYPE_BOOLEAN,
-			       flag, G_TYPE_INVALID, G_TYPE_INVALID);
-	if (!ok || err) {
-		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
-			err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-#endif
 }
 
 GdkFilterReturn
@@ -928,7 +823,6 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		break;
 	case ScreenSaverOff:
 		setidlehint(FALSE);
-		LockScreen();
 		break;
 	case ScreenSaverOn:
 		setidlehint(TRUE);
@@ -3157,6 +3051,48 @@ test_remote_user(void)
 	return True;
 }
 
+gboolean
+append_power_action(GtkWidget *submenu, Bool islocal, const char *name, const char *label,
+		    const char *icon, GCallback callback)
+{
+	GError *err = NULL;
+	gchar *value = NULL;
+	GtkWidget *imag, *item;
+	gboolean gotone = FALSE;
+	GVariant *result;
+	GVariantIter iter;
+	GVariant *var;
+
+	result = g_dbus_proxy_call_sync(sd_manager, name,
+					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	if (result && !err) {
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_dup_string(var, NULL);
+		DPRINTF("%s status is %s\n", name, value);
+		item = gtk_image_menu_item_new_with_label(label);
+		imag = gtk_image_new_from_icon_name(icon, GTK_ICON_SIZE_MENU);
+		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
+		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
+		g_signal_connect_data(G_OBJECT(item), "activate",
+				      callback, (gpointer) value, free_value, G_CONNECT_AFTER);
+		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
+			gtk_widget_set_sensitive(item, TRUE);
+			gotone = TRUE;
+		} else
+			gtk_widget_set_sensitive(item, FALSE);
+		gtk_widget_show(item);
+		value = NULL;
+		g_variant_unref(var);
+		g_variant_unref(result);
+	} else {
+		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
+	return gotone;
+
+}
+
 /** @brief add a power actions submenu to the actions menu
   *
   * We can provide power management actions to the user on the following
@@ -3174,32 +3110,16 @@ test_remote_user(void)
 static void
 append_power_actions(GtkMenu *menu)
 {
-	GError *err = NULL;
-	const gchar *value = NULL;
-	gboolean ok;
-	GtkWidget *submenu, *power, *imag, *item;
+	GtkWidget *submenu, *power;
 	gboolean gotone = FALSE;
 	Bool islocal;
 
-#ifdef USE_GDBUS
-	GVariant *result;
-	GVariantIter iter;
-	GVariant *var;
-#endif
-
 	if (!menu)
 		return;
-#ifdef USE_GDBUS
 	if (!sd_manager) {
 		EPRINTF("no manager DBUS proxy!\n");
 		return;
 	}
-#else
-	if (!sd_manager) {
-		EPRINTF("no manager DBUS proxy!\n");
-		return;
-	}
-#endif
 
 	islocal = isLocal();
 
@@ -3209,190 +3129,21 @@ append_power_actions(GtkMenu *menu)
 
 	submenu = gtk_menu_new();
 
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_manager, "CanPowerOff",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanPowerOff",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
-	if (ok && !err) {
-#ifdef USE_GDBUS
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-#endif
-		DPRINTF("CanPowerOff status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Power Off");
-		imag = gtk_image_new_from_icon_name("system-shutdown", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_poweroff), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-#ifdef USE_GDBUS
-		g_variant_unref(var);
-		g_variant_unref(result);
-#endif
-	} else {
-		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_manager, "CanReboot",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanReboot",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
-	if (ok && !err) {
-#ifdef USE_GDBUS
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-#endif
-		DPRINTF("CanReboot status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Reboot");
-		imag = gtk_image_new_from_icon_name("system-reboot", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_reboot), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-#ifdef USE_GDBUS
-		g_variant_unref(var);
-		g_variant_unref(result);
-#endif
-	} else {
-		EPRINTF("CanReboot call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_manager, "CanSuspend",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanSuspend",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
-	if (ok && !err) {
-#ifdef USE_GDBUS
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-#endif
-		DPRINTF("CanSuspend status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Suspend");
-		imag = gtk_image_new_from_icon_name("system-suspend", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_suspend), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-#ifdef USE_GDBUS
-		g_variant_unref(var);
-		g_variant_unref(result);
-#endif
-	} else {
-		EPRINTF("CanSuspend call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_manager, "CanHibernate",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanHibernate",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
-	if (ok && !err) {
-#ifdef USE_GDBUS
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-#endif
-		DPRINTF("CanHibernate status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Hibernate");
-		imag = gtk_image_new_from_icon_name("system-suspend-hibernate", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_hibernate), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-#ifdef USE_GDBUS
-		g_variant_unref(var);
-		g_variant_unref(result);
-#endif
-	} else {
-		EPRINTF("CanHibernate call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-
-#ifdef USE_GDBUS
-	result = g_dbus_proxy_call_sync(sd_manager, "CanHybridSleep",
-			NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
-	ok = (result != NULL);
-#else
-	ok = dbus_g_proxy_call(sd_manager, "CanHybridSleep",
-			       &err, G_TYPE_INVALID, G_TYPE_STRING, &value, G_TYPE_INVALID);
-#endif
-	if (ok && !err) {
-#ifdef USE_GDBUS
-		g_variant_iter_init(&iter, result);
-		var = g_variant_iter_next_value(&iter);
-		value = g_variant_get_string(var, NULL);
-#endif
-		DPRINTF("CanHybridSleep status is %s\n", value);
-		item = gtk_image_menu_item_new_with_label("Hybrid Sleep");
-		imag = gtk_image_new_from_icon_name("system-sleep", GTK_ICON_SIZE_MENU);
-		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
-		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_hybridsleep), (gpointer)value, free_value, G_CONNECT_AFTER);
-		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
-			gtk_widget_set_sensitive(item, TRUE);
-			gotone = TRUE;
-		} else
-			gtk_widget_set_sensitive(item, FALSE);
-		gtk_widget_show(item);
-		value = NULL;
-#ifdef USE_GDBUS
-		g_variant_unref(var);
-		g_variant_unref(result);
-#endif
-	} else {
-		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
-		g_clear_error(&err);
-	}
+	if (append_power_action(submenu, islocal, "CanPowerOff", "Power Off",
+				"system-shutdown", G_CALLBACK(on_poweroff)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanReboot", "Reboot",
+				"system-reboot", G_CALLBACK(on_reboot)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanSuspend", "Suspend",
+				"system-suspend", G_CALLBACK(on_suspend)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanHibernate", "Hibernate",
+				"system-suspend-hibernate", G_CALLBACK(on_hibernate)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanHybridSleep", "Hybrid Sleep",
+				"system-sleep", G_CALLBACK(on_hybridsleep)))
+		gotone = TRUE;
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(power), submenu);
 	if (gotone)
@@ -3420,7 +3171,6 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 	gchar *session = data;
 	GError *err = NULL;
 
-#ifdef USE_GDBUS
 	GVariant *result;
 
 	if (!sd_manager) {
@@ -3438,21 +3188,6 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 		return;
 	}
 	g_variant_unref(result);
-#else
-	gboolean ok;
-
-	if (!sd_manager) {
-		EPRINTF("no session DBUS proxy\n");
-		return;
-	}
-	ok = dbus_g_proxy_call(sd_manager, "ActivateSession", &err, G_TYPE_STRING,
-			       session, G_TYPE_INVALID, G_TYPE_INVALID);
-	if (!ok || err) {
-		EPRINTF("ActivateSession: %s: call failed: %s\n", session,
-			err ? err->message : NULL);
-		g_clear_error(&err);
-	}
-#endif
 }
 
 static void
@@ -5409,7 +5144,6 @@ do_lock(int argc, char *argv[])
 #if 0
 	/* unfortunately, these are privileged */
 	setup_systemd();
-#ifdef USE_GDBUS
 	if (sd_session) {
 		GError *err = NULL;
 		GVariant *result;
@@ -5423,19 +5157,6 @@ do_lock(int argc, char *argv[])
 		} else
 			g_variant_unref(result);
 	}
-#else
-	if (sd_session) {
-		GError *err = NULL;
-		gboolean ok;
-
-		ok = dbus_g_proxy_call(sd_session, "Lock", &err, G_TYPE_INVALID, G_TYPE_INVALID);
-		if (!ok || err) {
-			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
-				err ? err->message : NULL);
-			g_clear_error(&err);
-		}
-	}
-#endif
 #endif
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
@@ -5504,7 +5225,6 @@ do_unlock(int argc, char *argv[])
 #if 0
 	/* unfortunately, these are privileged */
 	setup_systemd();
-#ifdef USE_GDBUS
 	if (sd_session) {
 		GError *err = NULL;
 		GVariant *result;
@@ -5518,19 +5238,6 @@ do_unlock(int argc, char *argv[])
 		} else
 			g_variant_unref(result);
 	}
-#else
-	if (sd_session) {
-		GError *err = NULL;
-		gboolean ok;
-
-		ok = dbus_g_proxy_call(sd_session, "Unlock", &err, G_TYPE_INVALID, G_TYPE_INVALID);
-		if (!ok || err) {
-			EPRINTF("Unlock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
-				err ? err->message : NULL);
-			g_clear_error(&err);
-		}
-	}
-#endif
 #endif
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("cannot open display %s\n", getenv("DISPLAY") ? : "");
