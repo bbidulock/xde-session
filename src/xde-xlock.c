@@ -822,6 +822,11 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 	default:
 		break;
 	case ScreenSaverOff:
+		/* Note that if we were not locked for more than a few seconds we should
+		   simply unlock the screen.  This way if the user presses a key or
+		   nudges the mouse fast enought when the screen blanks, they will not
+		   have to reenter a password.  This could be coupled with screen fading
+		   during the grace period.  */
 		setidlehint(FALSE);
 		break;
 	case ScreenSaverOn:
@@ -3086,7 +3091,7 @@ append_power_action(GtkWidget *submenu, Bool islocal, const char *name, const ch
 		g_variant_unref(var);
 		g_variant_unref(result);
 	} else {
-		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
+		EPRINTF("%s call failed: %s\n", name, err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 	return gotone;
