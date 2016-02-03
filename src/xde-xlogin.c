@@ -451,9 +451,11 @@ LoginState state = LoginStateInit;
 typedef enum {
 	LockStateLocked,
 	LockStateUnlocked,
+	LockStateAborted,
 } LockState;
 
 LockState lock_state = LockStateLocked;
+struct timeval lock_time = { 0, 0 };
 
 typedef enum {
 	LockCommandLock,
@@ -653,6 +655,7 @@ GDBusProxy *sd_session = NULL;
 #ifdef DO_XLOCKING
 static void LockScreen(void);
 static void UnlockScreen(void);
+static void AbortLockScreen(void);
 #endif
 
 void
@@ -822,8 +825,13 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 	default:
 		break;
 	case ScreenSaverOff:
+		/* Note that if we were not locked for more than a few seconds we should
+		   simply unlock the screen.  This way if the user presses a key or
+		   nudges the mouse fast enought when the screen blanks, they will not
+		   have to reenter a password.  This could be coupled with screen fading
+		   during the grace period.  */
 		setidlehint(FALSE);
-		LockScreen();
+		AbortLockScreen();
 		break;
 	case ScreenSaverOn:
 		setidlehint(TRUE);
@@ -3087,7 +3095,7 @@ append_power_action(GtkWidget *submenu, Bool islocal, const char *name, const ch
 		g_variant_unref(var);
 		g_variant_unref(result);
 	} else {
-		EPRINTF("CanPowerOff call failed: %s\n", err ? err->message : NULL);
+		EPRINTF("%s call failed: %s\n", name, err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 	return gotone;
@@ -4949,6 +4957,8 @@ HideScreens(void)
 void
 HideWindow(void)
 {
+	DPRINT();
+
 	HideScreens();
 }
 
@@ -5005,6 +5015,10 @@ authenticate(void)
 		DPRINTF("...running main loop\n");
 		if (login_result == LoginResultLogout)
 			break;
+#ifdef DO_XLOCKING
+		if (lock_state == LockStateAborted)
+			break;
+#endif
 	}
       done:
 	DPRINTF("closing PAM\n");
@@ -5016,23 +5030,29 @@ authenticate(void)
 static void
 LockScreen(void)
 {
+	DPRINT();
+
 	if (lock_state == LockStateLocked) {
 		DPRINTF("already locked!\n");
 		return;
 	}
 	ShowWindow();
 	lock_state = LockStateLocked;
+	gettimeofday(&lock_time, NULL);
 	gtk_main_quit();
 }
 
 static void
 RelockScreen(void)
 {
+	DPRINT();
+
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
 	XForceScreenSaver(dpy, ScreenSaverActive);
 	lock_state = LockStateLocked;
+	gettimeofday(&lock_time, NULL);
 	DPRINTF("running main loop...\n");
 	gtk_main();
 	DPRINTF("...running main loop\n");
@@ -5041,6 +5061,8 @@ RelockScreen(void)
 static void
 UnlockScreen(void)
 {
+	DPRINT();
+
 	if (lock_state == LockStateUnlocked) {
 		EPRINTF("already unlocked!\n");
 		return;
@@ -5050,6 +5072,26 @@ UnlockScreen(void)
 	DPRINTF("running main loop...\n");
 	gtk_main();
 	DPRINTF("...running main loop\n");
+}
+
+static void
+AbortLockScreen(void)
+{
+	DPRINT();
+
+	if (lock_state != LockStateLocked) {
+		EPRINTF("not locked!\n");
+		return;
+	} else {
+		struct timeval tv = { 0, 0 };
+
+		gettimeofday(&tv, NULL);
+		if (tv.tv_sec < lock_time.tv_sec + 5) {
+			DPRINTF("Screen saver interrupted: unlocking screen\n");
+			lock_state = LockStateAborted;
+			gtk_main_quit();
+		}
+	}
 }
 #endif				/* DO_XLOCKING */
 
@@ -5078,6 +5120,13 @@ do_run(int argc, char *argv[])
 #endif
 		DPRINT();
 		status = authenticate();
+#ifdef DO_XLOCKING
+		DPRINT();
+		if (lock_state == LockStateAborted) {
+			UnlockScreen();
+			continue;
+		}
+#endif
 		DPRINT();
 		if (login_result == LoginResultLogout) {
 #ifdef DO_XLOCKING
