@@ -284,6 +284,7 @@ typedef struct {
 	double xposition;
 	double yposition;
 	Bool setstyle;
+	unsigned guard;
 } Options;
 
 Options options = {
@@ -326,6 +327,7 @@ Options options = {
 	.xposition = 0.5,
 	.yposition = 0.5,
 	.setstyle = True,
+	.guard = 5,
 };
 
 Options defaults = {
@@ -368,6 +370,7 @@ Options defaults = {
 	.xposition = 0.5,
 	.yposition = 0.5,
 	.setstyle = True,
+	.guard = 5,
 };
 
 typedef struct {
@@ -5086,7 +5089,7 @@ AbortLockScreen(void)
 		struct timeval tv = { 0, 0 };
 
 		gettimeofday(&tv, NULL);
-		if (tv.tv_sec < lock_time.tv_sec + 5) {
+		if (tv.tv_sec < lock_time.tv_sec + options.guard) {
 			DPRINTF("Screen saver interrupted: unlocking screen\n");
 			lock_state = LockStateAborted;
 			gtk_main_quit();
@@ -6834,6 +6837,7 @@ main(int argc, char *argv[])
 			{"default",	    required_argument,	NULL, '6'},
 #ifndef DO_XLOCKING
 			{"username",	    required_argument,	NULL, '7'},
+			{"guard",	    required_argument,	NULL, 'g'},
 #endif
 			{"nosetbg",	    no_argument,	NULL, '8'},
 			{"transparent",	    no_argument,	NULL, '9'},
@@ -6981,6 +6985,11 @@ main(int argc, char *argv[])
 		case '7':	/* --username USERNAME */
 			free(options.username);
 			options.username = strdup(optarg);
+			break;
+		case 'g':	/* --guard SECONDS */
+			if ((val = strtol(optarg, NULL, 0)) < 0)
+				goto bad_option;
+			options.guard = val;
 			break;
 #endif
 		case '8':	/* --nosetbg */
