@@ -167,6 +167,11 @@ an argument to F<~/.xinitrc>.
 
 Specifies the default user name for login.
 
+=item B<-g>, B<--guard> I<SECONDS>
+
+Specifies the number of seconds within which user input will abort
+screen locking.  The default is 5 seconds.
+
 =item B<--nosetbg>
 
 Specifies that the background image should not be set by the program.
