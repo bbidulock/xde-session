@@ -471,6 +471,8 @@ examining C<OnlyShowIn> and C<NotShowIn> key-value pairs in desktop
 entry files.  Will be overridden by the B<--desktop> command line option.
 Can be specified in an XSession file.
 
+=item B<Profile>=I<PROFILE>
+
 =item B<StartupFile>=I<PATH>
 
 Specifies a null, partial, absolute tilde-expanded or relative path to a
@@ -676,7 +678,7 @@ command line option.  Can be specified in an XSesison file.
 
 Specifies whether or not to act as an XSettings daemon.  The default is
 C<true>.  Cannot be overridden with a command line option.  Can be
-Specifed in an XSession file.
+Specified in an XSession file.
 
 =item B<XInput>=I<BOOLEAN>
 
@@ -688,7 +690,7 @@ Can be specified in an XSession file.
 
 =item B<ThemeManage>=I<BOOLEAN>
 
-Sepcifies whether or not to perform desktop theme management for the
+Specifies whether or not to perform desktop theme management for the
 XSession.  The default is C<true>.  Cannot be overridden with a command
 line option.  Can be specified in an XSession file.  Useful for X
 sessions that manage the desktop theme (wallpapers) themselves (e.g.
