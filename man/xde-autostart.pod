@@ -20,6 +20,41 @@ Note that the functions performed by B<xde-autostart> are integrated
 into L<xde-session(1)>, so only use it when you are not using a full
 blown XDE session.
 
+=head2 PHASES
+
+There are several phases to autostart initialization:
+
+=over
+
+=item I<Initialization>
+
+Initialization that does not require the presence of a window manager
+and typically does not display X windows.
+
+=item I<windowManager>
+
+The window manager itself and any proxies or window manager assisting
+applications such as session manager proxies and auto-start monitors.
+
+Specific window managers started during this phase typically are not
+specified in XDG F<autostart> files, but rather in F<xsession> files.
+
+=item I<Desktop>
+
+The desktop environment.
+
+=item I<Panel>
+
+The panel, dock or system tray.
+
+=item I<Application(s)>
+
+Other applications that should be started that may provide a
+WindowMaker dock application or system tray icon.  This might also
+include regular applications that are to be started at login.
+
+=back
+
 =head1 OPTIONS
 
 The program uses L<getopt_long_only(3)> to parse options, so abbreviated
