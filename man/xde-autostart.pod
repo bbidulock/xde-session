@@ -29,9 +29,14 @@ There are several phases to autostart initialization:
 =item I<Initialization>
 
 Initialization that does not require the presence of a window manager
-and typically does not display X windows.
+and typically does not display X windows.  It is the first phase
+executed.
 
-=item I<windowManager>
+Auto-started applications must be marked as requiring the initialization
+stage to be started during this phase (the default is the I<Application>
+phase).
+
+=item I<WindowManager>
 
 The window manager itself and any proxies or window manager assisting
 applications such as session manager proxies and auto-start monitors.
