@@ -46,17 +46,34 @@ specified in XDG F<autostart> files, but rather in F<xsession> files.
 
 =item I<Desktop>
 
-The desktop environment.
+The desktop environment.  This is background setters, icons on the
+desktop.  It does not include panels, docks or system trays.  These
+auto-started applications normally require the presence of a window
+manager before they are launched.
+
+Auto-started applications must be marked as requiring the desktop phase
+unless they are known to B<xde-autostart>.  (An example of a known
+desktop application is the L<xde-desktop(1)> application.)
 
 =item I<Panel>
 
-The panel, dock or system tray.
+The panel, dock or system tray.  This includes any stand-alone panels,
+docks, launchers, system trays and status bars.  These auto-started
+applications normally require the presence of a window manager and
+desktop (or theme setter) before launching.
+
+Auto-started applications must be marked as requiring the panel phase
+unless they are known to B<xde-autostart>.
 
 =item I<Application(s)>
 
 Other applications that should be started that may provide a
 WindowMaker dock application or system tray icon.  This might also
-include regular applications that are to be started at login.
+include regular applications that are to be started at login.  This is
+the default phase for auto-started applications that do not specify a
+phase in their F<.desktop> file.  These applications typically require
+the entire desktop environment (window manager, desktop, panels, docks
+and system trays) to be established before they are launched.
 
 =back
 
