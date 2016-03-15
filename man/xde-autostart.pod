@@ -298,6 +298,27 @@ See the L<xde-session(1)> manual page for details of its operation.
 
 When launched directly, 
 
+=head1 FILES
+
+In general, auto-started F<.desktop> entries are launched using the
+external L<xdg-launch(1)> application (by specifying the F<.desktop>
+file to launch).  B<xde-autostart> establishes the application name for
+launch as well as determining the order and conditions under which to
+launch a particular entry.  Because of this, B<xde-autostart> only
+directly considers a small subset of the B<.desktop> key fields and
+relies on L<xdg-launch(1)> to process the remainder of the fields.
+
+The following F<.desktop> file entries are considered by
+B<xde-autostart>:
+
+=over
+
+=item B<X-GNOME-Autostart-Phase>
+
+=item B<AutostartPhase>
+
+=back
+
 =head1 ENVIRONMENT
 
 The following environment variables are examined by B<xde-autostart>:
