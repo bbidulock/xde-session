@@ -313,11 +313,28 @@ B<xde-autostart>:
 
 =over
 
-=item B<X-GNOME-Autostart-Phase>
+=item B<X-GNOME-Autostart-Phase>={I<Initialization>|I<WindowManager>|I<Desktop>|I<Panel>|I<Application>}
 
-=item B<AutostartPhase>
+This is a GNOME-specific key field that specifies the phase.
+
+Unfortunately, some poorly formatted F<.desktop> files specify the
+value of C<Applications> for this field instead of C<Application>; so,
+B<xde-autostart> treats unknown values for this field as the default
+(which, I<is> C<Application>).
+
+=item B<AutostartPhase>={I<Initialization>|I<WindowManager>|I<Desktop>|I<Panel>|I<Application>}
+
+This is a more general form of the B<X-GNOME-Autostart-PHase> key that
+is not specific to the GNOME desktop environment.  It takes the same
+values as B<X-GNOME-Autostart-PHase>, and provides the same behaviour.
 
 =back
+
+In general, B<xde-autostart> uses the F<.desktop> file key fields above
+to determine the order in which to invoke the separate F<.desktop> file
+auto-start entries.  L<xdg-launch(1)> uses a much wider range of
+F<.desktop> file key fields to launch the auto-started application as
+well as performing startup notification for the launched applications. 
 
 =head1 ENVIRONMENT
 
