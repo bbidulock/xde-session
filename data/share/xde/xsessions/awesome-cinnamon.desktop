@@ -1,9 +1,14 @@
 [Desktop Entry]
 Type=XSession
 Name=Awesome Cinnamon
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
 Comment=Dynamic window manager
+Icon=awesome
 TryExec=/usr/bin/cinnamon
 Exec=cinnamon-session-cinnamon --session=awesome
+NoDisplay=true
 X-AppInstall-Package=awesome-cinnamon
 X-AppInstall-Popcon=3
 X-AppInstall-Section=aur
@@ -15,3 +20,5 @@ X-Arch-Package-Description=Launch awesome with cinnamon-settings-daemon
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/clfarron4/archlinux-awesome-cinnamon/
 X-Arch-Package-Votes=3
+DesktopNames=CINNAMON
+X-LightDM-DesktopName=cinnamon

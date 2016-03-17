@@ -26,7 +26,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://awesome.naquadah.org/
 DesktopNames=AWESOME
 X-LightDM-DesktopName=awesome
-Actions=XDE;
+Actions=XDE;Cinnamon;GNOME;
 
 [Desktop Action XDE]
 Name=XDE
@@ -36,6 +36,22 @@ TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop AWESOME -startwm awesome
 DesktopNames=XDE:AWESOME
 X-LightDM-DesktopName=xde
+
+[Desktop Action Cinnamon]
+Name=Awesome Cinnamon
+Comment=Dynamic window manager
+TryExec=/usr/bin/cinnamon
+Exec=cinnamon-session-cinnamon --session=awesome
+DesktopNames=CINNAMON
+X-LightDM-DesktopName=cinnamon
+
+[Desktop Action GNOME]
+Name=Awesome GNOME
+Comment=Dynamic window manager
+TryExec=/usr/bin/gnome-session
+Exec=gnome-session --session=awesome
+DesktopNames=GNOME
+X-LightDM-DesktopName=gnome
 
 [Window Manager]
 Name=awesome
