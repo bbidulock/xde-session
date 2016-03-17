@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/bbidulock/blackboxwm
 Aliases=blackbox;
 DesktopNames=BLACKBOX
+X-LightDM-DesktopName=blackbox
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop BLACKBOX -startwm start-blackbox
 DesktopNames=XDE:BLACKBOX
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=blackbox
