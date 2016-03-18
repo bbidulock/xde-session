@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.windowmaker.org/
 Aliases=wmaker;
 DesktopNames=WMAKER
+X-LightDM-DesktopName=wmaker
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop WMAKER -startwm wmaker
 DesktopNames=XDE:WMAKER
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=wmaker
