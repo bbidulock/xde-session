@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/bbidulock/flwm
 Aliases=flwm;
 DesktopNames=FLWM
+X-LightDM-DesktopName=flwm
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop FLWM -startwm start-flwm
 DesktopNames=XDE:FLWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=flwm
