@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://porneia.free.fr/larswm/larswm.html
 Aliases=larswm;
 DesktopNames=LARSWM
+X-LightDM-DesktopName=larswm
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop LARSWM -startwm start-larswm
 DesktopNames=XDE:LARSWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=larswm
