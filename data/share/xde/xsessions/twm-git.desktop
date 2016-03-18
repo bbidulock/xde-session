@@ -102,6 +102,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://xorg.freedesktop.org/
 Aliases=twm;
 DesktopNames=TWM
+X-LightDM-DesktopName=twm
 X-SuSE-translate=true
 Actions=XDE;
 
@@ -112,6 +113,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop TWM -startwm start-twm
 DesktopNames=XDE:TWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=twm
