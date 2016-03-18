@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.spectrwm.org
 Aliases=spectrwm;
 DesktopNames=SPECTRWM
+X-LightDM-DesktopName=spectrwm
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop SPECTRWM -startwm spectrwm
 DesktopNames=XDE:SPECTRWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=spectrwm
