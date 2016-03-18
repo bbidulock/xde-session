@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://code.google.com/p/segin-utils/
 Aliases=matwm2;
 DesktopNames=MATWM2
+X-LightDM-DesktopName=matwm2
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop MATWM2 -startwm start-matwm2
 DesktopNames=XDE:MATWM2
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=matwm2
