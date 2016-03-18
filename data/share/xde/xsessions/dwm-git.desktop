@@ -26,6 +26,7 @@ X-Arch-Package-Description=A dynamic window manager for X
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://dwm.suckless.org
 DesktopNames=DWM
+X-LightDM-DesktopName=dwm
 Aliases=dwm;
 Actions=XDE;
 
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop DWM -startwm start-dwm
 DesktopNames=XDE:DWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=dwm
