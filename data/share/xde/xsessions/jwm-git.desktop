@@ -27,6 +27,7 @@ X-Arch-Package-Groups=x11
 X-Arch-Package-URL=http://joewing.net/projects/jwm/
 Aliases=jwm;
 DesktopNames=JWM
+X-LightDM-DesktopName=jwm
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop JWM -startwm jwm
 DesktopNames=XDE:JWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=jwm
