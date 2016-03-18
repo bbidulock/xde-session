@@ -25,6 +25,7 @@ X-Arch-Package-Description=Small, fast, functional, and flexible window manager
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.pekwm.org/
 DesktopNames=PEKWM
+X-LightDM-DesktopName=pekwm
 Aliases=pekwm;
 Actions=XDE;
 
@@ -35,6 +36,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop PEKWM -startwm pekwm
 DesktopNames=XDE:PEKWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=pekwm
