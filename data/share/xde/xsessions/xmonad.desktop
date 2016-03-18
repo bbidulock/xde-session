@@ -1,10 +1,16 @@
 [Desktop Entry]
 Type=XSession
 Name=XMonad
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Tiling window manager
+Icon=xmonad
 TryExec=/usr/bin/xmonad
 Exec=xmonad
 NoDisplay=true
-StartupNotify=false
+Categories=WindowManager;Application;System;
+StartupNotify=true
 X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
@@ -18,3 +24,21 @@ X-Arch-Package-Version=0.11.1-2
 X-Arch-Package-Description=Lightweight X11 tiled window manager written in Haskell
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://xmonad.org/
+DesktopNames=XMONAD
+X-LightDM-DesktopName=xmonad
+Actions=GNOME;
+
+[Desktop Action GNOME]
+Name=GNOME/XMonad
+Comment=XMonad in a GNOME session
+Icon=xmonad
+TryExec=/usr/bin/gnome-session
+Exec=gnome-session --session=xmonad-gnome
+DesktopNames=GNOME
+X-LightDM-DesktopName=gnome
+
+[Window Manager]
+Name=XMonad
+SessionManaged=true
+StartupNotification=true
+X-XDE-Managed=false

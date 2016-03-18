@@ -1,9 +1,21 @@
 [Desktop Entry]
 Type=XSession
 Name=GNOME/XMonad
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
 Comment=Tiling window manager
+Icon=xmonad
 TryExec=/usr/bin/gnome-session
 Exec=gnome-session --session=xmonad-gnome
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=true
+X-GNOME-Autostart-Notify=true
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=XMonad
 X-AppInstall-Package=haskell-xmonad-gnome3
 X-AppInstall-Section=aur
 X-Arch-Package=haskell-xmonad-gnome3 20141022-2
@@ -14,3 +26,6 @@ X-Arch-Package-Description=Minimal XMonad/GNOME3 hybrid desktop configuration. P
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/tonyskn/arch-aur-packages/tree/master/xmonad-gnome3
 X-Arch-Package-Votes=0
+Aliases=xmonad;
+DesktopNames=GNOME
+X-LightDM-DesktopName=gnome
