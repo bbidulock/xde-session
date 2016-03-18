@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://windwm.sourceforge.net/
 Aliases=wind;
 DesktopNames=WIND
+X-LightDM-DesktopName=wind
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop WIND -startwm start-wind
 DesktopNames=XDE:WIND
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=wind
