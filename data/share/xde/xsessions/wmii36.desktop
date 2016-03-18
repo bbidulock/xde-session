@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://wmii.suckless.org/
 Aliases=wmii;
 DesktopNames=WMII
+X-LightDM-DesktopName=wmii
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -exec uxterm -desktop WMII -startwm wmii
 DesktopNames=XDE:WMII
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=wmii
