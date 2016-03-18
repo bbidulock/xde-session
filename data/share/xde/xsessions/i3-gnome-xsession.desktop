@@ -1,9 +1,20 @@
 [Desktop Entry]
 Type=XSession
 Name=i3 + GNOME
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
 Comment=improved dynamic tiling window manager
+Icon=i3
 TryExec=/usr/bin/gnome-session
 Exec=gnome-session --session=i3-gnome
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=i3
 X-AppInstall-Package=i3-gnome
 X-AppInstall-Popcon=24
 X-AppInstall-Section=aur
@@ -15,3 +26,5 @@ X-Arch-Package-Description=Integrate the i3 window manager into GNOME
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://i3wm.org/
 X-Arch-Package-Votes=24
+DesktopNames=I3
+X-LightDM-DesktopName=i3

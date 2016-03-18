@@ -26,7 +26,7 @@ X-Arch-Package-Groups=i3
 X-Arch-Package-URL=http://i3wm.org/
 DesktopNames=I3
 X-LightDM-DesktopName=i3
-Actions=XDE;Debug;
+Actions=XDE;Debug;GNOME;
 
 [Desktop Action XDE]
 Name=XDE
@@ -43,6 +43,9 @@ Comment=improved dynamic tiling window manager
 Icon=i3
 TryExec=/usr/bin/i3-with-shmlog
 Exec=i3-with-shmlog
+
+[Desktop Action GNOME]
+Name=i3 + GNOME
 
 [Window Manager]
 Name=i3
