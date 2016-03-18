@@ -57,6 +57,7 @@ TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop OPENBOX -startwm start-openbox
 DesktopNames=XDE:OPENBOX
 X-LightDM-DesktopName=xde
+X-XDE-Managed=true
 
 [Desktop Action Gnome]
 Name=Gnome
@@ -66,6 +67,7 @@ TryExec=/usr/bin/openbox-gnome-session
 Exec=openbox-gnome-session
 DesktopNames=GNOME
 X-LightDM-DesktopName=gnome
+X-XDE-Managed=false
 
 [Desktop Action KDE]
 Name=KDE
@@ -75,6 +77,7 @@ TryExec=/usr/bin//usr/bin/startkde
 Exec=openbox-kde-session
 DesktopNames=KDE
 X-LightDM-DesktopName=kde
+X-XDE-Managed=false
 
 [Desktop Action Session]
 Name=Session
@@ -84,6 +87,7 @@ TryExec=/usr/bin/openbox-session
 Exec=openbox-session
 DesktopNames=OPENBOX
 X-LightDM-DesktopName=openbox
+X-XDE-Managed=false
 
 [Window Manager]
 Name=Openbox

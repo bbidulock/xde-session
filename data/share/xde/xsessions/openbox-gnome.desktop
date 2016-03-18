@@ -15,7 +15,7 @@ StartupNotify=true
 X-GNOME-Autostart-Notify=true
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-WMName=openbox
+X-GNOME-WMName=Openbox
 X-AppInstall-Package=gnome-session
 X-AppInstall-Section=extra
 X-Arch-Package=gnome-session 3.16.0-1
@@ -25,6 +25,7 @@ X-Arch-Package-Version=3.16.0-1
 X-Arch-Package-Description=The GNOME Session Handler
 X-Arch-Package-Groups=gnome
 X-Arch-Package-URL=http://www.gnome.org
+Aliases=openbox;
 DesktopNames=GNOME
 X-LightDM-DesktopName=gnome
 
