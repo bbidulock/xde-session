@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.ohloh.net/p/velox-wm
 Aliases=velox;
 DesktopNames=VELOX
+X-LightDM-DesktopName=velox
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -exec uxterm -desktop VELOX -startwm velox
 DesktopNames=XDE:VELOX
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=velox
