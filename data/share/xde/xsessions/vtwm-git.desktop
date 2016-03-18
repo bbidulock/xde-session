@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.vtwm.org
 Aliases=vtwm;
 DesktopNames=VTWM
+X-LightDM-DesktopName=vtwm
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop VTWM -startwm start-vtwm
 DesktopNames=XDE:VTWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=vtwm
