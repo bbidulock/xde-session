@@ -26,6 +26,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/bbidulock/icewm
 Aliases=icewm;
 DesktopNames=ICEWM
+X-LightDM-DesktopName=icewm
 X-SuSE-translate=true
 Actions=XDE;Session;
 
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop ICEWM -startwm start-icewmn
 DesktopNames=XDE:ICEWM
+X-LightDM-DesktopName=xde
 
 [Desktop Action Session]
 Name=IceWM Session

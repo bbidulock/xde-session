@@ -25,6 +25,7 @@ X-Arch-Package-Version=1.3.9.104-1
 X-Arch-Package-Description=A window manager designed for speed, usability, and consistency
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/bbidulock/icewm
+Aliases=icewm;
 DesktopNames=ICEWM
 X-LightDM-DesktopName=icewm
 
