@@ -27,6 +27,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.all-day-breakfast.com/wm2/
 Aliases=wm2;
 DesktopNames=WM2
+X-LightDM-DesktopName=wm2
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -exec uxterm -desktop WM2 -startwm wm2
 DesktopNames=XDE:WM2
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=wm2
