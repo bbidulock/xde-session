@@ -27,6 +27,7 @@ X-Arch-Package-URL=http://evilwm.sourceforge.net
 X-Arch-Package-Votes=2
 Aliases=evilwm;
 DesktopNames=EVILWM
+X-LightDM-DesktopName=evilwm
 Actions=XDE;
 
 [Desktop Action XDE]
@@ -36,6 +37,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop EVILWM -startwm start-evilwm
 DesktopNames=XDE:EVILWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=evilwm
