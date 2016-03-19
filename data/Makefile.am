@@ -405,7 +405,7 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/xsessions/icewm.desktop \
 	share/xde/xsessions/icewm-git.desktop \
 	share/xde/xsessions/icewm-session.desktop \
-	share/xde/xsessions/Jwm.desktop \
+	share/xde/xsessions/jwm.desktop \
 	share/xde/xsessions/jwm-git.desktop \
 	share/xde/xsessions/larswm.desktop \
 	share/xde/xsessions/larswm-git.desktop \
