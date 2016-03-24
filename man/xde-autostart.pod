@@ -105,13 +105,6 @@ Print the program version to standard output and exit.
 
 Print copying permissions to standard output and exit.
 
-=item B<--client-id> I<CLIENTID>
-
-Tells the program to restore X Session Management settings saved using
-the client identifier, I<CLIENTID>.  This is an internal option used for
-communicating with an X Session Manager and should not be specified on
-the command line.  See L</USAGE>, below.
-
 =back
 
 =head2 GENERAL OPTIONS
@@ -291,6 +284,26 @@ specified before any non-option argument.)
 
 =back
 
+=head2 SESSION MANAGEMENT OPTIONS
+
+=over
+
+=item B<--client-id> I<CLIENTID>
+
+Tells the program to restore X Session Management settings saved using
+the client identifier, I<CLIENTID>.  This is an internal option used for
+communicating with an X Session Manager and should not be specified on
+the command line.  See L</USAGE>, below.
+
+=item B<--save-file> I<FILENAME>
+
+Tells the program that persistent information was saved in the file with
+path I<FILENAME>.  This is an internal option used for communicating
+with an X Session Manager and should not be specified on the command
+line.  See L</USAGE>, below.
+
+=back
+
 =head1 USAGE
 
 B<xde-autostart> is intended on being launched by L<xde-session(1)>.
@@ -381,11 +394,13 @@ and L<lxsession(1)> when launching XDG-compliant applications and
 desktop environments over NetWM/EWMH compliant light-weight window
 managers.  Most of these tools perform autostart I<before> the window
 manager is started, which can confuse the window manager.
-B<xde-autostart> auto-starts program I<after> the window manager has
-appeared.
+B<xde-autostart> auto-starts applications I<after> the window manager
+has appeared while auto-starting entries marked with the
+I<Initialization> phase before the window manager.
 
-B<xde-autostart> was originally written using L<perl-gtk>, but was
-rewritten as a C<C>-language program.
+B<xde-autostart> was originally written using L<perl-gtk>, and was
+part of the L<perl> program B<xde-session>, but was rewritten as a
+C<C>-language program.
 
 =head1 AUTHOR
 
