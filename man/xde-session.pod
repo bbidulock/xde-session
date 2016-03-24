@@ -352,7 +352,8 @@ L<https://github.com/bbidulock/xde-session/issues>.
 
 I wrote B<xde-session> due to the deficiencies of B<fbautostart(1)> and
 L<lxsession(1)> when launching XDG-compliant applications and desktop
-environments over NWM/ENWM compliant light-weight window managers.
+environments over NWM/ENWM compliant light-weight window managers.  The
+program was originally written in C<perl>, but later ported to C<C>.
 
 =head1 AUTHOR
 
