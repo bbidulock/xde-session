@@ -1195,15 +1195,15 @@ check_audio()
 	char *s;
 
 	if (!(s = get_text(root, _XA_PULSE_COOKIE)))
-		return None;
+		return (wm.audio_owner = None);
 	XFree(s);
 	if (!(s = get_text(root, _XA_PULSE_SERVER)))
-		return None;
+		return (wm.audio_owner = None);
 	XFree(s);
 	if (!(s = get_text(root, _XA_PULSE_ID)))
-		return None;
+		return (wm.audio_owner = None);
 	XFree(s);
-	return (root);
+	return (wm.audio_owner = root);
 }
 
 static void
