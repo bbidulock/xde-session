@@ -106,10 +106,11 @@ be set) before running the command or exiting.
 Wait for a compositing manager to appear before running the command or
 exiting.
 
-=item B<-U>, B<--audio>, B<--pulse-audio>
+=item B<-U>, B<--audio>, B<--audio-server>
 
-Wait for an X11 pulse audio server to appear (or for root window
-properties to be set) before running the command and exiting.
+Wait for an X11 audio server to appear (or for root window properties to
+be set) before running the command and exiting.  The only audio server
+currently detected is pulse audio.
 
 =item B<-A>, B<--all>
 
@@ -145,9 +146,17 @@ level is 0.
 
 =head1 USAGE
 
-The common procedure when starting light-weight window managers is to
-start a start a window manager and sleep for two seconds before starting
-applications like so:
+Normally waiting for a specific resource to appear before launching an
+application is performed internal to L<xdg-launch(1)>, or by
+applications such as L<xde-autostart(1)>, within the XDG desktop
+specifications.  However, some applications do not have desktop entries
+and still may need to await resources in specific startup scripts.  For
+this purpose, B<xde-wait> will await the necessary resources before
+continuing.
+
+For example, the common procedure when starting light-weight window
+managers is to start a start a window manager and sleep for two seconds
+before starting applications like so:
 
     start-fluxbox & wm=$!
     sleep 2

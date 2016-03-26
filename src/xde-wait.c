@@ -136,6 +136,7 @@ typedef struct {
 	Bool systray;
 	Bool pager;
 	Bool composite;
+	Bool audio;
 	Time delay;
 	char **eargv;
 	int eargc;
@@ -154,6 +155,7 @@ Options options = {
 	.systray = False,
 	.pager = False,
 	.composite = False,
+	.audio = False,
 	.delay = 2000,
 	.eargv = NULL,
 	.eargc = 0,
@@ -177,6 +179,7 @@ typedef struct {
 	Window pager_owner;		/* _NET_DESKTOP_LAYOUT_S%d owner */
 	Window compm_owner;		/* _NET_WM_CM_S%d owner */
 	Window shelp_owner;		/* _XDG_ASSIST_S%d owner */
+	Window audio_owner;		/* PULSE_SERVER owner or root */
 } WindowManager;
 
 WindowManager wm;
@@ -204,6 +207,9 @@ Atom _XA_WIN_WORKSPACE;
 Atom _XA_XDG_ASSIST_CMD;
 Atom _XA_XDG_ASSIST_CMD_QUIT;
 Atom _XA_XDG_ASSIST_CMD_REPLACE;
+Atom _XA_PULSE_COOKIE;
+Atom _XA_PULSE_SERVER;
+Atom _XA_PULSE_ID;
 
 static Bool handle_MANAGER(XEvent *);
 static Bool handle_MOTIF_WM_INFO(XEvent *);
@@ -219,6 +225,9 @@ static Bool handle_WINDOWMAKER_NOTICEBOARD(XEvent *);
 static Bool handle_WIN_PROTOCOLS(XEvent *);
 static Bool handle_WIN_SUPPORTING_WM_CHECK(XEvent *);
 static Bool handle_WIN_WORKSPACE(XEvent *);
+static Bool handle_PULSE_COOKIE(XEvent *);
+static Bool handle_PULSE_SERVER(XEvent *);
+static Bool handle_PULSE_ID(XEvent *);
 
 struct atoms {
 	char *name;
@@ -252,6 +261,9 @@ struct atoms {
 	{ "_XDG_ASSIST_CMD_QUIT",		&_XA_XDG_ASSIST_CMD_QUIT,		NULL,					None			},
 	{ "_XDG_ASSIST_CMD_REPLACE",		&_XA_XDG_ASSIST_CMD_REPLACE,		NULL,					None			},
 	{ "_XDG_ASSIST_CMD",			&_XA_XDG_ASSIST_CMD,			NULL,					None			},
+	{ "PULSE_COOKIE",			&_XA_PULSE_COOKIE,			&handle_PULSE_COOKIE,			None			},
+	{ "PULSE_SERVER",			&_XA_PULSE_SERVER,			&handle_PULSE_SERVER,			None			},
+	{ "PULSE_ID",				&_XA_PULSE_ID,				&handle_PULSE_ID,			None			},
 	{ NULL,					NULL,					NULL,					None			}
 	/* *INDENT-ON* */
 };
@@ -366,7 +378,6 @@ put_display()
 	}
 }
 
-#if 0
 static char *
 get_text(Window win, Atom prop)
 {
@@ -379,7 +390,6 @@ get_text(Window win, Atom prop)
 	}
 	return NULL;
 }
-#endif
 
 static long *
 get_cardinals(Window win, Atom prop, Atom type, long *n)
@@ -990,7 +1000,7 @@ check_for_window_manager()
 	return check_anywm();
 }
 
-void
+static void
 wait_for_window_manager()
 {
 	PTRACE();
@@ -1066,7 +1076,7 @@ handle_NET_SYSTEM_TRAY_VISUAL(XEvent *e)
 	return True;
 }
 
-void
+static void
 wait_for_system_tray()
 {
 	PTRACE();
@@ -1119,7 +1129,7 @@ handle_NET_DESKTOP_LAYOUT(XEvent *e)
 	return True;
 }
 
-void
+static void
 wait_for_desktop_pager()
 {
 	PTRACE();
@@ -1158,7 +1168,7 @@ check_compm()
 	return (wm.compm_owner = win);
 }
 
-void
+static void
 wait_for_composite_manager()
 {
 	PTRACE();
@@ -1179,6 +1189,64 @@ wait_for_composite_manager()
 	wait_for_condition(&check_compm);
 }
 
+static Window
+check_audio()
+{
+	char *s;
+
+	if (!(s = get_text(root, _XA_PULSE_COOKIE)))
+		return None;
+	XFree(s);
+	if (!(s = get_text(root, _XA_PULSE_SERVER)))
+		return None;
+	XFree(s);
+	if (!(s = get_text(root, _XA_PULSE_ID)))
+		return None;
+	XFree(s);
+	return (root);
+}
+
+static void
+wait_for_audio_server()
+{
+	PTRACE();
+	if (check_audio()) {
+		if (options.info) {
+			fputs("Have an audio server:\n\n", stdout);
+			fprintf(stdout, "%-24s = 0x%08lx\n", "Audio server window", wm.audio_owner);
+			fputs("\n", stdout);
+		}
+		return;
+	} else {
+		if (options.info) {
+			fputs("Would wait for audio server\n", stdout);
+			return;
+		}
+	}
+	wait_for_condition(&check_audio);
+}
+
+static Bool
+handle_PULSE_COOKIE(XEvent *e)
+{
+	check_audio();
+	return True;
+}
+
+static Bool
+handle_PULSE_SERVER(XEvent *e)
+{
+	check_audio();
+	return True;
+}
+
+static Bool
+handle_PULSE_ID(XEvent *e)
+{
+	check_audio();
+	return True;
+}
+
 static Bool
 handle_MANAGER(XEvent *e)
 {
@@ -1193,7 +1261,7 @@ handle_MANAGER(XEvent *e)
 static void
 wait_for_resource()
 {
-	if (options.manager || options.systray || options.pager || options.composite) {
+	if (options.manager || options.systray || options.pager || options.composite || options.audio) {
 		if (options.manager)
 			wait_for_window_manager();
 		if (options.systray)
@@ -1202,6 +1270,8 @@ wait_for_resource()
 			wait_for_desktop_pager();
 		if (options.composite)
 			wait_for_composite_manager();
+		if (options.audio)
+			wait_for_audio_server();
 	} else
 		DPRINTF("No resource wait requested.\n");
 }
@@ -1382,6 +1452,8 @@ Options:\n\
         wait for desktop pager before proceeding [default: %10$s]\n\
     -O, --composite, --composite-manager\n\
         wait for composite manager before proceeding [default: %11$s]\n\
+    -U, --audio, --audio-server\n\
+        wait for audio server before proceeding [default: %15$s]\n\
     -A, --all\n\
         wait for all desktop resource [default: %14$s]\n\
     -t, --delay MILLISECONDS\n\
@@ -1406,6 +1478,7 @@ Options:\n\
 	, options.delay
 	, show_bool(options.info)
 	, show_bool(options.all)
+	, show_bool(options.audio)
 );
 	/* *INDENT-ON* */
 }
@@ -1452,6 +1525,8 @@ main(int argc, char *argv[])
 			{"pager",		no_argument,		NULL,	'P'},
 			{"composite-manager",	no_argument,		NULL,	'O'},
 			{"composite",		no_argument,		NULL,	'O'},
+			{"audio-server",	no_argument,		NULL,	'U'},
+			{"audio",		no_argument,		NULL,	'U'},
 			{"all",			no_argument,		NULL,	'A'},
 			{"delay",		required_argument,	NULL,	't'},
 
@@ -1465,10 +1540,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "d:s:wciNWSOAt:D::v::hVCH?",
+		c = getopt_long_only(argc, argv, "d:s:wciNWSOUAt:D::v::hVCH?",
 				     long_options, &option_index);
 #else				/* _GNU_SOURCE */
-		c = getopt(argc, argv, "d:s:wciNWSOAt:DvhVCH?");
+		c = getopt(argc, argv, "d:s:wciNWSOUAt:DvhVCH?");
 #endif				/* _GNU_SOURCE */
 		if (c == -1 || exec_mode) {
 			DPRINTF("done options processing\n");
@@ -1526,12 +1601,17 @@ main(int argc, char *argv[])
 			options.composite = True;
 			options.nowait = False;
 			break;
+		case 'U':	/* -U, --audio-server, --audio */
+			options.audio = True;
+			options.nowait = False;
+			break;
 		case 'A':	/* -A, --all */
 			options.all = True;
 			options.manager = True;
 			options.systray = True;
 			options.pager = True;
 			options.composite = True;
+			options.audio = True;
 			break;
 		case 't':	/* -t, --delay MILLISECONDS */
 			if ((val = strtoul(optarg, &endptr, 0)) < 0)
