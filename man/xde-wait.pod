@@ -106,10 +106,16 @@ be set) before running the command or exiting.
 Wait for a compositing manager to appear before running the command or
 exiting.
 
+=item B<-U>, B<--audio>, B<--pulse-audio>
+
+Wait for an X11 pulse audio server to appear (or for root window
+properties to be set) before running the command and exiting.
+
 =item B<-A>, B<--all>
 
-Wait for all desktop resources (window manager, system tray, desktop
-pager and composite manager) before running the command or exiting.
+Wait for all desktop resources (audio server, window manager, system
+tray, desktop pager and composite manager) before running the command or
+exiting.
 
 =item B<-t>, B<--delay> I<MILLISECONDS>
 
