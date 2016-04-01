@@ -6,6 +6,354 @@ History of major user-visible changes:
 Release @PACKAGE@-@VERSION@ released @DATE@
 -------------------------------------------
 
+git shortlog -e -n -w80,6,8 1.1...1.2
+
+Brian Bidulock <bidulock@openss7.org> (174):
+      pretty print xsession desktop files
+      pretty print autostart desktop files
+      pretty print desktop file
+      add some types
+      clean up some desktop entries
+      update headers
+      add more arch package info
+      add more arch package info
+      updates to xsession files
+      update default key bindings for adwm
+      add in MVWM window manager
+      add in new window manager files
+      update openbox xsession
+      add option to have xde-chooser output filename
+      updated xsession files
+      updated autostart and xsessions
+      update session files
+      also add each xsession as an application
+      updates to xsession files
+      correct multiples
+      remove redundant pekwm_kdm
+      correct duplicate FVWM
+      update some applications
+      update keys files for audio
+      update gnome compiz session
+      update some man pages
+      update icewm keys for audio
+      bring pixmaps under VCS
+      bring pixmaps under VCS
+      add perl development test program
+      spelling corrections
+      updated manual page
+      updated manual page
+      updated manual page
+      updated manual page
+      updated manual page
+      updated manual page
+      updated manual page
+      updated manual page
+      updated manual page
+      updated manual page
+      updated manual page
+      updated TODO
+      add manager documentation
+      spelling
+      spelling
+      spelling
+      spelling
+      spelling
+      spelling
+      spelling
+      spelling
+      spelling
+      document behavior
+      add xde-wait utility
+      change repo for bugs
+      consistent copyright statement
+      some corrections
+      some more corrections
+      setup/start.sh are in config dir not data dir
+      update copyright headers
+      working up complete documentation
+      target can be NULL
+      sure, bring in app-defaults
+      no backslash for trailing spaces
+      updating documentation
+      add xde-sm manual page
+      update manual pages
+      updated manpages
+      remove unnecessary headers
+      update manpage for xde-login
+      updating documentation
+      change backslashes back the way they were
+      start working up xde-sm
+      no longer a perl module
+      add LICENSE clause
+      add xde-smproxy to mix
+      update session manager code
+      consistent canel case
+      add vim line
+      working up session manager
+      convert hash tables to lists
+      working up session manager
+      more session manager workup
+      delete properties in session manager
+      convert lists to queues
+      correct interact done behaviour
+      implement finish up save
+      reorganize somewhat
+      more comments
+      working up session manager
+      start making state machine robust
+      support limited checkpoint/shutdown
+      better printing
+      set initial properties
+      free client implemented
+      working up session manager
+      determine rstart protocol
+      add a type
+      fix some indentation
+      free authentication data
+      ignore vim swap files
+      document xmproxy
+      update documentation for xde-wmproxy
+      update documentation for xde-xchooser
+      update documentation for xde-xlock
+      update documentation for xde-xlogin
+      updating documentation
+      update documentation
+      start using gdbus instead of dbus-glib
+      lock on inactive session
+      more conversion to gdbus
+      more gdbus conversion
+      more gdbus conversion
+      complete gdbus conversion
+      final gdbus conversion
+      gdbus and getnameinfo
+      convert to gdbus
+      remove dbus-glib dependency
+      remove glib-dbus
+      prepare for guard time
+      abort locking under 5 seconds
+      rationalize like programs
+      add guard time option
+      rationalize like programs
+      add guard timer to manpage
+      minor build system modifications
+      spelling
+      corrections
+      update docs
+      update readme
+      update xde-autostart documentation
+      update xde-autostart documentation
+      update xde-autostart documentation
+      manual page updates
+      add lightdm definitions to adwm xsession
+      adjustments to awesome xsessions
+      add lightdm info to xsession for blackbox
+      add lightdm info to xsession for ctwm
+      add lightdm info to xsession for cwm
+      add lightdm info to xsession for dwm
+      add lightdm info to xsession for echinus
+      add lightdm info to xsession for evilwm
+      add lightdm info to xsession for fluxbox
+      add lightdm info to xsession for flwm
+      add some missing information to xsession for i3
+      add lightdm info to xsession for icewm
+      add lightdm info to xsession for jwm
+      add lightdm info to xsession for larswm
+      add lightdm info to xsession for matwm2
+      add lightdm info to xsessions for openbox
+      add lightdm info to xsession for pekwm
+      add lightdm info to xsession for spectrwm
+      add lightdm info to xsession for twm
+      add lightdm info to xsession for uwm
+      add lightdm info to xsession for velox
+      add lightdm info to xessions for waimea
+      add lightdm info to xsessions for windowmaker
+      add lightdm info to xsession for wind
+      add lightdm info to xsession for vtwm
+      add lightdm info to xsession for wm2
+      add lightdm info to xsession for wmii
+      add lightdm info the xsession for wmx
+      full xsession entries for xmonad
+      rename Jwm.desktop to jwm.desktop
+      add encoding
+      add translations
+      more translations for e16
+      update history
+      update manpage
+      add audio option
+      add audio server option to xde-wait
+      update readme
+      correction to audio server wait
+
+
+Release xde-session-1.1 released 2014-09-17
+-------------------------------------------
+
+git shortlog -e -n -w80,6,8 1.0...1.1
+
+Brian Bidulock <bidulock@openss7.org> (155):
+      added XDG and light-weigth window manager configuration files
+      add autostart and pod files
+      added indent file
+      first stab at xde-xchooser
+      working up utilities
+      working up some nice programs
+      working up programs
+      working up xde-wmproxy
+      added xde-smproxy
+      add smproxy pod
+      getting things to compile
+      more compiling
+      more compilation
+      last compilation
+      strap in options processing for programs
+      added in xde-wmproxy and xde-xlogin programs
+      add options to xde-chooser
+      add xde-input options
+      add options to xde-logout
+      set default banners
+      add window manager checks
+      working up xde-chooser
+      working up xde-chooser
+      update xde-chooser documentation
+      get options processing right on xde-chooser
+      get and display default and current session
+      xde-chooser now runs the same as perl version
+      have xde-chooser take over screen like xde-logout
+      working up xde-logout
+      xde-logout works now like the perl program
+      identify options better
+      start working up xde-autostart
+      correction and process file default xde-autostart
+      working up xde-autostart
+      got xde-xchooser working like perl program
+      workup startup notificaiton for xde-autostart
+      started big workup of xde-xsession
+      working up documentation
+      checkpoint
+      start splitting off
+      building up xde-xsession
+      more xde-xsession workup
+      more splitting and workup of xde-xsession
+      rationalize a bit
+      some manpage updates
+      working up session components
+      adding session managerment to xde-logout
+      add session management checkpoint and shutdown
+      added -ggdb to debug flags in maintainer script
+      added some ignores
+      working on systemd mutli-session integration
+      test session locking
+      should display AF_UNIX address (but moot now)
+      unfortunately systemd allows none of this
+      added more functions to chooser
+      getting there
+      better icon
+      working up much better xdm chooser
+      do not expect broadcast on IPv6 addresses
+      working up xchooser, xlogin and xlock
+      removed stray binary
+      working up xlock and xlogin
+      use $HOME/.dmrc for defaults as well
+      change user menu for xde-xlogin
+      add switch users to xde-logout
+      working up login, logout, lock
+      handle multiple screens and monitors
+      prepare for RANDR changes
+      split out pane and panel
+      added in xde-xlock
+      add documentation for xde-xlock
+      add readme for github
+      update
+      check for MIT-SCREEN-SAVER extension
+      better arrangement
+      more rework and reorg
+      better expose, power menu
+      rationalize approach across four programs
+      rationalize xde-logout for multiple screens and monitors
+      label tweaks
+      more rationalization and common factoring
+      rework local locations of config files for inplace execution
+      passes distcheck again
+      install scripts as executable
+      handle defaults better
+      handle default backgrounds (splash)
+      add missing images
+      provided splash background where possible
+      cannot grab here
+      add in xdm files for xde
+      move data files around a lot
+      add RANDR monitor support and rough out PAM
+      build chooser xsession list better, retain filename
+      handle selections better and set cursors
+      more consistent xsession list store naming and handling
+      config files were ignored
+      added a maintainer script
+      remove config from ignore file
+      ignored an entire directory - fixed
+      more ignored files that shouldn't be
+      no camel case on xdm option flags
+      handle xdm address port properly
+      copy xdm address correctly
+      copy port number correctly for xdm socket address
+      more corrections to xdm socket output
+      try non-interactive power management
+      corrected typo in object path
+      better background handling
+      ensure window moves and resizes when screen resizes
+      ensure vendor option included on all
+      handle xdmcp addresses a bit better
+      when client is local, use any connection type
+      handle scopes in xchooser code
+      handle scopes even better
+      correct byte ordering in comparisons
+      copyover
+      read X resources set by xdm(1) on startup
+      add in xsession default
+      regrab after menu popup particularly on xde-xlock
+      add transparency and background setting options
+      add libxvnc, better resource handling
+      a whole lot of rationalization
+      prepare for custom styling resources
+      theme customization using resources
+      rationalize resource handling
+      add local connection detection
+      sort vts and show active user as insensitive
+      tweak
+      only change colors when transparent
+      output must be case folded
+      expose events too late for shaded root background
+      use setstyle approach for root window background too
+      working up resources
+      do not necessarily show windows immediately
+      fix up startup scripts
+      problems getting GTK to deliver Xss events
+      lock when screen saver expires
+      gentler VNC checks
+      added logind notes
+      this basically works now
+      added desktop file for screen locker
+      setbg needs to be false for xde-xlock
+      more indentation
+      handle radix character issues
+      new key defaults for adwm
+      default keys and startup/setup scripts
+      start and setup for pekwm
+      tweaks to pekwm configuration
+      correct focus behaviour on window cycling
+      proper theme setup for adwm
+      corrections to adwm setup
+      proper pixmap path handling
+      add missing files
+      install scripts as scripts
+      update keys
+
+
+Release xde-session-1.0 released 2014-05-31
+-------------------------------------------
+
+git shortlog -e -n -w80,6,8 ...1.0
+
 This is the initial development release of @PACKAGE@.
+
 
 # vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:
