@@ -82,8 +82,9 @@ shell script between L<xdm(1)> and B<xde-xlogin> that adds the
 options:
 
  #!/bin/sh
- /usr/lib/X11/xdm/xde-xlogin -prompt "Welcome to X!" \
-	 -banner /usr/lib/X11/xdm/banner.png $@
+ XDM=/usr/lib/X11/xdm
+ $XDM/xde-xlogin -prompt "Welcome to X!" \
+	 -banner $XDM/banner.png $@
 
 =item B<-b>, B<--banner> I<BANNER>
 
@@ -93,11 +94,12 @@ invoked by a shell script invoked by L<xdm(1)> that adds the options.
 For example:
 
  #!/bin/sh
- /usr/lib/X11/xdm/xde-xlogin -banner /usr/lib/X11/xdm/xde/banner.png $@
+ XDM=/usr/lib/X11/xdm
+ $XDM/xde-xlogin -banner $XDM/xde/banner.png $@
 
 The default is obtained by looking for the file
 F<${XDG_MENU_PREFIX}banner.{xpm,png,jpg,svg}> in the F<images>
-subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
+sub-directory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
 L</ENVIRONMENT>.
 
 =item B<-S>, B<--splash> I<SPLASH>
@@ -107,7 +109,7 @@ The default is to use the background image currently installed on the
 screen, and if no background image is installed on the screen, to search
 for the background image file in the file named
 F<${XDG_MENU_PREFIX}splash.{xpm,png,jpg,svg}> in the F<images>
-subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
+sub-directory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
 L</ENVIRONMENT>.
 
 L<xdm(1)> does not provide this option, but it can easily be
@@ -115,7 +117,8 @@ invoked by a shell script by L<xdm(1)> that adds the options.  For
 example:
 
  #!/bin/sh
- /usr/lib/X11/xdm/xde-xlogin -splash /usr/lib/X11/xdm/xde/splash.jpg $@
+ XDM=/usr/lib/X11/xdm
+ $XDM/xde-xlogin -splash $XDM/xde/splash.jpg $@
 
 =item B<-s>, B<--side> {B<left>|B<top>|B<right>|B<bottom>}
 
@@ -288,7 +291,7 @@ Provides the banner to use for the branding logo in the same fashion as
 the B<-banner> command line option.  Specifies the I<PATH> to the banner
 graphic to display in the left pane of the host menu.  When unspecified,
 the program searches for an image file name
-F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the subdirectory
+F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the sub-directory
 F<images> in XDG data directories.
 
 =item B<xde-xlogin>.B<splash>: I<PATH>
@@ -785,7 +788,7 @@ greeter or chooser programs.
 Because the greeter and chooser is associated with XDE, a complete set of
 L<xdm(1)> configuration files, including the X resources file containing
 B<XDE-XLogin> resources are contained in the F</etc/X11/xdm/xde>
-subdirectory.  Application defaults are not loaded from anywhere else
+sub-directory.  Application defaults are not loaded from anywhere else
 for security.
 
 =item F</usr/share/X11/app-defaults/XDE-XLogin>
