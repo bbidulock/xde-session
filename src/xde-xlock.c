@@ -3231,8 +3231,8 @@ comparevts(const void *a, const void *b)
 static void
 append_switch_users(GtkMenu *menu)
 {
-	const char *seat, *sess;
-	char **sessions = NULL, **s;
+	const char *seat;
+	char *sess, **sessions = NULL, **s;
 	GtkWidget *submenu, *jumpto;
 	gboolean gotone = FALSE;
 	Bool islocal;
@@ -3250,7 +3250,10 @@ append_switch_users(GtkMenu *menu)
 	submenu = gtk_menu_new();
 
 	seat = getenv("XDG_SEAT") ? : "seat0";
-	sess = getenv("XDG_SESSION_ID");
+	if (getenv("XDG_SESSION_ID"))
+		sess = strdup(getenv("XDG_SESSION_ID"));
+	else
+		sd_pid_get_session(getpid(), &sess);
 	if (sd_seat_can_multi_session(NULL) <= 0) {
 		DPRINTF("%s: cannot multi-session\n", seat);
 		return;
@@ -3340,6 +3343,7 @@ append_switch_users(GtkMenu *menu)
 		} else
 			gtk_widget_set_sensitive(item, FALSE);
 	}
+	free(sess);
 	free(sessions);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(jumpto), submenu);
 	if (gotone)

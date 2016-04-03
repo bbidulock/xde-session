@@ -1113,8 +1113,8 @@ comparevts(const void *a, const void *b)
 GtkWidget *
 get_user_menu(void)
 {
-	const char *seat, *sess;
-	char **sessions = NULL, **s;
+	const char *seat;
+	char *sess, **sessions = NULL, **s;
 	GtkWidget *menu = NULL;
 	gboolean gotone = FALSE;
 	Bool islocal;
@@ -1123,7 +1123,10 @@ get_user_menu(void)
 	islocal = isLocal();
 
 	seat = getenv("XDG_SEAT") ? : "seat0";
-	sess = getenv("XDG_SESSION_ID");
+	if (getenv("XDG_SESSION_ID"))
+		sess = strdup(getenv("XDG_SESSION_ID"));
+	else
+		sd_pid_get_session(getpid(), &sess);
 	if (sd_seat_can_multi_session(NULL) <= 0) {
 		DPRINTF("%s: cannot multi-session\n", seat);
 		return (NULL);
@@ -1213,6 +1216,7 @@ get_user_menu(void)
 		} else
 			gtk_widget_set_sensitive(item, FALSE);
 	}
+	free(sess);
 	free(sessions);
 	if (gotone)
 		return (menu);
