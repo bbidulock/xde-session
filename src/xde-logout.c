@@ -900,7 +900,7 @@ setup_systemd(void)
 		g_clear_error(&err);
 		return;
 	}
-	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
+	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID") ? : "self");
 	if (!(sd_session =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
 					    "org.freedesktop.login1.Session", NULL, &err)) || err) {

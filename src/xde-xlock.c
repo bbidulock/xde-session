@@ -766,7 +766,7 @@ setup_systemd(void)
 	}
 	g_signal_connect(G_OBJECT(sd_manager), "g-signal",
 			 G_CALLBACK(on_sd_prox_manager_signal), NULL);
-	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID"));
+	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID") ? : "self");
 	if (!(sd_session =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
 					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
@@ -797,7 +797,7 @@ setidlehint(gboolean flag)
 	if (!(result =
 	      g_dbus_proxy_call_sync(sd_session, "SetIdleHint", g_variant_new("(b)", flag),
 				     G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err)) || err) {
-		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID") ? : "self",
 			err ? err->message : NULL);
 		g_clear_error(&err);
 		return;
@@ -5204,7 +5204,7 @@ do_lock(int argc, char *argv[])
 		result = g_dbus_proxy_call_sync(sd_session, "Lock",
 				NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 		if (!result || err) {
-			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID") ? : "self",
 				err ? err->message : NULL);
 			g_clear_error(&err);
 		} else
@@ -5285,7 +5285,7 @@ do_unlock(int argc, char *argv[])
 		result = g_dbus_proxy_call_sync(sd_session, "Unlock",
 				NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 		if (!result || err) {
-			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID"),
+			EPRINTF("Lock: %s: call failed: %s\n", getenv("XDG_SESSION_ID") ? : "self",
 				err ? err->message : NULL);
 			g_clear_error(&err);
 		} else

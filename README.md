@@ -1,7 +1,7 @@
 
 ## xde-session
 
-Package xde-session-1.2 was released under GPL license 2016-03-26.
+Package xde-session-1.2.1 was released under GPL license 2016-04-02.
 
 This package provides a number of "C"-language tools for working with
 the X Desktop Environment.  Most of these tools were previously written
@@ -25,7 +25,7 @@ Primary tools included are:
 
 ### Release
 
-This is the `xde-session-1.2` package, released 2016-03-26.  This release,
+This is the `xde-session-1.2.1` package, released 2016-04-02.  This release,
 and the latest version, can be obtained from the GitHub repository at
 https://github.com/bbidulock/xde-session, using a command such as:
 
