@@ -89,7 +89,7 @@ will also be set to the file name in the user session.
 
 The target XDG desktop environment.  When unspecified, defaults to the
 contents of the B<XDG_CURRENT_DESKTOP> environment variable.
-When set, the B<XDG_SESSION_DESKTOP> environment variable will be set to
+When set, the B<XDG_CURRENT_DESKTOP> environment variable will be set to
 the desktop name in the user session.
 
 =item B<-S>, B<--service> I<SERVICE>
