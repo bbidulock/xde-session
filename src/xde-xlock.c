@@ -164,33 +164,11 @@ timestamp(void)
 static int saveArgc;
 static char **saveArgv;
 
-#undef DO_XCHOOSER
-#define DO_XLOCKING 1
 #undef DO_ONIDLE
-#undef DO_CHOOSER
-#undef DO_LOGOUT
 
-#if defined(DO_XCHOOSER)
-#   define RESNAME "xde-xchooser"
-#   define RESCLAS "XDE-XChooser"
-#   define RESTITL "XDMCP Chooser"
-#elif defined(DO_XLOCKING)
-#   define RESNAME "xde-xlock"
-#   define RESCLAS "XDE-XLock"
-#   define RESTITL "X11 Locker"
-#elif defined(DO_CHOOSER)
-#   define RESNAME "xde-chooser"
-#   define RESCLAS "XDE-Chooser"
-#   define RESTITL "XDE X11 Session Chooser"
-#elif defined(DO_LOGOUT)
-#   define RESNAME "xde-logout"
-#   define RESCLAS "XDE-Logout"
-#   define RESTITL "XDE X11 Session Logout"
-#else
-#   define RESNAME "xde-xlogin"
-#   define RESCLAS "XDE-XLogin"
-#   define RESTITL "XDMCP Greeter"
-#endif
+#define RESNAME "xde-xlock"
+#define RESCLAS "XDE-XLock"
+#define RESTITL "X11 Locker"
 
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
 
@@ -450,7 +428,6 @@ typedef enum {
 
 LoginState state = LoginStateInit;
 
-#ifdef DO_XLOCKING
 typedef enum {
 	LockStateLocked,
 	LockStateUnlocked,
@@ -466,8 +443,6 @@ typedef enum {
 	LockCommandQuit,
 } LockCommand;
 
-#endif				/* DO_XLOCKING */
-
 typedef enum {
 	LoginResultLogout,
 	LoginResultLaunch,
@@ -481,7 +456,6 @@ Atom _XA_XDE_XLOCK_COMMAND;
 Atom _XA_XROOTPMAP_ID;
 Atom _XA_ESETROOT_PMAP_ID;
 
-#ifdef DO_XLOCKING
 int xssEventBase;
 int xssErrorBase;
 int xssMajorVersion;
@@ -516,7 +490,6 @@ xssKind(int kind)
 	}
 	return ("(unknown)");
 }
-#endif
 
 const char *
 showBool(Bool boolean)
@@ -543,16 +516,13 @@ typedef struct {
 	XdeMonitor *mons;		/* monitors for this screen */
 	GdkPixmap *pixmap;		/* pixmap for background image */
 	GdkPixbuf *pixbuf;		/* pixbuf for background image */
-#ifdef DO_XLOCKING
 	XScreenSaverInfo info;		/* screen saver info for this screen */
 	char selection[32];
 	Window selwin;
-#endif
 } XdeScreen;
 
 XdeScreen *screens;
 
-#ifdef DO_XLOCKING
 typedef struct {
 	int xfd;
 	Display *dpy;
@@ -650,16 +620,13 @@ setup_screensaver(void)
 	}
 }
 
-#endif /* DO_XLOCKING */
 
 GDBusProxy *sd_manager = NULL;
 GDBusProxy *sd_session = NULL;
 
-#ifdef DO_XLOCKING
 static void LockScreen(void);
 static void UnlockScreen(void);
 static void AbortLockScreen(void);
-#endif
 
 void
 on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
@@ -679,13 +646,11 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 {
 	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
-#ifdef DO_XLOCKING
 	if (!strcmp(signal_name, "Lock")) {
 		LockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
 		UnlockScreen();
 	}
-#endif
 }
 
 void
@@ -734,10 +699,8 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 				continue;
 			}
 			if (!g_variant_get_boolean(boxed)) {
-#ifdef DO_XLOCKING
 				DPRINTF("went inactive, locking screen\n");
 				LockScreen();
-#endif
 			}
 			g_variant_unref(key);
 			g_variant_unref(val);
@@ -781,8 +744,6 @@ setup_systemd(void)
 			 G_CALLBACK(on_sd_prox_session_props_changed), NULL);
 	g_free(s);
 }
-
-#ifdef DO_XLOCKING
 
 void
 setidlehint(gboolean flag)
@@ -846,65 +807,6 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 	}
 	return G_SOURCE_CONTINUE;
 }
-#endif				/* DO_XLOCKING */
-
-#ifdef DO_XCHOOSER
-#define PING_TRIES	3
-#define PING_INTERVAL	2	/* 2 seconds */
-
-XdmcpBuffer directBuffer;
-XdmcpBuffer broadcastBuffer;
-
-static gpointer
-sockaddr_copy_func(gpointer boxed)
-{
-	struct sockaddr_storage *sa = boxed;
-	struct sockaddr_storage *na = NULL;
-
-	if (sa && (na = calloc(1, sizeof(*na))))
-		memmove(na, sa, sizeof(*na));
-	return (na);
-}
-
-static void
-sockaddr_free_func(gpointer boxed)
-{
-	free(boxed);
-}
-
-static GType
-g_sockaddr_get_type(void)
-{
-	static int initialized = 0;
-	static GType mytype;
-
-	if (!initialized) {
-		mytype = g_boxed_type_register_static("sockaddr",
-						      sockaddr_copy_func, sockaddr_free_func);
-		initialized = 1;
-	}
-	return mytype;
-}
-
-#undef G_TYPE_SOCKADDR
-#define G_TYPE_SOCKADDR (g_sockaddr_get_type())
-
-enum {
-	XDM_COL_HOSTNAME,		/* the manager hostname */
-	XDM_COL_REMOTENAME,		/* the manager remote name */
-	XDM_COL_WILLING,		/* the willing status */
-	XDM_COL_STATUS,			/* the status */
-	XDM_COL_IPADDR,			/* the ip address */
-	XDM_COL_CTYPE,			/* the connection type */
-	XDM_COL_SERVICE,		/* the service */
-	XDM_COL_PORT,			/* the port number */
-	XDM_COL_MARKUP,			/* the combined markup description */
-	XDM_COL_TOOLTIP,		/* the tooltip information */
-	XDM_COL_SOCKADDR,		/* the socket address */
-	XDM_COL_SCOPE,			/* the socket address scope */
-	XDM_COL_IFINDEX,		/* the socket interface index */
-};
-#endif				/* DO_XCHOOSER */
 
 enum {
 	XSESS_COL_PIXBUF,		/* the icon name for the pixbuf */
@@ -986,7 +888,6 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 		reparse(dpy, xev->xclient.window);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
-#ifdef DO_XLOCKING
 	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
 		switch (xev->xclient.data.l[0]) {
 		case LockCommandLock:
@@ -1001,7 +902,6 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 			break;
 		}
 	}
-#endif
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
@@ -1021,17 +921,14 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	case PropertyNotify:
 		return event_handler_PropertyNotify(dpy, xev, xscr);
 	default:
-#ifdef DO_XLOCKING
 		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify)
 			return handle_XScreenSaverNotify(dpy, xev);
 		DPRINTF("unknown event type %d\n", xev->type);
-#endif				/* DO_XLOCKING */
 		break;
 	}
 	return GDK_FILTER_CONTINUE;
 }
 
-#ifdef DO_XLOCKING
 static GdkFilterReturn
 event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
 {
@@ -1078,7 +975,6 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	}
 	return GDK_FILTER_CONTINUE;
 }
-#endif
 
 static GdkFilterReturn
 client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
@@ -1521,11 +1417,6 @@ on_idle(gpointer data)
 	return G_SOURCE_CONTINUE;
 }
 
-#ifdef DO_XCHOOSER
-GtkListStore *model;
-GtkWidget *view;
-#endif				/* DO_XCHOOSER */
-
 GtkWidget *top;
 
 void
@@ -1548,11 +1439,7 @@ get_data_dirs(int *np)
 	int len, n;
 
 	home = getenv("HOME") ? : ".";
-#ifdef DO_XLOCKING
 	xhome = getenv("XDG_DATA_HOME");
-#else
-	xhome = "/usr/lib/X11/xdm";
-#endif
 	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
@@ -1602,1134 +1489,6 @@ xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, g
 	g_value_unset(&b_v);
 	return (ret);
 }
-
-#ifdef DO_XCHOOSER
-Bool
-CanConnect(struct sockaddr *sa)
-{
-	int sock;
-	socklen_t salen;
-
-	switch (sa->sa_family) {
-	case AF_INET:
-		salen = sizeof(struct sockaddr_in);
-		break;
-	case AF_INET6:
-		salen = sizeof(struct sockaddr_in6);
-		break;
-	case AF_UNIX:
-		salen = sizeof(struct sockaddr_un);
-		break;
-	default:
-		EPRINTF("wrong socket family %d\n", (int) sa->sa_family);
-		return False;
-	}
-	if ((sock = socket(sa->sa_family, SOCK_DGRAM, 0)) == -1) {
-		EPRINTF("socket: %s\n", strerror(errno));
-		return False;
-	}
-	if (options.debug) {
-		char *p, *e, *rawbuf;
-		unsigned char *b;
-		int i, len;
-
-		len = 2 * salen + 1;
-		rawbuf = calloc(len, sizeof(*rawbuf));
-		for (i = 0, p = rawbuf, e = rawbuf + len, b = (typeof(b)) sa;
-		     i < salen; i++, p += 2, b++)
-			snprintf(p, e - p, "%02x", *b);
-		DPRINTF("raw socket address for connect: %s\n", rawbuf);
-		free(rawbuf);
-	}
-	if (connect(sock, sa, salen) == -1) {
-		DPRINTF("connect: %s\n", strerror(errno));
-		close(sock);
-		return False;
-	}
-	if (options.debug) {
-		struct sockaddr conn;
-		char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
-
-		if (getsockname(sock, &conn, &salen) == -1) {
-			EPRINTF("getsockname: %s\n", strerror(errno));
-			close(sock);
-			return False;
-		}
-		switch (conn.sa_family) {
-		case AF_INET:
-		{
-			struct sockaddr_in *sin = (typeof(sin)) & conn;
-			int port = ntohs(sin->sin_port);
-
-			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
-			DPRINTF("address is %s port %d\n", ipaddr, port);
-			break;
-		}
-		case AF_INET6:
-		{
-			struct sockaddr_in6 *sin6 = (typeof(sin6)) & conn;
-			int port = ntohs(sin6->sin6_port);
-
-			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-			DPRINTF("address is %s port %d\n", ipaddr, port);
-			break;
-		}
-		case AF_UNIX:
-		{
-			struct sockaddr_un *sun = (typeof(sun)) & conn;
-
-			DPRINTF("family is AF_UNIX\n");
-			break;
-		}
-		default:
-			EPRINTF("bad connected family %d\n", (int) conn.sa_family);
-			close(sock);
-			return False;
-		}
-	}
-	close(sock);
-	return True;
-}
-
-#define IN_LINKLOCAL(a) ((((in_addr_t)(a)) & 0xffff0000) == 0xa9fe0000)
-#define IN_LOOPBACK(a)	((((in_addr_t)(a)) & 0xffffff00) == 0x7f000000)
-#define IN_ORGLOCAL(a) ( \
-	((((in_addr_t)(a)) & 0xff000000) == 0x0a000000) || \
-	((((in_addr_t)(a)) & 0xfff00000) == 0xac100000) || \
-	((((in_addr_t)(a)) & 0xffff0000) == 0xc0a80000))
-
-static SocketScope
-getaddrscope(struct sockaddr *sa)
-{
-	switch (sa->sa_family) {
-	case AF_INET:
-	{
-		struct sockaddr_in *sin = (typeof(sin)) sa;
-		in_addr_t addr = ntohl(sin->sin_addr.s_addr);
-
-		if (IN_LOOPBACK(addr))
-			return SocketScopeLoopback;
-		if (IN_LINKLOCAL(addr))
-			return SocketScopeLinklocal;
-		if (IN_ORGLOCAL(addr))
-			return SocketScopePrivate;
-		return SocketScopeGlobal;
-	}
-	case AF_INET6:
-	{
-		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
-		struct in6_addr *addr = &sin6->sin6_addr;
-
-		if (IN6_IS_ADDR_LOOPBACK(addr))
-			return SocketScopeLoopback;
-		if (IN6_IS_ADDR_LINKLOCAL(addr))
-			return SocketScopeLinklocal;
-		if (IN6_IS_ADDR_SITELOCAL(addr))
-			return SocketScopeSitelocal;
-		if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
-			in_addr_t ipv4 = ntohl(((uint32_t *) addr)[3]);
-
-			if (IN_LOOPBACK(ipv4))
-				return SocketScopeLoopback;
-			if (IN_LINKLOCAL(ipv4))
-				return SocketScopeLinklocal;
-			if (IN_ORGLOCAL(ipv4))
-				return SocketScopePrivate;
-			return SocketScopeGlobal;
-		}
-		return SocketScopeGlobal;
-	}
-	default:
-	case AF_UNSPEC:
-	case AF_UNIX:
-		break;
-	}
-	return SocketScopeLoopback;
-}
-
-Bool
-AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
-	ARRAY8 *authname_a, ARRAY8 *hostname_a, ARRAY8 *status_a)
-{
-	int ctype;
-	sa_family_t family;
-	short port;
-	char remotename[NI_MAXHOST + 1] = { 0, };
-	char service[NI_MAXSERV + 1] = { 0, };
-	char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
-	char hostname[NI_MAXHOST + 1] = { 0, };
-	char markup[BUFSIZ + 1] = { 0, };
-	char tooltip[BUFSIZ + 1] = { 0, };
-	char status[256] = { 0, };
-	socklen_t len;
-	SocketScope scope;
-
-	DPRINT();
-
-	scope = getaddrscope(sa);
-	if (scope < options.clientScope) {
-		DPRINTF("cannot use local scoped address for remote clients\n");
-		return False;
-	}
-	switch (scope) {
-	case SocketScopeLinklocal:
-	case SocketScopeSitelocal:
-		if (!ifindex) {
-			DPRINTF("cannot use site/link local address without ifindex\n");
-			return False;
-		}
-		if (scope == options.clientScope && ifindex != options.clientIface) {
-			DPRINTF("cannot use site/link local address with other ifindex\n");
-			return False;
-		}
-		break;
-	default:
-		break;
-	}
-
-	len = hostname_a->length;
-	if (len > NI_MAXHOST)
-		len = NI_MAXHOST;
-	strncpy(hostname, (char *) hostname_a->data, len);
-	DPRINTF("hostname is %s\n", hostname);
-
-	len = status_a->length;
-	if (len > sizeof(status) - 1)
-		len = sizeof(status) - 1;
-	strncpy(status, (char *) status_a->data, len);
-	DPRINTF("status is %s\n", status);
-
-	switch ((family = sa->sa_family)) {
-	case AF_INET:
-	{
-		struct sockaddr_in *sin = (typeof(sin)) sa;
-
-		salen = sizeof(*sin);
-
-		DPRINTF("family is AF_INET\n");
-		ctype = FamilyInternet;
-		port = ntohs(sin->sin_port);
-		inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
-		DPRINTF("address is %s port %hd\n", ipaddr, port);
-		break;
-	}
-	case AF_INET6:
-	{
-		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
-
-		salen = sizeof(*sin6);
-
-		DPRINTF("family is AF_INET6\n");
-		ctype = FamilyInternet6;
-		port = ntohs(sin6->sin6_port);
-		inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-		DPRINTF("address is %s port %hd\n", ipaddr, port);
-		break;
-	}
-	case AF_UNIX:
-	{
-		struct sockaddr_un *sun = (typeof(sun)) sa;
-
-		salen = sizeof(*sun);
-
-		DPRINTF("family is AF_UNIX\n");
-		ctype = FamilyLocal;
-		port = 0;
-		/* FIXME: display address in debug mode */
-		break;
-	}
-	default:
-		return False;
-	}
-	if (options.isLocal && !CanConnect(sa)) {
-		DPRINTF("cannot connect\n");
-		return False;
-	}
-	if (!options.isLocal && options.connectionType != FamilyInternet6
-	    && options.connectionType != ctype) {
-		DPRINTF("wrong connection type\n");
-		return False;
-	}
-	/* We really do not want to do this for IPv4LL addresses, beause they
-	 * can take 5 seconds to fail on reverse DNS lookups. */
-	if (scope == SocketScopeLinklocal) {
-		struct servent *serv;
-
-		strncpy(remotename, ipaddr, NI_MAXHOST);
-		if ((serv = getservbyport(port, "udp")))
-			strncpy(service, serv->s_name, NI_MAXSERV);
-	} else {
-		DPRINTF("beg calling getnameinfo ...\n");
-		if (getnameinfo(sa, salen, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
-			DPRINTF("getnameinfo: %s\n", strerror(errno));
-			return False;
-		}
-		DPRINTF("... calling getnameinfo end\n");
-	}
-
-	GtkTreeIter iter;
-	gboolean valid;
-
-	for (valid = gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(model), &iter, NULL, 0); valid;
-	     valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)) {
-		GValue sock_v = G_VALUE_INIT;
-		const struct sockaddr *sock;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(model), &iter, XDM_COL_SOCKADDR, &sock_v);
-		sock = g_value_get_boxed(&sock_v);
-		if (!memcmp(sock, sa, salen)) {
-			g_value_unset(&sock_v);
-			break;
-		}
-		g_value_unset(&sock_v);
-	}
-	if (!valid)
-		gtk_list_store_append(model, &iter);
-	/* *INDENT-OFF* */
-	gtk_list_store_set(model, &iter,
-			   XDM_COL_HOSTNAME, hostname,
-			   XDM_COL_REMOTENAME, remotename,
-			   XDM_COL_WILLING, opc,
-			   XDM_COL_STATUS, status,
-			   XDM_COL_IPADDR, ipaddr,
-			   XDM_COL_CTYPE, ctype,
-			   XDM_COL_SERVICE, service,
-			   XDM_COL_PORT, port,
-			   XDM_COL_SOCKADDR, sa,
-			   XDM_COL_SCOPE, scope,
-			   XDM_COL_IFINDEX, ifindex,
-			   -1);
-	/* *INDENT-ON* */
-
-	const char *conntype;
-
-	strncpy(markup, "", sizeof(markup));
-	strncpy(tooltip, "", sizeof(tooltip));
-
-	switch (ctype) {
-	case FamilyLocal:
-		conntype = "UNIX Domain";
-		break;
-	case FamilyInternet:
-		conntype = "TCP (IP Version 4)";
-		break;
-	case FamilyInternet6:
-		conntype = "TCP (IP Version 6)";
-		break;
-	default:
-		conntype = "";
-		break;
-	}
-
-	strncat(tooltip, "<small><b>Hostname:</b>\t", BUFSIZ);
-	strncat(tooltip, hostname, BUFSIZ);
-	strncat(tooltip, "</small>\n", BUFSIZ);
-
-	strncat(tooltip, "<small><b>Alias:</b>\t\t", BUFSIZ);
-	strncat(tooltip, remotename, BUFSIZ);
-	strncat(tooltip, "</small>\n", BUFSIZ);
-
-	if (opc == WILLING) {
-		strncat(markup, "<span foreground=\"black\"><b>", BUFSIZ);
-		strncat(markup, hostname, BUFSIZ);
-		strncat(markup, "</b></span>\n", BUFSIZ);
-
-		strncat(markup, "<small><span foreground=\"black\">(", BUFSIZ);
-		strncat(markup, remotename, BUFSIZ);
-		strncat(markup, ")</span></small>\n", BUFSIZ);
-
-		strncat(markup, "<small><span foreground=\"black\"><i>", BUFSIZ);
-		strncat(markup, status, BUFSIZ);
-		strncat(markup, "</i></span></small>", BUFSIZ);
-
-		strncat(tooltip, "<small><b>Willing:</b>\t\t", BUFSIZ);
-		len = strlen(tooltip);
-		snprintf(tooltip + len, BUFSIZ - len, "Willing(%d)", (int) opc);
-		strncat(tooltip, "</small>\n", BUFSIZ);
-
-		strncat(tooltip, "<small><b>Status:</b>\t\t", BUFSIZ);
-		strncat(tooltip, status, BUFSIZ);
-		strncat(tooltip, "</small>\n", BUFSIZ);
-	} else {
-		strncat(markup, "<span foreground=\"grey\"><b>", BUFSIZ);
-		strncat(markup, hostname, BUFSIZ);
-		strncat(markup, "</b></span>\n", BUFSIZ);
-
-		strncat(markup, "<small><span foreground=\"grey\">(", BUFSIZ);
-		strncat(markup, remotename, BUFSIZ);
-		strncat(markup, "</span></small>\n", BUFSIZ);
-
-		strncat(markup, "<small><span foreground=\"grey\"><i>", BUFSIZ);
-		strncat(markup, "Unwilling(6)", BUFSIZ);
-		strncat(markup, "</i></span></small>", BUFSIZ);
-
-		strncat(tooltip, "<small><b>Willing:</b>\t\t", BUFSIZ);
-		len = strlen(tooltip);
-		snprintf(tooltip + len, BUFSIZ - len, "Unwilling(%d)", (int) opc);
-		strncat(tooltip, "</small>\n", BUFSIZ);
-	}
-
-	strncat(tooltip, "<small><b>IP Address:</b>\t", BUFSIZ);
-	strncat(tooltip, ipaddr, BUFSIZ);
-	strncat(tooltip, "</small>\n", BUFSIZ);
-
-	strncat(tooltip, "<small><b>Scope:</b>\t\t", BUFSIZ);
-	len = strlen(tooltip);
-	switch (scope) {
-	case SocketScopeLoopback:
-		snprintf(tooltip + len, BUFSIZ - len, "Loopback [%d]", ifindex);
-		break;
-	case SocketScopeLinklocal:
-		snprintf(tooltip + len, BUFSIZ - len, "Link Local [%d]", ifindex);
-		break;
-	case SocketScopeSitelocal:
-		snprintf(tooltip + len, BUFSIZ - len, "Site Local [%d]", ifindex);
-		break;
-	case SocketScopePrivate:
-		snprintf(tooltip + len, BUFSIZ - len, "Private Network");
-		break;
-	case SocketScopeGlobal:
-		snprintf(tooltip + len, BUFSIZ - len, "Global Network");
-		break;
-	}
-	strncat(tooltip, "</small>\n", BUFSIZ);
-
-	strncat(tooltip, "<small><b>ConnType:</b>\t", BUFSIZ);
-	strncat(tooltip, conntype, BUFSIZ);
-	strncat(tooltip, "</small>\n", BUFSIZ);
-
-	strncat(tooltip, "<small><b>Service:</b>\t\t", BUFSIZ);
-	strncat(tooltip, service, BUFSIZ);
-	strncat(tooltip, "</small>\n", BUFSIZ);
-
-	strncat(tooltip, "<small><b>Port:</b>\t\t", BUFSIZ);
-	len = strlen(tooltip);
-	snprintf(tooltip + len, BUFSIZ - len, "%d", (int) port);
-	strncat(tooltip, "</small>", BUFSIZ);
-
-	DPRINTF("markup is:\n%s\n", markup);
-	DPRINTF("tooltip is:\n%s\n", tooltip);
-
-	gtk_list_store_set(model, &iter, XDM_COL_MARKUP, markup, XDM_COL_TOOLTIP, tooltip, -1);
-
-	relax();
-	return True;
-
-}
-
-/*
- * Does what XdmcpFill does but also retrieves the interface index of the
- * received interface on IP version 4 sockets or scope_id on IP version 6
- * sockets.
- */
-int
-XdmcpRecv(int fd, XdmcpBufferPtr buffer, XdmcpNetaddr from, int *fromlen, int *fromif)
-{
-	static char cbuf[BUFSIZ];
-	BYTE *newBuf;
-	struct iovec iov;
-	struct msghdr msg;
-
-	if (buffer->size < XDM_MAX_MSGLEN) {
-		newBuf = calloc(XDM_MAX_MSGLEN, sizeof(*newBuf));
-		if (newBuf) {
-			free(buffer->data);
-			buffer->data = newBuf;
-			buffer->size = XDM_MAX_MSGLEN;
-		}
-	}
-
-	iov.iov_base = (void *) buffer->data;
-	iov.iov_len = buffer->size;
-
-	msg.msg_name = (void *) from;
-	msg.msg_namelen = *fromlen;
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_control = (void *) cbuf;
-	msg.msg_controllen = sizeof(cbuf);
-	msg.msg_flags = 0;
-
-	buffer->pointer = 0;
-	buffer->count = recvmsg(fd, &msg, 0);
-
-	if (buffer->count == -1) {
-		buffer->count = 0;
-		return FALSE;
-	}
-	if (buffer->count < 6) {
-		buffer->count = 0;
-		errno = EMSGSIZE;
-		return FALSE;
-	}
-
-	*fromlen = msg.msg_namelen;
-	*fromif = 0;
-	switch (((struct sockaddr *) from)->sa_family) {
-	case AF_INET:
-	{
-#if defined(IP_PKTINFO)
-		struct cmsghdr *cmsg;
-		struct in_pktinfo *ipi;
-
-		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-			if (cmsg->cmsg_level != IPPROTO_IP)
-				continue;
-			if (cmsg->cmsg_type != IP_PKTINFO)
-				continue;
-			ipi = (typeof(ipi)) CMSG_DATA(cmsg);
-			*fromif = ipi->ipi_ifindex;
-			break;
-		}
-#elif defined(IP_RECVIF)
-		/* FIXME: there is a way to do this for BSD too... */
-#endif
-		break;
-	}
-	case AF_INET6:
-		*fromif = ((struct sockaddr_in6 *) from)->sin6_scope_id;
-		break;
-	default:
-		break;
-	}
-	return TRUE;
-}
-
-gboolean
-ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
-{
-	XdmcpBuffer *buffer = (XdmcpBuffer *) data;
-	XdmcpHeader header;
-	ARRAY8 authenticationName = { 0, NULL };
-	ARRAY8 hostname = { 0, NULL };
-	ARRAY8 status = { 0, NULL };
-	struct sockaddr_storage addr;
-	int addrlen, sfd, ifindex;
-
-	DPRINT();
-	sfd = g_io_channel_unix_get_fd(source);
-	addrlen = sizeof(addr);
-	memset(&addr, 0, addrlen);
-	if (!XdmcpRecv(sfd, buffer, (XdmcpNetaddr) &addr, &addrlen, &ifindex)) {
-		EPRINTF("could not fill buffer: %s\n", strerror(errno));
-		return G_SOURCE_CONTINUE;
-	}
-	if (!XdmcpReadHeader(buffer, &header)) {
-		EPRINTF("could not read header!\n");
-		return G_SOURCE_CONTINUE;
-	}
-	if (header.version != XDM_PROTOCOL_VERSION) {
-		EPRINTF("wrong header version!\n");
-		return G_SOURCE_CONTINUE;
-	}
-	switch (header.opcode) {
-	case WILLING:
-		DPRINTF("host is WILLING\n");
-		if (XdmcpReadARRAY8(buffer, &authenticationName)
-		    && XdmcpReadARRAY8(buffer, &hostname)
-		    && XdmcpReadARRAY8(buffer, &status)) {
-			if (header.length == 6 + authenticationName.length +
-			    hostname.length + status.length)
-				AddHost((struct sockaddr *) &addr, addrlen, ifindex,
-					header.opcode, &authenticationName, &hostname, &status);
-			else
-				EPRINTF("message is the wrong length\n");
-		} else
-			EPRINTF("could not parse message\n");
-		break;
-	case UNWILLING:
-		DPRINTF("host is UNWILLING\n");
-		if (XdmcpReadARRAY8(buffer, &hostname) && XdmcpReadARRAY8(buffer, &status)) {
-			if (header.length == 4 + hostname.length + status.length)
-				AddHost((struct sockaddr *) &addr, addrlen, ifindex,
-					header.opcode, &authenticationName, &hostname, &status);
-			else
-				EPRINTF("message is the wrong length\n");
-		} else
-			EPRINTF("could not parse message\n");
-		break;
-	default:
-		break;
-	}
-	XdmcpDisposeARRAY8(&authenticationName);
-	XdmcpDisposeARRAY8(&hostname);
-	XdmcpDisposeARRAY8(&status);
-	return G_SOURCE_CONTINUE;
-}
-
-typedef struct _hostAddr {
-	struct _hostAddr *next;
-	struct sockaddr_storage addr;
-	int addrlen;
-	int sfd;
-	xdmOpCode type;
-} HostAddr;
-
-HostAddr *hostAddrdb;
-int pingTry = 0;
-gint pingid = 0;
-
-gboolean
-PingHosts(gpointer data)
-{
-	HostAddr *ha;
-
-	DPRINT();
-	for (ha = hostAddrdb; ha; ha = ha->next) {
-		int sfd;
-		struct sockaddr *addr;
-		sa_family_t family;
-		char buf[INET6_ADDRSTRLEN];
-
-		(void) buf;
-		if (!(sfd = ha->sfd))
-			continue;
-		addr = (typeof(addr)) & ha->addr;
-		family = addr->sa_family;
-		switch (family) {
-		case AF_INET:
-			DPRINTF("ping address is AF_INET\n");
-			break;
-		case AF_INET6:
-			DPRINTF("ping address is AF_INET6\n");
-			break;
-		}
-		if (options.debug) {
-			char *p;
-			int i;
-
-			DPRINTF("message is:");
-			for (i = 0, p = (char *) &ha->addr; i < ha->addrlen; i++, p++)
-				fprintf(stderr, " %02X", (unsigned int) *p);
-
-		}
-		if (ha->type == QUERY) {
-			DPRINTF("ping type is QUERY\n");
-			XdmcpFlush(ha->sfd, &directBuffer, (XdmcpNetaddr) &ha->addr, ha->addrlen);
-		} else {
-			DPRINTF("ping type is BROADCAST_QUERY\n");
-			XdmcpFlush(ha->sfd, &broadcastBuffer,
-				   (XdmcpNetaddr) &ha->addr, ha->addrlen);
-		}
-	}
-	if (++pingTry < PING_TRIES) {
-		DPRINTF("adding timer\n");
-		pingid = g_timeout_add_seconds(PING_INTERVAL, PingHosts, (gpointer) NULL);
-	}
-	return G_SOURCE_REMOVE;
-}
-
-gint srce4, srce6;
-
-static ARRAYofARRAY8 AuthenticationNames;
-
-Bool
-InitXDMCP(char *argv[], int argc)
-{
-	int sock4, sock6, value;
-	GIOChannel *chan4, *chan6;
-	XdmcpBuffer *buffer4, *buffer6;
-	XdmcpHeader header;
-	int i;
-	char **arg;
-
-	DPRINT();
-
-	header.version = XDM_PROTOCOL_VERSION;
-	header.opcode = (CARD16) BROADCAST_QUERY;
-	header.length = 1;
-	for (i = 0; i < (int) AuthenticationNames.length; i++)
-		header.length += 2 + AuthenticationNames.data[i].length;
-	XdmcpWriteHeader(&broadcastBuffer, &header);
-	XdmcpWriteARRAYofARRAY8(&broadcastBuffer, &AuthenticationNames);
-
-	header.version = XDM_PROTOCOL_VERSION;
-	header.opcode = (CARD16) QUERY;
-	header.length = 1;
-	for (i = 0; i < (int) AuthenticationNames.length; i++)
-		header.length += 2 + AuthenticationNames.data[i].length;
-	XdmcpWriteHeader(&directBuffer, &header);
-	XdmcpWriteARRAYofARRAY8(&directBuffer, &AuthenticationNames);
-
-	if ((sock4 = socket(PF_INET, SOCK_DGRAM, 0)) == -1) {
-		EPRINTF("socket: Could not create IPv4 socket: %s\n", strerror(errno));
-		return False;
-	}
-	value = 1;
-	if (setsockopt(sock4, SOL_SOCKET, SO_BROADCAST, &value, sizeof(value)) == -1) {
-		EPRINTF("setsockopt: Could not set IPv4 broadcast: %s\n", strerror(errno));
-	}
-#ifdef IP_PKTINFO
-	if (setsockopt(sock4, IPPROTO_IP, IP_PKTINFO, &value, sizeof(value)) == -1) {
-		EPRINTF("setsockopt: could not set IP_PKTINFO: %s\n", strerror(errno));
-	}
-#endif
-	if ((sock6 = socket(PF_INET6, SOCK_DGRAM, 0)) == -1) {
-		EPRINTF("socket: Could not create IPv6 socket: %s\n", strerror(errno));
-	}
-	if (setsockopt(sock6, SOL_SOCKET, SO_BROADCAST, &value, sizeof(value)) == -1) {
-		EPRINTF("setsockopt: Could not set IPv6 broadcast: %s\n", strerror(errno));
-	}
-	chan4 = g_io_channel_unix_new(sock4);
-	chan6 = g_io_channel_unix_new(sock6);
-
-	buffer4 = calloc(1, sizeof(*buffer4));
-	buffer6 = calloc(1, sizeof(*buffer6));
-
-	srce4 = g_io_add_watch(chan4, G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI,
-			       ReceivePacket, (gpointer) buffer4);
-	srce6 = g_io_add_watch(chan6, G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI,
-			       ReceivePacket, (gpointer) buffer6);
-
-	for (i = 0, arg = argv; i < argc; i++, arg++) {
-		if (!strcmp(*arg, "BROADCAST")) {
-			struct ifaddrs *ifa, *ifas = NULL;
-			HostAddr *ha;
-
-			if (getifaddrs(&ifas) == 0) {
-				for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
-					sa_family_t family;
-					socklen_t addrlen;
-					struct sockaddr *ifa_addr;
-					struct sockaddr_in *sin;
-
-					(void) index;
-					if (ifa->ifa_flags & IFF_LOOPBACK) {
-						DPRINTF("interface %s is a loopback interface\n",
-							ifa->ifa_name);
-						continue;
-					}
-					if (!(ifa_addr = ifa->ifa_addr)) {
-						EPRINTF("interface %s has no address\n",
-							ifa->ifa_name);
-						continue;
-					} else {
-						if (ifa_addr->sa_family == AF_INET)
-							DPRINTF("interface %s is AF_INET\n",
-								ifa->ifa_name);
-						else if (ifa_addr->sa_family == AF_INET6)
-							DPRINTF("interface %s is AF_INET6\n",
-								ifa->ifa_name);
-						else if (ifa_addr->sa_family == AF_PACKET)
-							DPRINTF("interface %s is AF_PACKET\n",
-								ifa->ifa_name);
-					}
-					if (!(ifa->ifa_flags & IFF_BROADCAST)) {
-						DPRINTF("interface %s has no broadcast\n",
-							ifa->ifa_name);
-						continue;
-					}
-					family = ifa_addr->sa_family;
-					if (family == AF_INET)
-						addrlen = sizeof(struct sockaddr_in);
-					else {
-						DPRINTF("interface %s has wrong family %d\n",
-							ifa->ifa_name, (int) family);
-						continue;
-					}
-					if (!(ifa_addr = ifa->ifa_broadaddr)) {
-						EPRINTF("interface %s has missing broadcast\n",
-							ifa->ifa_name);
-						continue;
-					}
-					DPRINTF("interace %s is ok\n", ifa->ifa_name);
-					ha = calloc(1, sizeof(*ha));
-					memcpy(&ha->addr, ifa_addr, addrlen);
-					sin = (typeof(sin)) & ha->addr;
-					sin->sin_port = htons(XDM_UDP_PORT);
-					ha->addrlen = addrlen;
-					ha->sfd = sock4;
-					ha->type = BROADCAST_QUERY;
-					ha->next = hostAddrdb;
-					hostAddrdb = ha;
-				}
-				freeifaddrs(ifas);
-			}
-		} else if (strspn(*arg, "0123456789abcdefABCDEF") == strlen(*arg)
-			   && strlen(*arg) == 8) {
-			char addr[4];
-			char *p, *o, c, b;
-			Bool ok = True;
-
-			for (p = *arg, o = addr; *p; p += 2, o++) {
-				c = tolower(p[0]);
-				if (!isxdigit(c)) {
-					ok = False;
-					break;
-				}
-				b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
-				b <<= 4;
-				c = tolower(p[1]);
-				if (!isxdigit(c)) {
-					ok = False;
-					break;
-				}
-				b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
-				*o = b;
-			}
-			if (ok) {
-				HostAddr *ha;
-				struct sockaddr_in *sin;
-
-				ha = calloc(1, sizeof(*ha));
-				sin = (typeof(sin)) & ha->addr;
-				sin->sin_family = AF_INET;
-				sin->sin_port = XDM_UDP_PORT;
-				memcpy(&sin->sin_addr, addr, 4);
-				ha->addrlen = sizeof(*sin);
-				ha->sfd = sock4;
-				ha->type = QUERY;
-				ha->next = hostAddrdb;
-				hostAddrdb = ha;
-			}
-		} else {
-			struct addrinfo hints, *result, *ai;
-
-			hints.ai_flags = AI_ADDRCONFIG;
-			hints.ai_family = AF_UNSPEC;
-			hints.ai_socktype = SOCK_DGRAM;
-			hints.ai_protocol = IPPROTO_UDP;
-			hints.ai_addrlen = 0;
-			hints.ai_addr = NULL;
-			hints.ai_canonname = NULL;
-			hints.ai_next = NULL;
-
-			if (getaddrinfo(*arg, "xdmcp", &hints, &result) == 0) {
-				HostAddr *ha;
-
-				for (ai = result; ai; ai = ai->ai_next) {
-					if (ai->ai_family == AF_INET) {
-						struct sockaddr_in *sin = (typeof(sin)) ai->ai_addr;
-
-						ha = calloc(1, sizeof(*ha));
-						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
-						ha->addrlen = ai->ai_addrlen;
-						ha->sfd = sock4;
-						ha->type =
-						    IN_MULTICAST(ntohl(sin->sin_addr.s_addr)) ?
-						    BROADCAST_QUERY : QUERY;
-						ha->next = hostAddrdb;
-						hostAddrdb = ha;
-					} else if (ai->ai_family == AF_INET6) {
-						struct sockaddr_in6 *sin6 =
-						    (typeof(sin6)) ai->ai_addr;
-
-						ha = calloc(1, sizeof(*ha));
-						memcpy(&ha->addr, ai->ai_addr, ai->ai_addrlen);
-						ha->addrlen = ai->ai_addrlen;
-						ha->sfd = sock6;
-						ha->type = IN6_IS_ADDR_MULTICAST(&sin6->sin6_addr) ?
-						    BROADCAST_QUERY : QUERY;
-						ha->next = hostAddrdb;
-						hostAddrdb = ha;
-					}
-				}
-				freeaddrinfo(result);
-			}
-		}
-	}
-	pingTry = 0;
-	PingHosts((gpointer) NULL);
-	return True;
-}
-
-static gint timer_id;
-
-gboolean
-on_msg_timeout(gpointer data)
-{
-	gtk_dialog_response(GTK_DIALOG(data), GTK_RESPONSE_NONE);
-	timer_id = 0;
-	return G_SOURCE_REMOVE;
-}
-
-void
-Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifindex)
-{
-	CARD8 rawaddr[20] = { 0, };
-	ARRAY8 hostAddress = { 0, rawaddr };
-
-	switch (sa->sa_family) {
-	case AF_INET:
-	{
-		struct sockaddr_in *sin = (typeof(sin)) sa;
-
-		memmove(rawaddr, &sin->sin_addr, 4);
-
-		switch (scope) {
-		case SocketScopeLinklocal:
-		case SocketScopeSitelocal:
-			memmove(rawaddr + 4, &ifindex, 4);
-			hostAddress.length = 8;
-			break;
-		default:
-			hostAddress.length = 4;
-			break;
-		}
-		break;
-	}
-	case AF_INET6:
-	{
-		struct sockaddr_in6 *sin6 = (typeof(sin6)) sa;
-		uint32_t scope_id = sin6->sin6_scope_id;
-
-		memmove(rawaddr, &sin6->sin6_addr, 16);
-
-		switch (scope) {
-		case SocketScopeLinklocal:
-		case SocketScopeSitelocal:
-			memmove(rawaddr + 16, &scope_id, 4);
-			hostAddress.length = 20;
-			break;
-		default:
-			hostAddress.length = 16;
-			break;
-		}
-		break;
-	}
-	default:
-	case AF_UNIX:
-		break;
-	}
-
-	if (options.xdmAddress.data) {
-		char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
-		struct sockaddr_storage xdmAddr;
-		struct sockaddr *xa;
-		socklen_t xalen;
-		char buf[1024];
-		XdmcpBuffer buffer;
-		char *xdm;
-		int fd;
-
-		/* 
-		 * Connect to XDM and output result
-		 */
-		memset(&xdmAddr, 0, sizeof(xdmAddr));
-		xa = (typeof(xa)) & xdmAddr;
-		xdm = (char *) options.xdmAddress.data;
-		xa->sa_family = ((int) xdm[0] << 8) + xdm[1];
-		switch (xa->sa_family) {
-		case AF_INET:
-		{
-			struct sockaddr_in *sin;
-
-			if (options.xdmAddress.length != 2 + 2 + 4) {
-				EPRINTF("Bad xdm address length %d\n",
-					(int) options.xdmAddress.length);
-				return;
-			}
-			sin = (typeof(sin)) xa;
-			memmove(&sin->sin_port, xdm + 2, 2);
-			memmove(&sin->sin_addr, xdm + 4, 4);
-			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
-			DPRINTF("AF_INET: %s port %hd\n", ipaddr, ntohs(sin->sin_port));
-			xalen = sizeof(*sin);
-			break;
-		}
-		case AF_INET6:
-		{
-			struct sockaddr_in6 *sin6;
-
-			if (options.xdmAddress.length != 2 + 2 + 16 &&
-			    options.xdmAddress.length != 2 + 2 + 20) {
-				EPRINTF("Bad xdm address length %d\n",
-					(int) options.xdmAddress.length);
-				return;
-			}
-			sin6 = (typeof(sin6)) xa;
-			memmove(&sin6->sin6_port, xdm + 2, 2);
-			memmove(&sin6->sin6_addr, xdm + 4, 16);
-			if (options.xdmAddress.length == 2 + 2 + 20)
-				sin6->sin6_scope_id = ntohl(*(uint32_t *) (xdm + 20));
-			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-			DPRINTF("AF_INET6: %s port %hd\n", ipaddr, ntohs(sin6->sin6_port));
-			xalen = sizeof(*sin6);
-			break;
-		}
-		case AF_UNIX:
-		default:
-			return;
-		}
-		if ((fd = socket(xa->sa_family, SOCK_STREAM, 0)) == -1) {
-			EPRINTF("Cannot create response socket: %s\n", strerror(errno));
-			exit(REMANAGE_DISPLAY);
-		}
-		if (connect(fd, xa, xalen) == -1) {
-			EPRINTF("Cannot connect to xdm: %s\n", strerror(errno));
-			exit(REMANAGE_DISPLAY);
-		}
-		buffer.data = (BYTE *) buf;
-		buffer.size = sizeof(buf);
-		buffer.pointer = 0;
-		buffer.count = 0;
-		XdmcpWriteARRAY8(&buffer, &options.clientAddress);
-		XdmcpWriteCARD16(&buffer, connectionType);
-		XdmcpWriteARRAY8(&buffer, &hostAddress);
-		if (write(fd, (char *) buffer.data, buffer.pointer)) ;
-		close(fd);
-	}
-	if (!options.xdmAddress.data || options.debug) {
-		int i, len;
-		CARD8Ptr b, buf;
-		FILE *where = options.xdmAddress.data ? stderr : stdout;
-
-		if (options.xdmAddress.data)
-			DPRINTF("choice: ");
-		len = options.clientAddress.length;
-		buf = options.clientAddress.data;
-		for (i = 0, b = buf; i < len; i++, b++)
-			fprintf(where, "%02x", (unsigned) *b);
-		fprintf(where, " %d ", (int) connectionType);
-		len = hostAddress.length;
-		buf = hostAddress.data;
-		for (i = 0, b = buf; i < len; i++, b++)
-			fprintf(where, "%02x", (unsigned) *b);
-		fprintf(where, "\n");
-	}
-	exit(OBEYSESS_DISPLAY);
-}
-
-void grabbed_window(GtkWidget *window, gpointer user_data);
-
-void
-DoAccept(GtkButton *button, gpointer data)
-{
-	GtkTreeSelection *selection;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-
-	GValue ctype = G_VALUE_INIT;
-	GValue ipaddr = G_VALUE_INIT;
-	GValue willing = G_VALUE_INIT;
-	GValue saddr = G_VALUE_INIT;
-	GValue scope = G_VALUE_INIT;
-	GValue index = G_VALUE_INIT;
-	gint willingness, connectionType, sockScope, ifindex;
-	gchar *ipAddress;
-	struct sockaddr *sockAddress;
-
-	DPRINT();
-	if (!view)
-		return;
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	if (!gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
-								    GTK_DIALOG_DESTROY_WITH_PARENT,
-								    GTK_MESSAGE_ERROR,
-								    GTK_BUTTONS_OK,
-								    "<b>%s</b>\n%s\n",
-								    "No selection!",
-								    "Click on a list entry to make a selection.");
-
-		timer_id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
-
-		gtk_widget_realize(msg);
-		grabbed_window(msg, NULL);
-		gtk_dialog_run(GTK_DIALOG(msg));
-		g_object_unref(G_OBJECT(msg));
-		grabbed_window(top, NULL);
-		if (timer_id)
-			g_source_remove(timer_id);
-		return;
-	}
-
-	gtk_tree_model_get_value(model, &iter, XDM_COL_WILLING, &willing);
-	willingness = g_value_get_int(&willing);
-	g_value_unset(&willing);
-
-	if (willingness != WILLING) {
-		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
-								    GTK_DIALOG_DESTROY_WITH_PARENT,
-								    GTK_MESSAGE_ERROR,
-								    GTK_BUTTONS_OK,
-								    "<b>%s</b>\n%d != %d\n%s\n",
-								    "Host is not willing!",
-								    willingness,
-								    (int) WILLING,
-								    "Please select another host.");
-
-		timer_id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
-
-		gtk_widget_realize(msg);
-		grabbed_window(msg, NULL);
-		gtk_dialog_run(GTK_DIALOG(msg));
-		g_object_unref(G_OBJECT(msg));
-		grabbed_window(top, NULL);
-		if (timer_id)
-			g_source_remove(timer_id);
-		return;
-	}
-
-	gtk_tree_model_get_value(model, &iter, XDM_COL_CTYPE, &ctype);
-	connectionType = g_value_get_int(&ctype);
-	g_value_unset(&ctype);
-	if (!options.isLocal && options.connectionType != FamilyInternet6
-	    && connectionType != options.connectionType) {
-		GtkWidget *msg = gtk_message_dialog_new_with_markup(GTK_WINDOW(top),
-								    GTK_DIALOG_DESTROY_WITH_PARENT,
-								    GTK_MESSAGE_ERROR,
-								    GTK_BUTTONS_OK,
-								    "<b>%s</b>\n%s\n",
-								    "Host has wrong connection type!",
-								    "Please select another host.");
-
-		timer_id = g_timeout_add_seconds(3, on_msg_timeout, (gpointer) msg);
-
-		gtk_widget_realize(msg);
-		grabbed_window(msg, NULL);
-		gtk_dialog_run(GTK_DIALOG(msg));
-		g_object_unref(G_OBJECT(msg));
-		grabbed_window(top, NULL);
-		if (timer_id)
-			g_source_remove(timer_id);
-		return;
-	}
-
-	gtk_tree_model_get_value(model, &iter, XDM_COL_IPADDR, &ipaddr);
-	ipAddress = g_value_dup_string(&ipaddr);
-	g_value_unset(&ipaddr);
-
-	gtk_tree_model_get_value(model, &iter, XDM_COL_SOCKADDR, &saddr);
-	sockAddress = g_value_dup_boxed(&saddr);
-	g_value_unset(&saddr);
-
-	gtk_tree_model_get_value(model, &iter, XDM_COL_SCOPE, &scope);
-	sockScope = g_value_get_int(&scope);
-	g_value_unset(&scope);
-
-	gtk_tree_model_get_value(model, &iter, XDM_COL_IFINDEX, &index);
-	ifindex = g_value_get_int(&index);
-	g_value_unset(&index);
-
-	Choose(connectionType, ipAddress, sockAddress, sockScope, ifindex);
-}
-
-typedef struct {
-	int willing;
-} PingHost;
-
-Bool
-DoCheckWilling(PingHost *host)
-{
-	return (host->willing == WILLING);
-}
-
-void
-DoPing(GtkButton *button, gpointer data)
-{
-	if (pingTry == PING_TRIES) {
-		pingTry = 0;
-		PingHosts(data);
-	}
-}
-
-static void
-on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer
-		 user_data)
-{
-}
-#endif				/* DO_XCHOOSER */
 
 /** @brief determines whether the user is local or remote using a bunch or
   * techniques and heauristics.  We check for the following conditions:
@@ -3441,9 +2200,6 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 
 	login_result = LoginResultLogout;
 	gtk_main_quit();
-#ifndef DO_XLOCKING
-	exit(OBEYSESS_DISPLAY);
-#endif
 }
 
 static void
@@ -3589,10 +2345,8 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 		EPRINTF("Could not grab pointer!\n");
 	else
 		DPRINTF("Grabbed pointer\n");
-#if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
 	if (!grab_broken_handler)
 		grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
-#endif
 }
 
 /** @brief transform a window away from a grabbed window
@@ -3606,12 +2360,10 @@ ungrabbed_window(GtkWidget *window)
 {
 	GdkWindow *win = gtk_widget_get_window(window);
 
-#if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
 	if (grab_broken_handler) {
 		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
 		grab_broken_handler = 0;
 	}
-#endif
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 	gdk_window_hide(win);
@@ -3852,7 +2604,6 @@ redo_source(XdeScreen *xscr)
 	get_source(xscr);
 }
 
-#ifdef DO_XLOCKING
 static Window
 get_selection(Window selwin, char *selection, int s)
 {
@@ -3896,7 +2647,6 @@ get_selection(Window selwin, char *selection, int s)
 	}
 	return (owner);
 }
-#endif				/* DO_XLOCKING */
 
 GtkWidget *cont;			/* container of event box */
 GtkWidget *ebox;			/* event box window within the screen */
@@ -4125,7 +2875,6 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn, Bool noshow)
 	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK;
 	gdk_window_set_events(root, mask);
 
-#ifdef DO_XLOCKING
 	Window owner = None;
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
@@ -4143,7 +2892,6 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn, Bool noshow)
 	mask = gdk_window_get_events(sel);
 	mask |= GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK | GDK_PROPERTY_CHANGE_MASK;
 	gdk_window_set_events(sel, mask);
-#endif				/* DO_XLOCKING */
 }
 
 static void
@@ -4247,11 +2995,7 @@ GetPanel(void)
 	gtk_frame_set_shadow_type(GTK_FRAME(inp), shadow);
 	gtk_container_set_border_width(GTK_CONTAINER(inp), 0);
 
-#ifdef DO_XCHOOSER
-	gtk_box_pack_start(GTK_BOX(pan), inp, FALSE, FALSE, 4);
-#else
 	gtk_box_pack_start(GTK_BOX(pan), inp, TRUE, TRUE, 4);
-#endif
 
 	GtkWidget *align = gtk_alignment_new(0.5, 0.5, 1.0, 0.0);
 
@@ -4379,12 +3123,6 @@ GetPanel(void)
 	GtkWidget *i;
 	GtkWidget *b;
 
-#ifdef DO_XCHOOSER
-	buttons[1] = b = gtk_button_new_from_stock(GTK_STOCK_REFRESH);
-	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(DoPing), NULL);
-	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
-#endif
-
 	if ((getenv("DISPLAY") ? : "")[0] == ':') {
 		b = gtk_button_new_from_stock(GTK_STOCK_QUIT);
 	} else {
@@ -4412,13 +3150,6 @@ GetPanel(void)
 		gtk_widget_set_sensitive(b, TRUE);
 	else
 		gtk_widget_set_sensitive(b, FALSE);
-
-#ifdef DO_XCHOOSER
-	buttons[2] = b = gtk_button_new_from_stock(GTK_STOCK_CONNECT);
-	gtk_widget_set_can_default(b, TRUE);
-	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(DoAccept), NULL);
-	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
-#endif
 
 	buttons[3] = b = gtk_button_new();
 	gtk_widget_set_can_default(b, TRUE);
@@ -4515,64 +3246,6 @@ GetPanel(void)
 
 	g_signal_connect(G_OBJECT(sess), "popdown", G_CALLBACK(on_combo_popdown), NULL);
 	}
-
-#ifdef DO_XCHOOSER
-	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
-
-	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(sw), shadow);
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
-				       GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-	gtk_box_pack_start(GTK_BOX(pan), sw, TRUE, TRUE, 4);
-
-	/* *INDENT-OFF* */
-	model = gtk_list_store_new(13
-			,G_TYPE_STRING		/* hostname */
-			,G_TYPE_STRING		/* remotename */
-			,G_TYPE_INT		/* willing */
-			,G_TYPE_STRING		/* status */
-			,G_TYPE_STRING		/* IP Address */
-			,G_TYPE_INT		/* connection type */
-			,G_TYPE_STRING		/* service */
-			,G_TYPE_INT		/* port */
-			,G_TYPE_STRING		/* markup */
-			,G_TYPE_STRING		/* tooltip */
-			,G_TYPE_SOCKADDR	/* socket address */
-			,G_TYPE_INT		/* scope */
-			,G_TYPE_INT		/* interface index */
-	    );
-	/* *INDENT-ON* */
-
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(model),
-					     XDM_COL_MARKUP, GTK_SORT_ASCENDING);
-	view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(model));
-	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(view), TRUE);
-	gtk_tree_view_set_search_column(GTK_TREE_VIEW(view), XDM_COL_HOSTNAME);
-	gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(view), XDM_COL_TOOLTIP);
-
-	gtk_container_add(GTK_CONTAINER(sw), view);
-
-	char hostname[64] = { 0, };
-
-	gethostname(hostname, sizeof(hostname));
-
-	int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
-	char *title = calloc(len, sizeof(*title));
-
-	strncpy(title, "XDCMP Host Menu from ", len);
-	strncat(title, hostname, len);
-
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(title, renderer,
-									     "markup",
-									     XDM_COL_MARKUP, NULL);
-
-	free(title);
-	gtk_tree_view_column_set_sort_column_id(column, XDM_COL_HOSTNAME);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(view), GTK_TREE_VIEW_COLUMN(column));
-	g_signal_connect(G_OBJECT(view), "row_activated",
-			 G_CALLBACK(on_row_activated), (gpointer) NULL);
-
-#endif				/* DO_XCHOOSER */
 
 	if (options.xsession) {
 #ifdef DO_ONIDLE
@@ -4765,7 +3438,6 @@ GetWindow(Bool noshow)
 	return xscr->wind;
 }
 
-#ifdef DO_XLOCKING
 Bool shutting_down;
 
 void
@@ -4809,12 +3481,10 @@ handle_event(Display *dpy, XEvent *xev)
 	case GenericEvent:
 		break;
 	default:
-#ifdef DO_XLOCKING
 		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify) 
 			handle_XScreenSaverNotify(dpy, xev);
 		else
 			EPRINTF("unknown event type %d\n", xev->type);
-#endif
 		break;
 	}
 }
@@ -4845,7 +3515,6 @@ on_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 	}
 	return TRUE; /* keep event source */
 }
-#endif				/* DO_XLOCKING */
 
 static void
 startup(int argc, char *argv[])
@@ -4885,7 +3554,6 @@ startup(int argc, char *argv[])
 	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
 	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 
-#ifdef DO_XLOCKING
 	if (!(display.dpy = XOpenDisplay(NULL))) {
 		EPRINTF("cannot open display\n");
 		exit(EXIT_FAILURE);
@@ -4895,7 +3563,6 @@ startup(int argc, char *argv[])
 	guint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
 
 	g_io_add_watch(chan, mask, on_watch, NULL);
-#endif				/* DO_XLOCKING */
 }
 
 void
@@ -5022,10 +3689,8 @@ authenticate(void)
 		DPRINTF("...running main loop\n");
 		if (login_result == LoginResultLogout)
 			break;
-#ifdef DO_XLOCKING
 		if (lock_state == LockStateAborted)
 			break;
-#endif
 	}
       done:
 	DPRINTF("closing PAM\n");
@@ -5033,7 +3698,6 @@ authenticate(void)
 	return (status);
 }
 
-#ifdef DO_XLOCKING
 static void
 LockScreen(void)
 {
@@ -5100,7 +3764,6 @@ AbortLockScreen(void)
 		}
 	}
 }
-#endif				/* DO_XLOCKING */
 
 static void
 do_run(int argc, char *argv[])
@@ -5110,37 +3773,22 @@ do_run(int argc, char *argv[])
 	startup(argc, argv);
 	setup_systemd();
 	top = GetWindow(True);
-#ifdef DO_XLOCKING
 	setup_screensaver();
-#endif
-#ifdef DO_XCHOOSER
-	InitXDMCP(argv, argc);
-#endif
-#ifdef DO_XLOCKING
 	if (options.command != CommandLock)
 		UnlockScreen();
-#endif
 	for (;;) {
-#ifdef DO_XLOCKING
 		DPRINT();
 		ShowWindow();
-#endif
 		DPRINT();
 		status = authenticate();
-#ifdef DO_XLOCKING
 		DPRINT();
 		if (lock_state == LockStateAborted) {
 			UnlockScreen();
 			continue;
 		}
-#endif
 		DPRINT();
 		if (login_result == LoginResultLogout) {
-#ifdef DO_XLOCKING
 			RelockScreen();
-#else
-			exit(EXIT_FAILURE);
-#endif
 			continue;
 		}
 		DPRINT();
@@ -5151,19 +3799,11 @@ do_run(int argc, char *argv[])
 		case PAM_MAXTRIES:
 		default:
 			DPRINT();
-#ifdef DO_XLOCKING
 			RelockScreen();
-#else
-			exit(EXIT_FAILURE);
-#endif
 			continue;
 		case PAM_SUCCESS:
 			DPRINT();
-#ifdef DO_XLOCKING
 			UnlockScreen();
-#else
-			exit(EXIT_SUCCESS);
-#endif
 			continue;
 		}
 		break;
@@ -5171,7 +3811,6 @@ do_run(int argc, char *argv[])
 	DPRINT();
 }
 
-#ifdef DO_XLOCKING
 /** @brief quit the running background locker
   */
 static void
@@ -5347,7 +3986,6 @@ do_unlock(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 }
-#endif				/* DO_XLOCKING */
 
 static void
 copying(int argc, char *argv[])
@@ -6220,18 +4858,6 @@ set_default_language(void)
 	defaults.charset = strdup(nl_langinfo(CODESET));
 }
 
-#ifdef DO_XCHOOSER
-void
-set_default_address(void)
-{
-	XdmcpReallocARRAY8(&defaults.clientAddress, sizeof(struct in6_addr));
-	*(struct in6_addr *) defaults.clientAddress.data = (struct in6_addr) IN6ADDR_LOOPBACK_INIT;
-	defaults.connectionType = FamilyInternet6;
-	defaults.clientScope = SocketScopeLoopback;
-	defaults.isLocal = True;
-}
-#endif				/* DO_XCHOOSER */
-
 #if 0
 void
 set_default_session(void)
@@ -6346,9 +4972,6 @@ set_defaults(int argc, char *argv[])
 	set_default_splash();
 	set_default_welcome();
 	set_default_language();
-#ifdef DO_XCHOOSER
-	set_default_address();
-#endif				/* DO_XCHOOSER */
 #if 0
 	set_default_session();
 #endif
@@ -6512,197 +5135,6 @@ get_default_language(void)
 	}
 }
 
-#ifdef DO_XCHOOSER
-SocketScope
-GetScope(ARRAY8Ptr clientAddress, CARD16 connectionType)
-{
-	switch (connectionType) {
-	case FamilyLocal:
-		break;
-	case FamilyInternet:
-	{
-		in_addr_t addr = ntohl(*(in_addr_t *) clientAddress->data);
-
-		if (IN_LOOPBACK(addr))
-			return SocketScopeLoopback;
-		if (IN_LINKLOCAL(addr))
-			return SocketScopeLinklocal;
-		if (IN_ORGLOCAL(addr))
-			return SocketScopePrivate;
-		return SocketScopeGlobal;
-	}
-	case FamilyInternet6:
-	{
-		struct in6_addr *addr = (typeof(addr)) clientAddress->data;
-
-		if (IN6_IS_ADDR_LOOPBACK(addr))
-			return SocketScopeLoopback;
-		if (IN6_IS_ADDR_LINKLOCAL(addr))
-			return SocketScopeLinklocal;
-		if (IN6_IS_ADDR_SITELOCAL(addr))
-			return SocketScopeSitelocal;
-		if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
-			in_addr_t ipv4 = ntohl(((uint32_t *) addr)[3]);
-
-			if (IN_LOOPBACK(ipv4))
-				return SocketScopeLoopback;
-			if (IN_LINKLOCAL(ipv4))
-				return SocketScopeLinklocal;
-			if (IN_ORGLOCAL(ipv4))
-				return SocketScopePrivate;
-			return SocketScopeGlobal;
-		}
-		return SocketScopeGlobal;
-	}
-	default:
-		break;
-	}
-	return SocketScopeLoopback;
-}
-
-Bool
-TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
-{
-	sa_family_t family;
-	struct ifaddrs *ifa, *ifas = NULL;
-
-	switch (connectionType) {
-	case FamilyLocal:
-		family = AF_UNIX;
-		return True;
-	case FamilyInternet:
-		if (ntohl((*(in_addr_t *) clientAddress->data)) == INADDR_LOOPBACK)
-			return True;
-		family = AF_INET;
-		break;
-	case FamilyInternet6:
-		if (IN6_IS_ADDR_LOOPBACK(clientAddress->data))
-			return True;
-		family = AF_INET6;
-		break;
-	default:
-		family = AF_UNSPEC;
-		return False;
-	}
-	if (getifaddrs(&ifas) == 0) {
-		for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
-			struct sockaddr *ifa_addr;
-
-			if (!(ifa_addr = ifa->ifa_addr)) {
-				EPRINTF("interface %s has no address\n", ifa->ifa_name);
-				continue;
-			}
-			if (ifa_addr->sa_family != family) {
-				DPRINTF("interface %s has wrong family\n", ifa->ifa_name);
-				continue;
-			}
-			switch (family) {
-			case AF_INET:
-			{
-				struct sockaddr_in *sin = (typeof(sin)) ifa_addr;
-
-				if (!memcmp(&sin->sin_addr, clientAddress->data, 4)) {
-					DPRINTF("interface %s matches\n", ifa->ifa_name);
-					freeifaddrs(ifas);
-					return True;
-				}
-
-				break;
-			}
-			case AF_INET6:
-			{
-				struct sockaddr_in6 *sin6 = (typeof(sin6)) ifa_addr;
-
-				if (!memcmp(&sin6->sin6_addr, clientAddress->data, 16)) {
-					DPRINTF("interface %s matches\n", ifa->ifa_name);
-					freeifaddrs(ifas);
-					return True;
-				}
-				break;
-			}
-			}
-		}
-		freeifaddrs(ifas);
-	}
-	return False;
-}
-
-void
-get_default_address(void)
-{
-	switch (options.clientAddress.length) {
-	case 0:
-		options.clientAddress = defaults.clientAddress;
-		options.connectionType = defaults.connectionType;
-		options.clientScope = defaults.clientScope;
-		options.clientIface = defaults.clientIface;
-		options.isLocal = defaults.isLocal;
-		break;
-	case 4:
-	case 8:
-		if (options.connectionType != FamilyInternet) {
-			EPRINTF("Mismatch in connectionType %d != %d\n",
-				FamilyInternet, options.connectionType);
-			exit(EXIT_SYNTAXERR);
-		}
-		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
-		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
-		switch (options.clientAddress.length) {
-		case 4:
-			options.clientIface = defaults.clientIface;
-			break;
-		case 8:
-			memmove(&options.clientIface, options.clientAddress.data + 4, 4);
-			break;
-		}
-		switch (options.clientScope) {
-		case SocketScopeLinklocal:
-		case SocketScopeSitelocal:
-			if (!options.clientIface) {
-				EPRINTF("link or site local address with no interface\n");
-				exit(EXIT_SYNTAXERR);
-			}
-			break;
-		default:
-			break;
-		}
-		break;
-	case 16:
-	case 20:
-		if (options.connectionType != FamilyInternet6) {
-			EPRINTF("Mismatch in connectionType %d != %d\n",
-				FamilyInternet, options.connectionType);
-			exit(EXIT_SYNTAXERR);
-		}
-		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
-		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
-		switch (options.clientAddress.length) {
-		case 16:
-			options.clientIface = defaults.clientIface;
-			break;
-		case 20:
-			memmove(&options.clientIface, options.clientAddress.data + 16, 4);
-			break;
-		}
-		switch (options.clientScope) {
-		case SocketScopeLinklocal:
-		case SocketScopeSitelocal:
-			if (!options.clientIface) {
-				EPRINTF("link or site local address with no interface\n");
-				exit(EXIT_SYNTAXERR);
-			}
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		EPRINTF("Invalid client address length %d\n", options.clientAddress.length);
-		exit(EXIT_SYNTAXERR);
-	}
-}
-#endif				/* DO_XCHOOSER */
-
 void
 get_default_session(void)
 {
@@ -6754,42 +5186,10 @@ get_defaults(int argc, char *argv[])
 	get_default_splash();
 	get_default_welcome();
 	get_default_language();
-#ifdef DO_XCHOOSER
-	get_default_address();
-#endif				/* DO_XCHOOSER */
 	get_default_session();
 	get_default_choice();
 	get_default_username();
 }
-
-#ifdef DO_XCHOOSER
-Bool
-HexToARRAY8(ARRAY8 *array, char *hex)
-{
-	short len;
-	CARD8 *o, b;
-	char *p, c;
-
-	len = strlen(hex);
-	if (len & 0x01)
-		return False;
-	len >>= 1;
-	XdmcpReallocARRAY8(array, len);
-	for (p = hex, o = array->data; *p; p += 2, o++) {
-		c = tolower(p[0]);
-		if (!isxdigit(c))
-			return False;
-		b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
-		b <<= 4;
-		c = tolower(p[1]);
-		if (!isxdigit(c))
-			return False;
-		b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
-		*o = b;
-	}
-	return True;
-}
-#endif
 
 int
 main(int argc, char *argv[])
@@ -6812,20 +5212,11 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-#ifdef DO_XCHOOSER
-			{"xdmaddress",	    required_argument,	NULL, 'x'},
-			{"clientaddress",   required_argument,	NULL, 'c'},
-			{"connectionType",  required_argument,	NULL, 't'},
-			{"welcome",	    required_argument,	NULL, 'w'},
-#else					/* DO_XCHOOSER */
 			{"prompt",	    required_argument,	NULL, 'p'},
-#endif					/* DO_XCHOOSER */
-#ifdef DO_XLOCKING
 			{"replace",	    no_argument,	NULL, 'r'},
 			{"lock",	    no_argument,	NULL, 'l'},
 			{"unlock",	    no_argument,	NULL, 'U'},
 			{"quit",	    no_argument,	NULL, 'q'},
-#endif					/* DO_XLOCKING */
 
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'S'},
@@ -6838,10 +5229,6 @@ main(int argc, char *argv[])
 			{"vendor",	    required_argument,	NULL, '5'},
 			{"xsessions",	    no_argument,	NULL, 'X'},
 			{"default",	    required_argument,	NULL, '6'},
-#ifndef DO_XLOCKING
-			{"username",	    required_argument,	NULL, '7'},
-			{"guard",	    required_argument,	NULL, 'g'},
-#endif
 			{"setbg",	    no_argument,	NULL, '8'},
 			{"transparent",	    no_argument,	NULL, '9'},
 
@@ -6869,40 +5256,11 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-#ifdef DO_XCHOOSER
-		case 'x':	/* -xdmaddress HEXBYTES */
-			if (options.xdmAddress.length)
-				goto bad_option;
-			if (!HexToARRAY8(&options.xdmAddress, optarg))
-				goto bad_option;
-			break;
-		case 'c':	/* -clientaddress HEXBYTES */
-			if (options.clientAddress.length)
-				goto bad_option;
-			if (!HexToARRAY8(&options.clientAddress, optarg))
-				goto bad_option;
-			break;
-		case 't':	/* -connectionType TYPE */
-			if (!strcmp(optarg, "FamilyInternet") || atoi(optarg) == FamilyInternet)
-				options.connectionType = FamilyInternet;
-			else if (!strcmp(optarg, "FamilyInternet6")
-				 || atoi(optarg) == FamilyInternet6)
-				options.connectionType = FamilyInternet6;
-			else
-				goto bad_option;
-			break;
-		case 'w':	/* -w, --welcome WELCOME */
-			free(options.welcome);
-			options.welcome = strndup(optarg, 256);
-			break;
-#else				/* DO_XCHOOSER */
 		case 'p':	/* -p, --prompt PROMPT */
 			free(options.welcome);
 			options.welcome = strndup(optarg, 256);
 			break;
-#endif				/* DO_XCHOOSER */
 
-#ifdef DO_XLOCKING
 		case 'r':	/* -r, --replace */
 			if (options.command != CommandDefault)
 				goto bad_option;
@@ -6926,7 +5284,6 @@ main(int argc, char *argv[])
 				command = CommandLock;
 			options.command = CommandLock;
 			break;
-#endif				/* DO_XLOCKING */
 
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
@@ -6984,17 +5341,6 @@ main(int argc, char *argv[])
 			free(options.choice);
 			options.choice = strdup(optarg);
 			break;
-#ifndef DO_XLOCKING
-		case '7':	/* --username USERNAME */
-			free(options.username);
-			options.username = strdup(optarg);
-			break;
-		case 'g':	/* --guard SECONDS */
-			if ((val = strtol(optarg, NULL, 0)) < 0)
-				goto bad_option;
-			options.guard = val;
-			break;
-#endif
 		case '8':	/* --setbg */
 			options.setbg = True;
 			break;
@@ -7074,21 +5420,14 @@ main(int argc, char *argv[])
 	switch (command) {
 	default:
 	case CommandDefault:
-		if (optind >= argc) {
-#ifdef DO_XCHOOSER
-			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
-			goto bad_nonopt;
-#else
-		} else {
+		if (optind < argc) {
 			fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
 			goto bad_nonopt;
-#endif
 		}
 		DPRINTF("%s: running default\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
 		exit(EXIT_FAILURE);
 		break;
-#ifdef DO_XLOCKING
 	case CommandReplace:
 		DPRINTF("%s: running replace\n", argv[0]);
 		do_run(argc, argv);
@@ -7105,7 +5444,6 @@ main(int argc, char *argv[])
 		DPRINTF("%s: running unlock\n", argv[0]);
 		do_unlock(argc, argv);
 		break;
-#endif				/* DO_XLOCKING */
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);
 		help(argc, argv);
