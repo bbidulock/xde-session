@@ -5215,14 +5215,13 @@ main(int argc, char *argv[])
 			{"prompt",	    required_argument,	NULL, 'p'},
 			{"replace",	    no_argument,	NULL, 'r'},
 			{"lock",	    no_argument,	NULL, 'l'},
-			{"unlock",	    no_argument,	NULL, 'U'},
 			{"quit",	    no_argument,	NULL, 'q'},
 
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'S'},
 			{"side",	    required_argument,	NULL, 's'},
-			{"charset",	    required_argument,	NULL, '1'},
-			{"language",	    required_argument,	NULL, '2'},
+			{"charset",	    required_argument,	NULL, 'c'},
+			{"language",	    required_argument,	NULL, 'L'},
 			{"icons",	    required_argument,	NULL, 'i'},
 			{"theme",	    required_argument,	NULL, 'T'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
@@ -5231,6 +5230,7 @@ main(int argc, char *argv[])
 			{"default",	    required_argument,	NULL, '6'},
 			{"setbg",	    no_argument,	NULL, '8'},
 			{"transparent",	    no_argument,	NULL, '9'},
+			{"tray",	    no_argument,	NULL, 't'},
 
 			{"dry-run",	    no_argument,	NULL, 'n'},
 			{"debug",	    optional_argument,	NULL, 'D'},
@@ -5243,10 +5243,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "p:rlqb:S:s:c:L:i:T:uXnD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
+		c = getopt(argc, argv, "p:rlqb:S:s:c:L:i:T:uXnDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -5269,6 +5269,13 @@ main(int argc, char *argv[])
 			options.command = CommandReplace;
 			options.replace = True;
 			break;
+		case 'l':	/* -l, --lock */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandLock;
+			options.command = CommandLock;
+			break;
 		case 'q':	/* -q, --quit */
 			if (options.command != CommandDefault)
 				goto bad_option;
@@ -5276,13 +5283,6 @@ main(int argc, char *argv[])
 				command = CommandQuit;
 			options.command = CommandQuit;
 			options.replace = True;
-			break;
-		case 'l':	/* -l, --lock */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandLock;
-			options.command = CommandLock;
 			break;
 
 		case 'b':	/* -b, --banner BANNER */
@@ -5311,11 +5311,11 @@ main(int argc, char *argv[])
 				break;
 			}
 			goto bad_option;
-		case '1':	/* -c --charset CHARSET */
+		case 'c':	/* -c --charset CHARSET */
 			free(options.charset);
 			options.charset = strdup(optarg);
 			break;
-		case '2':	/* -l, --language LANG */
+		case 'L':	/* -L, --language LANG */
 			free(options.language);
 			options.language = strdup(optarg);
 			break;
@@ -5346,6 +5346,9 @@ main(int argc, char *argv[])
 			break;
 		case '9':	/* --transparent */
 			options.transparent = True;
+			break;
+
+		case 't':	/* -t, --tray */
 			break;
 
 		case 'n':	/* -n, --dry-run */
