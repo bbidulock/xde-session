@@ -298,7 +298,7 @@ Options options = {
 	.splash = NULL,
 	.source = BackgroundSourceSplash,
 	.xsession = False,
-	.setbg = False,
+	.setbg = True,
 	.transparent = False,
 	.width = -1,
 	.height = -1,
@@ -341,7 +341,7 @@ Options defaults = {
 	.splash = NULL,
 	.source = BackgroundSourceSplash,
 	.xsession = False,
-	.setbg = False,
+	.setbg = True,
 	.transparent = False,
 	.width = -1,
 	.height = -1,
@@ -5232,7 +5232,7 @@ main(int argc, char *argv[])
 			{"default",	    required_argument,	NULL, '6'},
 			{"username",	    required_argument,	NULL, '7'},
 			{"guard",	    required_argument,	NULL, 'g'},
-			{"setbg",	    no_argument,	NULL, '8'},
+			{"nosetbg",	    no_argument,	NULL, '8'},
 			{"transparent",	    no_argument,	NULL, '9'},
 			{"tray",	    no_argument,	NULL, 't'},
 
@@ -5363,8 +5363,8 @@ main(int argc, char *argv[])
 				goto bad_option;
 			options.guard = val;
 			break;
-		case '8':	/* --setbg */
-			options.setbg = True;
+		case '8':	/* --nosetbg */
+			options.setbg = False;
 			break;
 		case '9':	/* --transparent */
 			options.transparent = True;
