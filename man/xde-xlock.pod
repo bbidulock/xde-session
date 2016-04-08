@@ -178,11 +178,16 @@ Specifies that the background image should not be set by the program.
 The default behaviour is to set the background in accordance with the
 B<-banner> option.
 
-=item B<-transparent>
+=item B<--transparent>
 
 Specifies that the login panel should be transparent and that the
 widgets should be embedded in the background image.  The default is to
 paint the login panel.
+
+=item B<--tray>
+
+Specifies that a status icon for the locker should be placed in the
+system tray.
 
 =item B<-n>, B<--dry-run>
 

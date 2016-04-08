@@ -263,6 +263,7 @@ typedef struct {
 	double yposition;
 	Bool setstyle;
 	unsigned guard;
+	Bool tray;
 } Options;
 
 Options options = {
@@ -306,6 +307,7 @@ Options options = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.guard = 5,
+	.tray = False,
 };
 
 Options defaults = {
@@ -349,6 +351,7 @@ Options defaults = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.guard = 5,
+	.tray = False,
 };
 
 typedef struct {
@@ -5371,8 +5374,8 @@ main(int argc, char *argv[])
 		case '9':	/* --transparent */
 			options.transparent = True;
 			break;
-
 		case 't':	/* -t, --tray */
+			options.tray = True;
 			break;
 
 		case 'n':	/* -n, --dry-run */
