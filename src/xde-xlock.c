@@ -4060,11 +4060,11 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [options] ADDRESS [...]\n\
-    %1$s [options] {-r|--replace}\n\
-    %1$s [options] {-l|--lock}\n\
-    %1$s [options] {-q|--quit}\n\
-    %1$s [options] {-h|--help}\n\
+    %1$s [-L|--locker] [OPTIONS]\n\
+    %1$s {-r|--replace} [OPTIONS]\n\
+    %1$s {-l|--lock} [OPTIONS]\n\
+    %1$s {-q|--quit} [OPTIONS]\n\
+    %1$s {-h|--help} [OPTIONS]\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 ", argv[0]);
@@ -4102,17 +4102,19 @@ help(int argc, char *argv[])
         /* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [options] ADDRESS [...]\n\
-    %1$s [options] {-r|--replace}\n\
-    %1$s [options] {-l|--lock}\n\
-    %1$s [options] {-q|--quit}\n\
-    %1$s [options] {-h|--help}\n\
+    %1$s [-L|--locker] [OPTIONS]\n\
+    %1$s {-r|--replace} [OPTIONS]\n\
+    %1$s {-l|--lock} [OPTIONS]\n\
+    %1$s {-q|--quit} [OPTIONS]\n\
+    %1$s {-h|--help} [OPTIONS]\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Arguments:\n\
     ADDRESS [...]\n\
         host names of display managers or \"BROADCAST\"\n\
 Command options:\n\
+   [-L, --locker]\n\
+        run an instance of the locker without replacement\n\
     -r, --replace\n\
         replace a running instance with the current one\n\
     -l, --lock\n\
@@ -5441,16 +5443,16 @@ main(int argc, char *argv[])
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
+	if (optind < argc) {
+		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
+		goto bad_nonopt;
+	}
 	get_defaults(argc, argv);
 	switch (command) {
 	default:
 	case CommandDefault:
-		if (optind < argc) {
-			fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
-			goto bad_nonopt;
-		}
 		DPRINTF("%s: running default\n", argv[0]);
-		do_run(argc - optind, &argv[optind]);
+		do_run(argc, argv);
 		exit(EXIT_FAILURE);
 		break;
 	case CommandReplace:
