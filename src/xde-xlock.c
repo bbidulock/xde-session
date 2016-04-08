@@ -5213,6 +5213,7 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"prompt",	    required_argument,	NULL, 'p'},
+			{"locker",	    no_argument,	NULL, 'L'},
 			{"replace",	    no_argument,	NULL, 'r'},
 			{"lock",	    no_argument,	NULL, 'l'},
 			{"quit",	    no_argument,	NULL, 'q'},
@@ -5243,10 +5244,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "p:rlqb:S:s:i:T:uXnD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "p:Lrlqb:S:s:i:T:uXnD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "p:rlqb:S:s:i:T:uXnDvhVCH?");
+		c = getopt(argc, argv, "p:Lrlqb:S:s:i:T:uXnDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -5261,6 +5262,14 @@ main(int argc, char *argv[])
 			options.welcome = strndup(optarg, 256);
 			break;
 
+		case 'L':	/* -L, --locker */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandLocker;
+			options.command = CommandLocker;
+			options.replace = False;
+			break;
 		case 'r':	/* -r, --replace */
 			if (options.command != CommandDefault)
 				goto bad_option;
