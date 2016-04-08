@@ -5220,8 +5220,8 @@ main(int argc, char *argv[])
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'S'},
 			{"side",	    required_argument,	NULL, 's'},
-			{"charset",	    required_argument,	NULL, 'c'},
-			{"language",	    required_argument,	NULL, 'L'},
+			{"charset",	    required_argument,	NULL, '3'},
+			{"language",	    required_argument,	NULL, '4'},
 			{"icons",	    required_argument,	NULL, 'i'},
 			{"theme",	    required_argument,	NULL, 'T'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
@@ -5243,10 +5243,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "p:rlqb:S:s:c:L:i:T:uXnD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "p:rlqb:S:s:i:T:uXnD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "p:rlqb:S:s:c:L:i:T:uXnDvhVCH?");
+		c = getopt(argc, argv, "p:rlqb:S:s:i:T:uXnDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -5311,11 +5311,11 @@ main(int argc, char *argv[])
 				break;
 			}
 			goto bad_option;
-		case 'c':	/* -c --charset CHARSET */
+		case '3':	/* --charset CHARSET */
 			free(options.charset);
 			options.charset = strdup(optarg);
 			break;
-		case 'L':	/* -L, --language LANG */
+		case '4':	/* --language LANG */
 			free(options.language);
 			options.language = strdup(optarg);
 			break;
