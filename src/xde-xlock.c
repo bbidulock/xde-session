@@ -108,6 +108,9 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
+
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
@@ -165,6 +168,8 @@ static int saveArgc;
 static char **saveArgv;
 
 #undef DO_ONIDLE
+
+#define LOGO_NAME "gnome-lockscreen"
 
 #define RESNAME "xde-xlock"
 #define RESCLAS "XDE-XLock"
@@ -3768,6 +3773,129 @@ AbortLockScreen(void)
 	}
 }
 
+static gboolean
+on_button_press(GtkStatusIcon *icon, GdkEvent *event, gpointer user_data)
+{
+	GdkEventButton *ev;
+
+	ev = (typeof(ev)) event;
+	if (ev->button != 1)
+		return GTK_EVENT_PROPAGATE;
+	LockScreen();
+	return GTK_EVENT_STOP;
+}
+
+static void
+on_refresh_selected(GtkMenuItem *item, gpointer user_data)
+{
+	LockScreen();
+}
+
+static void
+on_about_selected(GtkMenuItem *item, gpointer user_data)
+{
+	gchar *authors[] = { "Brian F. G. Bidulock <bidulock@openss7.org>", NULL };
+	gtk_show_about_dialog(NULL,
+			      "authors", authors,
+			      "comments", "A systemd compliant screen locker.",
+			      "copyright", "Copyright (c) 2013, 2014, 2015, 2016  OpenSS7 Corporation",
+			      "license", "Do what thou wilt shall be the whole of the law.\n\n-- Aleister Crowley",
+			      "logo-icon-name", LOGO_NAME,
+			      "program-name", "xde-menu",
+			      "version", "0.1",
+			      "website", "http://www.unexicon.com/",
+			      "website-label", "Unexicon - Linux spun for telecom",
+			      NULL);
+	return;
+}
+
+static void
+on_redo_selected(GtkMenuItem *item, gpointer user_data)
+{
+	char **argv;
+	int i;
+
+#if 0
+	if (smcConn) {
+		/* When running under a session manager, simply exit and the session
+		   manager will restart us immediately.  This will preserve startup
+		   order. */
+		exit(EXIT_SUCCESS);
+	}
+#endif
+	argv = calloc(saveArgc + 1, sizeof(*argv));
+	for (i = 0; i < saveArgc; i++)
+		argv[i] = saveArgv[i];
+	DPRINTF("%s: restarting the screen locker\n", NAME);
+	if (execvp(argv[0], argv) == -1)
+		EPRINTF("%s: %s\n", argv[0], strerror(errno));
+	return;
+}
+
+static void
+on_prefs_selected(GtkMenuItem *item, gpointer user_data)
+{
+}
+
+static void
+on_quit_selected(GtkMenuItem *item, gpointer user_data)
+{
+	/* FIXME: tell session manager we are shutting down. */
+	exit(EXIT_SUCCESS);
+}
+
+static void
+on_popup_menu(GtkStatusIcon *icon, guint button, guint time, gpointer user_data)
+{
+	GtkWidget *menu, *item;
+
+	menu = gtk_menu_new();
+	item = gtk_image_menu_item_new_from_stock("gtk-refresh", NULL);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_refresh_selected), NULL);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-about", NULL);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_about_selected), NULL);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_separator_menu_item_new();
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-redo", NULL);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_redo_selected), NULL);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-preferences", NULL);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_prefs_selected), NULL);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-quit", NULL);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_quit_selected), NULL); \
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, gtk_status_icon_position_menu, icon, button,
+		       time);
+	return;
+}
+
+static void
+init_statusicon(void)
+{
+	GtkStatusIcon *icon;
+
+	icon = gtk_status_icon_new_from_icon_name(LOGO_NAME);
+	gtk_status_icon_set_tooltip_text(icon, "Click to lock screen...");
+	gtk_status_icon_set_visible(icon, TRUE);
+	g_signal_connect(G_OBJECT(icon), "button_press_event", G_CALLBACK(on_button_press), NULL);
+	g_signal_connect(G_OBJECT(icon), "popup_menu", G_CALLBACK(on_popup_menu), NULL);
+}
+
 static void
 do_run(int argc, char *argv[])
 {
@@ -3777,6 +3905,8 @@ do_run(int argc, char *argv[])
 	setup_systemd();
 	top = GetWindow(True);
 	setup_screensaver();
+	if (options.tray)
+		init_statusicon();
 	if (options.command != CommandLock)
 		UnlockScreen();
 	for (;;) {
