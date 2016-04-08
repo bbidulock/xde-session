@@ -5207,17 +5207,18 @@ main(int argc, char *argv[])
 
 	while (1) {
 		int c, val;
+		char *endptr = NULL;
 
 #ifdef _GNU_SOURCE
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-			{"prompt",	    required_argument,	NULL, 'p'},
 			{"locker",	    no_argument,	NULL, 'L'},
 			{"replace",	    no_argument,	NULL, 'r'},
 			{"lock",	    no_argument,	NULL, 'l'},
 			{"quit",	    no_argument,	NULL, 'q'},
 
+			{"prompt",	    required_argument,	NULL, 'p'},
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'S'},
 			{"side",	    required_argument,	NULL, 's'},
@@ -5229,6 +5230,8 @@ main(int argc, char *argv[])
 			{"vendor",	    required_argument,	NULL, '5'},
 			{"xsessions",	    no_argument,	NULL, 'X'},
 			{"default",	    required_argument,	NULL, '6'},
+			{"username",	    required_argument,	NULL, '7'},
+			{"guard",	    required_argument,	NULL, 'g'},
 			{"setbg",	    no_argument,	NULL, '8'},
 			{"transparent",	    no_argument,	NULL, '9'},
 			{"tray",	    no_argument,	NULL, 't'},
@@ -5244,10 +5247,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "p:Lrlqb:S:s:i:T:uXnD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "Lrlqp:b:S:s:i:T:uXg:nD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "p:Lrlqb:S:s:i:T:uXnDvhVCH?");
+		c = getopt(argc, argv, "Lrlqp:b:S:s:i:T:uXg:nDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -5256,11 +5259,6 @@ main(int argc, char *argv[])
 		switch (c) {
 		case 0:
 			goto bad_usage;
-
-		case 'p':	/* -p, --prompt PROMPT */
-			free(options.welcome);
-			options.welcome = strndup(optarg, 256);
-			break;
 
 		case 'L':	/* -L, --locker */
 			if (options.command != CommandDefault)
@@ -5294,6 +5292,10 @@ main(int argc, char *argv[])
 			options.replace = True;
 			break;
 
+		case 'p':	/* -p, --prompt PROMPT */
+			free(options.welcome);
+			options.welcome = strndup(optarg, 256);
+			break;
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
 			options.banner = strdup(optarg);
@@ -5343,12 +5345,23 @@ main(int argc, char *argv[])
 			free(options.vendor);
 			options.vendor = strdup(optarg);
 			break;
-		case 'X':	/* --xsessions */
+		case 'X':	/* -X, --xsessions */
 			options.xsession = True;
 			break;
 		case '6':	/* --default DEFAULT */
 			free(options.choice);
 			options.choice = strdup(optarg);
+			break;
+		case '7':	/* --username USERNAME */
+			free(options.username);
+			options.username = strdup(optarg);
+			break;
+		case 'g':	/* -g, --guard SECONDS */
+			if ((val = strtol(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && !*endptr)
+				goto bad_option;
+			options.guard = val;
 			break;
 		case '8':	/* --setbg */
 			options.setbg = True;
