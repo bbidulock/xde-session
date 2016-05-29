@@ -212,7 +212,7 @@ save-yourself phase 2).
 Dock applications that support the B<WM_SAVE_YOURSELF> protocol will
 receive a B<WM_SAVE_YOURSELF> client message each time the session
 manager issues a checkpoint or shutdown.  This allows applications to
-save state.  If a dock application does not support he
+save state.  If a dock application does not support the
 B<WM_SAVE_YOURSELF> protocol, the dock manager will provide enough
 information to the session manager to restart the application (using
 B<WM_COMMAND>), but no state will be restored.
@@ -226,6 +226,16 @@ support X11R6/ICCCM 2.0 session management (they all use the older
 X11R5/ICCCM 1.0 procedures).  Because of this, there is no risk that a
 dock application registers with the session manager external to
 B<xde-dockapps>.  That is not the case with system tray applications.
+
+Because another X11R6 Session Management proxy might attempt to manage
+dock applications; or, because a window manager may attempt X11R6
+Session Management proxy operations on a dock application,
+B<xde-dockapps> sets the B<SM_CLIENT_ID> property on the client leader
+window (or window if no client leader) if not already set, which is
+typical for dock applications.  The setting of the B<SM_CLIENT_ID>
+property will indicate to any X11R6 Session Management proxy that the
+dock application is already managed by X11R6 Session Management and the
+proxy should ignore it.
 
 =head2 CHECKPOINT & SHUTDOWN
 
@@ -241,9 +251,17 @@ EWMH/NetWM window manager hints.
 
 =head2 EDITING
 
+=head1 PROPERTIES
+
+The following window properties are examined or set by B<xde-dockapps>:
+
+=over
+
+=back
+
 =head1 ENVIRONMENT
 
-The following environment variables are examined by B<xde-dockapps>:
+The following environment variables are examined or set by B<xde-dockapps>:
 
 =over
 
