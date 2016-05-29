@@ -2,6 +2,7 @@
 xde_man_files = \
 	xde-autostart.man \
 	xde-chooser.man \
+	xde-dockapps.man \
 	xde-dockmgr.man \
 	xde-input.man \
 	xde-login.man \
@@ -24,6 +25,7 @@ CLEANFILES = $(xde_man_files)
 EXTRA_DIST = \
 	xde-autostart.pod \
 	xde-chooser.pod \
+	xde-dockapps.pod \
 	xde-dockmgr.pod \
 	xde-input.pod \
 	xde-login.pod \

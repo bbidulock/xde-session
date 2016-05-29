@@ -2,17 +2,17 @@
 
 =head1 NAME
 
-xde-dockmgr - a dock manager for XDE
+xde-dockapps - a dock manager for XDE
 
 =head1 SYNOPSIS
 
-B<xde-dockmgr> [I<OPTIONS>]
+B<xde-dockapps> [I<OPTIONS>]
 
 =head1 DESCRIPTION
 
-B<xde-dockmgr> is a C<C> language application program that
-manages dock applications.  It provides startup, ordering and X11
-session management for dock applications.
+B<xde-dockapps> is a C<C> language application program that manages
+dock applications.  It provides startup, ordering and X11 session
+management for dock applications.
 
 =head1 OPTIONS
 
@@ -33,8 +33,8 @@ follows:
 
 =item [B<--manage>, B<-m>]
 
-Assume normal operation.  Launch dock applications and monitor
-the dock.
+Assume normal operation.  Launch dock applications and monitor the
+dock.
 
 =item B<--replace>, B<-r>
 
@@ -47,9 +47,9 @@ Ask a running instance to exit.
 
 =item B<--edit>, B<-e>
 
-As a running instance to launch the editor.  The editor is used
-to edit the dock applications that will be launched at startup
-and the order of dock applications in the dock.
+As a running instance to launch the editor.  The editor is used to
+edit the dock applications that will be launched at startup and
+the order of dock applications in the dock.
 
 =item B<--help>, B<-h>
 
@@ -68,8 +68,8 @@ Print copying permissions to standard output and exit.
 
 =head2 GENERAL OPTIONS
 
-The following general options can be used with most of the
-command options listed above:
+The following general options can be used with most of the command
+options listed above:
 
 =over
 
@@ -117,9 +117,8 @@ line.
 
 Tells the program to restore X Session Management settings saved
 using the client identifier, I<CLIENTID>.  This is an internal
-option used for communicating with an X Session Manager and
-should not be specified on the command line.  See L</USAGE>,
-below.
+option used for communicating with an X Session Manager and should
+not be specified on the command line.  See L</USAGE>, below.
 
 =item B<--save-file> I<FILENAME>
 
@@ -132,52 +131,52 @@ specified on the command line.  See L</USAGE>, below.
 
 =head1 USAGE
 
-B<xde-dockmgr> expects to be launched before the window manager.
+B<xde-dockapps> expects to be launched before the window manager.
 It can be launched by XDG autostart entry, but when launched in
 this fashion it must be launched in the C<Intializing> phase of
 autostart.  That is, to be effective, it must be launched before
 the window manager and before the first dock application is
 launched.
 
-B<xde-dockmgr> assumes a session manager that provides total
+B<xde-dockapps> assumes a session manager that provides total
 ordering of clients on restoration.  That is the only way of
 ensuring that dock applications are restored in the correct order
 for docks that do not provide an ordering mechanism of their own.
 The L<xde-sm(1)> session manager provide total ordering on
-restoration.  Under this assumption, it is not necessary that
-dock applications be launched from within B<xde-dockmgr>.
+restoration.  Under this assumption, it is not necessary that dock
+applications be launched from within B<xde-dockapps>.
 
 Because of these assumptions, on session initialization, dock
 applications can be launched by any means expedient.  A mechanism
-whereby dock applications are launched by XDG autostart entries
-is still appropriate.  However, if dock applications are launched
-by window manager setup scripts (as is the classical case for
+whereby dock applications are launched by XDG autostart entries is
+still appropriate.  However, if dock applications are launched by
+window manager setup scripts (as is the classical case for
 L<fluxbox(1)>, L<blackbox(1)> and some other light-weight window
-managers), or by the window manager itself (as is the default
-case for L<wmaker(1)>), the setup script or auto startup must be
+managers), or by the window manager itself (as is the default case
+for L<wmaker(1)>), the setup script or auto startup must be
 bypassed during session restoration, or B<xde-dock> must be
 started with the B<--nolaunch> option.
 
-B<xde-dockmgr> does not harmfully interact with session manager
+B<xde-dockapps> does not harmfully interact with session manager
 proxies (such as L<smproxy(1)> and L<xde-smproxy(1)>).  This is
 because dock applications are not normally assigned a B<WM_STATE>
-property by the window manager dock, so the normal session
-manager proxy does not see dock applications.  L<xde-smproxy(1)>,
-however, can be given a flag that allows it to perform the same
-functions as B<xde-dockmgr>.
+property by the window manager dock, so the normal session manager
+proxy does not see dock applications.  L<xde-smproxy(1)>, however,
+can be given a flag that allows it to perform the same functions
+as B<xde-dockapps>.
 
 If dock applications are launched with XDG startup notification,
 or startup notification assistance (see L<xdg-launch(1)>),
-B<xde-dockmgr> can provide additional information when
-registering with the session manager than is normally available
-strictly from ICCCM window properties.
+B<xde-dockapps> can provide additional information when registering
+with the session manager than is normally available strictly from
+ICCCM window properties.
 
 =head1 BEHAVIOR
 
 =head2 SESSION MANAGEMENT
 
-A Window Maker dock application is a top-level window that has
-the following characteristics:
+A Window Maker dock application is a top-level window that has the
+following characteristics:
 
 =over
 
@@ -201,8 +200,8 @@ C<DockApp>.
 =back
 
 The B<WM_STATE> property must not be added to these windows (when
-the window manager supports dock applications), otherwise they
-are treated as non-dock application windows.  Dock applications
+the window manager supports dock applications), otherwise they are
+treated as non-dock application windows.  Dock applications
 typically also have the B<WM_PROTOCOLS>, B<WM_CLASS>, B<WM_NAME>,
 B<WM_COMMAND>, B<WM_CLIENT_MACHINE> and B<WM_CLIENT_LEADER>
 properties set.
@@ -222,24 +221,24 @@ support he B<WM_SAVE_YOURSELF> protocol, the dock manager will
 provide enough information to the session manager to restart the
 application (using B<WM_COMMAND>), but no state will be restored.
 
-B<xde-dockmgr> tracks the full life cycle of each dock
+B<xde-dockapps> tracks the full life cycle of each dock
 application.  During initial startup or restoration of a session,
 when dock applications are re-parented by the window manager to
-the dock, it establishes a proxy connection to the session
-manager on behalf of each dock application.  There are not really
-any dock applications that support X11R6/ICCCM 2.0 session
-management (they all use the older X11R5/ICCCM 1.0 procedures).
-Because of this, there is no risk that a dock application
-registers with the session manager external to B<xde-dockmgr>.
-That is not the case with system tray applications.
+the dock, it establishes a proxy connection to the session manager
+on behalf of each dock application.  There are not really any dock
+applications that support X11R6/ICCCM 2.0 session management (they
+all use the older X11R5/ICCCM 1.0 procedures).  Because of this,
+there is no risk that a dock application registers with the
+session manager external to B<xde-dockapps>.  That is not the case
+with system tray applications.
 
 =head2 CHECKPOINT & SHUTDOWN
 
-When the session managers sends a save yourself, B<xde-dockmgr>
+When the session managers sends a save yourself, B<xde-dockapps>
 requests a save-yourself phase 2.  When phase 2 begins,
-B<xde-dockmgr> examines the state and position of all dock
-applications and stores their primary ICCCM 2.0 properties as
-well as any present WMH/WinWM, EWMH/NetWM window manager hints.
+B<xde-dockapps> examines the state and position of all dock
+applications and stores their primary ICCCM 2.0 properties as well
+as any present WMH/WinWM, EWMH/NetWM window manager hints.
 
 =head2 SAVED STATE
 
@@ -250,7 +249,7 @@ well as any present WMH/WinWM, EWMH/NetWM window manager hints.
 =head1 ENVIRONMENT
 
 The following environment variables are examined by
-B<xde-dockmgr>:
+B<xde-dockapps>:
 
 =over
 
@@ -281,8 +280,8 @@ F<$HOME/.local/share>.
 =item B<XDG_DATA_DIRS>
 
 When set, F<$XDG_DATA_DIRS/dockapps> and
-F<$XDG_DATA_DIRS/applications> will be examined for each
-directory in the colon separated list of directories contained in
+F<$XDG_DATA_DIRS/applications> will be examined for each directory
+in the colon separated list of directories contained in
 B<XDG_DATA_DIRS>.  The variable defaults to
 F</usr/local/share:/usr/share>.
 
@@ -304,7 +303,7 @@ F</usr/local/share:/usr/share>.
 
 =head1 BUGS
 
-B<xde-dockmgr> had no known bugs at the time of release.  Please
+B<xde-dockapps> had no known bugs at the time of release.  Please
 report bugs for current versions to the source code repository at
 L<https://github.com/bbidulock/xde-session/issues>.
 
@@ -321,15 +320,15 @@ system tray icons will be launched at startup with corresponding
 window managers.
 
 Many system trays do not have the ability to specify ordering of
-system tray icons.  The F<autostart> approach also had the
-problem that system tray icons were launched in application id
-order and raced for position in the system tray.  This
-application has the ability to order and reorder icons in the
-system tray, as well as controlling the order of startup.
+system tray icons.  The F<autostart> approach also had the problem
+that system tray icons were launched in application id order and
+raced for position in the system tray.  This application has the
+ability to order and reorder icons in the system tray, as well as
+controlling the order of startup.
 
 =head1 SEE ALSO
 
-L<xde-traymgr(1)>
+L<xde-trayicons(1)>
 
 =head1 AUTHOR
 
