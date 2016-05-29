@@ -3,7 +3,7 @@
 - [ ] do not autostart tray icons; make an xde-trayicons instead (or
       maybe just use xde-tray) that is autostarted, but which will only
       launch the tray icons requested by the user (or default to a
-      reasonable set).
+      reasonable set, based on profile).
 
 - [ ] Expect system tray .desktop files to be in the XDG subdirectory
       $XDG_DATA_DIRS/trayicons.  Also consider .desktop files with the
@@ -17,7 +17,7 @@
 - [ ] do not autostart dock apps; make an xde-dockapps instead (or maybe
       just use xde-dock) that is autostarted, but which will only launch
       the dock apps requested by the user (or default to a reasonable
-      set).
+      set, based on profile).
 
 - [ ] Expect dock app .desktop files to be in the XDG subdirectory
       $XDG_DATA_DIRS/dockapps.  Also consider .desktop files with the

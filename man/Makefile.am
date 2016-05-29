@@ -9,6 +9,7 @@ xde_man_files = \
 	xde-session.man \
 	xde-sm.man \
 	xde-smproxy.man \
+	xde-trayicons.man \
 	xde-traymgr.man \
 	xde-wait.man \
 	xde-wmproxy.man \
@@ -30,6 +31,7 @@ EXTRA_DIST = \
 	xde-session.pod \
 	xde-sm.pod \
 	xde-smproxy.pod \
+	xde-trayicons.pod \
 	xde-traymgr.pod \
 	xde-wait.pod \
 	xde-wmproxy.pod \
