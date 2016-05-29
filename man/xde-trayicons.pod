@@ -10,55 +10,53 @@ B<xde-trayicons> [I<OPTIONS>]
 
 =head1 DESCRIPTION
 
-B<xde-trayicons> is a C<C> language application program that
-manages system tray icons.  It provides startup, ordering and X11
-session management for system tray icons.  It does not provide a
-system tray of its own, but relies on the appearance of a system
-tray before performing its function.
+B<xde-trayicons> is a C<C> language application program that manages
+system tray icons.  It provides startup, ordering and X11 session
+management for system tray icons.  It does not provide a system tray of
+its own, but relies on the appearance of a system tray before performing
+its function.
 
 =head1 OPTIONS
 
-The program uses L<getopt_long_only(3)> to parse options, so
-abbreviated or single-dash long options are recognized when not
-ambiguous.  The program accepts the following options:
+The program uses L<getopt_long_only(3)> to parse options, so abbreviated
+or single-dash long options are recognized when not ambiguous.  The
+program accepts the following options:
 
 =head2 COMMAND OPTIONS
 
-Command options affect the major operating mode of the program.
-Only one command option may be specified (with the exception that
-B<--help> can be specified in conjunction with any other command
-option).  When no command option is specified, B<--manage> is
-assumed.  The command options recognized by the program are as
-follows:
+Command options affect the major operating mode of the program.  Only
+one command option may be specified (with the exception that B<--help>
+can be specified in conjunction with any other command option).  When no
+command option is specified, B<--manage> is assumed.  The command
+options recognized by the program are as follows:
 
 =over
 
 =item [B<--manage>, B<-m>]
 
-Assume normal operation.  Wait for the appearance of a system
-tray, launch system tray icons and monitor the system tray.
+Assume normal operation.  Wait for the appearance of a system tray,
+launch system tray icons and monitor the system tray.
 
 =item B<--replace>, B<-r>
 
-Replace a currently running instance of the program with the
-current process.  It is not an error if no instance is currently
-running.
+Replace a currently running instance of the program with the current
+process.  It is not an error if no instance is currently running.
 
 =item B<--quit>, B<-q>
 
-Ask a running instance to exit.  It is not an error if no instance
-is currently running.
+Ask a running instance to exit.  It is not an error if no instance is
+currently running.
 
 =item B<--edit>, B<-e>
 
-Ask a running instance to launch the editor.  The editor is used
-to edit the system tray icons that will be launched at startup and
-the order of system tray icons in the tray.
+Ask a running instance to launch the editor.  The editor is used to edit
+the system tray icons that will be launched at startup and the order of
+system tray icons in the tray.
 
 =item B<--help>, B<-h>
 
-Print usage information to standard error containing current
-option settings and exit.
+Print usage information to standard error containing current option
+settings and exit.
 
 =item B<--version>, B<-V>
 
@@ -70,50 +68,48 @@ Print copying permissions to standard output and exit.
 
 =item B<--client-id> I<CLIENTID>
 
-Tells the program to restore X Session Management settings saved
-using the client identifier, I<CLIENTID>.  This is an internal
-option used for communicating with an external X Session Manager
-and should not be specified on the command line.  See L</USAGE>,
-below.
+Tells the program to restore X Session Management settings saved using
+the client identifier, I<CLIENTID>.  This is an internal option used for
+communicating with an external X Session Manager and should not be
+specified on the command line.  See L</USAGE>, below.
 
 =back
 
 =head2 GENERAL OPTIONS
 
-The following general options can be used with most of the
-command options listed above:
+The following general options can be used with most of the command
+options listed above:
 
 =over
 
 =item B<--display>, B<-d> I<DISPLAY>
 
-Specifies the display to use.  This is not normally necessary as
-the display is obtained from the B<DISPLAY> environment variable
-when this option is not specified.
+Specifies the display to use.  This is not normally necessary as the
+display is obtained from the B<DISPLAY> environment variable when this
+option is not specified.
 
 =item B<--nolaunch>, B<-n>
 
-Do not launch any dock applications, but simply monitor and
-provide X11 session management.
+Do not launch any dock applications, but simply monitor and provide X11
+session management.
 
 =item B<-n>, B<--dry-run>
 
-Don't do anything, just print what would be done on standard
-error.
+Don't do anything, just print what would be done on standard error.
 
 =item B<-D>, B<--debug> [I<LEVEL>]
 
-Increase, or set to I<LEVEL>, the debugging verbosity.  The
-default debugging verbosity level is zero (0), which means to
-output no debugging information.  When non-zero, debugging
-information will be printed to standard error.
+Increase, or set to I<LEVEL>, the debugging verbosity.  The default
+debugging verbosity level is zero (0), which means to output no
+debugging information.  When non-zero, debugging information will be
+printed to standard error.
 
 =item B<-v>, B<--verbose> [I<LEVEL>]
 
-Increase, or set to I<LEVEL>, the output verbosity.  The default
-output verbosity level is one (1), which means to output normal
-information to standard output.  When set to zero (0), no output
-will be printed to standard output. 
+Increase, or set to I<LEVEL>, the output verbosity.  The default output
+verbosity level is one (1), which means to output normal information to
+standard output.  When set to zero (0), no output will be printed to
+standard output. 
 
 =back
 
@@ -121,54 +117,52 @@ will be printed to standard output.
 
 =head1 BEHAVIOUR
 
-When B<xde-trayicons> first starts, it establishes a connection
-with the X11 Session Manager and becomes an X11 Session Manager
-itself.  The purpose here is to intercept any X11 session
-management from system tray icon applications.
+When B<xde-trayicons> first starts, it establishes a connection with the
+X11 Session Manager and becomes an X11 Session Manager itself.  The
+purpose here is to intercept any X11 session management from system tray
+icon applications.
 
-When B<xde-trayicons> starts, it also monitors for startup
-notification so that it may identify applications that are invoked
-that establish a system tray icon.
+When B<xde-trayicons> starts, it also monitors for startup notification
+so that it may identify applications that are invoked that establish a
+system tray icon.
 
 When B<xde-trayicons> starts, it then checks for the
-C<_NET_SYSTEM_TRAY_S%d> selection on all screens of the display,
-where C<%d> is the screen number.  When no system tray manager
-exists for a given screen, it will await acquisition of the
-manager selection for that screen before performing management of
-system tray icons for that selection.
+C<_NET_SYSTEM_TRAY_S%d> selection on all screens of the display, where
+C<%d> is the screen number.  When no system tray manager exists for a
+given screen, it will await acquisition of the manager selection for
+that screen before performing management of system tray icons for that
+selection.
 
-The B<xde-trayicons> selects for events on the manager window so
-that it may receive client messages requesting docking.  When it
-receives a C<SYSTEM_TRAY_REQUEST_DOCK> client message (message
-type C<_NET_SYSTEM_TRAY_OPCODE>), it identifies and selects for
-events on the "icon" window identified in the message.  When
-received, B<xde-trayicons> will monitor for XEMBED events
-associated with the "icon" window.
+The B<xde-trayicons> selects for events on the manager window so that it
+may receive client messages requesting docking.  When it receives a
+C<SYSTEM_TRAY_REQUEST_DOCK> client message (message type
+C<_NET_SYSTEM_TRAY_OPCODE>), it identifies and selects for events on the
+"icon" window identified in the message.  When received,
+B<xde-trayicons> will monitor for XEMBED events associated with the
+"icon" window.
 
 After establishing input selection with the manager window,
-B<xde-trayicons> will start launching system tray icon
-applications as specified in the configuration file (or X11
-session management save file when session management is restoring
-the program).  When determining which system tray icon
-applications to launch, it may consult an X11 session management
-save file; the C<XDG_CURRENT_DESKTOP> environment variable; the
-C<DESKTOP_SESSION> environment variable; and information obtained
-concerning the window manager (or window manager name).  This
-information is used to locate the configuration file associated
-with the restored or default session for a given profile.
+B<xde-trayicons> will start launching system tray icon applications as
+specified in the configuration file (or X11 session management save file
+when session management is restoring the program).  When determining
+which system tray icon applications to launch, it may consult an X11
+session management save file; the C<XDG_CURRENT_DESKTOP> environment
+variable; the C<DESKTOP_SESSION> environment variable; and information
+obtained concerning the window manager (or window manager name).  This
+information is used to locate the configuration file associated with the
+restored or default session for a given profile.
 
 =head1 ENVIRONMENT
 
-The following environment variables are examined by
-B<xde-trayicons>:
+The following environment variables are examined by B<xde-trayicons>:
 
 =over
 
 =item B<HOME>
 
-Will be used to determine the user's home directory for the
-purpose of calculating the default values for B<XDG_CONFIG_HOME>
-and B<XDG_DATA_HOME> when required.
+Will be used to determine the user's home directory for the purpose of
+calculating the default values for B<XDG_CONFIG_HOME> and
+B<XDG_DATA_HOME> when required.
 
 =item B<XDG_CONFIG_HOME>
 
@@ -183,17 +177,15 @@ B<XDG_CONFIG_DIRS>.  The variable defaults to F</etc/xdg>.
 
 =item B<XDG_DATA_HOME>
 
-When set, F<$XDG_DATA_HOME/trayicons> and
-F<$XDG_DATA_HOME/applications> will be examined for C<TrayIcon>
-category F<*.desktop> files.  The variable defaults to
-F<$HOME/.local/share>.
+When set, F<$XDG_DATA_HOME/trayicons> and F<$XDG_DATA_HOME/applications>
+will be examined for C<TrayIcon> category F<*.desktop> files.  The
+variable defaults to F<$HOME/.local/share>.
 
 =item B<XDG_DATA_DIRS>
 
-When set, F<$XDG_DATA_DIRS/trayicons> and
-F<$XDG_DATA_DIRS/applications> will be examined for each directory
-in the colon separated list of directories contained in
-B<XDG_DATA_DIRS>.  The variable defaults to
+When set, F<$XDG_DATA_DIRS/trayicons> and F<$XDG_DATA_DIRS/applications>
+will be examined for each directory in the colon separated list of
+directories contained in B<XDG_DATA_DIRS>.  The variable defaults to
 F</usr/local/share:/usr/share>.
 
 =item B<DISPLAY>
@@ -220,23 +212,21 @@ L<https://github.com/bbidulock/xde-session/issues>.
 
 =head1 HISTORY
 
-Originally, XDE used to launch WindowMaker dock applications at
-startup using F<autostart> directory F<.desktop> files.  This
-approach did not provide for session management control and
-provided only a crude mechanism for editing dock applications
-(basically just editing F<autostart> entries).  I wrote this
-application to provide both the ability to place dock
-applications under session management control as well as
-providing a better mechanism for editing which dock applications
+Originally, XDE used to launch WindowMaker dock applications at startup
+using F<autostart> directory F<.desktop> files.  This approach did not
+provide for session management control and provided only a crude
+mechanism for editing dock applications (basically just editing
+F<autostart> entries).  I wrote this application to provide both the
+ability to place dock applications under session management control as
+well as providing a better mechanism for editing which dock applications
 will be launched at startup with corresponding window managers.
 
-Many docks do not have the ability to specify ordering of system
-tray icons (with the possible exception of L<fluxbox(1)> and
-L<wmaker(1)>).  The F<autostart> approach also had the problem
-that dock applications were launched in application id order and
-raced for position in the dock.  This application has the ability
-to order and reorder dock applications in the dock, as well as
-controlling the order of startup.
+Many docks do not have the ability to specify ordering of system tray
+icons (with the possible exception of L<fluxbox(1)> and L<wmaker(1)>).
+The F<autostart> approach also had the problem that dock applications
+were launched in application id order and raced for position in the
+dock.  This application has the ability to order and reorder dock
+applications in the dock, as well as controlling the order of startup.
 
 =head1 SEE ALSO
 
@@ -246,13 +236,12 @@ L<xde-dockapps(1)>
 
 Brian Bidulock L<mailto:bidulock@openss7.org>.
 
-See B<--copying> for full copyright notice and copying
-permissions.
+See B<--copying> for full copyright notice and copying permissions.
 
 =head1 LICENSE
 
-See the F<COPYING> file in the distribution or use the
-B<--copying> flag to display copying permissions.
+See the F<COPYING> file in the distribution or use the B<--copying> flag
+to display copying permissions.
 
 =cut
 
