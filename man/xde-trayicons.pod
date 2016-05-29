@@ -12,7 +12,9 @@ B<xde-trayicons> [I<OPTIONS>]
 
 B<xde-trayicons> is a C<C> language application program that
 manages system tray icons.  It provides startup, ordering and X11
-session management for system tray icons.
+session management for system tray icons.  It does not provide a
+system tray of its own, but relies on the appearance of a system
+tray before performing its function.
 
 =head1 OPTIONS
 
@@ -39,11 +41,13 @@ tray, launch system tray icons and monitor the system tray.
 =item B<--replace>, B<-r>
 
 Replace a currently running instance of the program with the
-current process.
+current process.  It is not an error if no instance is currently
+running.
 
 =item B<--quit>, B<-q>
 
-Ask a running instance to exit.
+Ask a running instance to exit.  It is not an error if no instance
+is currently running.
 
 =item B<--edit>, B<-e>
 
@@ -68,8 +72,8 @@ Print copying permissions to standard output and exit.
 
 Tells the program to restore X Session Management settings saved
 using the client identifier, I<CLIENTID>.  This is an internal
-option used for communicating with an X Session Manager and
-should not be specified on the command line.  See L</USAGE>,
+option used for communicating with an external X Session Manager
+and should not be specified on the command line.  See L</USAGE>,
 below.
 
 =back

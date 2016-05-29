@@ -12,7 +12,9 @@ B<xde-dockapps> [I<OPTIONS>]
 
 B<xde-dockapps> is a C<C> language application program that manages
 dock applications.  It provides startup, ordering and X11 session
-management for dock applications.
+management for dock applications.  It does not provide a dock of
+its own, but relies on the appearance of a dock (or window manager
+supporting a dock) before performing its function.
 
 =head1 OPTIONS
 
@@ -33,17 +35,19 @@ follows:
 
 =item [B<--manage>, B<-m>]
 
-Assume normal operation.  Launch dock applications and monitor the
-dock.
+Assume normal operation.  Wait for the appearance of a dock,
+launch dock applications and monitor the dock.
 
 =item B<--replace>, B<-r>
 
 Replace a currently running instance of the program with the
-current process.
+current process.  It is not an error if no instance is currently
+running.
 
 =item B<--quit>, B<-q>
 
-Ask a running instance to exit.
+Ask a running instance to exit.  It is not an error if no instance
+is currently running.
 
 =item B<--edit>, B<-e>
 
