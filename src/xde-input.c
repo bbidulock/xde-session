@@ -261,6 +261,53 @@ typedef struct {
 
 Config config;
 
+typedef struct {
+	struct {
+		GtkWidget *GlobalAutoRepeat;
+		GtkWidget *KeyClickPercent;
+		GtkWidget *BellPercent;
+		GtkWidget *BellPitch;
+		GtkWidget *BellDuration;
+	} Keyboard;
+	struct {
+		GtkWidget *AccelerationDenominator;
+		GtkWidget *AccelerationNumerator;
+		GtkWidget *Threshold;
+	} Pointer;
+	struct {
+		GtkWidget *Timeout;
+		GtkWidget *Interval;
+		GtkWidget *PreferBlank;
+		GtkWidget *AllowExpose;
+	} ScreenSaver;
+	struct {
+		GtkWidget *State;
+		GtkWidget *StandbyTimeout;
+		GtkWidget *SuspendTimeout;
+		GtkWidget *OffTimeout;
+	} DPMS;
+	struct {
+		GtkWidget *RepeatKeysEnabled;
+		GtkWidget *RepeatDelay;
+		GtkWidget *RepeatInterval;
+		GtkWidget *SlowKeysEnabled;
+		GtkWidget *SlowKeysDelay;
+		GtkWidget *BounceKeysEnabled;
+		GtkWidget *DebounceDelay;
+		GtkWidget *StickyKeysEnabled;
+		GtkWidget *MouseKeysEnabled;
+		GtkWidget *MouseKeysDfltBtn;
+		GtkWidget *MouseKeysAccelEnabled;
+		GtkWidget *MouseKeysDelay;
+		GtkWidget *MouseKeysInterval;
+		GtkWidget *MouseKeysTimeToMax;
+		GtkWidget *MouseKeysMaxSpeed;
+		GtkWidget *MouseKeysCurve;
+	} XKeyboard;
+} Controls;
+
+Controls controls;
+
 
 void
 get_input()
@@ -794,6 +841,725 @@ startup()
 	}
 	if (DPMSGetVersion(dpy, &state.DPMS.major_version, &state.DPMS.minor_version)) {
 	}
+}
+
+gchar *
+format_value_milliseconds(GtkScale *scale, gdouble value, gpointer user_data)
+{
+	return g_strdup_printf("%0.*g ms", gtk_scale_get_digits(scale), value);
+}
+
+gchar *
+format_value_seconds(GtkScale *scale, gdouble value, gpointer user_data)
+{
+	return g_strdup_printf("%0.*g s", gtk_scale_get_digits(scale), value);
+}
+
+void
+accel_numerator_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+accel_denominator_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+threshold_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+keyclick_percent_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+bell_percent_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+bell_pitch_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+bell_duration_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+repeat_delay_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+repeat_interval_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+slow_keys_delay_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+debounce_delay_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+mouse_keys_delay_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+mouse_keys_interval_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+mouse_keys_time_to_max_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+mouse_keys_max_speed_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+mouse_keys_curve_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+screensaver_timeout_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+rotate_screensaver_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+standby_timeout_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+suspend_timeout_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+off_timeout_value_changed(GtkRange *range, gpointer user_data)
+{
+}
+
+void
+global_autorepeat_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+repeat_keys_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+slow_keys_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+bounce_keys_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+sticky_keys_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+mouse_keys_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+mouse_keys_accel_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+prefer_blanking_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+allow_exposures_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+dpms_toggled(GtkToggleButton *button, gpointer user_data)
+{
+}
+
+void
+ring_bell_clicked(GtkButton *button, gpointer user_data)
+{
+}
+
+void
+activate_screensaver_clicked(GtkButton *button, gpointer user_data)
+{
+}
+
+void
+rotate_screensaver_clicked(GtkButton *button, gpointer user_data)
+{
+}
+
+void
+activate_standby_clicked(GtkButton *button, gpointer user_data)
+{
+}
+
+void
+activate_suspend_clicked(GtkButton *button, gpointer user_data)
+{
+}
+
+void
+activate_off_clicked(GtkButton *button, gpointer user_data)
+{
+}
+
+void
+default_mouse_button_changed(GtkComboBox *box, gpointer user_data)
+{
+}
+
+
+
+GtkWindow *
+create_window()
+{
+	GtkWindow *w;
+
+	w = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
+	gtk_window_set_wmclass(w, "xde-input", "Xde-input");
+	gtk_window_set_title(w, "XDE X Input Control");
+	gtk_window_set_gravity(w, GDK_GRAVITY_CENTER);
+	gtk_window_set_type_hint(w, GDK_WINDOW_TYPE_HINT_DIALOG);
+	gtk_container_set_border_width(GTK_CONTAINER(w), 10);
+	gtk_window_set_skip_pager_hint(w, FALSE);
+	gtk_window_set_skip_taskbar_hint(w, FALSE);
+	gtk_window_set_position(w, GTK_WIN_POS_CENTER_ALWAYS);
+	g_signal_connect(G_OBJECT(w), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+
+	GtkWidget *h = gtk_hbox_new(FALSE, 5);
+	gtk_container_add(GTK_CONTAINER(w), h);
+
+	GtkWidget *n = gtk_notebook_new();
+	gtk_box_pack_start(GTK_BOX(h), n, FALSE, FALSE, 0);
+
+	GtkWidget *v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+
+	GtkWidget *l = gtk_label_new("Pointer");
+	gtk_notebook_append_page(GTK_NOTEBOOK(n), v, l);
+
+	GtkWidget *f = gtk_frame_new("Acceleration Numerator");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(1.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the acceleration numerator.  The effective\n\
+acceleration factor is the numerator divided by\n\
+the denominator.  A typical value is 24.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(accel_numerator_value_changed), NULL);
+	controls.Pointer.AccelerationNumerator = h;
+
+	f = gtk_frame_new("Acceleration Denominator");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(1.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the acceleration denominator.  The effective\n\
+acceleration factor is the numerator divided by\n\
+the denominator.  A typical value is 10.");
+	gtk_container_add(GTK_CONTAINER(f), h);
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(accel_denominator_value_changed), NULL);
+	controls.Pointer.AccelerationDenominator = h;
+
+	f = gtk_frame_new("Threshold");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(1.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the number of pixels moved before acceleration\n\
+begins.  A typical and usable value is 10 pixels.");
+	gtk_container_add(GTK_CONTAINER(f), h);
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(threshold_value_changed), NULL);
+	controls.Pointer.Threshold = h;
+
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("Keyboard");
+	gtk_notebook_append_page(GTK_NOTEBOOK(n), v, l);
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	GtkWidget *u = gtk_check_button_new_with_label("Global Auto Repeat");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When enabled, all keyboard keys will auto-repeat;\n\
+otherwise, only per-key autorepeat settings are\n\
+observed.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(global_autorepeat_toggled), NULL);
+	controls.Keyboard.GlobalAutoRepeat = u;
+
+	f = gtk_frame_new("Key Click Percent (%)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(0.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the key click volume as a percentage of\n\
+maximum volume: from 0% to 100%.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(keyclick_percent_value_changed), NULL);
+	controls.Keyboard.KeyClickPercent = h;
+
+	f = gtk_frame_new("Bell Percent (%)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(0.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the bell volume as a percentage of\n\
+maximum volume: from 0% to 100%.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(bell_percent_value_changed), NULL);
+	controls.Keyboard.BellPercent = h;
+
+	f = gtk_frame_new("Bell Pitch (Hz)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(60.0, 2000.0, 20.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the bell pitch in Hertz.  Usable values\n\
+are from 200 to 800 Hz.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(bell_pitch_value_changed), NULL);
+	controls.Keyboard.BellPitch = h;
+
+	f = gtk_frame_new("Bell Duration (milliseconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(10.0, 500.0, 10.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the bell duration in milliseconds.  Usable\n\
+values are 100 to 300 milliseconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(bell_duration_value_changed), NULL);
+	controls.Keyboard.BellDuration = h;
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_button_new_with_label("Ring Bell");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "Press to ring bell.");
+	g_signal_connect(G_OBJECT(u), "clicked", G_CALLBACK(ring_bell_clicked), NULL);
+
+	// FIXME: if have XKEYBOARD extension.
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("XKeyboard");
+	gtk_notebook_append_page(GTK_NOTEBOOK(n), v, l);
+	GtkWidget *s = gtk_notebook_new();
+	gtk_box_pack_start(GTK_BOX(v), s, TRUE, TRUE, 0);
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("Repeat Keys");
+	gtk_notebook_append_page(GTK_NOTEBOOK(s), v, l);
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_check_button_new_with_label("Repeat Keys Enabled");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When enabled, all keyboard keys will auto-repeat;\n\
+otherwise, only per-key autorepeat settings are\n\
+observed.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(repeat_keys_toggled), NULL);
+	controls.XKeyboard.RepeatKeysEnabled = u;
+
+	f = gtk_frame_new("Repeat Delay (milliseconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(0.0, 1000.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the delay after key press before auto-repeat\n\
+begins in milliseconds.  Usable values are from\n\
+250 to 500 milliseconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(repeat_delay_value_changed), NULL);
+	controls.XKeyboard.RepeatDelay = h;
+
+	f = gtk_frame_new("Repeat Interval (milliseconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(10.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the interval between repeats after auto-repeat\n\
+has begun.  Usable values are from 10 to 100\n\
+milliseconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(repeat_interval_value_changed), NULL);
+	controls.XKeyboard.RepeatInterval = h;
+
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("Slow Keys");
+	gtk_notebook_append_page(GTK_NOTEBOOK(s), v, l);
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_check_button_new_with_label("Slow Keys Enabled");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When checked, slow keys are enabled;\n\
+otherwise slow keys are disabled.\n\
+When enabled, keys pressed and released\n\
+before the slow keys delay expires will\n\
+be ignored.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(slow_keys_toggled), NULL);
+	controls.XKeyboard.SlowKeysEnabled = u;
+
+	f = gtk_frame_new("Slow Keys Delay (milliseconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(0.0, 1000.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Set the duration in milliseconds for which a\n\
+key must remain pressed to be considered\n\
+a key press.  Usable values are 100 to 300\n\
+milliseconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(slow_keys_delay_value_changed), NULL);
+	controls.XKeyboard.SlowKeysDelay = h;
+
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("Bounce Keys");
+	gtk_notebook_append_page(GTK_NOTEBOOK(s), v, l);
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_check_button_new_with_label("Bounce Keys Enabled");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When checked, keys that are repeatedly\n\
+pressed within the debounce delay will be\n\
+ignored; otherwise, keys are not debounced.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(bounce_keys_toggled), NULL);
+	controls.XKeyboard.BounceKeysEnabled = u;
+
+	f = gtk_frame_new("Debounce Delay (milliseconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(0.0, 1000.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Ignores repeated key presses and releases\n\
+that occur within the debounce delay after\n\
+the key was released.  Usable values are\n\
+300 milliseconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(debounce_delay_value_changed), NULL);
+	controls.XKeyboard.DebounceDelay = h;
+
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("Sticky Keys");
+	gtk_notebook_append_page(GTK_NOTEBOOK(s), v, l);
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_check_button_new_with_label("Sticky Keys Enabled");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When checked, sticky keys are enabled;\n\
+otherwise, sticky keys are disabled.\n\
+When enabled, modifier keys will stick\n\
+when pressed and released until a non-\n\
+modifier key is pressed.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(sticky_keys_toggled), NULL);
+	controls.XKeyboard.StickyKeysEnabled = u;
+
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("Mouse Keys");
+	gtk_notebook_append_page(GTK_NOTEBOOK(s), v, l);
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_check_button_new_with_label("Mouse Keys Enabled");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When checked, mouse keys are enabled;\n\
+otherwise they are disabled.  Mouse\n\
+keys permit operating the pointer using\n\
+only the keyboard.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(mouse_keys_toggled), NULL);
+	controls.XKeyboard.MouseKeysEnabled = u;
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	GtkWidget *q = gtk_hbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(f), q);
+	l = gtk_label_new("Default Mouse Button");
+	gtk_box_pack_start(GTK_BOX(q), l, FALSE, FALSE, 5);
+	u = gtk_combo_box_new_text();
+	gtk_combo_box_append_text(GTK_COMBO_BOX(u), "1");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(u), "2");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(u), "3");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(u), "4");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(u), "5");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(u), "6");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(u), "7");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(u), "8");
+	gtk_box_pack_end(GTK_BOX(q), u, TRUE, TRUE, 0);
+	gtk_widget_set_tooltip_markup(u, "Select the default mouse button.");
+	g_signal_connect(G_OBJECT(u), "changed", G_CALLBACK(default_mouse_button_changed), NULL);
+	controls.XKeyboard.MouseKeysDfltBtn = u;
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_check_button_new_with_label("Mouse Keys Accel Enabled");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When checked, mouse key acceleration\n\
+is enabled; otherwise it is disabled.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(mouse_keys_accel_toggled), NULL);
+	controls.XKeyboard.MouseKeysAccelEnabled = u;
+
+	f = gtk_frame_new("Mouse Keys Delay (milliseconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(0.0, 1000.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Specifies the amount of time in milliseconds\n\
+between the initial key press and the first\n\
+repeated motion event.  A usable value is\n\
+about 160 milliseconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(mouse_keys_delay_value_changed), NULL);
+	controls.XKeyboard.MouseKeysDelay = h;
+
+	f = gtk_frame_new("Mouse Keys Interval (milliseconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(0.0, 1000.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Specifies the amount of time in milliseconds\n\
+between repeated mouse key events.  Usable\n\
+values are from 10 to 40 milliseconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(mouse_keys_interval_value_changed), NULL);
+	controls.XKeyboard.MouseKeysInterval = h;
+
+	f = gtk_frame_new("Mouse Keys Time to Maximum (count)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(1.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Sets the number of key presses after which the\n\
+mouse key acceleration will be at the maximum.\n\
+Usable values are from 10 to 40.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(mouse_keys_time_to_max_value_changed), NULL);
+	controls.XKeyboard.MouseKeysTimeToMax = h;
+
+	f = gtk_frame_new("Mouse Keys Maximum Speed (multiplier)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(0.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Specifies the multiplier for mouse events at\n\
+the maximum speed.  Usable values are\n\
+from 10 to 40.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(mouse_keys_max_speed_value_changed), NULL);
+	controls.XKeyboard.MouseKeysMaxSpeed = h;
+
+	f = gtk_frame_new("Mouse Keys Curve (factor)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	h = gtk_hscale_new_with_range(-1000.0, 1000.0, 50.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	gtk_container_add(GTK_CONTAINER(f), h);
+	gtk_widget_set_tooltip_markup(h, "\
+Sets the curve ramp up to maximum acceleration.\n\
+Negative values ramp sharply to the maximum;\n\
+positive values ramp slowly.  Usable values are\n\
+from -1000 to 1000.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(mouse_keys_curve_value_changed), NULL);
+	controls.XKeyboard.MouseKeysCurve = h;
+
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("Screen Saver");
+	gtk_notebook_append_page(GTK_NOTEBOOK(n), v, l);
+
+	f = gtk_frame_new("Timeout (seconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	q = gtk_vbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(f), q);
+	h = gtk_hscale_new_with_range(0.0, 3600.0, 30.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_seconds), NULL);
+	gtk_box_pack_start(GTK_BOX(q), h, FALSE, FALSE, 0);
+	u = gtk_button_new_with_label("Activate Screen Saver");
+	gtk_box_pack_start(GTK_BOX(q), u, FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_markup(u, "Click to activate the screen saver.");
+	g_signal_connect(G_OBJECT(u), "clicked", G_CALLBACK(activate_screensaver_clicked), NULL);
+	gtk_widget_set_tooltip_markup(h, "\
+Specify the time in seconds that pointer and keyboard\n\
+must be idle before the screensaver is activated.\n\
+Typical values are 600 seconds (10 minutes).  Set\n\
+to zero to disable the screensaver.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(screensaver_timeout_value_changed), NULL);
+	controls.ScreenSaver.Timeout = h;
+
+	f = gtk_frame_new("Interval (seconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	q = gtk_vbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(f), q);
+	h = gtk_hscale_new_with_range(0.0, 3600.0, 30.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_seconds), NULL);
+	gtk_box_pack_start(GTK_BOX(q), h, FALSE, FALSE, 0);
+	u = gtk_button_new_with_label("Rotate Screen Saver");
+	gtk_box_pack_start(GTK_BOX(q), u, FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_markup(u, "Click to rotate the screen saver.");
+	g_signal_connect(G_OBJECT(u), "clicked", G_CALLBACK(rotate_screensaver_clicked), NULL);
+	gtk_widget_set_tooltip_markup(h, "\
+Specify the time in seconds after which the screen\n\
+saver will change (if other than blanking).  A\n\
+typical value is 600 seconds (10 minutes).");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(rotate_screensaver_value_changed), NULL);
+	controls.ScreenSaver.Interval = h;
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_check_button_new_with_label("Prefer Blanking");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When checked, blank the scfreen instead of using\n\
+a screen saver; otherwise, use a screen saver if\n\
+enabled.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(prefer_blanking_toggled), NULL);
+	controls.ScreenSaver.PreferBlank = u;
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	gtk_check_button_new_with_label("Allow Exposures");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When set, use a screensaver even when the server\n\
+is not capable of performing screen saving without\n\
+sending exposure events to existing clients.  Not\n\
+normally needed nowadays.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(allow_exposures_toggled), NULL);
+	controls.ScreenSaver.AllowExpose = u;
+
+	// FIXME: only when DPMS extension supported
+
+	v = gtk_vbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+	l = gtk_label_new("DPMS");
+	gtk_notebook_append_page(GTK_NOTEBOOK(n), v, l);
+
+	f = gtk_frame_new(NULL);
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	u = gtk_check_button_new_with_label("DPMS Enabled");
+	gtk_container_add(GTK_CONTAINER(f), u);
+	gtk_widget_set_tooltip_markup(u, "\
+When checked, enable DPMS functions;\n\
+otherwise disabled.");
+	g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(dpms_toggled), NULL);
+	controls.DPMS.State = u;
+
+	f = gtk_frame_new("Standby Timeout (seconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	q = gtk_vbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(f), q);
+	h = gtk_hscale_new_with_range(0.0, 3600.0, 30.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_seconds), NULL);
+	gtk_box_pack_start(GTK_BOX(q), h, FALSE, FALSE, 0);
+	u = gtk_button_new_with_label("Activate Standby");
+	gtk_box_pack_start(GTK_BOX(q), u, FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_markup(u, "Click to activate standby mode.");
+	g_signal_connect(G_OBJECT(u), "clicked", G_CALLBACK(activate_standby_clicked), NULL);
+	gtk_widget_set_tooltip_markup(h, "\
+Specifies the period of inactivity after which the\n\
+monitor will enter standby mode.  A typical value\n\
+is 600 seconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(standby_timeout_value_changed), NULL);
+	controls.DPMS.StandbyTimeout = h;
+
+	f = gtk_frame_new("Suspend Timeout (seconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	q = gtk_vbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(f), q);
+	h = gtk_hscale_new_with_range(0.0, 3600.0, 30.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_seconds), NULL);
+	gtk_box_pack_start(GTK_BOX(q), h, FALSE, FALSE, 0);
+	u = gtk_button_new_with_label("Activate Suspend");
+	gtk_box_pack_start(GTK_BOX(q), u, FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_markup(u, "Click to activate suspend mode.");
+	g_signal_connect(G_OBJECT(u), "clicked", G_CALLBACK(activate_suspend_clicked), NULL);
+	gtk_widget_set_tooltip_markup(h, "\
+Specifies the period of inactivity after which the\n\
+monitor will enter suspend mode.  A typical value\n\
+is 1200 seconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(suspend_timeout_value_changed), NULL);
+	controls.DPMS.SuspendTimeout = h;
+
+	f = gtk_frame_new("Off Timeout (seconds)");
+	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+	q = gtk_vbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(f), q);
+	h = gtk_hscale_new_with_range(0.0, 3600.0, 30.0);
+	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_seconds), NULL);
+	gtk_box_pack_start(GTK_BOX(q), h, FALSE, FALSE, 0);
+	u = gtk_button_new_with_label("Activate Off");
+	gtk_box_pack_start(GTK_BOX(q), u, FALSE, FALSE, 0);
+	gtk_widget_set_tooltip_markup(u, "Click to activate off mode.");
+	g_signal_connect(G_OBJECT(u), "clicked", G_CALLBACK(activate_off_clicked), NULL);
+	gtk_widget_set_tooltip_markup(h, "\
+Specifies the period of inactivity after which the\n\
+monitor will be turned off.  A typical value is\n\
+1800 seconds.");
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(off_timeout_value_changed), NULL);
+	controls.DPMS.OffTimeout = h;
+
+	return (w);
 }
 
 static void
