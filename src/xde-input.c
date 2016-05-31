@@ -1135,6 +1135,19 @@ mouse_keys_toggled(GtkToggleButton *button, gpointer user_data)
 }
 
 static void
+default_mouse_button_changed(GtkComboBox *box, gpointer user_data)
+{
+	gint value = gtk_combo_box_get_active(box);
+	unsigned char val = value + 1;
+
+	if (val != state.XKeyboard.desc->ctrls->mk_dflt_btn) {
+		state.XKeyboard.desc->ctrls->mk_dflt_btn = val;
+		XkbSetControls(dpy, XkbMouseKeysMask, state.XKeyboard.desc);
+		reprocess_input();
+	}
+}
+
+static void
 mouse_keys_accel_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1383,11 +1396,6 @@ global_autorepeat_toggled(GtkToggleButton *button, gpointer user_data)
 
 static void
 ring_bell_clicked(GtkButton *button, gpointer user_data)
-{
-}
-
-static void
-default_mouse_button_changed(GtkComboBox *box, gpointer user_data)
 {
 }
 
