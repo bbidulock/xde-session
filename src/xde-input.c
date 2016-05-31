@@ -795,6 +795,15 @@ get_input()
 }
 
 void
+reprocess_input()
+{
+	get_input();
+	edit_set_values();
+	process_errors();
+	purge_queue();
+}
+
+void
 startup()
 {
 	Window window = None;
@@ -879,10 +888,7 @@ accel_numerator_value_changed(GtkRange * range, gpointer user_data)
 	if (val != state.Pointer.accel_numerator) {
 		XChangePointerControl(dpy, True, False, val, state.Pointer.accel_denominator,
 				      state.Pointer.threshold);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+		reprocess_input();
 	}
 }
 
@@ -895,10 +901,7 @@ accel_denominator_value_changed(GtkRange * range, gpointer user_data)
 	if (val != state.Pointer.accel_denominator) {
 		XChangePointerControl(dpy, True, False, state.Pointer.accel_numerator, val,
 				      state.Pointer.threshold);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+		reprocess_input();
 	}
 }
 
@@ -914,10 +917,7 @@ threshold_value_changed(GtkRange * range, gpointer user_data)
 		XChangePointerControl(dpy, False, True,
 				      state.Pointer.accel_denominator,
 				      state.Pointer.accel_numerator, val);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+		reprocess_input();
 	}
 }
 
@@ -932,10 +932,7 @@ keyclick_percent_value_changed(GtkRange * range, gpointer user_data)
 			.key_click_percent = val,
 		};
 		XChangeKeyboardControl(dpy, KBKeyClickPercent, &kb);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+		reprocess_input();
 	}
 }
 
@@ -950,10 +947,7 @@ bell_percent_value_changed(GtkRange * range, gpointer user_data)
 			.bell_percent = val,
 		};
 		XChangeKeyboardControl(dpy, KBBellPercent, &kb);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+		reprocess_input();
 	}
 }
 
@@ -968,10 +962,7 @@ bell_pitch_value_changed(GtkRange * range, gpointer user_data)
 			.bell_pitch = val,
 		};
 		XChangeKeyboardControl(dpy, KBBellPitch, &kb);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+		reprocess_input();
 	}
 }
 
@@ -986,10 +977,24 @@ bell_duration_value_changed(GtkRange * range, gpointer user_data)
 			.bell_duration = val,
 		};
 		XChangeKeyboardControl(dpy, KBBellDuration, &kb);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+		reprocess_input();
+	}
+}
+
+void
+repeat_keys_toggled(GtkToggleButton * button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	unsigned int value = active ? XkbRepeatKeysMask : 0;
+
+	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbRepeatKeysMask)) {
+#if 1
+		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbRepeatKeysMask, value);
+#else
+		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbRepeatKeysMask;
+		XkbSetControls(dpy, XkbRepeatKeysMask, state.XKeyboard.desc);
+#endif
+		reprocess_input();
 	}
 }
 
@@ -1000,12 +1005,14 @@ repeat_delay_value_changed(GtkRange * range, gpointer user_data)
 	unsigned short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->repeat_delay) {
-		XkbSetAutoRepeatRate(dpy, XkbUseCoreKbd, val,
+		state.XKeyboard.desc->ctrls->repeat_delay = val;
+#if 0
+		XkbSetAutoRepeatRate(dpy, XkbUseCoreKbd, state.XKeyboard.desc->ctrls->repeat_delay,
 				     state.XKeyboard.desc->ctrls->repeat_interval);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+#else
+		XkbSetControls(dpy, XkbRepeatKeysMask, state.XKeyboard.desc);
+#endif
+		reprocess_input();
 	}
 }
 
@@ -1016,58 +1023,259 @@ repeat_interval_value_changed(GtkRange * range, gpointer user_data)
 	unsigned short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->repeat_interval) {
+		state.XKeyboard.desc->ctrls->repeat_interval = val;
+#if 0
 		XkbSetAutoRepeatRate(dpy, XkbUseCoreKbd, state.XKeyboard.desc->ctrls->repeat_delay,
-				     val);
-		get_input();
-		edit_set_values();
-		process_errors();
-		purge_queue();
+				     state.XKeyboard.desc->ctrls->repeat_interval);
+#else
+		XkbSetControls(dpy, XkbRepeatKeysMask, state.XKeyboard.desc);
+#endif
+		reprocess_input();
+	}
+}
+
+void
+slow_keys_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	unsigned int value = active ? XkbSlowKeysMask : 0;
+
+	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbSlowKeysMask)) {
+#if 1
+		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbSlowKeysMask, value);
+#else
+		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbSlowKeysMask;
+		XkbSetControls(dpy, XkbSlowKeysMask, state.XKeyboard.desc);
+#endif
+		reprocess_input();
 	}
 }
 
 void
 slow_keys_delay_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	unsigned short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->slow_keys_delay) {
+		state.XKeyboard.desc->ctrls->slow_keys_delay = val;
+		XkbSetControls(dpy, XkbSlowKeysMask, state.XKeyboard.desc);
+		reprocess_input();
+	}
 }
 
 void
-debounce_delay_value_changed(GtkRange *range, gpointer user_data)
+bounce_keys_toggled(GtkToggleButton *button, gpointer user_data)
 {
+	gboolean active = gtk_toggle_button_get_active(button);
+	unsigned int value = active ? XkbBounceKeysMask : 0;
+
+	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbBounceKeysMask)) {
+#if 1
+		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbBounceKeysMask, value);
+#else
+		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbBounceKeysMask;
+		XkbSetControls(dpy, XkbBounceKeysMask, state.XKeyboard.desc);
+#endif
+		reprocess_input();
+	}
+}
+
+void
+debounce_delay_value_changed(GtkRange * range, gpointer user_data)
+{
+	gdouble value = gtk_range_get_value(range);
+	unsigned short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->debounce_delay) {
+		state.XKeyboard.desc->ctrls->debounce_delay = val;
+		XkbSetControls(dpy, XkbBounceKeysMask, state.XKeyboard.desc);
+		reprocess_input();
+	}
+}
+
+void
+sticky_keys_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	unsigned int value = active ? XkbStickyKeysMask : 0;
+
+	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbStickyKeysMask)) {
+#if 1
+		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbStickyKeysMask, value);
+#else
+		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbStickyKeysMask;
+		XkbSetControls(dpy, XkbStickyKeysMask, state.XKeyboard.desc);
+#endif
+		reprocess_input();
+	}
+}
+
+void
+mouse_keys_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	unsigned int value = active ? XkbMouseKeysMask : 0;
+
+	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbMouseKeysMask)) {
+#if 1
+		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbMouseKeysMask, value);
+#else
+		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbMouseKeysMask;
+		XkbSetControls(dpy, XkbMouseKeysMask, state.XKeyboard.desc);
+#endif
+		reprocess_input();
+	}
+}
+
+void
+mouse_keys_accel_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	unsigned int value = active ? XkbMouseKeysAccelMask : 0;
+
+	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbMouseKeysAccelMask)) {
+#if 1
+		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbMouseKeysAccelMask, value);
+#else
+		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbMouseKeysAccelMask;
+		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
+#endif
+		reprocess_input();
+	}
 }
 
 void
 mouse_keys_delay_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	unsigned short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->mk_delay) {
+		state.XKeyboard.desc->ctrls->mk_delay = val;
+		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
+		reprocess_input();
+	}
 }
 
 void
 mouse_keys_interval_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	unsigned short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->mk_interval) {
+		state.XKeyboard.desc->ctrls->mk_interval = val;
+		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
+		reprocess_input();
+	}
 }
 
 void
 mouse_keys_time_to_max_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	unsigned short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->mk_time_to_max) {
+		state.XKeyboard.desc->ctrls->mk_time_to_max = val;
+		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
+		reprocess_input();
+	}
 }
 
 void
 mouse_keys_max_speed_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	unsigned short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->mk_max_speed) {
+		state.XKeyboard.desc->ctrls->mk_max_speed = val;
+		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
+		reprocess_input();
+	}
 }
 
 void
 mouse_keys_curve_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->mk_curve) {
+		state.XKeyboard.desc->ctrls->mk_curve = val;
+		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
+		reprocess_input();
+	}
 }
 
 void
-screensaver_timeout_value_changed(GtkRange *range, gpointer user_data)
+screensaver_timeout_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	int val = round(value);
+
+	if (val != state.ScreenSaver.timeout) {
+		state.ScreenSaver.timeout = val;
+		XSetScreenSaver(dpy,
+				state.ScreenSaver.timeout,
+				state.ScreenSaver.interval,
+				state.ScreenSaver.prefer_blanking,
+				state.ScreenSaver.allow_exposures);
+		reprocess_input();
+	}
 }
 
 void
-rotate_screensaver_value_changed(GtkRange *range, gpointer user_data)
+screensaver_interval_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	int val = round(value);
+
+	if (val != state.ScreenSaver.interval) {
+		state.ScreenSaver.interval = val;
+		XSetScreenSaver(dpy,
+				state.ScreenSaver.timeout,
+				state.ScreenSaver.interval,
+				state.ScreenSaver.prefer_blanking,
+				state.ScreenSaver.allow_exposures);
+		reprocess_input();
+	}
+}
+
+void
+prefer_blanking_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	int value = active ? PreferBlanking : DontPreferBlanking;
+
+	if (value != state.ScreenSaver.prefer_blanking) {
+		state.ScreenSaver.prefer_blanking = value;
+		XSetScreenSaver(dpy,
+				state.ScreenSaver.timeout,
+				state.ScreenSaver.interval,
+				state.ScreenSaver.prefer_blanking,
+				state.ScreenSaver.allow_exposures);
+		reprocess_input();
+	}
+}
+
+void
+allow_exposures_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	int value = active ? AllowExposures : DontAllowExposures;
+
+	if (value != state.ScreenSaver.allow_exposures) {
+		state.ScreenSaver.allow_exposures = value;
+		XSetScreenSaver(dpy,
+				state.ScreenSaver.timeout,
+				state.ScreenSaver.interval,
+				state.ScreenSaver.prefer_blanking,
+				state.ScreenSaver.allow_exposures);
+		reprocess_input();
+	}
 }
 
 void
@@ -1087,46 +1295,6 @@ off_timeout_value_changed(GtkRange *range, gpointer user_data)
 
 void
 global_autorepeat_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
-repeat_keys_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
-slow_keys_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
-bounce_keys_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
-sticky_keys_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
-mouse_keys_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
-mouse_keys_accel_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
-prefer_blanking_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
-allow_exposures_toggled(GtkToggleButton *button, gpointer user_data)
 {
 }
 
@@ -1584,7 +1752,7 @@ to zero to disable the screensaver.");
 Specify the time in seconds after which the screen\n\
 saver will change (if other than blanking).  A\n\
 typical value is 600 seconds (10 minutes).");
-	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(rotate_screensaver_value_changed), NULL);
+	g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(screensaver_interval_value_changed), NULL);
 	controls.ScreenSaver.Interval = h;
 
 	f = gtk_frame_new(NULL);
