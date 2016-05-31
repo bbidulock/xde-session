@@ -867,19 +867,25 @@ startup()
 	}
 }
 
-gchar *
+static gchar *
 format_value_milliseconds(GtkScale *scale, gdouble value, gpointer user_data)
 {
 	return g_strdup_printf("%0.*g ms", gtk_scale_get_digits(scale), value);
 }
 
-gchar *
+static gchar *
 format_value_seconds(GtkScale *scale, gdouble value, gpointer user_data)
 {
 	return g_strdup_printf("%0.*g s", gtk_scale_get_digits(scale), value);
 }
 
-void
+static gchar *
+format_value_percent(GtkScale *scale, gdouble value, gpointer user_data)
+{
+	return g_strdup_printf("%0.*g%%", gtk_scale_get_digits(scale), value);
+}
+
+static void
 accel_numerator_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -892,7 +898,7 @@ accel_numerator_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 accel_denominator_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -905,7 +911,7 @@ accel_denominator_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 threshold_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value;
@@ -921,7 +927,7 @@ threshold_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 keyclick_percent_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -936,7 +942,7 @@ keyclick_percent_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 bell_percent_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -951,7 +957,7 @@ bell_percent_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 bell_pitch_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -966,7 +972,7 @@ bell_pitch_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 bell_duration_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -981,7 +987,7 @@ bell_duration_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 repeat_keys_toggled(GtkToggleButton * button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -998,7 +1004,7 @@ repeat_keys_toggled(GtkToggleButton * button, gpointer user_data)
 	}
 }
 
-void
+static void
 repeat_delay_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1016,7 +1022,7 @@ repeat_delay_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 repeat_interval_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1034,7 +1040,7 @@ repeat_interval_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 slow_keys_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1051,7 +1057,7 @@ slow_keys_toggled(GtkToggleButton *button, gpointer user_data)
 	}
 }
 
-void
+static void
 slow_keys_delay_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1064,7 +1070,7 @@ slow_keys_delay_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 bounce_keys_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1081,7 +1087,7 @@ bounce_keys_toggled(GtkToggleButton *button, gpointer user_data)
 	}
 }
 
-void
+static void
 debounce_delay_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1094,7 +1100,7 @@ debounce_delay_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 sticky_keys_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1111,7 +1117,7 @@ sticky_keys_toggled(GtkToggleButton *button, gpointer user_data)
 	}
 }
 
-void
+static void
 mouse_keys_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1128,7 +1134,7 @@ mouse_keys_toggled(GtkToggleButton *button, gpointer user_data)
 	}
 }
 
-void
+static void
 mouse_keys_accel_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1145,7 +1151,7 @@ mouse_keys_accel_toggled(GtkToggleButton *button, gpointer user_data)
 	}
 }
 
-void
+static void
 mouse_keys_delay_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1158,7 +1164,7 @@ mouse_keys_delay_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 mouse_keys_interval_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1171,7 +1177,7 @@ mouse_keys_interval_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 mouse_keys_time_to_max_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1184,7 +1190,7 @@ mouse_keys_time_to_max_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 mouse_keys_max_speed_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1197,7 +1203,7 @@ mouse_keys_max_speed_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 mouse_keys_curve_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1210,7 +1216,7 @@ mouse_keys_curve_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 screensaver_timeout_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1227,14 +1233,14 @@ screensaver_timeout_value_changed(GtkRange * range, gpointer user_data)
 	}
 }
 
-void
+static void
 activate_screensaver_clicked(GtkButton *button, gpointer user_data)
 {
 	XForceScreenSaver(dpy, ScreenSaverActive);
 	XFlush(dpy);
 }
 
-void
+static void
 screensaver_interval_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1251,14 +1257,14 @@ screensaver_interval_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 rotate_screensaver_clicked(GtkButton *button, gpointer user_data)
 {
 	XForceScreenSaver(dpy, ScreenSaverActive);
 	XFlush(dpy);
 }
 
-void
+static void
 prefer_blanking_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1275,7 +1281,7 @@ prefer_blanking_toggled(GtkToggleButton *button, gpointer user_data)
 	}
 }
 
-void
+static void
 allow_exposures_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1292,7 +1298,7 @@ allow_exposures_toggled(GtkToggleButton *button, gpointer user_data)
 	}
 }
 
-void
+static void
 dpms_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
@@ -1304,7 +1310,7 @@ dpms_toggled(GtkToggleButton *button, gpointer user_data)
 	reprocess_input();
 }
 
-void
+static void
 standby_timeout_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1320,13 +1326,13 @@ standby_timeout_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 activate_standby_clicked(GtkButton *button, gpointer user_data)
 {
 	DPMSForceLevel(dpy, DPMSModeStandby);
 }
 
-void
+static void
 suspend_timeout_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1342,13 +1348,13 @@ suspend_timeout_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 activate_suspend_clicked(GtkButton *button, gpointer user_data)
 {
 	DPMSForceLevel(dpy, DPMSModeSuspend);
 }
 
-void
+static void
 off_timeout_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1364,23 +1370,23 @@ off_timeout_value_changed(GtkRange *range, gpointer user_data)
 	}
 }
 
-void
+static void
 activate_off_clicked(GtkButton *button, gpointer user_data)
 {
 	DPMSForceLevel(dpy, DPMSModeOff);
 }
 
-void
+static void
 global_autorepeat_toggled(GtkToggleButton *button, gpointer user_data)
 {
 }
 
-void
+static void
 ring_bell_clicked(GtkButton *button, gpointer user_data)
 {
 }
 
-void
+static void
 default_mouse_button_changed(GtkComboBox *box, gpointer user_data)
 {
 }
@@ -1470,6 +1476,7 @@ observed.");
 	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
 	h = gtk_hscale_new_with_range(0.0, 100.0, 1.0);
 	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_percent), NULL);
 	gtk_container_add(GTK_CONTAINER(f), h);
 	gtk_widget_set_tooltip_markup(h, "\
 Set the key click volume as a percentage of\n\
@@ -1481,6 +1488,7 @@ maximum volume: from 0% to 100%.");
 	gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
 	h = gtk_hscale_new_with_range(0.0, 100.0, 1.0);
 	gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+	g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_percent), NULL);
 	gtk_container_add(GTK_CONTAINER(f), h);
 	gtk_widget_set_tooltip_markup(h, "\
 Set the bell volume as a percentage of\n\
