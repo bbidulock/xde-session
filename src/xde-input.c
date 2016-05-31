@@ -873,13 +873,11 @@ format_value_seconds(GtkScale *scale, gdouble value, gpointer user_data)
 void
 accel_numerator_value_changed(GtkRange * range, gpointer user_data)
 {
-	gdouble value;
-	int intval;
+	gdouble value = gtk_range_get_value(range);
+	int val = round(value);
 
-	value = gtk_range_get_value(range);
-	intval = round(value);
-	if (intval != state.Pointer.accel_numerator) {
-		XChangePointerControl(dpy, True, False, intval, state.Pointer.accel_denominator,
+	if (val != state.Pointer.accel_numerator) {
+		XChangePointerControl(dpy, True, False, val, state.Pointer.accel_denominator,
 				      state.Pointer.threshold);
 		get_input();
 		edit_set_values();
@@ -891,13 +889,11 @@ accel_numerator_value_changed(GtkRange * range, gpointer user_data)
 void
 accel_denominator_value_changed(GtkRange * range, gpointer user_data)
 {
-	gdouble value;
-	int intval;
+	gdouble value = gtk_range_get_value(range);
+	int val = round(value);
 
-	value = gtk_range_get_value(range);
-	intval = round(value);
-	if (intval != state.Pointer.accel_denominator) {
-		XChangePointerControl(dpy, True, False, state.Pointer.accel_numerator, intval,
+	if (val != state.Pointer.accel_denominator) {
+		XChangePointerControl(dpy, True, False, state.Pointer.accel_numerator, val,
 				      state.Pointer.threshold);
 		get_input();
 		edit_set_values();
@@ -910,14 +906,14 @@ void
 threshold_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value;
-	int intval;
+	int val;
 
 	value = gtk_range_get_value(range);
-	intval = round(value);
-	if (intval != state.Pointer.threshold) {
+	val = round(value);
+	if (val != state.Pointer.threshold) {
 		XChangePointerControl(dpy, False, True,
 				      state.Pointer.accel_denominator,
-				      state.Pointer.accel_numerator, intval);
+				      state.Pointer.accel_numerator, val);
 		get_input();
 		edit_set_values();
 		process_errors();
@@ -929,11 +925,11 @@ void
 keyclick_percent_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
-	int intval = (int) round(value);
+	int val = round(value);
 
-	if (intval != state.Keyboard.key_click_percent) {
+	if (val != state.Keyboard.key_click_percent) {
 		XKeyboardControl kb = {
-			.key_click_percent = intval,
+			.key_click_percent = val,
 		};
 		XChangeKeyboardControl(dpy, KBKeyClickPercent, &kb);
 		get_input();
@@ -947,11 +943,11 @@ void
 bell_percent_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
-	int intval = round(value);
+	int val = round(value);
 
-	if (intval != state.Keyboard.bell_percent) {
+	if (val != state.Keyboard.bell_percent) {
 		XKeyboardControl kb = {
-			.bell_percent = intval,
+			.bell_percent = val,
 		};
 		XChangeKeyboardControl(dpy, KBBellPercent, &kb);
 		get_input();
@@ -965,11 +961,11 @@ void
 bell_pitch_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
-	int intval = round(value);
+	int val = round(value);
 
-	if (intval != state.Keyboard.bell_pitch) {
+	if (val != state.Keyboard.bell_pitch) {
 		XKeyboardControl kb = {
-			.bell_pitch = intval,
+			.bell_pitch = val,
 		};
 		XChangeKeyboardControl(dpy, KBBellPitch, &kb);
 		get_input();
@@ -980,14 +976,14 @@ bell_pitch_value_changed(GtkRange * range, gpointer user_data)
 }
 
 void
-bell_duration_value_changed(GtkRange *range, gpointer user_data)
+bell_duration_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
-	int intval = round(value);
+	int val = round(value);
 
-	if (intval != state.Keyboard.bell_duration) {
+	if (val != state.Keyboard.bell_duration) {
 		XKeyboardControl kb = {
-			.bell_duration = intval,
+			.bell_duration = val,
 		};
 		XChangeKeyboardControl(dpy, KBBellDuration, &kb);
 		get_input();
@@ -998,13 +994,35 @@ bell_duration_value_changed(GtkRange *range, gpointer user_data)
 }
 
 void
-repeat_delay_value_changed(GtkRange *range, gpointer user_data)
+repeat_delay_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	unsigned short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->repeat_delay) {
+		XkbSetAutoRepeatRate(dpy, XkbUseCoreKbd, val,
+				     state.XKeyboard.desc->ctrls->repeat_interval);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
-repeat_interval_value_changed(GtkRange *range, gpointer user_data)
+repeat_interval_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	unsigned short val = round(value);
+
+	if (val != state.XKeyboard.desc->ctrls->repeat_interval) {
+		XkbSetAutoRepeatRate(dpy, XkbUseCoreKbd, state.XKeyboard.desc->ctrls->repeat_delay,
+				     val);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
