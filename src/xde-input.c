@@ -944,18 +944,57 @@ keyclick_percent_value_changed(GtkRange * range, gpointer user_data)
 }
 
 void
-bell_percent_value_changed(GtkRange *range, gpointer user_data)
+bell_percent_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	int intval = round(value);
+
+	if (intval != state.Keyboard.bell_percent) {
+		XKeyboardControl kb = {
+			.bell_percent = intval,
+		};
+		XChangeKeyboardControl(dpy, KBBellPercent, &kb);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
-bell_pitch_value_changed(GtkRange *range, gpointer user_data)
+bell_pitch_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	int intval = round(value);
+
+	if (intval != state.Keyboard.bell_pitch) {
+		XKeyboardControl kb = {
+			.bell_pitch = intval,
+		};
+		XChangeKeyboardControl(dpy, KBBellPitch, &kb);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
 bell_duration_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	int intval = round(value);
+
+	if (intval != state.Keyboard.bell_duration) {
+		XKeyboardControl kb = {
+			.bell_duration = intval,
+		};
+		XChangeKeyboardControl(dpy, KBBellDuration, &kb);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
