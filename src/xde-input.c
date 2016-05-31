@@ -928,6 +928,22 @@ threshold_value_changed(GtkRange * range, gpointer user_data)
 }
 
 static void
+global_autorepeat_toggled(GtkToggleButton * button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	int val = active ? AutoRepeatModeOn : AutoRepeatModeOff;
+
+	if (val != state.Keyboard.global_auto_repeat) {
+		XKeyboardControl kb = {
+			.auto_repeat_mode = val,
+		};
+		XChangeKeyboardControl(dpy, KBAutoRepeatMode, &kb);
+		reprocess_input();
+	}
+
+}
+
+static void
 keyclick_percent_value_changed(GtkRange * range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -971,6 +987,14 @@ bell_pitch_value_changed(GtkRange * range, gpointer user_data)
 		reprocess_input();
 	}
 }
+
+static void
+ring_bell_clicked(GtkButton *button, gpointer user_data)
+{
+	XBell(dpy, 0);
+	XFlush(dpy);
+}
+
 
 static void
 bell_duration_value_changed(GtkRange * range, gpointer user_data)
@@ -1387,16 +1411,6 @@ static void
 activate_off_clicked(GtkButton *button, gpointer user_data)
 {
 	DPMSForceLevel(dpy, DPMSModeOff);
-}
-
-static void
-global_autorepeat_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-static void
-ring_bell_clicked(GtkButton *button, gpointer user_data)
-{
 }
 
 
