@@ -78,6 +78,7 @@
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <math.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -308,6 +309,20 @@ typedef struct {
 
 Controls controls;
 
+void
+edit_set_values()
+{
+}
+
+void
+process_errors()
+{
+}
+
+void
+purge_queue()
+{
+}
 
 void
 get_input()
@@ -856,23 +871,76 @@ format_value_seconds(GtkScale *scale, gdouble value, gpointer user_data)
 }
 
 void
-accel_numerator_value_changed(GtkRange *range, gpointer user_data)
+accel_numerator_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value;
+	int intval;
+
+	value = gtk_range_get_value(range);
+	intval = round(value);
+	if (intval != state.Pointer.accel_numerator) {
+		XChangePointerControl(dpy, True, False, intval, state.Pointer.accel_denominator,
+				      state.Pointer.threshold);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
-accel_denominator_value_changed(GtkRange *range, gpointer user_data)
+accel_denominator_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value;
+	int intval;
+
+	value = gtk_range_get_value(range);
+	intval = round(value);
+	if (intval != state.Pointer.accel_denominator) {
+		XChangePointerControl(dpy, True, False, state.Pointer.accel_numerator, intval,
+				      state.Pointer.threshold);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
-threshold_value_changed(GtkRange *range, gpointer user_data)
+threshold_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value;
+	int intval;
+
+	value = gtk_range_get_value(range);
+	intval = round(value);
+	if (intval != state.Pointer.threshold) {
+		XChangePointerControl(dpy, False, True,
+				      state.Pointer.accel_denominator,
+				      state.Pointer.accel_numerator, intval);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
-keyclick_percent_value_changed(GtkRange *range, gpointer user_data)
+keyclick_percent_value_changed(GtkRange * range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	int intval = (int) round(value);
+
+	if (intval != state.Keyboard.key_click_percent) {
+		XKeyboardControl kb = {
+			.key_click_percent = intval,
+		};
+		XChangeKeyboardControl(dpy, KBKeyClickPercent, &kb);
+		get_input();
+		edit_set_values();
+		process_errors();
+		purge_queue();
+	}
 }
 
 void
