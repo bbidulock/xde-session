@@ -1228,6 +1228,13 @@ screensaver_timeout_value_changed(GtkRange * range, gpointer user_data)
 }
 
 void
+activate_screensaver_clicked(GtkButton *button, gpointer user_data)
+{
+	XForceScreenSaver(dpy, ScreenSaverActive);
+	XFlush(dpy);
+}
+
+void
 screensaver_interval_value_changed(GtkRange *range, gpointer user_data)
 {
 	gdouble value = gtk_range_get_value(range);
@@ -1242,6 +1249,13 @@ screensaver_interval_value_changed(GtkRange *range, gpointer user_data)
 				state.ScreenSaver.allow_exposures);
 		reprocess_input();
 	}
+}
+
+void
+rotate_screensaver_clicked(GtkButton *button, gpointer user_data)
+{
+	XForceScreenSaver(dpy, ScreenSaverActive);
+	XFlush(dpy);
 }
 
 void
@@ -1279,18 +1293,81 @@ allow_exposures_toggled(GtkToggleButton *button, gpointer user_data)
 }
 
 void
+dpms_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	if (active)
+		DPMSEnable(dpy);
+	else
+		DPMSDisable(dpy);
+	XFlush(dpy);
+	reprocess_input();
+}
+
+void
 standby_timeout_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	CARD16 val = round(value);
+
+	if (val != state.DPMS.standby) {
+		state.DPMS.standby = val;
+		DPMSSetTimeouts(dpy,
+				state.DPMS.standby,
+				state.DPMS.suspend,
+				state.DPMS.off);
+		reprocess_input();
+	}
+}
+
+void
+activate_standby_clicked(GtkButton *button, gpointer user_data)
+{
+	DPMSForceLevel(dpy, DPMSModeStandby);
 }
 
 void
 suspend_timeout_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	CARD16 val = round(value);
+
+	if (val != state.DPMS.suspend) {
+		state.DPMS.suspend = val;
+		DPMSSetTimeouts(dpy,
+				state.DPMS.standby,
+				state.DPMS.suspend,
+				state.DPMS.off);
+		reprocess_input();
+	}
+}
+
+void
+activate_suspend_clicked(GtkButton *button, gpointer user_data)
+{
+	DPMSForceLevel(dpy, DPMSModeSuspend);
 }
 
 void
 off_timeout_value_changed(GtkRange *range, gpointer user_data)
 {
+	gdouble value = gtk_range_get_value(range);
+	CARD16 val = round(value);
+
+	if (val != state.DPMS.off) {
+		state.DPMS.off = val;
+		DPMSSetTimeouts(dpy,
+				state.DPMS.standby,
+				state.DPMS.suspend,
+				state.DPMS.off);
+		reprocess_input();
+	}
+}
+
+void
+activate_off_clicked(GtkButton *button, gpointer user_data)
+{
+	DPMSForceLevel(dpy, DPMSModeOff);
 }
 
 void
@@ -1299,37 +1376,7 @@ global_autorepeat_toggled(GtkToggleButton *button, gpointer user_data)
 }
 
 void
-dpms_toggled(GtkToggleButton *button, gpointer user_data)
-{
-}
-
-void
 ring_bell_clicked(GtkButton *button, gpointer user_data)
-{
-}
-
-void
-activate_screensaver_clicked(GtkButton *button, gpointer user_data)
-{
-}
-
-void
-rotate_screensaver_clicked(GtkButton *button, gpointer user_data)
-{
-}
-
-void
-activate_standby_clicked(GtkButton *button, gpointer user_data)
-{
-}
-
-void
-activate_suspend_clicked(GtkButton *button, gpointer user_data)
-{
-}
-
-void
-activate_off_clicked(GtkButton *button, gpointer user_data)
 {
 }
 
