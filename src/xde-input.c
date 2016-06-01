@@ -171,6 +171,8 @@ typedef struct {
 		XScreenSaverInfo info;
 	} ScreenSaver;
 	struct {
+		int event; /* event base */
+		int error; /* error base */
 		int major_version;
 		int minor_version;
 		CARD16 power_level;
@@ -1095,10 +1097,17 @@ startup()
 {
 	Window window = None;
 
-	if (XScreenSaverQueryExtension(dpy, &state.ScreenSaver.event, &state.ScreenSaver.error)) {
+	support.Keyboard = True;	/* core protocol */
+	support.Pointer = True;	/* core protocol */
+	if (XkbQueryExtension(dpy, &state.XKeyboard.opcode, &state.XKeyboard.event,
+			      &state.XKeyboard.error, &state.XKeyboard.major_version,
+			      &state.XKeyboard.minor_version)) {
+		support.XKeyboard = True;
+	}
+	if (XScreenSaverQueryExtension(dpy, &state.ScreenSaver.event, &state.ScreenSaver.error) &&
+	    XScreenSaverQueryVersion(dpy, &state.ScreenSaver.major_version,
+				     &state.ScreenSaver.minor_version)) {
 		support.ScreenSaver = True;
-		XScreenSaverQueryVersion(dpy, &state.ScreenSaver.major_version,
-				&state.ScreenSaver.minor_version);
 		XScreenSaverQueryInfo(dpy, window, &state.ScreenSaver.info);
 		if (options.debug) {
 			fputs("Screen Saver:\n", stderr);
@@ -1133,9 +1142,8 @@ startup()
 				break;
 			}
 			fprintf(stderr, "\ttil-or-since: %lu milliseconds\n",
-					state.ScreenSaver.info.til_or_since);
-			fprintf(stderr, "\tidle: %lu milliseconds\n",
-					state.ScreenSaver.info.idle);
+				state.ScreenSaver.info.til_or_since);
+			fprintf(stderr, "\tidle: %lu milliseconds\n", state.ScreenSaver.info.idle);
 			fputs("\tevent-mask: ", stderr);
 			if (state.ScreenSaver.info.eventMask & ScreenSaverNotifyMask)
 				fputs("NotifyMask ", stderr);
@@ -1144,13 +1152,9 @@ startup()
 			fputs("\n", stderr);
 		}
 	}
-
-	if (XkbQueryExtension(dpy, &state.XKeyboard.opcode, &state.XKeyboard.event,
-			&state.XKeyboard.error, &state.XKeyboard.major_version,
-			&state.XKeyboard.minor_version)) {
-		support.XKeyboard = True;
-	}
-	if (DPMSGetVersion(dpy, &state.DPMS.major_version, &state.DPMS.minor_version)) {
+	if (DPMSQueryExtension(dpy, &state.DPMS.event, &state.DPMS.error) &&
+	    DPMSGetVersion(dpy, &state.DPMS.major_version, &state.DPMS.minor_version)) {
+		support.DPMS = True;
 	}
 }
 
