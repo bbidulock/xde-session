@@ -278,8 +278,8 @@ typedef struct {
 	struct {
 		GtkWidget *Timeout;
 		GtkWidget *Interval;
-		GtkWidget *PreferBlank;
-		GtkWidget *AllowExpose;
+		GtkWidget *Preferblanking;
+		GtkWidget *Allowexposures;
 	} ScreenSaver;
 	struct {
 		GtkWidget *State;
@@ -309,40 +309,124 @@ typedef struct {
 
 Controls controls;
 
-void
+static gboolean
+test_boolean(const char *s)
+{
+	gboolean flag;
+
+	flag = (s && (!strcasecmp(s, "true") || !strcasecmp(s, "yes") ||
+		      !strcasecmp(s, "on") || !strcasecmp(s, "1"))) ? TRUE : FALSE;
+	return (flag);
+}
+
+static void
 edit_set_values()
 {
 	char *endptr = NULL;
 	double value;
 	gboolean flag;
 
-	value = strtod(config.Pointer.AccelerationNumerator, &endptr);
-	if (endptr && !*endptr)
-		gtk_range_set_value(GTK_RANGE(controls.Pointer.AccelerationNumerator), value);
-	value = strtod(config.Pointer.AccelerationDenominator, &endptr);
-	if (endptr && !*endptr)
-		gtk_range_set_value(GTK_RANGE(controls.Pointer.AccelerationDenominator), value);
-	value = strtod(config.Pointer.Threshold, &endptr);
-	if (endptr && !*endptr)
-		gtk_range_set_value(GTK_RANGE(controls.Pointer.Threshold), value);
+	if (support.Pointer) {
+		value = strtod(config.Pointer.AccelerationNumerator, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.Pointer.AccelerationNumerator), value);
+		value = strtod(config.Pointer.AccelerationDenominator, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.Pointer.AccelerationDenominator), value);
+		value = strtod(config.Pointer.Threshold, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.Pointer.Threshold), value);
+	}
+	if (support.Keyboard) {
+		value = strtod(config.Keyboard.KeyClickPercent, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.Keyboard.KeyClickPercent), value);
+		value = strtod(config.Keyboard.BellPercent, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPercent), value);
+		value = strtod(config.Keyboard.BellPitch, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPitch), value);
+		value = strtod(config.Keyboard.BellDuration, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellDuration), value);
+		flag = test_boolean(config.Keyboard.GlobalAutoRepeat);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.Keyboard.GlobalAutoRepeat), flag);
+	}
+	if (support.XKeyboard) {
+		flag = test_boolean(config.XKeyboard.RepeatKeysEnabled);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.RepeatKeysEnabled), flag);
+		value = strtod(config.XKeyboard.RepeatDelay, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.RepeatDelay), value);
+		value = strtod(config.XKeyboard.RepeatInterval, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.RepeatInterval), value);
 
-	value = strtod(config.Keyboard.KeyClickPercent, &endptr);
-	if (endptr && !*endptr)
-		gtk_range_set_value(GTK_RANGE(controls.Keyboard.KeyClickPercent), value);
-	value = strtod(config.Keyboard.BellPercent, &endptr);
-	if (endptr && !*endptr)
-		gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPercent), value);
-	value = strtod(config.Keyboard.BellPitch, &endptr);
-	if (endptr && !*endptr)
-		gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPitch), value);
-	value = strtod(config.Keyboard.BellDuration, &endptr);
-	if (endptr && !*endptr)
-		gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellDuration), value);
-	endptr = config.Keyboard.GlobalAutoRepeat;
-	flag = (!strcasecmp(endptr, "true") || !strcasecmp(endptr, "yes") ||
-		!strcasecmp(endptr, "on") || !strcasecmp(endptr, "1")) ? TRUE : FALSE;
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.Keyboard.GlobalAutoRepeat), flag);
+		flag = test_boolean(config.XKeyboard.SlowKeysEnabled);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.SlowKeysEnabled), flag);
+		value = strtod(config.XKeyboard.SlowKeysDelay, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.SlowKeysDelay), value);
 
+		flag = test_boolean(config.XKeyboard.StickyKeysEnabled);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.StickyKeysEnabled), flag);
+
+		flag = test_boolean(config.XKeyboard.BounceKeysEnabled);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.BounceKeysEnabled), flag);
+		value = strtod(config.XKeyboard.DebounceDelay, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.DebounceDelay), value);
+
+		flag = test_boolean(config.XKeyboard.MouseKeysEnabled);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.MouseKeysEnabled), flag);
+		value = strtod(config.XKeyboard.MouseKeysDfltBtn, &endptr);
+		if (endptr && !*endptr)
+			gtk_combo_box_set_active(GTK_COMBO_BOX(controls.XKeyboard.MouseKeysDfltBtn), (int) value - 1);
+
+		flag = test_boolean(config.XKeyboard.MouseKeysAccelEnabled);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.MouseKeysAccelEnabled), flag);
+		value = strtod(config.XKeyboard.MouseKeysDelay, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysDelay), value);
+		value = strtod(config.XKeyboard.MouseKeysInterval, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysInterval), value);
+		value = strtod(config.XKeyboard.MouseKeysTimeToMax, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysTimeToMax), value);
+		value = strtod(config.XKeyboard.MouseKeysMaxSpeed, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysMaxSpeed), value);
+		value = strtod(config.XKeyboard.MouseKeysCurve, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysCurve), value);
+	}
+	if (support.ScreenSaver) {
+		value = strtod(config.ScreenSaver.Timeout, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.ScreenSaver.Timeout), value);
+		value = strtod(config.ScreenSaver.Interval, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.ScreenSaver.Interval), value);
+		flag = test_boolean(config.ScreenSaver.Preferblanking);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.ScreenSaver.Preferblanking), flag);
+		flag = test_boolean(config.ScreenSaver.Allowexposures);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.ScreenSaver.Allowexposures), flag);
+	}
+	if (support.DPMS) {
+		value = strtod(config.DPMS.StandbyTimeout, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.DPMS.StandbyTimeout), value);
+		value = strtod(config.DPMS.SuspendTimeout, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.DPMS.SuspendTimeout), value);
+		value = strtod(config.DPMS.OffTimeout, &endptr);
+		if (endptr && !*endptr)
+			gtk_range_set_value(GTK_RANGE(controls.DPMS.OffTimeout), value);
+		flag = test_boolean(config.DPMS.State);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.DPMS.State), flag);
+	}
 }
 
 void
@@ -1878,7 +1962,7 @@ When checked, blank the scfreen instead of using\n\
 a screen saver; otherwise, use a screen saver if\n\
 enabled.");
 		g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(prefer_blanking_toggled), NULL);
-		controls.ScreenSaver.PreferBlank = u;
+		controls.ScreenSaver.Preferblanking = u;
 
 		f = gtk_frame_new(NULL);
 		gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
@@ -1890,7 +1974,7 @@ is not capable of performing screen saving without\n\
 sending exposure events to existing clients.  Not\n\
 normally needed nowadays.");
 		g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(allow_exposures_toggled), NULL);
-		controls.ScreenSaver.AllowExpose = u;
+		controls.ScreenSaver.Allowexposures = u;
 	}
 
 	if (support.DPMS) {
