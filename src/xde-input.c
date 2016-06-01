@@ -262,6 +262,8 @@ typedef struct {
 
 Config config;
 
+GKeyFile *file;
+
 typedef struct {
 	struct {
 		GtkWidget *GlobalAutoRepeat;
@@ -429,17 +431,17 @@ edit_set_values()
 	}
 }
 
-void
+static void
 process_errors()
 {
 }
 
-void
+static void
 purge_queue()
 {
 }
 
-void
+static void
 get_input()
 {
 	char buf[256] = { 0, };
@@ -906,6 +908,176 @@ get_input()
 			}
 			config.XKeyboard.AccessXTimeoutValues = strdup(buf);
 		}
+	}
+}
+
+static const char *KFG_Pointer = "Pointer";
+static const char *KFG_Keyboard = "Keyboard";
+static const char *KFG_XKeyboard = "XKeyboard";
+static const char *KFG_ScreenSaver = "ScreenSaver";
+static const char *KFG_DPMS = "DPMS";
+
+static const char *KFK_Pointer_AccelerationDenominator = "AccelerationDenominator";
+static const char *KFK_Pointer_AccelerationNumerator = "AccelerationNumerator";
+static const char *KFK_Pointer_Threshold = "Threshold";
+
+const char *KFK_Keyboard_AutoRepeats = "AutoRepeats";
+static const char *KFK_Keyboard_BellDuration = "BellDuration";
+static const char *KFK_Keyboard_BellPercent = "BellPercent";
+static const char *KFK_Keyboard_BellPitch = "BellPitch";
+static const char *KFK_Keyboard_GlobalAutoRepeat = "GlobalAutoRepeat";
+static const char *KFK_Keyboard_KeyClickPercent = "KeyClickPercent";
+const char *KFK_Keyboard_LEDMask = "LEDMask";
+
+const char *KFK_XKeyboard_AccessXFeedbackMaskEnabled = "AccessXFeedbackMaskEnabled";
+const char *KFK_XKeyboard_AccessXKeysEnabled = "AccessXKeysEnabled";
+const char *KFK_XKeyboard_AccessXOptions = "AccessXOptions";
+const char *KFK_XKeyboard_AccessXTimeout = "AccessXTimeout";
+const char *KFK_XKeyboard_AccessXTimeoutMask = "AccessXTimeoutMask";
+const char *KFK_XKeyboard_AccessXTimeoutMaskEnabled = "AccessXTimeoutMaskEnabled";
+const char *KFK_XKeyboard_AccessXTimeoutOptionsMask = "AccessXTimeoutOptionsMask";
+const char *KFK_XKeyboard_AccessXTimeoutOptionsValues = "AccessXTimeoutOptionsValues";
+const char *KFK_XKeyboard_AccessXTimeoutValues = "AccessXTimeoutValues";
+const char *KFK_XKeyboard_AudibleBellMaskEnabled = "AudibleBellMaskEnabled";
+const char *KFK_XKeyboard_BounceKeysEnabled = "BounceKeysEnabled";
+const char *KFK_XKeyboard_ControlsEnabledEnabled = "ControlsEnabledEnabled";
+const char *KFK_XKeyboard_DebounceDelay = "DebounceDelay";
+const char *KFK_XKeyboard_GroupsWrapEnabled = "GroupsWrapEnabled";
+const char *KFK_XKeyboard_IgnoreGroupLockMaskEnabled = "IgnoreGroupLockMaskEnabled";
+const char *KFK_XKeyboard_IgnoreLockModsEnabled = "IgnoreLockModsEnabled";
+const char *KFK_XKeyboard_InternalModsEnabled = "InternalModsEnabled";
+const char *KFK_XKeyboard_MouseKeysAccelEnabled = "MouseKeysAccelEnabled";
+const char *KFK_XKeyboard_MouseKeysCurve = "MouseKeysCurve";
+const char *KFK_XKeyboard_MouseKeysDelay = "MouseKeysDelay";
+const char *KFK_XKeyboard_MouseKeysDfltBtn = "MouseKeysDfltBtn";
+const char *KFK_XKeyboard_MouseKeysEnabled = "MouseKeysEnabled";
+const char *KFK_XKeyboard_MouseKeysInterval = "MouseKeysInterval";
+const char *KFK_XKeyboard_MouseKeysMaxSpeed = "MouseKeysMaxSpeed";
+const char *KFK_XKeyboard_MouseKeysTimeToMax = "MouseKeysTimeToMax";
+const char *KFK_XKeyboard_Overlay1MaskEnabled = "Overlay1MaskEnabled";
+const char *KFK_XKeyboard_Overlay2MaskENabled = "Overlay2MaskENabled";
+const char *KFK_XKeyboard_PerKeyRepeat = "PerKeyRepeat";
+const char *KFK_XKeyboard_PerKeyRepeatEnabled = "PerKeyRepeatEnabled";
+const char *KFK_XKeyboard_RepeatDelay = "RepeatDelay";
+const char *KFK_XKeyboard_RepeatInterval = "RepeatInterval";
+const char *KFK_XKeyboard_RepeatKeysEnabled = "RepeatKeysEnabled";
+const char *KFK_XKeyboard_RepeatRate = "RepeatRate";
+const char *KFK_XKeyboard_SlowKeysDelay = "SlowKeysDelay";
+const char *KFK_XKeyboard_SlowKeysEnabled = "SlowKeysEnabled";
+const char *KFK_XKeyboard_StickyKeysEnabled = "StickyKeysEnabled";
+
+static const char *KFK_ScreenSaver_AllowExposures = "AllowExposures";
+static const char *KFK_ScreenSaver_Interval = "Interval";
+static const char *KFK_ScreenSaver_PreferBlanking = "PreferBlanking";
+static const char *KFK_ScreenSaver_Timeout = "Timeout";
+
+static const char *KFK_DPMS_OffTimeout = "OffTimeout";
+static const char *KFK_DPMS_PowerLevel = "PowerLevel";
+static const char *KFK_DPMS_StandbyTimeout = "StandbyTimeout";
+static const char *KFK_DPMS_State = "State";
+static const char *KFK_DPMS_SuspendTimeout = "SuspendTimeout";
+
+/** @brief read input settings
+  * 
+  * Read the input settings from the configuration file.  Simple and direct.
+  * The file is an .ini-style keyfile.  Use glib to read in the values.
+  */
+void
+read_input(const char *filename)
+{
+	GError *error = NULL;
+
+	file = g_key_file_new();
+	if (!g_key_file_load_from_file(file, filename, G_KEY_FILE_NONE, &error)) {
+		return;
+	}
+}
+
+/** @brief write input settings
+  *
+  * Write the input settings back to the configuration file.  Simple and direct.
+  * The file is an .ini-style keyfile.  Use glib to write out the values.
+  */
+void
+write_input()
+{
+}
+
+void
+set_input(const char *filename)
+{
+	read_input(filename);
+	if (g_key_file_has_group(file, KFG_Pointer) && support.Pointer) {
+		Bool do_accel, do_threshold;
+		int accel_numerator, accel_denominator, threshold;
+
+		accel_denominator =
+		    g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationDenominator,
+					   NULL);
+		accel_numerator =
+		    g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationNumerator,
+					   NULL);
+		threshold = g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_Threshold, NULL);
+		do_accel = (accel_denominator && accel_numerator) ? True : False;
+		do_threshold = threshold ? True : False;
+		XChangePointerControl(dpy, do_accel, do_threshold, accel_numerator,
+				      accel_denominator, threshold);
+	}
+	if (g_key_file_has_group(file, KFG_Keyboard) && support.Keyboard) {
+		XKeyboardControl kbd = { 0, };
+		unsigned long value_mask = 0;
+
+		if ((kbd.key_click_percent =
+		     g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_KeyClickPercent,
+					    NULL)))
+			value_mask |= KBKeyClickPercent;
+		if ((kbd.bell_percent =
+		     g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellPercent, NULL)))
+			value_mask |= KBBellPercent;
+		if ((kbd.bell_pitch =
+		     g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellPitch, NULL)))
+			value_mask |= KBBellPitch;
+		if ((kbd.bell_duration =
+		     g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellDuration, NULL)))
+			value_mask |= KBBellDuration;
+		if ((kbd.auto_repeat_mode =
+		     g_key_file_get_boolean(file, KFG_Keyboard, KFK_Keyboard_GlobalAutoRepeat,
+					    NULL)))
+			value_mask |= KBAutoRepeatMode;
+		if (value_mask)
+			XChangeKeyboardControl(dpy, value_mask, &kbd);
+	}
+	if (g_key_file_has_group(file, KFG_XKeyboard) && support.XKeyboard) {
+	}
+	if (g_key_file_has_group(file, KFG_ScreenSaver) && support.ScreenSaver) {
+		int timeout, interval, prefer_blanking, allow_exposures;
+
+		timeout =
+		    g_key_file_get_integer(file, KFG_ScreenSaver, KFK_ScreenSaver_Timeout, NULL);
+		interval =
+		    g_key_file_get_integer(file, KFG_ScreenSaver, KFK_ScreenSaver_Interval, NULL);
+		prefer_blanking =
+		    g_key_file_get_boolean(file, KFG_ScreenSaver, KFK_ScreenSaver_PreferBlanking,
+					   NULL);
+		allow_exposures =
+		    g_key_file_get_boolean(file, KFG_ScreenSaver, KFK_ScreenSaver_AllowExposures,
+					   NULL);
+		XSetScreenSaver(dpy, timeout, interval, prefer_blanking, allow_exposures);
+	}
+	if (g_key_file_has_group(file, KFG_DPMS) && support.DPMS) {
+		int standby, suspend, off, level;
+
+		standby = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_StandbyTimeout, NULL);
+		suspend = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_SuspendTimeout, NULL);
+		off = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_OffTimeout, NULL);
+		DPMSSetTimeouts(dpy, standby, suspend, off);
+		if (g_key_file_get_boolean(file, KFG_DPMS, KFK_DPMS_State, NULL)) {
+			DPMSEnable(dpy);
+		} else {
+			DPMSDisable(dpy);
+		}
+		level = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_PowerLevel, NULL);
+		DPMSForceLevel(dpy, level);
 	}
 }
 
