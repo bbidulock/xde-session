@@ -337,639 +337,12 @@ typedef struct {
 
 Controls controls;
 
-static gboolean
-test_boolean(const char *s)
-{
-	gboolean flag;
-
-	flag = (s && (!strcasecmp(s, "true") || !strcasecmp(s, "yes") ||
-		      !strcasecmp(s, "on") || !strcasecmp(s, "1"))) ? TRUE : FALSE;
-	return (flag);
-}
-
-static void
-edit_set_values()
-{
-	char *endptr = NULL;
-	double value;
-	gboolean flag;
-
-	if (support.Pointer) {
-		value = strtod(config.Pointer.AccelerationNumerator, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.Pointer.AccelerationNumerator), value);
-		value = strtod(config.Pointer.AccelerationDenominator, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.Pointer.AccelerationDenominator), value);
-		value = strtod(config.Pointer.Threshold, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.Pointer.Threshold), value);
-	}
-	if (support.Keyboard) {
-		value = strtod(config.Keyboard.KeyClickPercent, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.Keyboard.KeyClickPercent), value);
-		value = strtod(config.Keyboard.BellPercent, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPercent), value);
-		value = strtod(config.Keyboard.BellPitch, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPitch), value);
-		value = strtod(config.Keyboard.BellDuration, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellDuration), value);
-		flag = test_boolean(config.Keyboard.GlobalAutoRepeat);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.Keyboard.GlobalAutoRepeat), flag);
-	}
-	if (support.XKeyboard) {
-		flag = test_boolean(config.XKeyboard.RepeatKeysEnabled);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.RepeatKeysEnabled), flag);
-		value = strtod(config.XKeyboard.RepeatDelay, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.RepeatDelay), value);
-		value = strtod(config.XKeyboard.RepeatInterval, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.RepeatInterval), value);
-
-		flag = test_boolean(config.XKeyboard.SlowKeysEnabled);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.SlowKeysEnabled), flag);
-		value = strtod(config.XKeyboard.SlowKeysDelay, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.SlowKeysDelay), value);
-
-		flag = test_boolean(config.XKeyboard.StickyKeysEnabled);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.StickyKeysEnabled), flag);
-
-		flag = test_boolean(config.XKeyboard.BounceKeysEnabled);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.BounceKeysEnabled), flag);
-		value = strtod(config.XKeyboard.DebounceDelay, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.DebounceDelay), value);
-
-		flag = test_boolean(config.XKeyboard.MouseKeysEnabled);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.MouseKeysEnabled), flag);
-		value = strtod(config.XKeyboard.MouseKeysDfltBtn, &endptr);
-		if (endptr && !*endptr)
-			gtk_combo_box_set_active(GTK_COMBO_BOX(controls.XKeyboard.MouseKeysDfltBtn), (int) value - 1);
-
-		flag = test_boolean(config.XKeyboard.MouseKeysAccelEnabled);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.MouseKeysAccelEnabled), flag);
-		value = strtod(config.XKeyboard.MouseKeysDelay, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysDelay), value);
-		value = strtod(config.XKeyboard.MouseKeysInterval, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysInterval), value);
-		value = strtod(config.XKeyboard.MouseKeysTimeToMax, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysTimeToMax), value);
-		value = strtod(config.XKeyboard.MouseKeysMaxSpeed, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysMaxSpeed), value);
-		value = strtod(config.XKeyboard.MouseKeysCurve, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysCurve), value);
-	}
-	if (support.ScreenSaver) {
-		value = strtod(config.ScreenSaver.Timeout, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.ScreenSaver.Timeout), value);
-		value = strtod(config.ScreenSaver.Interval, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.ScreenSaver.Interval), value);
-		flag = test_boolean(config.ScreenSaver.Preferblanking);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.ScreenSaver.Preferblanking), flag);
-		flag = test_boolean(config.ScreenSaver.Allowexposures);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.ScreenSaver.Allowexposures), flag);
-	}
-	if (support.DPMS) {
-		value = strtod(config.DPMS.StandbyTimeout, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.DPMS.StandbyTimeout), value);
-		value = strtod(config.DPMS.SuspendTimeout, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.DPMS.SuspendTimeout), value);
-		value = strtod(config.DPMS.OffTimeout, &endptr);
-		if (endptr && !*endptr)
-			gtk_range_set_value(GTK_RANGE(controls.DPMS.OffTimeout), value);
-		flag = test_boolean(config.DPMS.State);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.DPMS.State), flag);
-	}
-}
-
-static void
-process_errors()
-{
-}
-
-static void
-purge_queue()
-{
-}
-
-static void
-get_input()
-{
-	char buf[256] = { 0, };
-	int i, j;
-
-	XGetKeyboardControl(dpy, &state.Keyboard);
-
-	if (options.debug) {
-		fputs("Keyboard Control:\n", stderr);
-		fprintf(stderr, "\tkey-click-percent: %d\n", state.Keyboard.key_click_percent);
-		fprintf(stderr, "\tbell-percent: %d\n", state.Keyboard.bell_percent);
-		fprintf(stderr, "\tbell-pitch: %u Hz\n", state.Keyboard.bell_pitch);
-		fprintf(stderr, "\tbell-duration: %u milliseconds\n", state.Keyboard.bell_duration);
-		fprintf(stderr, "\tled-mask: 0x%08lx\n", state.Keyboard.led_mask);
-		fprintf(stderr, "\tglobal-auto-repeat: %s\n", state.Keyboard.global_auto_repeat ? "Yes" : "No");
-		fputs("\tauto-repeats: ", stderr);
-		for (i = 0; i < 32; i++)
-			fprintf(stderr, "%02X", state.Keyboard.auto_repeats[i]);
-		fputs("\n", stderr);
-	}
-
-	free(config.Keyboard.KeyClickPercent);
-	snprintf(buf, sizeof(buf), "%d", state.Keyboard.key_click_percent);
-	config.Keyboard.KeyClickPercent = strndup(buf, sizeof(buf));
-
-	free(config.Keyboard.BellPercent);
-	snprintf(buf, sizeof(buf), "%d", state.Keyboard.bell_percent);
-	config.Keyboard.BellPercent = strndup(buf, sizeof(buf));
-
-	free(config.Keyboard.BellPitch);
-	snprintf(buf, sizeof(buf), "%u", state.Keyboard.bell_pitch);
-	config.Keyboard.BellPitch = strndup(buf, sizeof(buf));
-
-	free(config.Keyboard.BellDuration);
-	snprintf(buf, sizeof(buf), "%u", state.Keyboard.bell_duration);
-	config.Keyboard.BellDuration = strndup(buf, sizeof(buf));
-
-	free(config.Keyboard.LEDMask);
-	snprintf(buf, sizeof(buf), "0x%lx", state.Keyboard.led_mask);
-	config.Keyboard.LEDMask = strndup(buf, sizeof(buf));
-
-	free(config.Keyboard.GlobalAutoRepeat);
-	snprintf(buf, sizeof(buf), "%s", state.Keyboard.global_auto_repeat ? "On" : "Off");
-	config.Keyboard.GlobalAutoRepeat = strndup(buf, sizeof(buf));
-
-	free(config.Keyboard.AutoRepeats);
-	for (i = 0, j = 0; i < 32; i++, j += 2)
-		snprintf(buf + j, sizeof(buf) - j, "%02X", state.Keyboard.auto_repeats[i]);
-	config.Keyboard.AutoRepeats = strndup(buf, sizeof(buf));
-
-	XGetPointerControl(dpy, &state.Pointer.accel_numerator, &state.Pointer.accel_denominator, &state.Pointer.threshold);
-
-	if (options.debug) {
-		fputs("Pointer Control:\n", stderr);
-		fprintf(stderr, "\tacceleration-numerator: %d\n", state.Pointer.accel_numerator);
-		fprintf(stderr, "\tacceleration-denominator: %d\n", state.Pointer.accel_denominator);
-		fprintf(stderr, "\tthreshold: %d\n", state.Pointer.threshold);
-	}
-
-	free(config.Pointer.AccelerationDenominator);
-	snprintf(buf, sizeof(buf), "%d", state.Pointer.accel_denominator);
-	config.Pointer.AccelerationDenominator = strndup(buf, sizeof(buf));
-
-	free(config.Pointer.AccelerationNumerator);
-	snprintf(buf, sizeof(buf), "%d", state.Pointer.accel_numerator);
-	config.Pointer.AccelerationNumerator = strndup(buf, sizeof(buf));
-
-	free(config.Pointer.Threshold);
-	snprintf(buf, sizeof(buf), "%d", state.Pointer.threshold);
-	config.Pointer.Threshold = strndup(buf, sizeof(buf));
-
-	XGetScreenSaver(dpy, &state.ScreenSaver.timeout, &state.ScreenSaver.interval, &state.ScreenSaver.prefer_blanking, &state.ScreenSaver.allow_exposures);
-
-	if (options.debug) {
-		fputs("Screen Saver:\n", stderr);
-		fprintf(stderr, "\ttimeout: %d seconds\n", state.ScreenSaver.timeout);
-		fprintf(stderr, "\tinterval: %d seconds\n", state.ScreenSaver.interval);
-		fputs("\tprefer-blanking: ", stderr);
-		switch (state.ScreenSaver.prefer_blanking) {
-		case DontPreferBlanking:
-			fputs("DontPreferBlanking\n", stderr);
-			break;
-		case PreferBlanking:
-			fputs("PreferBlanking\n", stderr);
-			break;
-		case DefaultBlanking:
-			fputs("DefaultBlanking\n", stderr);
-			break;
-		default:
-			fprintf(stderr, "(unknown) %d\n", state.ScreenSaver.prefer_blanking);
-			break;
-		}
-		fputs("\tallow-exposures: ", stderr);
-		switch (state.ScreenSaver.allow_exposures) {
-		case DontAllowExposures:
-			fputs("DontAllowExposures\n", stderr);
-			break;
-		case AllowExposures:
-			fputs("AllowExposures\n", stderr);
-			break;
-		case DefaultExposures:
-			fputs("DefaultExposures\n", stderr);
-			break;
-		default:
-			fprintf(stderr, "(unknown) %d\n", state.ScreenSaver.allow_exposures);
-			break;
-		}
-	}
-
-	free(config.ScreenSaver.Allowexposures);
-	switch (state.ScreenSaver.allow_exposures) {
-	case DontAllowExposures:
-		strncpy(buf, "DontAllowExposures", sizeof(buf));
-		break;
-	case AllowExposures:
-		strncpy(buf, "AllowExposures", sizeof(buf));
-		break;
-	case DefaultExposures:
-		strncpy(buf, "DefaultExposures", sizeof(buf));
-		break;
-	default:
-		snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.allow_exposures);
-		break;
-	}
-	config.ScreenSaver.Allowexposures = strndup(buf, sizeof(buf));
-
-	free(config.ScreenSaver.Interval);
-	snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.interval);
-	config.ScreenSaver.Interval = strndup(buf, sizeof(buf));
-
-	free(config.ScreenSaver.Preferblanking);
-	switch (state.ScreenSaver.prefer_blanking) {
-	case DontPreferBlanking:
-		strncpy(buf, "DontPreferBlanking", sizeof(buf));
-		break;
-	case PreferBlanking:
-		strncpy(buf, "PreferBlanking", sizeof(buf));
-		break;
-	case DefaultBlanking:
-		strncpy(buf, "DefaultBlanking", sizeof(buf));
-		break;
-	default:
-		snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.prefer_blanking);
-		break;
-	}
-	config.ScreenSaver.Preferblanking = strndup(buf, sizeof(buf));
-
-	free(config.ScreenSaver.Timeout);
-	snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.timeout);
-	config.ScreenSaver.Timeout = strndup(buf, sizeof(buf));
-
-	if (DPMSGetVersion(dpy, &state.DPMS.major_version, &state.DPMS.minor_version)) {
-		DPMSInfo(dpy, &state.DPMS.power_level, &state.DPMS.state);
-		DPMSGetTimeouts(dpy, &state.DPMS.standby, &state.DPMS.suspend, &state.DPMS.off);
-		if (options.debug) {
-			fputs("DPMS:\n", stderr);
-			fprintf(stderr, "\tDPMS Version: %d.%d\n", state.DPMS.major_version, state.DPMS.minor_version);
-			fputs("\tpower-level: ", stderr);
-			switch (state.DPMS.power_level) {
-			case DPMSModeOn:
-				fputs("DPMSModeOn\n", stderr);
-				break;
-			case DPMSModeStandby:
-				fputs("DPMSModeStandby\n", stderr);
-				break;
-			case DPMSModeSuspend:
-				fputs("DPMSModeSuspend\n", stderr);
-				break;
-			case DPMSModeOff:
-				fputs("DPMSModeOff\n", stderr);
-				break;
-			default:
-				fprintf(stderr, "%d (unknown)\n", state.DPMS.power_level);
-				break;
-			}
-			fprintf(stderr, "\tstate: %s\n", state.DPMS.state ? "True" : "False");
-			fprintf(stderr, "\tstandby-timeout: %hu seconds\n", state.DPMS.standby);
-			fprintf(stderr, "\tsuspend-timeout: %hu seconds\n", state.DPMS.suspend);
-			fprintf(stderr, "\toff-timeout: %hu seconds\n", state.DPMS.off);
-		}
-
-		free(config.DPMS.PowerLevel);
-		switch (state.DPMS.power_level) {
-		case DPMSModeOn:
-			strncpy(buf, "DPMSModeOn", sizeof(buf));
-			break;
-		case DPMSModeStandby:
-			strncpy(buf, "DPMSModeStandby", sizeof(buf));
-			break;
-		case DPMSModeSuspend:
-			strncpy(buf, "DPMSModeSuspend", sizeof(buf));
-			break;
-		case DPMSModeOff:
-			strncpy(buf, "DPMSModeOff", sizeof(buf));
-			break;
-		default:
-			snprintf(buf, sizeof(buf), "%d (unknown)", state.DPMS.power_level);
-			break;
-		}
-		config.DPMS.PowerLevel = strndup(buf, sizeof(buf));
-
-		free(config.DPMS.State);
-		snprintf(buf, sizeof(buf), "%s", state.DPMS.state ? "True" : "False");
-		config.DPMS.State = strndup(buf, sizeof(buf));
-
-		free(config.DPMS.StandbyTimeout);
-		snprintf(buf, sizeof(buf), "%hu", state.DPMS.standby);
-		config.DPMS.StandbyTimeout = strndup(buf, sizeof(buf));
-
-		free(config.DPMS.SuspendTimeout);
-		snprintf(buf, sizeof(buf), "%hu", state.DPMS.suspend);
-		config.DPMS.SuspendTimeout = strndup(buf, sizeof(buf));
-
-		free(config.DPMS.OffTimeout);
-		snprintf(buf, sizeof(buf), "%hu", state.DPMS.off);
-		config.DPMS.OffTimeout = strndup(buf, sizeof(buf));
-	}
-
-	if (XkbQueryExtension(dpy, &state.XKeyboard.opcode, &state.XKeyboard.event,
-			      &state.XKeyboard.error, &state.XKeyboard.major_version, &state.XKeyboard.minor_version)) {
-
-		static const char *_true = "true";
-		static const char *_false = "false";
-#if 0
-		unsigned int which = XkbControlsMask;
-#endif
-
-		state.XKeyboard.desc = XkbGetKeyboard(dpy, XkbControlsMask, XkbUseCoreKbd);
-
-		free(config.XKeyboard.MouseKeysDfltBtn);
-		snprintf(buf, sizeof(buf), "%hhu", state.XKeyboard.desc->ctrls->mk_dflt_btn);
-		config.XKeyboard.MouseKeysDfltBtn = strdup(buf);
-
-		free(config.XKeyboard.RepeatKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbRepeatKeysMask) ? _true : _false);
-		config.XKeyboard.RepeatKeysEnabled = strdup(buf);
-
-		free(config.XKeyboard.SlowKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbSlowKeysMask) ? _true : _false);
-		config.XKeyboard.SlowKeysEnabled = strdup(buf);
-
-		free(config.XKeyboard.BounceKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbBounceKeysMask) ? _true : _false);
-		config.XKeyboard.BounceKeysEnabled = strdup(buf);
-
-		free(config.XKeyboard.StickyKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbStickyKeysMask) ? _true : _false);
-		config.XKeyboard.StickyKeysEnabled = strdup(buf);
-
-		free(config.XKeyboard.MouseKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbMouseKeysMask) ? _true : _false);
-		config.XKeyboard.MouseKeysEnabled = strdup(buf);
-
-		free(config.XKeyboard.MouseKeysAccelEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbMouseKeysAccelMask) ? _true : _false);
-		config.XKeyboard.MouseKeysAccelEnabled = strdup(buf);
-
-		free(config.XKeyboard.AccessXKeysEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAccessXKeysMask) ? _true : _false);
-		config.XKeyboard.AccessXKeysEnabled = strdup(buf);
-
-		free(config.XKeyboard.AccessXTimeoutMaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAccessXTimeoutMask) ? _true : _false);
-		config.XKeyboard.AccessXTimeoutMaskEnabled = strdup(buf);
-
-		free(config.XKeyboard.AccessXFeedbackMaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAccessXFeedbackMask) ? _true : _false);
-		config.XKeyboard.AccessXFeedbackMaskEnabled = strdup(buf);
-
-		free(config.XKeyboard.AudibleBellMaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAudibleBellMask) ? _true : _false);
-		config.XKeyboard.AudibleBellMaskEnabled = strdup(buf);
-
-		free(config.XKeyboard.Overlay1MaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbOverlay1Mask) ? _true : _false);
-		config.XKeyboard.Overlay1MaskEnabled = strdup(buf);
-
-		free(config.XKeyboard.Overlay2MaskEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbOverlay2Mask) ? _true : _false);
-		config.XKeyboard.Overlay2MaskEnabled = strdup(buf);
-
-		free(config.XKeyboard.IgnoreGroupLockModsEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbIgnoreGroupLockMask) ? _true : _false);
-		config.XKeyboard.IgnoreGroupLockModsEnabled = strdup(buf);
-
-		free(config.XKeyboard.GroupsWrapEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbGroupsWrapMask) ? _true : _false);
-		config.XKeyboard.GroupsWrapEnabled = strdup(buf);
-
-		free(config.XKeyboard.InternalModsEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbInternalModsMask) ? _true : _false);
-		config.XKeyboard.InternalModsEnabled = strdup(buf);
-
-		free(config.XKeyboard.IgnoreLockModsEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbIgnoreLockModsMask) ? _true : _false);
-		config.XKeyboard.IgnoreLockModsEnabled = strdup(buf);
-
-		free(config.XKeyboard.PerKeyRepeatEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbPerKeyRepeatMask) ? _true : _false);
-		config.XKeyboard.PerKeyRepeatEnabled = strdup(buf);
-
-		free(config.XKeyboard.ControlsEnabledEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbControlsEnabledMask) ? _true : _false);
-		config.XKeyboard.ControlsEnabledEnabled = strdup(buf);
-
-		free(config.XKeyboard.AccessXOptionsEnabled);
-		strcpy(buf, (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbAccessXOptionsMask) ? _true : _false);
-		config.XKeyboard.AccessXOptionsEnabled = strdup(buf);
-
-		{
-			unsigned int repeat_delay, repeat_interval;
-
-			XkbGetAutoRepeatRate(dpy, XkbUseCoreKbd, &repeat_delay, &repeat_interval);
-
-			free(config.XKeyboard.RepeatDelay);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->repeat_delay);
-			config.XKeyboard.RepeatDelay = strdup(buf);
-
-			free(config.XKeyboard.RepeatInterval);
-			free(config.XKeyboard.RepeatRate);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->repeat_interval);
-			config.XKeyboard.RepeatInterval = strdup(buf);
-		}
-
-#if 0
-		{
-			int slow_keys_delay;
-
-			XkbGetSlowKeysDelay(dpy, XkbUseCoreKbd, &slow_keys_delay);
-
-			free(config.XKeyboard.SlowKeysDelay);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->slow_keys_delay);
-			config.XKeyboard.SlowKeysDelay = strdup(buf);
-		}
-
-		{
-			int debounce_delay;
-
-			XkbGetBoundKeysDelay(dpy, XkbUseCoreKbd, &debounce_delay);
-
-			free(config.XKeyboard.DebounceDelay);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->debounce_delay);
-			config.XKeyboard.DebounceDelay = strdup(buf);
-		}
-#endif
-
-		free(config.XKeyboard.MouseKeysDelay);
-		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_delay);
-		config.XKeyboard.MouseKeysDelay = strdup(buf);
-
-		free(config.XKeyboard.MouseKeysInterval);
-		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_interval);
-		config.XKeyboard.MouseKeysInterval = strdup(buf);
-
-		free(config.XKeyboard.MouseKeysTimeToMax);
-		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_time_to_max);
-		config.XKeyboard.MouseKeysTimeToMax = strdup(buf);
-
-		free(config.XKeyboard.MouseKeysMaxSpeed);
-		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_max_speed);
-		config.XKeyboard.MouseKeysMaxSpeed = strdup(buf);
-
-		free(config.XKeyboard.MouseKeysCurve);
-		snprintf(buf, sizeof(buf), "%hd", state.XKeyboard.desc->ctrls->mk_curve);
-		config.XKeyboard.MouseKeysCurve = strdup(buf);
-
-		static struct {
-			unsigned short mask;
-			char *name;
-		} axoptions[12] = {
-			{ XkbAX_SKPressFBMask, "SlowKeysPress" },
-			{ XkbAX_SKAcceptFBMask, "SlowKeysAccept" },
-			{ XkbAX_FeatureFBMask, "Feature" },
-			{ XkbAX_SlowWarnFBMask, "SlowWarn" },
-			{ XkbAX_IndicatorFBMask, "Indicator" },
-			{ XkbAX_StickyKeysFBMask, "StickyKeys" },
-			{ XkbAX_TwoKeysMask, "TwoKeys" },
-			{ XkbAX_LatchToLockMask, "LatchToLock" },
-			{ XkbAX_SKReleaseFBMask, "SlowKeysRelease" },
-			{ XkbAX_SKRejectFBMask, "SlowKeysReject" },
-			{ XkbAX_BKRejectFBMask, "BounceKeysReject" },
-			{ XkbAX_DumbBellFBMask, "DumbBell" }
-		};
-
-		free(config.XKeyboard.AccessXOptions);
-		for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-			if (state.XKeyboard.desc->ctrls->ax_options & axoptions[i].mask) {
-				if (j++)
-					strncat(buf, ";", sizeof(buf)-1);
-				strncat(buf, axoptions[i].name, sizeof(buf)-1);
-			}
-		}
-		config.XKeyboard.AccessXOptions = strdup(buf);
-
-		/* XkbAX_SKPressFBMask */
-		/* XkbAX_SKAcceptFBMask */
-		/* XkbAX_FeatureFBMask */
-		/* XkbAX_SlowWarnFBMask */
-		/* XkbAX_IndicatorFBMask */
-		/* XkbAX_StickKeysFBMask */
-		/* XkbAX_TwoKeysMask */
-		/* XkbAX_LatchToLockMask */
-		/* XkbAX_SKReleaseFBMask */
-		/* XkbAX_SKRejectFBMask */
-		/* XkbAX_BKRejectFBMask */
-		/* XkbAX_DumbBellFBMask */
-
-		/* XkbAX_FBOptionsMask */
-		/* XkbAX_SKOptionsMask */
-		/* XkbAX_AllOptiosMask */
-
-		{
-#if 0
-			int ax_timeout, axt_ctrls_mask, axt_ctrls_values, axt_opts_mask, axt_opts_values;
-
-			XkbGetAccessXTimeout(dpy, XkbUseCoreKbd, &ax_timeout, &axt_ctrls_mask, &axt_ctrls_values, &axt_opts_mask, &axt_opts_values);
-#endif
-
-			free(config.XKeyboard.AccessXTimeout);
-			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->ax_timeout);
-			config.XKeyboard.AccessXTimeout = strdup(buf);
-
-			free(config.XKeyboard.AccessXTimeoutOptionsMask);
-			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls->axt_opts_mask & axoptions[i].mask) {
-					if (j++)
-						strncat(buf, ";", sizeof(buf)-1);
-					strncat(buf, axoptions[i].name, sizeof(buf)-1);
-				}
-
-			}
-			config.XKeyboard.AccessXTimeoutOptionsMask = strdup(buf);
-
-			free(config.XKeyboard.AccessXTimeoutOptionsValues);
-			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls->axt_opts_values & axoptions[i].mask) {
-					if (j++)
-						strncat(buf, ";", sizeof(buf)-1);
-					strncat(buf, axoptions[i].name, sizeof(buf)-1);
-				}
-
-			}
-			config.XKeyboard.AccessXTimeoutOptionsValues = strdup(buf);
-
-			free(config.XKeyboard.AccessXTimeoutMask);
-			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls->axt_ctrls_mask & axoptions[i].mask) {
-					if (j++)
-						strncat(buf, ";", sizeof(buf)-1);
-					strncat(buf, axoptions[i].name, sizeof(buf)-1);
-				}
-
-			}
-			config.XKeyboard.AccessXTimeoutMask = strdup(buf);
-
-			free(config.XKeyboard.AccessXTimeoutValues);
-			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls->axt_ctrls_values & axoptions[i].mask) {
-					if (j++)
-						strncat(buf, ";", sizeof(buf)-1);
-					strncat(buf, axoptions[i].name, sizeof(buf)-1);
-				}
-
-			}
-			config.XKeyboard.AccessXTimeoutValues = strdup(buf);
-		}
-	}
-	if (support.XF86Misc) {
-		static const char *_true = "true";
-		static const char *_false = "false";
-
-		XF86MiscGetKbdSettings(dpy, &state.XF86Misc.keyboard);
-
-		free(config.XF86Misc.KeyboardRate);
-		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.keyboard.rate);
-		config.XF86Misc.KeyboardRate = strdup(buf);
-
-		free(config.XF86Misc.KeyboardDelay);
-		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.keyboard.delay);
-		config.XF86Misc.KeyboardDelay = strdup(buf);
-
-		XF86MiscGetMouseSettings(dpy, &state.XF86Misc.mouse);
-
-		free(config.XF86Misc.MouseEmulate3Buttons);
-		snprintf(buf, sizeof(buf), "%s", state.XF86Misc.mouse.emulate3buttons ? _true : _false);
-		config.XF86Misc.MouseEmulate3Buttons = strdup(buf);
-
-		free(config.XF86Misc.MouseEmulate3Timeout);
-		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.mouse.emulate3timeout);
-		config.XF86Misc.MouseEmulate3Timeout = strdup(buf);
-
-		free(config.XF86Misc.MouseChordMiddle);
-		snprintf(buf, sizeof(buf), "%s", state.XF86Misc.mouse.chordmiddle ? _true : _false);
-		config.XF86Misc.MouseChordMiddle = strdup(buf);
-	}
-}
-
 static const char *KFG_Pointer = "Pointer";
 static const char *KFG_Keyboard = "Keyboard";
 static const char *KFG_XKeyboard = "XKeyboard";
 static const char *KFG_ScreenSaver = "ScreenSaver";
 static const char *KFG_DPMS = "DPMS";
+static const char *KFG_XF86Misc = "XF86Misc";
 
 static const char *KFK_Pointer_AccelerationDenominator = "AccelerationDenominator";
 static const char *KFK_Pointer_AccelerationNumerator = "AccelerationNumerator";
@@ -1031,6 +404,707 @@ static const char *KFK_DPMS_StandbyTimeout = "StandbyTimeout";
 static const char *KFK_DPMS_State = "State";
 static const char *KFK_DPMS_SuspendTimeout = "SuspendTimeout";
 
+static const char *KFK_XF86Misc_KeyboardRate = "KeyboardRate";
+static const char *KFK_XF86Misc_KeyboardDelay = "KeyboardDelay";
+static const char *KFK_XF86Misc_MouseEmulate3Buttons = "MouseEmulate3Buttons";
+static const char *KFK_XF86Misc_MouseEmulate3Timeout = "MouseEmulate3Timeout";
+static const char *KFK_XF86Misc_MouseChordMiddle = "MouseChordMiddle";
+
+
+static void
+edit_set_values()
+{
+	int value;
+	gboolean flag;
+
+	if (support.Keyboard) {
+		value = g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_KeyClickPercent, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.Keyboard.KeyClickPercent), value);
+		value = g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellPercent, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPercent), value);
+		value = g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellPitch, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPitch), value);
+		value = g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellDuration, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellDuration), value);
+		flag = g_key_file_get_boolean(file, KFG_Keyboard, KFK_Keyboard_GlobalAutoRepeat, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.Keyboard.GlobalAutoRepeat), flag);
+	}
+	if (support.Pointer) {
+		value = g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationNumerator, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.Pointer.AccelerationNumerator), value);
+		value = g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationDenominator, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.Pointer.AccelerationDenominator), value);
+		value = g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_Threshold, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.Pointer.Threshold), value);
+	}
+	if (support.XKeyboard) {
+		flag = g_key_file_get_boolean(file, KFG_XKeyboard, KFK_XKeyboard_RepeatKeysEnabled, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.RepeatKeysEnabled), flag);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_RepeatDelay, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.RepeatDelay), value);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_RepeatInterval, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.RepeatInterval), value);
+
+		flag = g_key_file_get_boolean(file, KFG_XKeyboard, KFK_XKeyboard_SlowKeysEnabled, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.SlowKeysEnabled), flag);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_SlowKeysDelay, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.SlowKeysDelay), value);
+
+		flag = g_key_file_get_boolean(file, KFG_XKeyboard, KFK_XKeyboard_StickyKeysEnabled, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.StickyKeysEnabled), flag);
+
+		flag = g_key_file_get_boolean(file, KFG_XKeyboard, KFK_XKeyboard_BounceKeysEnabled, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.BounceKeysEnabled), flag);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_DebounceDelay, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.DebounceDelay), value);
+
+		flag = g_key_file_get_boolean(file, KFG_XKeyboard, KFK_XKeyboard_MouseKeysEnabled, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.MouseKeysEnabled), flag);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_MouseKeysDfltBtn, NULL);
+		gtk_combo_box_set_active(GTK_COMBO_BOX(controls.XKeyboard.MouseKeysDfltBtn), value - 1);
+
+		flag = g_key_file_get_boolean(file, KFG_XKeyboard, KFK_XKeyboard_MouseKeysAccelEnabled, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XKeyboard.MouseKeysAccelEnabled), flag);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_MouseKeysDelay, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysDelay), value);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_MouseKeysInterval, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysInterval), value);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_MouseKeysTimeToMax, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysTimeToMax), value);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_MouseKeysMaxSpeed, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysMaxSpeed), value);
+		value = g_key_file_get_integer(file, KFG_XKeyboard, KFK_XKeyboard_MouseKeysCurve, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XKeyboard.MouseKeysCurve), value);
+	}
+	if (support.ScreenSaver) {
+		value = g_key_file_get_integer(file, KFG_ScreenSaver, KFK_ScreenSaver_Timeout, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.ScreenSaver.Timeout), value);
+		value = g_key_file_get_integer(file, KFG_ScreenSaver, KFK_ScreenSaver_Interval, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.ScreenSaver.Interval), value);
+		flag = g_key_file_get_boolean(file, KFG_ScreenSaver, KFK_ScreenSaver_PreferBlanking, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.ScreenSaver.Preferblanking), flag);
+		flag = g_key_file_get_boolean(file, KFG_ScreenSaver, KFK_ScreenSaver_AllowExposures, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.ScreenSaver.Allowexposures), flag);
+	}
+	if (support.DPMS) {
+		value = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_StandbyTimeout, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.DPMS.StandbyTimeout), value);
+		value = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_SuspendTimeout, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.DPMS.SuspendTimeout), value);
+		value = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_OffTimeout, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.DPMS.OffTimeout), value);
+		flag = g_key_file_get_boolean(file, KFG_DPMS, KFK_DPMS_State, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.DPMS.State), flag);
+	}
+	if (support.XF86Misc) {
+		value = g_key_file_get_integer(file, KFG_XF86Misc, KFK_XF86Misc_KeyboardRate, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XF86Misc.KeyboardRate), value);
+		value = g_key_file_get_integer(file, KFG_XF86Misc, KFK_XF86Misc_KeyboardDelay, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XF86Misc.KeyboardDelay), value);
+		flag = g_key_file_get_boolean(file, KFG_XF86Misc, KFK_XF86Misc_MouseEmulate3Buttons, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XF86Misc.MouseEmulate3Buttons), flag);
+		value = g_key_file_get_integer(file, KFG_XF86Misc, KFK_XF86Misc_MouseEmulate3Timeout, NULL);
+		gtk_range_set_value(GTK_RANGE(controls.XF86Misc.MouseEmulate3Timeout), value);
+		flag = g_key_file_get_boolean(file, KFG_XF86Misc, KFK_XF86Misc_MouseChordMiddle, NULL);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(controls.XF86Misc.MouseChordMiddle), flag);
+	}
+}
+
+static void
+process_errors()
+{
+}
+
+static void
+purge_queue()
+{
+}
+
+static void
+get_input()
+{
+	char buf[256] = { 0, };
+	int i, j;
+	static const char *_true = "true";
+	static const char *_false = "false";
+
+	if (support.Keyboard) {
+		XGetKeyboardControl(dpy, &state.Keyboard);
+
+		if (options.debug) {
+			fputs("Keyboard Control:\n", stderr);
+			fprintf(stderr, "\tkey-click-percent: %d\n",
+				state.Keyboard.key_click_percent);
+			fprintf(stderr, "\tbell-percent: %d\n", state.Keyboard.bell_percent);
+			fprintf(stderr, "\tbell-pitch: %u Hz\n", state.Keyboard.bell_pitch);
+			fprintf(stderr, "\tbell-duration: %u milliseconds\n",
+				state.Keyboard.bell_duration);
+			fprintf(stderr, "\tled-mask: 0x%08lx\n", state.Keyboard.led_mask);
+			fprintf(stderr, "\tglobal-auto-repeat: %s\n",
+				state.Keyboard.global_auto_repeat ? "Yes" : "No");
+			fputs("\tauto-repeats: ", stderr);
+			for (i = 0; i < 32; i++)
+				fprintf(stderr, "%02X", state.Keyboard.auto_repeats[i]);
+			fputs("\n", stderr);
+		}
+
+		free(config.Keyboard.KeyClickPercent);
+		snprintf(buf, sizeof(buf), "%d", state.Keyboard.key_click_percent);
+		config.Keyboard.KeyClickPercent = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_Keyboard,
+				       KFK_Keyboard_KeyClickPercent,
+				       state.Keyboard.key_click_percent);
+
+		free(config.Keyboard.BellPercent);
+		snprintf(buf, sizeof(buf), "%d", state.Keyboard.bell_percent);
+		config.Keyboard.BellPercent = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_Keyboard,
+				       KFK_Keyboard_BellPercent, state.Keyboard.bell_percent);
+
+		free(config.Keyboard.BellPitch);
+		snprintf(buf, sizeof(buf), "%u", state.Keyboard.bell_pitch);
+		config.Keyboard.BellPitch = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_Keyboard,
+				       KFK_Keyboard_BellPitch, state.Keyboard.bell_pitch);
+
+		free(config.Keyboard.BellDuration);
+		snprintf(buf, sizeof(buf), "%u", state.Keyboard.bell_duration);
+		config.Keyboard.BellDuration = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_Keyboard,
+				       KFK_Keyboard_BellDuration, state.Keyboard.bell_duration);
+
+		free(config.Keyboard.LEDMask);
+		snprintf(buf, sizeof(buf), "0x%lx", state.Keyboard.led_mask);
+		config.Keyboard.LEDMask = strndup(buf, sizeof(buf));
+
+		free(config.Keyboard.GlobalAutoRepeat);
+		snprintf(buf, sizeof(buf), "%s",
+			 state.Keyboard.global_auto_repeat ? _true : _false);
+		config.Keyboard.GlobalAutoRepeat = strndup(buf, sizeof(buf));
+		g_key_file_set_boolean(file, KFG_Keyboard,
+				       KFK_Keyboard_GlobalAutoRepeat,
+				       state.Keyboard.global_auto_repeat);
+
+		free(config.Keyboard.AutoRepeats);
+		for (i = 0, j = 0; i < 32; i++, j += 2)
+			snprintf(buf + j, sizeof(buf) - j, "%02X", state.Keyboard.auto_repeats[i]);
+		config.Keyboard.AutoRepeats = strndup(buf, sizeof(buf));
+	}
+
+	if (support.Pointer) {
+		XGetPointerControl(dpy, &state.Pointer.accel_numerator,
+				   &state.Pointer.accel_denominator, &state.Pointer.threshold);
+
+		if (options.debug) {
+			fputs("Pointer Control:\n", stderr);
+			fprintf(stderr, "\tacceleration-numerator: %d\n",
+				state.Pointer.accel_numerator);
+			fprintf(stderr, "\tacceleration-denominator: %d\n",
+				state.Pointer.accel_denominator);
+			fprintf(stderr, "\tthreshold: %d\n", state.Pointer.threshold);
+		}
+
+		free(config.Pointer.AccelerationDenominator);
+		snprintf(buf, sizeof(buf), "%d", state.Pointer.accel_denominator);
+		config.Pointer.AccelerationDenominator = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_Pointer,
+				       KFK_Pointer_AccelerationDenominator,
+				       state.Pointer.accel_denominator);
+
+		free(config.Pointer.AccelerationNumerator);
+		snprintf(buf, sizeof(buf), "%d", state.Pointer.accel_numerator);
+		config.Pointer.AccelerationNumerator = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_Pointer,
+				       KFK_Pointer_AccelerationNumerator,
+				       state.Pointer.accel_numerator);
+
+		free(config.Pointer.Threshold);
+		snprintf(buf, sizeof(buf), "%d", state.Pointer.threshold);
+		config.Pointer.Threshold = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_Pointer,
+				       KFK_Pointer_Threshold, state.Pointer.threshold);
+	}
+
+	if (support.ScreenSaver) {
+
+		XGetScreenSaver(dpy, &state.ScreenSaver.timeout, &state.ScreenSaver.interval,
+				&state.ScreenSaver.prefer_blanking,
+				&state.ScreenSaver.allow_exposures);
+
+		if (options.debug) {
+			fputs("Screen Saver:\n", stderr);
+			fprintf(stderr, "\ttimeout: %d seconds\n", state.ScreenSaver.timeout);
+			fprintf(stderr, "\tinterval: %d seconds\n", state.ScreenSaver.interval);
+			fputs("\tprefer-blanking: ", stderr);
+			switch (state.ScreenSaver.prefer_blanking) {
+			case DontPreferBlanking:
+				fputs("DontPreferBlanking\n", stderr);
+				break;
+			case PreferBlanking:
+				fputs("PreferBlanking\n", stderr);
+				break;
+			case DefaultBlanking:
+				fputs("DefaultBlanking\n", stderr);
+				break;
+			default:
+				fprintf(stderr, "(unknown) %d\n",
+					state.ScreenSaver.prefer_blanking);
+				break;
+			}
+			fputs("\tallow-exposures: ", stderr);
+			switch (state.ScreenSaver.allow_exposures) {
+			case DontAllowExposures:
+				fputs("DontAllowExposures\n", stderr);
+				break;
+			case AllowExposures:
+				fputs("AllowExposures\n", stderr);
+				break;
+			case DefaultExposures:
+				fputs("DefaultExposures\n", stderr);
+				break;
+			default:
+				fprintf(stderr, "(unknown) %d\n",
+					state.ScreenSaver.allow_exposures);
+				break;
+			}
+		}
+
+		free(config.ScreenSaver.Allowexposures);
+		switch (state.ScreenSaver.allow_exposures) {
+		case DontAllowExposures:
+			strncpy(buf, "DontAllowExposures", sizeof(buf));
+			break;
+		case AllowExposures:
+			strncpy(buf, "AllowExposures", sizeof(buf));
+			break;
+		case DefaultExposures:
+			strncpy(buf, "DefaultExposures", sizeof(buf));
+			break;
+		default:
+			snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.allow_exposures);
+			break;
+		}
+		config.ScreenSaver.Allowexposures = strndup(buf, sizeof(buf));
+		g_key_file_set_string(file, KFG_ScreenSaver, KFK_ScreenSaver_AllowExposures, buf);
+
+		free(config.ScreenSaver.Interval);
+		snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.interval);
+		config.ScreenSaver.Interval = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_ScreenSaver,
+				       KFK_ScreenSaver_Interval, state.ScreenSaver.interval);
+
+		free(config.ScreenSaver.Preferblanking);
+		switch (state.ScreenSaver.prefer_blanking) {
+		case DontPreferBlanking:
+			strncpy(buf, "DontPreferBlanking", sizeof(buf));
+			break;
+		case PreferBlanking:
+			strncpy(buf, "PreferBlanking", sizeof(buf));
+			break;
+		case DefaultBlanking:
+			strncpy(buf, "DefaultBlanking", sizeof(buf));
+			break;
+		default:
+			snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.prefer_blanking);
+			break;
+		}
+		config.ScreenSaver.Preferblanking = strndup(buf, sizeof(buf));
+		g_key_file_set_string(file, KFG_ScreenSaver, KFK_ScreenSaver_PreferBlanking, buf);
+
+		free(config.ScreenSaver.Timeout);
+		snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.timeout);
+		config.ScreenSaver.Timeout = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_ScreenSaver,
+				       KFK_ScreenSaver_Timeout, state.ScreenSaver.timeout);
+	}
+
+	if (support.DPMS) {
+		DPMSGetTimeouts(dpy, &state.DPMS.standby, &state.DPMS.suspend, &state.DPMS.off);
+		if (options.debug) {
+			fputs("DPMS:\n", stderr);
+			fprintf(stderr, "\tDPMS Version: %d.%d\n", state.DPMS.major_version,
+				state.DPMS.minor_version);
+			fputs("\tpower-level: ", stderr);
+			switch (state.DPMS.power_level) {
+			case DPMSModeOn:
+				fputs("DPMSModeOn\n", stderr);
+				break;
+			case DPMSModeStandby:
+				fputs("DPMSModeStandby\n", stderr);
+				break;
+			case DPMSModeSuspend:
+				fputs("DPMSModeSuspend\n", stderr);
+				break;
+			case DPMSModeOff:
+				fputs("DPMSModeOff\n", stderr);
+				break;
+			default:
+				fprintf(stderr, "%d (unknown)\n", state.DPMS.power_level);
+				break;
+			}
+			fprintf(stderr, "\tstate: %s\n", state.DPMS.state ? "True" : "False");
+			fprintf(stderr, "\tstandby-timeout: %hu seconds\n", state.DPMS.standby);
+			fprintf(stderr, "\tsuspend-timeout: %hu seconds\n", state.DPMS.suspend);
+			fprintf(stderr, "\toff-timeout: %hu seconds\n", state.DPMS.off);
+		}
+
+		free(config.DPMS.PowerLevel);
+		switch (state.DPMS.power_level) {
+		case DPMSModeOn:
+			strncpy(buf, "DPMSModeOn", sizeof(buf));
+			break;
+		case DPMSModeStandby:
+			strncpy(buf, "DPMSModeStandby", sizeof(buf));
+			break;
+		case DPMSModeSuspend:
+			strncpy(buf, "DPMSModeSuspend", sizeof(buf));
+			break;
+		case DPMSModeOff:
+			strncpy(buf, "DPMSModeOff", sizeof(buf));
+			break;
+		default:
+			snprintf(buf, sizeof(buf), "%d (unknown)", state.DPMS.power_level);
+			break;
+		}
+		config.DPMS.PowerLevel = strndup(buf, sizeof(buf));
+
+		free(config.DPMS.State);
+		snprintf(buf, sizeof(buf), "%s", state.DPMS.state ? "True" : "False");
+		config.DPMS.State = strndup(buf, sizeof(buf));
+
+		free(config.DPMS.StandbyTimeout);
+		snprintf(buf, sizeof(buf), "%hu", state.DPMS.standby);
+		config.DPMS.StandbyTimeout = strndup(buf, sizeof(buf));
+
+		free(config.DPMS.SuspendTimeout);
+		snprintf(buf, sizeof(buf), "%hu", state.DPMS.suspend);
+		config.DPMS.SuspendTimeout = strndup(buf, sizeof(buf));
+
+		free(config.DPMS.OffTimeout);
+		snprintf(buf, sizeof(buf), "%hu", state.DPMS.off);
+		config.DPMS.OffTimeout = strndup(buf, sizeof(buf));
+	}
+
+	if (support.XKeyboard) {
+#if 0
+		unsigned int which = XkbControlsMask;
+#endif
+
+		state.XKeyboard.desc = XkbGetKeyboard(dpy, XkbControlsMask, XkbUseCoreKbd);
+
+		free(config.XKeyboard.MouseKeysDfltBtn);
+		snprintf(buf, sizeof(buf), "%hhu", state.XKeyboard.desc->ctrls->mk_dflt_btn);
+		config.XKeyboard.MouseKeysDfltBtn = strdup(buf);
+
+		free(config.XKeyboard.RepeatKeysEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbRepeatKeysMask) ? _true : _false);
+		config.XKeyboard.RepeatKeysEnabled = strdup(buf);
+
+		free(config.XKeyboard.SlowKeysEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbSlowKeysMask) ? _true : _false);
+		config.XKeyboard.SlowKeysEnabled = strdup(buf);
+
+		free(config.XKeyboard.BounceKeysEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbBounceKeysMask) ? _true : _false);
+		config.XKeyboard.BounceKeysEnabled = strdup(buf);
+
+		free(config.XKeyboard.StickyKeysEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbStickyKeysMask) ? _true : _false);
+		config.XKeyboard.StickyKeysEnabled = strdup(buf);
+
+		free(config.XKeyboard.MouseKeysEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbMouseKeysMask) ? _true : _false);
+		config.XKeyboard.MouseKeysEnabled = strdup(buf);
+
+		free(config.XKeyboard.MouseKeysAccelEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbMouseKeysAccelMask) ? _true : _false);
+		config.XKeyboard.MouseKeysAccelEnabled = strdup(buf);
+
+		free(config.XKeyboard.AccessXKeysEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbAccessXKeysMask) ? _true : _false);
+		config.XKeyboard.AccessXKeysEnabled = strdup(buf);
+
+		free(config.XKeyboard.AccessXTimeoutMaskEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbAccessXTimeoutMask) ? _true : _false);
+		config.XKeyboard.AccessXTimeoutMaskEnabled = strdup(buf);
+
+		free(config.XKeyboard.AccessXFeedbackMaskEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbAccessXFeedbackMask) ? _true : _false);
+		config.XKeyboard.AccessXFeedbackMaskEnabled = strdup(buf);
+
+		free(config.XKeyboard.AudibleBellMaskEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbAudibleBellMask) ? _true : _false);
+		config.XKeyboard.AudibleBellMaskEnabled = strdup(buf);
+
+		free(config.XKeyboard.Overlay1MaskEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbOverlay1Mask) ? _true : _false);
+		config.XKeyboard.Overlay1MaskEnabled = strdup(buf);
+
+		free(config.XKeyboard.Overlay2MaskEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbOverlay2Mask) ? _true : _false);
+		config.XKeyboard.Overlay2MaskEnabled = strdup(buf);
+
+		free(config.XKeyboard.IgnoreGroupLockModsEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbIgnoreGroupLockMask) ? _true : _false);
+		config.XKeyboard.IgnoreGroupLockModsEnabled = strdup(buf);
+
+		free(config.XKeyboard.GroupsWrapEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbGroupsWrapMask) ? _true : _false);
+		config.XKeyboard.GroupsWrapEnabled = strdup(buf);
+
+		free(config.XKeyboard.InternalModsEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbInternalModsMask) ? _true : _false);
+		config.XKeyboard.InternalModsEnabled = strdup(buf);
+
+		free(config.XKeyboard.IgnoreLockModsEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbIgnoreLockModsMask) ? _true : _false);
+		config.XKeyboard.IgnoreLockModsEnabled = strdup(buf);
+
+		free(config.XKeyboard.PerKeyRepeatEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbPerKeyRepeatMask) ? _true : _false);
+		config.XKeyboard.PerKeyRepeatEnabled = strdup(buf);
+
+		free(config.XKeyboard.ControlsEnabledEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbControlsEnabledMask) ? _true : _false);
+		config.XKeyboard.ControlsEnabledEnabled = strdup(buf);
+
+		free(config.XKeyboard.AccessXOptionsEnabled);
+		strcpy(buf,
+		       (state.XKeyboard.desc->ctrls->
+			enabled_ctrls & XkbAccessXOptionsMask) ? _true : _false);
+		config.XKeyboard.AccessXOptionsEnabled = strdup(buf);
+
+		{
+			unsigned int repeat_delay, repeat_interval;
+
+			XkbGetAutoRepeatRate(dpy, XkbUseCoreKbd, &repeat_delay, &repeat_interval);
+
+			free(config.XKeyboard.RepeatDelay);
+			snprintf(buf, sizeof(buf), "%hu",
+				 state.XKeyboard.desc->ctrls->repeat_delay);
+			config.XKeyboard.RepeatDelay = strdup(buf);
+
+			free(config.XKeyboard.RepeatInterval);
+			free(config.XKeyboard.RepeatRate);
+			snprintf(buf, sizeof(buf), "%hu",
+				 state.XKeyboard.desc->ctrls->repeat_interval);
+			config.XKeyboard.RepeatInterval = strdup(buf);
+		}
+
+#if 0
+		{
+			int slow_keys_delay;
+
+			XkbGetSlowKeysDelay(dpy, XkbUseCoreKbd, &slow_keys_delay);
+
+			free(config.XKeyboard.SlowKeysDelay);
+			snprintf(buf, sizeof(buf), "%hu",
+				 state.XKeyboard.desc->ctrls->slow_keys_delay);
+			config.XKeyboard.SlowKeysDelay = strdup(buf);
+		}
+
+		{
+			int debounce_delay;
+
+			XkbGetBoundKeysDelay(dpy, XkbUseCoreKbd, &debounce_delay);
+
+			free(config.XKeyboard.DebounceDelay);
+			snprintf(buf, sizeof(buf), "%hu",
+				 state.XKeyboard.desc->ctrls->debounce_delay);
+			config.XKeyboard.DebounceDelay = strdup(buf);
+		}
+#endif
+
+		free(config.XKeyboard.MouseKeysDelay);
+		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_delay);
+		config.XKeyboard.MouseKeysDelay = strdup(buf);
+
+		free(config.XKeyboard.MouseKeysInterval);
+		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_interval);
+		config.XKeyboard.MouseKeysInterval = strdup(buf);
+
+		free(config.XKeyboard.MouseKeysTimeToMax);
+		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_time_to_max);
+		config.XKeyboard.MouseKeysTimeToMax = strdup(buf);
+
+		free(config.XKeyboard.MouseKeysMaxSpeed);
+		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_max_speed);
+		config.XKeyboard.MouseKeysMaxSpeed = strdup(buf);
+
+		free(config.XKeyboard.MouseKeysCurve);
+		snprintf(buf, sizeof(buf), "%hd", state.XKeyboard.desc->ctrls->mk_curve);
+		config.XKeyboard.MouseKeysCurve = strdup(buf);
+
+		static struct {
+			unsigned short mask;
+			char *name;
+		} axoptions[12] = {
+			{
+			XkbAX_SKPressFBMask, "SlowKeysPress"}, {
+			XkbAX_SKAcceptFBMask, "SlowKeysAccept"}, {
+			XkbAX_FeatureFBMask, "Feature"}, {
+			XkbAX_SlowWarnFBMask, "SlowWarn"}, {
+			XkbAX_IndicatorFBMask, "Indicator"}, {
+			XkbAX_StickyKeysFBMask, "StickyKeys"}, {
+			XkbAX_TwoKeysMask, "TwoKeys"}, {
+			XkbAX_LatchToLockMask, "LatchToLock"}, {
+			XkbAX_SKReleaseFBMask, "SlowKeysRelease"}, {
+			XkbAX_SKRejectFBMask, "SlowKeysReject"}, {
+			XkbAX_BKRejectFBMask, "BounceKeysReject"}, {
+			XkbAX_DumbBellFBMask, "DumbBell"}
+		};
+
+		free(config.XKeyboard.AccessXOptions);
+		for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
+			if (state.XKeyboard.desc->ctrls->ax_options & axoptions[i].mask) {
+				if (j++)
+					strncat(buf, ";", sizeof(buf) - 1);
+				strncat(buf, axoptions[i].name, sizeof(buf) - 1);
+			}
+		}
+		config.XKeyboard.AccessXOptions = strdup(buf);
+
+		/* XkbAX_SKPressFBMask */
+		/* XkbAX_SKAcceptFBMask */
+		/* XkbAX_FeatureFBMask */
+		/* XkbAX_SlowWarnFBMask */
+		/* XkbAX_IndicatorFBMask */
+		/* XkbAX_StickKeysFBMask */
+		/* XkbAX_TwoKeysMask */
+		/* XkbAX_LatchToLockMask */
+		/* XkbAX_SKReleaseFBMask */
+		/* XkbAX_SKRejectFBMask */
+		/* XkbAX_BKRejectFBMask */
+		/* XkbAX_DumbBellFBMask */
+
+		/* XkbAX_FBOptionsMask */
+		/* XkbAX_SKOptionsMask */
+		/* XkbAX_AllOptiosMask */
+
+		{
+#if 0
+			int ax_timeout, axt_ctrls_mask, axt_ctrls_values, axt_opts_mask,
+			    axt_opts_values;
+
+			XkbGetAccessXTimeout(dpy, XkbUseCoreKbd, &ax_timeout, &axt_ctrls_mask,
+					     &axt_ctrls_values, &axt_opts_mask, &axt_opts_values);
+#endif
+
+			free(config.XKeyboard.AccessXTimeout);
+			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->ax_timeout);
+			config.XKeyboard.AccessXTimeout = strdup(buf);
+
+			free(config.XKeyboard.AccessXTimeoutOptionsMask);
+			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
+				if (state.XKeyboard.desc->ctrls->axt_opts_mask & axoptions[i].mask) {
+					if (j++)
+						strncat(buf, ";", sizeof(buf) - 1);
+					strncat(buf, axoptions[i].name, sizeof(buf) - 1);
+				}
+
+			}
+			config.XKeyboard.AccessXTimeoutOptionsMask = strdup(buf);
+
+			free(config.XKeyboard.AccessXTimeoutOptionsValues);
+			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
+				if (state.XKeyboard.desc->ctrls->axt_opts_values & axoptions[i].
+				    mask) {
+					if (j++)
+						strncat(buf, ";", sizeof(buf) - 1);
+					strncat(buf, axoptions[i].name, sizeof(buf) - 1);
+				}
+
+			}
+			config.XKeyboard.AccessXTimeoutOptionsValues = strdup(buf);
+
+			free(config.XKeyboard.AccessXTimeoutMask);
+			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
+				if (state.XKeyboard.desc->ctrls->axt_ctrls_mask & axoptions[i].mask) {
+					if (j++)
+						strncat(buf, ";", sizeof(buf) - 1);
+					strncat(buf, axoptions[i].name, sizeof(buf) - 1);
+				}
+
+			}
+			config.XKeyboard.AccessXTimeoutMask = strdup(buf);
+
+			free(config.XKeyboard.AccessXTimeoutValues);
+			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
+				if (state.XKeyboard.desc->ctrls->axt_ctrls_values & axoptions[i].
+				    mask) {
+					if (j++)
+						strncat(buf, ";", sizeof(buf) - 1);
+					strncat(buf, axoptions[i].name, sizeof(buf) - 1);
+				}
+
+			}
+			config.XKeyboard.AccessXTimeoutValues = strdup(buf);
+		}
+	}
+	if (support.XF86Misc) {
+		XF86MiscGetKbdSettings(dpy, &state.XF86Misc.keyboard);
+
+		free(config.XF86Misc.KeyboardRate);
+		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.keyboard.rate);
+		config.XF86Misc.KeyboardRate = strdup(buf);
+
+		free(config.XF86Misc.KeyboardDelay);
+		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.keyboard.delay);
+		config.XF86Misc.KeyboardDelay = strdup(buf);
+
+		XF86MiscGetMouseSettings(dpy, &state.XF86Misc.mouse);
+
+		free(config.XF86Misc.MouseEmulate3Buttons);
+		snprintf(buf, sizeof(buf), "%s",
+			 state.XF86Misc.mouse.emulate3buttons ? _true : _false);
+		config.XF86Misc.MouseEmulate3Buttons = strdup(buf);
+
+		free(config.XF86Misc.MouseEmulate3Timeout);
+		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.mouse.emulate3timeout);
+		config.XF86Misc.MouseEmulate3Timeout = strdup(buf);
+
+		free(config.XF86Misc.MouseChordMiddle);
+		snprintf(buf, sizeof(buf), "%s", state.XF86Misc.mouse.chordmiddle ? _true : _false);
+		config.XF86Misc.MouseChordMiddle = strdup(buf);
+	}
+}
+
 /** @brief read input settings
   * 
   * Read the input settings from the configuration file.  Simple and direct.
@@ -1061,22 +1135,6 @@ void
 set_input(const char *filename)
 {
 	read_input(filename);
-	if (g_key_file_has_group(file, KFG_Pointer) && support.Pointer) {
-		Bool do_accel, do_threshold;
-		int accel_numerator, accel_denominator, threshold;
-
-		accel_denominator =
-		    g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationDenominator,
-					   NULL);
-		accel_numerator =
-		    g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationNumerator,
-					   NULL);
-		threshold = g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_Threshold, NULL);
-		do_accel = (accel_denominator && accel_numerator) ? True : False;
-		do_threshold = threshold ? True : False;
-		XChangePointerControl(dpy, do_accel, do_threshold, accel_numerator,
-				      accel_denominator, threshold);
-	}
 	if (g_key_file_has_group(file, KFG_Keyboard) && support.Keyboard) {
 		XKeyboardControl kbd = { 0, };
 		unsigned long value_mask = 0;
@@ -1100,6 +1158,22 @@ set_input(const char *filename)
 			value_mask |= KBAutoRepeatMode;
 		if (value_mask)
 			XChangeKeyboardControl(dpy, value_mask, &kbd);
+	}
+	if (g_key_file_has_group(file, KFG_Pointer) && support.Pointer) {
+		Bool do_accel, do_threshold;
+		int accel_numerator, accel_denominator, threshold;
+
+		accel_denominator =
+		    g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationDenominator,
+					   NULL);
+		accel_numerator =
+		    g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationNumerator,
+					   NULL);
+		threshold = g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_Threshold, NULL);
+		do_accel = (accel_denominator && accel_numerator) ? True : False;
+		do_threshold = threshold ? True : False;
+		XChangePointerControl(dpy, do_accel, do_threshold, accel_numerator,
+				      accel_denominator, threshold);
 	}
 	if (g_key_file_has_group(file, KFG_XKeyboard) && support.XKeyboard) {
 	}
@@ -1257,6 +1331,12 @@ static gchar *
 format_value_percent(GtkScale *scale, gdouble value, gpointer user_data)
 {
 	return g_strdup_printf("%0.*g%%", gtk_scale_get_digits(scale), value);
+}
+
+static char *
+format_value_hertz(GtkScale *scale, gdouble value, gpointer user_data)
+{
+	return g_strdup_printf("%0.*g Hz", gtk_scale_get_digits(scale), value);
 }
 
 static void
@@ -1787,6 +1867,70 @@ activate_off_clicked(GtkButton *button, gpointer user_data)
 	DPMSForceLevel(dpy, DPMSModeOff);
 }
 
+static void
+keyboard_rate_value_changed(GtkRange *range, gpointer user_data)
+{
+	gdouble value = gtk_range_get_value(range);
+	int val = round(value);
+	if (val != state.XF86Misc.keyboard.rate) {
+		state.XF86Misc.keyboard.rate = val;
+		XF86MiscSetKbdSettings(dpy, &state.XF86Misc.keyboard);
+	}
+	reprocess_input();
+}
+
+static void
+keyboard_delay_value_changed(GtkRange *range, gpointer user_data)
+{
+	gdouble value = gtk_range_get_value(range);
+	int val = round(value);
+
+	if (val != state.XF86Misc.keyboard.delay) {
+		state.XF86Misc.keyboard.delay = val;
+		XF86MiscSetKbdSettings(dpy, &state.XF86Misc.keyboard);
+	}
+	reprocess_input();
+}
+
+static void
+emulate_3_buttons_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	if (active) {
+		state.XF86Misc.mouse.emulate3buttons = True;
+	} else {
+		state.XF86Misc.mouse.emulate3buttons = False;
+	}
+	XF86MiscSetMouseSettings(dpy, &state.XF86Misc.mouse);
+	reprocess_input();
+}
+
+static void
+emulate_3_timeout_value_changed(GtkRange *range, gpointer user_data)
+{
+	gdouble value = gtk_range_get_value(range);
+	int val = round(value);
+
+	if (val != state.XF86Misc.mouse.emulate3timeout) {
+		state.XF86Misc.mouse.emulate3timeout = val;
+		XF86MiscSetMouseSettings(dpy, &state.XF86Misc.mouse);
+	}
+	reprocess_input();
+}
+
+static void
+chord_middle_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+	if (active) {
+		state.XF86Misc.mouse.chordmiddle = True;
+	} else {
+		state.XF86Misc.mouse.chordmiddle = False;
+	}
+	XF86MiscSetMouseSettings(dpy, &state.XF86Misc.mouse);
+	reprocess_input();
+}
+
 
 
 GtkWindow *
@@ -2308,6 +2452,83 @@ monitor will be turned off.  A typical value is\n\
 1800 seconds.");
 		g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(off_timeout_value_changed), NULL);
 		controls.DPMS.OffTimeout = h;
+	}
+	if (support.XF86Misc) {
+		v = gtk_vbox_new(FALSE, 5);
+		gtk_container_set_border_width(GTK_CONTAINER(v), 5);
+		l = gtk_label_new("Miscellaneous");
+		gtk_notebook_append_page(GTK_NOTEBOOK(n), v, l);
+
+		f = gtk_frame_new("Keyboard");
+		gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+		q = gtk_vbox_new(FALSE, 0);
+		gtk_container_add(GTK_CONTAINER(f), q);
+
+		f = gtk_frame_new("Rate");
+		gtk_box_pack_start(GTK_BOX(q), f, FALSE, FALSE, 0);
+		h = gtk_hscale_new_with_range(0.0, 1000.0, 1.0);
+		gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+		g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_hertz), NULL);
+		gtk_container_add(GTK_CONTAINER(f), h);
+		gtk_widget_set_tooltip_markup(h, "\
+Set the number of key repeats per second.  Usable\n\
+values are between 0 and 300.");
+		g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(keyboard_rate_value_changed), NULL);
+		controls.XF86Misc.KeyboardRate = h;
+
+		f = gtk_frame_new("Delay");
+		gtk_box_pack_start(GTK_BOX(q), f, FALSE, FALSE, 0);
+		h = gtk_hscale_new_with_range(0.0, 2000.0, 10.0);
+		gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+		g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+		gtk_container_add(GTK_CONTAINER(f), h);
+		gtk_widget_set_tooltip_markup(h, "\
+Specifies the delay in milliseconds after a key is\n\
+pressed before the key starts repeating.  Usable\n\
+values are between 10 and 500 milliseconds.");
+		g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(keyboard_delay_value_changed), NULL);
+		controls.XF86Misc.KeyboardDelay = h;
+
+		f = gtk_frame_new("Mouse");
+		gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
+		q = gtk_vbox_new(FALSE, 0);
+		gtk_container_add(GTK_CONTAINER(f), q);
+
+		f = gtk_frame_new(NULL);
+		gtk_box_pack_start(GTK_BOX(q), f, FALSE, FALSE, 0);
+		u = gtk_check_button_new_with_label("Emulate 3 Buttons");
+		gtk_container_add(GTK_CONTAINER(f), u);
+		gtk_widget_set_tooltip_markup(u, "\
+When enabled, emulate a 3-button mouse by clicking buttons\n\
+1 and 3 at about the same time; otherwise, no emulation is\n\
+performed.");
+		g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(emulate_3_buttons_toggled), NULL);
+		controls.XF86Misc.MouseEmulate3Buttons = u;
+
+		f = gtk_frame_new("Emulate 3 Buttons Timeout");
+		gtk_box_pack_start(GTK_BOX(q), f, FALSE, FALSE, 0);
+		h = gtk_hscale_new_with_range(0.0, 2000.0, 10.0);
+		gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+		g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_milliseconds), NULL);
+		gtk_container_add(GTK_CONTAINER(f), h);
+		gtk_widget_set_tooltip_markup(h, "\
+Specifies the delay after button 1 or 3 is pressed after\n\
+which the button presses will be considered independent\n\
+and not a 3-button emulation.  Usable values are from\n\
+10 to 200 milliseconds.");
+		g_signal_connect(G_OBJECT(h), "value-changed", G_CALLBACK(emulate_3_timeout_value_changed), NULL);
+		controls.XF86Misc.MouseEmulate3Timeout = h;
+
+		f = gtk_frame_new(NULL);
+		gtk_box_pack_start(GTK_BOX(q), f, FALSE, FALSE, 0);
+		u = gtk_check_button_new_with_label("Chord Middle");
+		gtk_container_add(GTK_CONTAINER(f), u);
+		gtk_widget_set_tooltip_markup(u, "\
+When enabled, treat buttons 1 and 3 pressed at the same\n\
+time as button 2; otherwise, buttons 1 and 3 are\n\
+considered independent.");
+		g_signal_connect(G_OBJECT(u), "toggled", G_CALLBACK(chord_middle_toggled), NULL);
+		controls.XF86Misc.MouseChordMiddle = u;
 	}
 
 	return (w);
