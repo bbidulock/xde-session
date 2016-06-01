@@ -94,6 +94,7 @@
 #endif
 #include <X11/extensions/scrnsaver.h>
 #include <X11/extensions/dpms.h>
+#include <X11/extensions/xf86misc.h>
 #include <X11/XKBlib.h>
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
@@ -148,6 +149,7 @@ typedef struct {
 	Bool ScreenSaver;   /* support for extension ScreenSaver */
 	Bool DPMS;	    /* support for extension DPMS */
 	Bool XKeyboard;	    /* support for extension XKEYBOARD */
+	Bool XF86Misc;	    /* support for extension XF86MISC */
 } Support;
 
 Support support;
@@ -159,6 +161,14 @@ typedef struct {
 		int accel_denominator;
 		int threshold;
 	} Pointer;
+	struct {
+		int opcode;
+		int event;
+		int error;
+		int major_version;
+		int minor_version;
+		XkbDescPtr desc;
+	} XKeyboard;
 	struct {
 		int event; /* event base */
 		int error; /* error base */
@@ -182,13 +192,13 @@ typedef struct {
 		CARD16 off;
 	} DPMS;
 	struct {
-		int opcode;
-		int event;
-		int error;
+		int event; /* event base */
+		int error; /* error base */
 		int major_version;
 		int minor_version;
-		XkbDescPtr desc;
-	} XKeyboard;
+		XF86MiscMouseSettings mouse;
+		XF86MiscKbdSettings keyboard;
+	} XF86Misc;
 } State;
 
 State state;
@@ -260,6 +270,13 @@ typedef struct {
 		char *SlowKeysEnabled;
 		char *StickyKeysEnabled;
 	} XKeyboard;
+	struct {
+		char *KeyboardRate;
+		char *KeyboardDelay;
+		char *MouseEmulate3Buttons;
+		char *MouseEmulate3Timeout;
+		char *MouseChordMiddle;
+	} XF86Misc;
 } Config;
 
 Config config;
@@ -309,6 +326,13 @@ typedef struct {
 		GtkWidget *MouseKeysMaxSpeed;
 		GtkWidget *MouseKeysCurve;
 	} XKeyboard;
+	struct {
+		GtkWidget *KeyboardRate;
+		GtkWidget *KeyboardDelay;
+		GtkWidget *MouseEmulate3Buttons;
+		GtkWidget *MouseEmulate3Timeout;
+		GtkWidget *MouseChordMiddle;
+	} XF86Misc;
 } Controls;
 
 Controls controls;
@@ -911,6 +935,34 @@ get_input()
 			config.XKeyboard.AccessXTimeoutValues = strdup(buf);
 		}
 	}
+	if (support.XF86Misc) {
+		static const char *_true = "true";
+		static const char *_false = "false";
+
+		XF86MiscGetKbdSettings(dpy, &state.XF86Misc.keyboard);
+
+		free(config.XF86Misc.KeyboardRate);
+		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.keyboard.rate);
+		config.XF86Misc.KeyboardRate = strdup(buf);
+
+		free(config.XF86Misc.KeyboardDelay);
+		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.keyboard.delay);
+		config.XF86Misc.KeyboardDelay = strdup(buf);
+
+		XF86MiscGetMouseSettings(dpy, &state.XF86Misc.mouse);
+
+		free(config.XF86Misc.MouseEmulate3Buttons);
+		snprintf(buf, sizeof(buf), "%s", state.XF86Misc.mouse.emulate3buttons ? _true : _false);
+		config.XF86Misc.MouseEmulate3Buttons = strdup(buf);
+
+		free(config.XF86Misc.MouseEmulate3Timeout);
+		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.mouse.emulate3timeout);
+		config.XF86Misc.MouseEmulate3Timeout = strdup(buf);
+
+		free(config.XF86Misc.MouseChordMiddle);
+		snprintf(buf, sizeof(buf), "%s", state.XF86Misc.mouse.chordmiddle ? _true : _false);
+		config.XF86Misc.MouseChordMiddle = strdup(buf);
+	}
 }
 
 static const char *KFG_Pointer = "Pointer";
@@ -1097,17 +1149,28 @@ startup()
 {
 	Window window = None;
 
-	support.Keyboard = True;	/* core protocol */
-	support.Pointer = True;	/* core protocol */
+	support.Keyboard = True;
+	DPRINTF("Keyboard: core protocol support\n");
+	support.Pointer = True;
+	DPRINTF("Pointer: core protocol support\n");
 	if (XkbQueryExtension(dpy, &state.XKeyboard.opcode, &state.XKeyboard.event,
 			      &state.XKeyboard.error, &state.XKeyboard.major_version,
 			      &state.XKeyboard.minor_version)) {
 		support.XKeyboard = True;
+		DPRINTF("XKeyboard: opcode=%d, event=%d, error=%d, major=%d, minor=%d\n",
+			state.XKeyboard.opcode, state.XKeyboard.event, state.XKeyboard.error,
+			state.XKeyboard.major_version, state.XKeyboard.minor_version);
+	} else {
+		support.XKeyboard = False;
+		DPRINTF("XKeyboard: not supported\n");
 	}
 	if (XScreenSaverQueryExtension(dpy, &state.ScreenSaver.event, &state.ScreenSaver.error) &&
 	    XScreenSaverQueryVersion(dpy, &state.ScreenSaver.major_version,
 				     &state.ScreenSaver.minor_version)) {
 		support.ScreenSaver = True;
+		DPRINTF("ScreenSaver: event=%d, error=%d, major=%d, minor=%d\n",
+			state.ScreenSaver.event, state.ScreenSaver.error,
+			state.ScreenSaver.major_version, state.ScreenSaver.minor_version);
 		XScreenSaverQueryInfo(dpy, window, &state.ScreenSaver.info);
 		if (options.debug) {
 			fputs("Screen Saver:\n", stderr);
@@ -1151,10 +1214,30 @@ startup()
 				fputs("CycleMask", stderr);
 			fputs("\n", stderr);
 		}
+	} else {
+		support.ScreenSaver = False;
+		DPRINTF("ScreenSaver: not supported\n");
 	}
 	if (DPMSQueryExtension(dpy, &state.DPMS.event, &state.DPMS.error) &&
 	    DPMSGetVersion(dpy, &state.DPMS.major_version, &state.DPMS.minor_version)) {
 		support.DPMS = True;
+		DPRINTF("DPMS: event=%d, error=%d, major=%d, minor=%d\n",
+			state.DPMS.event, state.DPMS.error, state.DPMS.major_version,
+			state.DPMS.minor_version);
+	} else {
+		support.DPMS = False;
+		DPRINTF("DPMS: not supported\n");
+	}
+	if (XF86MiscQueryExtension(dpy, &state.XF86Misc.event, &state.XF86Misc.error) &&
+	    XF86MiscQueryVersion(dpy, &state.XF86Misc.major_version,
+				 &state.XF86Misc.minor_version)) {
+		support.XF86Misc = True;
+		DPRINTF("XF86Misc: event=%d, error=%d, major=%d, minor=%d\n",
+			state.XF86Misc.event, state.XF86Misc.error, state.XF86Misc.major_version,
+			state.XF86Misc.minor_version);
+	} else {
+		support.XF86Misc = False;
+		DPRINTF("XF86Misc: not supported\n");
 	}
 }
 
