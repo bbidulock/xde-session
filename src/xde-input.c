@@ -356,42 +356,43 @@ static const char *KFK_Keyboard_GlobalAutoRepeat = "GlobalAutoRepeat";
 static const char *KFK_Keyboard_KeyClickPercent = "KeyClickPercent";
 const char *KFK_Keyboard_LEDMask = "LEDMask";
 
-const char *KFK_XKeyboard_AccessXFeedbackMaskEnabled = "AccessXFeedbackMaskEnabled";
-const char *KFK_XKeyboard_AccessXKeysEnabled = "AccessXKeysEnabled";
-const char *KFK_XKeyboard_AccessXOptions = "AccessXOptions";
-const char *KFK_XKeyboard_AccessXTimeout = "AccessXTimeout";
-const char *KFK_XKeyboard_AccessXTimeoutMask = "AccessXTimeoutMask";
-const char *KFK_XKeyboard_AccessXTimeoutMaskEnabled = "AccessXTimeoutMaskEnabled";
-const char *KFK_XKeyboard_AccessXTimeoutOptionsMask = "AccessXTimeoutOptionsMask";
-const char *KFK_XKeyboard_AccessXTimeoutOptionsValues = "AccessXTimeoutOptionsValues";
-const char *KFK_XKeyboard_AccessXTimeoutValues = "AccessXTimeoutValues";
-const char *KFK_XKeyboard_AudibleBellMaskEnabled = "AudibleBellMaskEnabled";
-const char *KFK_XKeyboard_BounceKeysEnabled = "BounceKeysEnabled";
-const char *KFK_XKeyboard_ControlsEnabledEnabled = "ControlsEnabledEnabled";
-const char *KFK_XKeyboard_DebounceDelay = "DebounceDelay";
-const char *KFK_XKeyboard_GroupsWrapEnabled = "GroupsWrapEnabled";
-const char *KFK_XKeyboard_IgnoreGroupLockMaskEnabled = "IgnoreGroupLockMaskEnabled";
-const char *KFK_XKeyboard_IgnoreLockModsEnabled = "IgnoreLockModsEnabled";
-const char *KFK_XKeyboard_InternalModsEnabled = "InternalModsEnabled";
-const char *KFK_XKeyboard_MouseKeysAccelEnabled = "MouseKeysAccelEnabled";
-const char *KFK_XKeyboard_MouseKeysCurve = "MouseKeysCurve";
-const char *KFK_XKeyboard_MouseKeysDelay = "MouseKeysDelay";
-const char *KFK_XKeyboard_MouseKeysDfltBtn = "MouseKeysDfltBtn";
-const char *KFK_XKeyboard_MouseKeysEnabled = "MouseKeysEnabled";
-const char *KFK_XKeyboard_MouseKeysInterval = "MouseKeysInterval";
-const char *KFK_XKeyboard_MouseKeysMaxSpeed = "MouseKeysMaxSpeed";
-const char *KFK_XKeyboard_MouseKeysTimeToMax = "MouseKeysTimeToMax";
-const char *KFK_XKeyboard_Overlay1MaskEnabled = "Overlay1MaskEnabled";
-const char *KFK_XKeyboard_Overlay2MaskENabled = "Overlay2MaskENabled";
+static const char *KFK_XKeyboard_AccessXFeedbackMaskEnabled = "AccessXFeedbackMaskEnabled";
+static const char *KFK_XKeyboard_AccessXKeysEnabled = "AccessXKeysEnabled";
+static const char *KFK_XKeyboard_AccessXOptions = "AccessXOptions";
+static const char *KFK_XKeyboard_AccessXOptionsEnabled = "AccessXOptionsEnabled";
+static const char *KFK_XKeyboard_AccessXTimeout = "AccessXTimeout";
+static const char *KFK_XKeyboard_AccessXTimeoutMask = "AccessXTimeoutMask";
+static const char *KFK_XKeyboard_AccessXTimeoutMaskEnabled = "AccessXTimeoutMaskEnabled";
+static const char *KFK_XKeyboard_AccessXTimeoutOptionsMask = "AccessXTimeoutOptionsMask";
+static const char *KFK_XKeyboard_AccessXTimeoutOptionsValues = "AccessXTimeoutOptionsValues";
+static const char *KFK_XKeyboard_AccessXTimeoutValues = "AccessXTimeoutValues";
+static const char *KFK_XKeyboard_AudibleBellMaskEnabled = "AudibleBellMaskEnabled";
+static const char *KFK_XKeyboard_BounceKeysEnabled = "BounceKeysEnabled";
+static const char *KFK_XKeyboard_ControlsEnabledEnabled = "ControlsEnabledEnabled";
+static const char *KFK_XKeyboard_DebounceDelay = "DebounceDelay";
+static const char *KFK_XKeyboard_GroupsWrapEnabled = "GroupsWrapEnabled";
+static const char *KFK_XKeyboard_IgnoreGroupLockModsEnabled = "IgnoreGroupLockModsEnabled";
+static const char *KFK_XKeyboard_IgnoreLockModsEnabled = "IgnoreLockModsEnabled";
+static const char *KFK_XKeyboard_InternalModsEnabled = "InternalModsEnabled";
+static const char *KFK_XKeyboard_MouseKeysAccelEnabled = "MouseKeysAccelEnabled";
+static const char *KFK_XKeyboard_MouseKeysCurve = "MouseKeysCurve";
+static const char *KFK_XKeyboard_MouseKeysDelay = "MouseKeysDelay";
+static const char *KFK_XKeyboard_MouseKeysDfltBtn = "MouseKeysDfltBtn";
+static const char *KFK_XKeyboard_MouseKeysEnabled = "MouseKeysEnabled";
+static const char *KFK_XKeyboard_MouseKeysInterval = "MouseKeysInterval";
+static const char *KFK_XKeyboard_MouseKeysMaxSpeed = "MouseKeysMaxSpeed";
+static const char *KFK_XKeyboard_MouseKeysTimeToMax = "MouseKeysTimeToMax";
+static const char *KFK_XKeyboard_Overlay1MaskEnabled = "Overlay1MaskEnabled";
+static const char *KFK_XKeyboard_Overlay2MaskEnabled = "Overlay2MaskENabled";
+static const char *KFK_XKeyboard_PerKeyRepeatEnabled = "PerKeyRepeatEnabled";
 const char *KFK_XKeyboard_PerKeyRepeat = "PerKeyRepeat";
-const char *KFK_XKeyboard_PerKeyRepeatEnabled = "PerKeyRepeatEnabled";
-const char *KFK_XKeyboard_RepeatDelay = "RepeatDelay";
-const char *KFK_XKeyboard_RepeatInterval = "RepeatInterval";
-const char *KFK_XKeyboard_RepeatKeysEnabled = "RepeatKeysEnabled";
+static const char *KFK_XKeyboard_RepeatDelay = "RepeatDelay";
+static const char *KFK_XKeyboard_RepeatInterval = "RepeatInterval";
+static const char *KFK_XKeyboard_RepeatKeysEnabled = "RepeatKeysEnabled";
 const char *KFK_XKeyboard_RepeatRate = "RepeatRate";
-const char *KFK_XKeyboard_SlowKeysDelay = "SlowKeysDelay";
-const char *KFK_XKeyboard_SlowKeysEnabled = "SlowKeysEnabled";
-const char *KFK_XKeyboard_StickyKeysEnabled = "StickyKeysEnabled";
+static const char *KFK_XKeyboard_SlowKeysDelay = "SlowKeysDelay";
+static const char *KFK_XKeyboard_SlowKeysEnabled = "SlowKeysEnabled";
+static const char *KFK_XKeyboard_StickyKeysEnabled = "StickyKeysEnabled";
 
 static const char *KFK_ScreenSaver_AllowExposures = "AllowExposures";
 static const char *KFK_ScreenSaver_Interval = "Interval";
@@ -576,6 +577,7 @@ get_input()
 		free(config.Keyboard.LEDMask);
 		snprintf(buf, sizeof(buf), "0x%lx", state.Keyboard.led_mask);
 		config.Keyboard.LEDMask = strndup(buf, sizeof(buf));
+		g_key_file_set_string(file, KFG_Keyboard, KFK_Keyboard_LEDMask, buf);
 
 		free(config.Keyboard.GlobalAutoRepeat);
 		snprintf(buf, sizeof(buf), "%s",
@@ -589,6 +591,7 @@ get_input()
 		for (i = 0, j = 0; i < 32; i++, j += 2)
 			snprintf(buf + j, sizeof(buf) - j, "%02X", state.Keyboard.auto_repeats[i]);
 		config.Keyboard.AutoRepeats = strndup(buf, sizeof(buf));
+		g_key_file_set_string(file, KFG_Keyboard, KFK_Keyboard_AutoRepeats, buf);
 	}
 
 	if (support.Pointer) {
@@ -767,22 +770,28 @@ get_input()
 			break;
 		}
 		config.DPMS.PowerLevel = strndup(buf, sizeof(buf));
+		g_key_file_set_string(file, KFG_DPMS, KFK_DPMS_PowerLevel, buf);
 
 		free(config.DPMS.State);
-		snprintf(buf, sizeof(buf), "%s", state.DPMS.state ? "True" : "False");
+		snprintf(buf, sizeof(buf), "%s", state.DPMS.state ? "true" : "false");
 		config.DPMS.State = strndup(buf, sizeof(buf));
+		g_key_file_set_boolean(file, KFG_DPMS, KFK_DPMS_State,
+				       state.DPMS.state ? TRUE : FALSE);
 
 		free(config.DPMS.StandbyTimeout);
 		snprintf(buf, sizeof(buf), "%hu", state.DPMS.standby);
 		config.DPMS.StandbyTimeout = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_StandbyTimeout, state.DPMS.standby);
 
 		free(config.DPMS.SuspendTimeout);
 		snprintf(buf, sizeof(buf), "%hu", state.DPMS.suspend);
 		config.DPMS.SuspendTimeout = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_SuspendTimeout, state.DPMS.suspend);
 
 		free(config.DPMS.OffTimeout);
 		snprintf(buf, sizeof(buf), "%hu", state.DPMS.off);
 		config.DPMS.OffTimeout = strndup(buf, sizeof(buf));
+		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_OffTimeout, state.DPMS.off);
 	}
 
 	if (support.XKeyboard) {
@@ -795,120 +804,199 @@ get_input()
 		free(config.XKeyboard.MouseKeysDfltBtn);
 		snprintf(buf, sizeof(buf), "%hhu", state.XKeyboard.desc->ctrls->mk_dflt_btn);
 		config.XKeyboard.MouseKeysDfltBtn = strdup(buf);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysDfltBtn,
+				       state.XKeyboard.desc->ctrls->mk_dflt_btn);
 
 		free(config.XKeyboard.RepeatKeysEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbRepeatKeysMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbRepeatKeysMask) ? _true : _false);
 		config.XKeyboard.RepeatKeysEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_RepeatKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbRepeatKeysMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.SlowKeysEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbSlowKeysMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbSlowKeysMask) ? _true : _false);
 		config.XKeyboard.SlowKeysEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_SlowKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbSlowKeysMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.BounceKeysEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbBounceKeysMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbBounceKeysMask) ? _true : _false);
 		config.XKeyboard.BounceKeysEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_BounceKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbBounceKeysMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.StickyKeysEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbStickyKeysMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbStickyKeysMask) ? _true : _false);
 		config.XKeyboard.StickyKeysEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_StickyKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbStickyKeysMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.MouseKeysEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbMouseKeysMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbMouseKeysMask) ? _true : _false);
 		config.XKeyboard.MouseKeysEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbMouseKeysMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.MouseKeysAccelEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbMouseKeysAccelMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbMouseKeysAccelMask) ? _true : _false);
 		config.XKeyboard.MouseKeysAccelEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysAccelEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbMouseKeysAccelMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.AccessXKeysEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbAccessXKeysMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbAccessXKeysMask) ? _true : _false);
 		config.XKeyboard.AccessXKeysEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AccessXKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAccessXKeysMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.AccessXTimeoutMaskEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbAccessXTimeoutMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbAccessXTimeoutMask) ? _true : _false);
 		config.XKeyboard.AccessXTimeoutMaskEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AccessXTimeoutMaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAccessXTimeoutMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.AccessXFeedbackMaskEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbAccessXFeedbackMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbAccessXFeedbackMask) ? _true : _false);
 		config.XKeyboard.AccessXFeedbackMaskEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AccessXFeedbackMaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAccessXFeedbackMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.AudibleBellMaskEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbAudibleBellMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbAudibleBellMask) ? _true : _false);
 		config.XKeyboard.AudibleBellMaskEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AudibleBellMaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAudibleBellMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.Overlay1MaskEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbOverlay1Mask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbOverlay1Mask) ? _true : _false);
 		config.XKeyboard.Overlay1MaskEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_Overlay1MaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbOverlay1Mask ? TRUE : FALSE);
 
 		free(config.XKeyboard.Overlay2MaskEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbOverlay2Mask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbOverlay2Mask) ? _true : _false);
 		config.XKeyboard.Overlay2MaskEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_Overlay2MaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbOverlay2Mask ? TRUE : FALSE);
 
 		free(config.XKeyboard.IgnoreGroupLockModsEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbIgnoreGroupLockMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbIgnoreGroupLockMask) ? _true : _false);
 		config.XKeyboard.IgnoreGroupLockModsEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_IgnoreGroupLockModsEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbIgnoreGroupLockMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.GroupsWrapEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbGroupsWrapMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbGroupsWrapMask) ? _true : _false);
 		config.XKeyboard.GroupsWrapEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_GroupsWrapEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbGroupsWrapMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.InternalModsEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbInternalModsMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbInternalModsMask) ? _true : _false);
 		config.XKeyboard.InternalModsEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_InternalModsEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbInternalModsMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.IgnoreLockModsEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbIgnoreLockModsMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbIgnoreLockModsMask) ? _true : _false);
 		config.XKeyboard.IgnoreLockModsEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_IgnoreLockModsEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbIgnoreLockModsMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.PerKeyRepeatEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbPerKeyRepeatMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbPerKeyRepeatMask) ? _true : _false);
 		config.XKeyboard.PerKeyRepeatEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_PerKeyRepeatEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbPerKeyRepeatMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.ControlsEnabledEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbControlsEnabledMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbControlsEnabledMask) ? _true : _false);
 		config.XKeyboard.ControlsEnabledEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_ControlsEnabledEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbControlsEnabledMask ? TRUE : FALSE);
 
 		free(config.XKeyboard.AccessXOptionsEnabled);
 		strcpy(buf,
-		       (state.XKeyboard.desc->ctrls->
-			enabled_ctrls & XkbAccessXOptionsMask) ? _true : _false);
+		       (state.XKeyboard.desc->
+			ctrls->enabled_ctrls & XkbAccessXOptionsMask) ? _true : _false);
 		config.XKeyboard.AccessXOptionsEnabled = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AccessXOptionsEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAccessXOptionsMask ? TRUE : FALSE);
 
 		{
 			unsigned int repeat_delay, repeat_interval;
@@ -954,22 +1042,37 @@ get_input()
 		free(config.XKeyboard.MouseKeysDelay);
 		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_delay);
 		config.XKeyboard.MouseKeysDelay = strdup(buf);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysDelay,
+				       state.XKeyboard.desc->ctrls->mk_delay);
 
 		free(config.XKeyboard.MouseKeysInterval);
 		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_interval);
 		config.XKeyboard.MouseKeysInterval = strdup(buf);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysInterval,
+				       state.XKeyboard.desc->ctrls->mk_interval);
 
 		free(config.XKeyboard.MouseKeysTimeToMax);
 		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_time_to_max);
 		config.XKeyboard.MouseKeysTimeToMax = strdup(buf);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysTimeToMax,
+				       state.XKeyboard.desc->ctrls->mk_time_to_max);
 
 		free(config.XKeyboard.MouseKeysMaxSpeed);
 		snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->mk_max_speed);
 		config.XKeyboard.MouseKeysMaxSpeed = strdup(buf);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysMaxSpeed,
+				       state.XKeyboard.desc->ctrls->mk_max_speed);
 
 		free(config.XKeyboard.MouseKeysCurve);
 		snprintf(buf, sizeof(buf), "%hd", state.XKeyboard.desc->ctrls->mk_curve);
 		config.XKeyboard.MouseKeysCurve = strdup(buf);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysCurve,
+				       state.XKeyboard.desc->ctrls->mk_curve);
 
 		static struct {
 			unsigned short mask;
@@ -999,6 +1102,7 @@ get_input()
 			}
 		}
 		config.XKeyboard.AccessXOptions = strdup(buf);
+		g_key_file_set_string(file, KFG_XKeyboard, KFK_XKeyboard_AccessXOptions, buf);
 
 		/* XkbAX_SKPressFBMask */
 		/* XkbAX_SKAcceptFBMask */
@@ -1029,6 +1133,9 @@ get_input()
 			free(config.XKeyboard.AccessXTimeout);
 			snprintf(buf, sizeof(buf), "%hu", state.XKeyboard.desc->ctrls->ax_timeout);
 			config.XKeyboard.AccessXTimeout = strdup(buf);
+			g_key_file_set_integer(file, KFG_XKeyboard,
+					       KFK_XKeyboard_AccessXTimeout,
+					       state.XKeyboard.desc->ctrls->ax_timeout);
 
 			free(config.XKeyboard.AccessXTimeoutOptionsMask);
 			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
@@ -1040,11 +1147,13 @@ get_input()
 
 			}
 			config.XKeyboard.AccessXTimeoutOptionsMask = strdup(buf);
+			g_key_file_set_string(file, KFG_XKeyboard,
+					      KFK_XKeyboard_AccessXTimeoutOptionsMask, buf);
 
 			free(config.XKeyboard.AccessXTimeoutOptionsValues);
 			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls->axt_opts_values & axoptions[i].
-				    mask) {
+				if (state.XKeyboard.desc->ctrls->
+				    axt_opts_values & axoptions[i].mask) {
 					if (j++)
 						strncat(buf, ";", sizeof(buf) - 1);
 					strncat(buf, axoptions[i].name, sizeof(buf) - 1);
@@ -1052,6 +1161,8 @@ get_input()
 
 			}
 			config.XKeyboard.AccessXTimeoutOptionsValues = strdup(buf);
+			g_key_file_set_string(file, KFG_XKeyboard,
+					      KFK_XKeyboard_AccessXTimeoutOptionsValues, buf);
 
 			free(config.XKeyboard.AccessXTimeoutMask);
 			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
@@ -1063,11 +1174,13 @@ get_input()
 
 			}
 			config.XKeyboard.AccessXTimeoutMask = strdup(buf);
+			g_key_file_set_string(file, KFG_XKeyboard,
+					      KFK_XKeyboard_AccessXTimeoutMask, buf);
 
 			free(config.XKeyboard.AccessXTimeoutValues);
 			for (*buf = '\0', j = 0, i = 0; i < 12; i++) {
-				if (state.XKeyboard.desc->ctrls->axt_ctrls_values & axoptions[i].
-				    mask) {
+				if (state.XKeyboard.desc->ctrls->
+				    axt_ctrls_values & axoptions[i].mask) {
 					if (j++)
 						strncat(buf, ";", sizeof(buf) - 1);
 					strncat(buf, axoptions[i].name, sizeof(buf) - 1);
@@ -1075,6 +1188,8 @@ get_input()
 
 			}
 			config.XKeyboard.AccessXTimeoutValues = strdup(buf);
+			g_key_file_set_string(file, KFG_XKeyboard,
+					      KFK_XKeyboard_AccessXTimeoutValues, buf);
 		}
 	}
 	if (support.XF86Misc) {
@@ -1083,10 +1198,14 @@ get_input()
 		free(config.XF86Misc.KeyboardRate);
 		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.keyboard.rate);
 		config.XF86Misc.KeyboardRate = strdup(buf);
+		g_key_file_set_integer(file, KFG_XF86Misc,
+				       KFK_XF86Misc_KeyboardRate, state.XF86Misc.keyboard.rate);
 
 		free(config.XF86Misc.KeyboardDelay);
 		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.keyboard.delay);
 		config.XF86Misc.KeyboardDelay = strdup(buf);
+		g_key_file_set_integer(file, KFG_XF86Misc,
+				       KFK_XF86Misc_KeyboardDelay, state.XF86Misc.keyboard.delay);
 
 		XF86MiscGetMouseSettings(dpy, &state.XF86Misc.mouse);
 
@@ -1094,14 +1213,23 @@ get_input()
 		snprintf(buf, sizeof(buf), "%s",
 			 state.XF86Misc.mouse.emulate3buttons ? _true : _false);
 		config.XF86Misc.MouseEmulate3Buttons = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XF86Misc,
+				       KFK_XF86Misc_MouseEmulate3Buttons,
+				       state.XF86Misc.mouse.emulate3buttons ? TRUE : FALSE);
 
 		free(config.XF86Misc.MouseEmulate3Timeout);
 		snprintf(buf, sizeof(buf), "%d", state.XF86Misc.mouse.emulate3timeout);
 		config.XF86Misc.MouseEmulate3Timeout = strdup(buf);
+		g_key_file_set_integer(file, KFG_XF86Misc,
+				       KFK_XF86Misc_MouseEmulate3Timeout,
+				       state.XF86Misc.mouse.emulate3timeout);
 
 		free(config.XF86Misc.MouseChordMiddle);
 		snprintf(buf, sizeof(buf), "%s", state.XF86Misc.mouse.chordmiddle ? _true : _false);
 		config.XF86Misc.MouseChordMiddle = strdup(buf);
+		g_key_file_set_boolean(file, KFG_XF86Misc,
+				       KFK_XF86Misc_MouseChordMiddle,
+				       state.XF86Misc.mouse.chordmiddle ? TRUE : FALSE);
 	}
 }
 
