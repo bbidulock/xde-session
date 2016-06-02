@@ -2504,16 +2504,16 @@ General options:\n\
 }
 
 void
-put_nc_resource(XrmDatabase *xrdb, const char *prefix, const char *resource, const char *value)
+put_nc_resource(XrmDatabase xrdb, const char *prefix, const char *resource, const char *value)
 {
 	static char specifier[64];
 
 	snprintf(specifier, sizeof(specifier), "%s.%s", prefix, resource);
-	XrmPutStringResource(xrdb, specifier, value);
+	XrmPutStringResource(&xrdb, specifier, value);
 }
 
 void
-put_resource(XrmDatabase *xrdb, const char *resource, const char *value)
+put_resource(XrmDatabase xrdb, const char *resource, const char *value)
 {
 	put_nc_resource(xrdb, RESCLAS, resource, value);
 }
@@ -2546,7 +2546,7 @@ putXrmBlanking(unsigned int integer)
 }
 
 char *
-putXrmExposure(unsigned int integer)
+putXrmExposures(unsigned int integer)
 {
 	switch (integer) {
 	case DontAllowExposures:
@@ -2595,6 +2595,173 @@ char *
 putXrmString(const char *string)
 {
 	return g_strdup(string);
+}
+
+void
+put_resources(void)
+{
+	XrmDatabase rdb;
+	char *val, *usrdb;
+
+	usrdb = g_strdup_printf("%s/.config/xde/inputrc", getenv("HOME"));
+
+	rdb = XrmGetStringDatabase("");
+	if (!rdb) {
+		DPRINTF("no resource manager database allocated\n");
+		return;
+	}
+	/* put a bunch of resources */
+	if ((val = putXrmBool(resources.Keyboard.GlobalAutoRepeat))) {
+		put_resource(rdb, "keyboard.globalAutoRepeat", val);
+		g_free(val);
+	}
+	if ((val = putXrmInt(resources.Keyboard.KeyClickPercent))) {
+		put_resource(rdb, "keyboard.keyClickPercent", val);
+		g_free(val);
+	}
+	if ((val = putXrmInt(resources.Keyboard.BellPercent))) {
+		put_resource(rdb, "keyboard.bellPercent", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.Keyboard.BellPitch))) {
+		put_resource(rdb, "keyboard.bellPitch", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.Keyboard.BellDuration))) {
+		put_resource(rdb, "keyboard.bellDuration", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.Pointer.AccelerationNumerator))) {
+		put_resource(rdb, "pointer.accelerationNumerator", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.Pointer.AccelerationDenominator))) {
+		put_resource(rdb, "pointer.accelerationDenominator", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.Pointer.Threshold))) {
+		put_resource(rdb, "pointer.threshold", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.ScreenSaver.Timeout))) {
+		put_resource(rdb, "screenSaver.timeout", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.ScreenSaver.Interval))) {
+		put_resource(rdb, "screenSaver.interval", val);
+		g_free(val);
+	}
+	if ((val = putXrmBlanking(resources.ScreenSaver.Preferblanking))) {
+		put_resource(rdb, "screenSaver.preferBlanking", val);
+		g_free(val);
+	}
+	if ((val = putXrmExposures(resources.ScreenSaver.Allowexposures))) {
+		put_resource(rdb, "screenSaver.allowExposures", val);
+		g_free(val);
+	}
+	if ((val = putXrmInt(resources.DPMS.State))) {
+		put_resource(rdb, "dPMS.state", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.DPMS.StandbyTimeout))) {
+		put_resource(rdb, "dPMS.standbyTimeout", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.DPMS.SuspendTimeout))) {
+		put_resource(rdb, "dPMS.suspendTimeout", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.DPMS.OffTimeout))) {
+		put_resource(rdb, "dPMS.offTimeout", val);
+		g_free(val);
+	}
+	if ((val = putXrmBool(resources.XKeyboard.RepeatKeysEnabled))) {
+		put_resource(rdb, "xKeyboard.repeatKeysEnabled", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.RepeatDelay))) {
+		put_resource(rdb, "xKeyboard.repeatDelay", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.RepeatInterval))) {
+		put_resource(rdb, "xKeyboard.repeatInterval", val);
+		g_free(val);
+	}
+	if ((val = putXrmBool(resources.XKeyboard.SlowKeysEnabled))) {
+		put_resource(rdb, "xKeyboard.slowKeysEnabled", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.SlowKeysDelay))) {
+		put_resource(rdb, "xKeyboard.slowKeysDelay", val);
+		g_free(val);
+	}
+	if ((val = putXrmBool(resources.XKeyboard.BounceKeysEnabled))) {
+		put_resource(rdb, "xKeyboard.bounceKeysEnabled", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.DebounceDelay))) {
+		put_resource(rdb, "xKeyboard.debounceDelay", val);
+		g_free(val);
+	}
+	if ((val = putXrmBool(resources.XKeyboard.StickyKeysEnabled))) {
+		put_resource(rdb, "xKeyboard.stickyKeysEnabled", val);
+		g_free(val);
+	}
+	if ((val = putXrmBool(resources.XKeyboard.MouseKeysEnabled))) {
+		put_resource(rdb, "xKeyboard.mouseKeysEnabled", val);
+		g_free(val);
+	}
+	if ((val = putXrmButton(resources.XKeyboard.MouseKeysDfltBtn))) {
+		put_resource(rdb, "xKeyboard.mouseKeysDfltBtn", val);
+		g_free(val);
+	}
+	if ((val = putXrmBool(resources.XKeyboard.MouseKeysAccelEnabled))) {
+		put_resource(rdb, "xKeyboard.mouseKeysAccelEnabled", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.MouseKeysDelay))) {
+		put_resource(rdb, "xKeyboard.mouseKeysDelay", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.MouseKeysInterval))) {
+		put_resource(rdb, "xKeyboard.mouseKeysInterval", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.MouseKeysTimeToMax))) {
+		put_resource(rdb, "xKeyboard.mouseKeysTimeToMax", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.MouseKeysMaxSpeed))) {
+		put_resource(rdb, "xKeyboard.mouseKeysMaxSpeed", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XKeyboard.MouseKeysCurve))) {
+		put_resource(rdb, "xKeyboard.mouseKeysCurve", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XF86Misc.KeyboardRate))) {
+		put_resource(rdb, "xF86Misc.keyboardRate", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XF86Misc.KeyboardDelay))) {
+		put_resource(rdb, "xF86Misc.keyboardDelay", val);
+		g_free(val);
+	}
+	if ((val = putXrmBool(resources.XF86Misc.MouseEmulate3Buttons))) {
+		put_resource(rdb, "xF86Misc.mouseEmulate3Buttons", val);
+		g_free(val);
+	}
+	if ((val = putXrmUint(resources.XF86Misc.MouseEmulate3Timeout))) {
+		put_resource(rdb, "xF86Misc.mouseEmulate3Timeout", val);
+		g_free(val);
+	}
+	if ((val = putXrmBool(resources.XF86Misc.MouseChordMiddle))) {
+		put_resource(rdb, "xF86Misc.mouseChordMiddle", val);
+		g_free(val);
+	}
+	XrmPutFileDatabase(rdb, usrdb);
+	XrmDestroyDatabase(rdb);
+	return;
 }
 
 const char *
@@ -2772,9 +2939,6 @@ get_resources(int argc, char *argv[])
 	Display *dpy;
 	XrmDatabase rdb;
 	const char *val;
-	XTextProperty xtp;
-	Window root;
-	Atom atom;
 	char *sysdb, *usrdb;
 
 	sysdb = g_strdup_printf("/usr/share/X11/app-defaults/%s", RESCLAS);
@@ -2785,22 +2949,34 @@ get_resources(int argc, char *argv[])
 		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
 		exit(EXIT_FAILURE);
 	}
-	root = DefaultRootWindow(dpy);
-	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
-		XCloseDisplay(dpy);
-		DPRINTF("no resource manager database allocated\n");
-		return;
-	}
-	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
-		XCloseDisplay(dpy);
-		EPRINTF("could not retrieve RESOURCE_MANAGER property\n");
-		return;
-	}
 	XrmInitialize();
-	rdb = XrmGetStringDatabase((char *) xtp.value);
+#if 0
+	{
+		Window root;
+		Atom atom;
+		XTextProperty xtp;
+
+		root = DefaultRootWindow(dpy);
+		if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
+			XCloseDisplay(dpy);
+			DPRINTF("no resource manager database allocated\n");
+			return;
+		}
+		if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
+			XCloseDisplay(dpy);
+			EPRINTF("could not retrieve RESOURCE_MANAGER property\n");
+			return;
+		}
+		rdb = XrmGetStringDatabase((char *) xtp.value);
+	}
+#else
+	XrmGetDatabase(dpy);
+#endif
 	XrmCombineFileDatabase(usrdb, &rdb, False);
 	XrmCombineFileDatabase(sysdb, &rdb, False);
+#if 0
 	XFree(xtp.value);
+#endif
 	if (!rdb) {
 		DPRINTF("no resource manager database allocated\n");
 		XCloseDisplay(dpy);
@@ -2816,6 +2992,8 @@ get_resources(int argc, char *argv[])
 		getXrmInt(val, &resources.Keyboard.KeyClickPercent);
 	if ((val = get_resource(rdb, "keyboard.bellPercent", NULL)))
 		getXrmInt(val, &resources.Keyboard.BellPercent);
+	if ((val = get_resource(rdb, "keyboard.bellPitch", NULL)))
+		getXrmUint(val, &resources.Keyboard.BellPitch);
 	if ((val = get_resource(rdb, "keyboard.bellDuration", NULL)))
 		getXrmUint(val, &resources.Keyboard.BellDuration);
 	if ((val = get_resource(rdb, "pointer.accelerationNumerator", NULL)))
