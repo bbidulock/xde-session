@@ -125,6 +125,12 @@
 #include <getopt.h>
 #endif
 
+#define RESNAME "xde-input"
+#define RESCLAS "XDE-Input"
+#define RESTITL "X11 Input"
+
+#define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
+
 Display *dpy;
 
 typedef struct {
@@ -2442,12 +2448,167 @@ General options:\n\
 ", argv[0]);
 }
 
+const char *
+get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
+		const char *resource)
+{
+	char *type;
+	static char name[64];
+	static char clas[64];
+	XrmValue value = { 0, NULL };
+
+	snprintf(name, sizeof(name), "%s.%s", res_name, resource);
+	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
+	if (XrmGetResource(xrdb, name, clas, &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			return (const char *) value.addr;
+		} else
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+	} else
+		DPRINTF("%s:\t\t%s\n", clas, "ERROR!");
+	return (NULL);
+}
+
+const char *
+get_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_nc_resource(xrdb, RESNAME, RESCLAS, resource)))
+		value = dflt;
+	return (value);
+}
+
+Bool
+getXrmInt(const char *val, int *integer)
+{
+	char *endptr = NULL;
+	int value;
+
+	value = strtol(val, &endptr, 0);
+	if (endptr && !*endptr) {
+		*integer = value;
+		return True;
+	}
+	return False;
+}
+
+Bool
+getXrmUInt(const char *val, unsigned int *integer)
+{
+	char *endptr = NULL;
+	unsigned int value;
+
+	value = strtoul(val, &endptr, 0);
+	if (endptr && !*endptr) {
+		*integer = value;
+		return True;
+	}
+	return False;
+}
+
+Bool
+getXrmDouble(const char *val, double *floating)
+{
+	const struct lconv *lc = localeconv();
+	char radix, *copy = strdup(val);
+
+	if ((radix = lc->decimal_point[0]) != '.' && strchr(copy, '.'))
+		*strchr(copy, '.') = radix;
+
+	*floating = strtod(copy, NULL);
+	DPRINTF("Got decimal value %s, translates to %f\n", val, *floating);
+	free(copy);
+	return True;
+}
+
+Bool
+getXrmBool(const char *val, Bool *boolean)
+{
+	int len;
+
+	if ((len = strlen(val))) {
+		if (!strncasecmp(val, "true", len)) {
+			*boolean = True;
+			return True;
+		}
+		if (!strncasecmp(val, "false", len)) {
+			*boolean = False;
+			return True;
+		}
+	}
+	EPRINTF("could not parse boolean'%s'\n", val);
+	return False;
+}
+
+Bool
+getXrmString(const char *val, char **string)
+{
+	char *tmp;
+
+	if ((tmp = strdup(val))) {
+		free(*string);
+		*string = tmp;
+		return True;
+	}
+	return False;
+}
+
+
+
+void
+get_resources(int argc, char *argv[])
+{
+	Display *dpy;
+	XrmDatabase rdb;
+	const char *val;
+	XTextProperty xtp;
+	Window root;
+	Atom atom;
+
+	DPRINT();
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
+		exit(EXIT_FAILURE);
+	}
+	root = DefaultRootWindow(dpy);
+	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
+		XCloseDisplay(dpy);
+		DPRINTF("no resource manager database allocated\n");
+		return;
+	}
+	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
+		XCloseDisplay(dpy);
+		EPRINTF("could not retrieve RESOURCE_MANAGER property\n");
+		return;
+	}
+	XrmInitialize();
+	rdb = XrmGetStringDatabase((char *) xtp.value);
+	XrmCombineFileDatabase(APPDFLT, &rdb, False);
+	XFree(xtp.value);
+	if (!rdb) {
+		DPRINTF("no resource manager database allocated\n");
+		XCloseDisplay(dpy);
+		return;
+	}
+	if ((val = get_resource(rdb, "debug", "0"))) {
+		getXrmInt(val, &options.debug);
+	}
+	/* FIXME: get a bunch of resources */
+	XrmDestroyDatabase(rdb);
+	XCloseDisplay(dpy);
+	return;
+}
+
 void
 set_defaults(void)
 {
-	char *file;
+	char *file, *p;
 	const char *s;
 
+	if ((p = getenv("XDE_DEBUG")))
+		options.debug = atoi(p);
 	file = calloc(PATH_MAX, sizeof(*file));
 	if ((s = getenv("XDG_CONFIG_HOME")))
 		strcpy(file, s);
@@ -2468,6 +2629,7 @@ main(int argc, char *argv[])
 	setlocale(LC_ALL, "");
 
 	set_defaults();
+	get_resources(argc, argv);
 
 	while(1) {
 		int c, val;
