@@ -2503,6 +2503,100 @@ General options:\n\
 ", argv[0]);
 }
 
+void
+put_nc_resource(XrmDatabase *xrdb, const char *prefix, const char *resource, const char *value)
+{
+	static char specifier[64];
+
+	snprintf(specifier, sizeof(specifier), "%s.%s", prefix, resource);
+	XrmPutStringResource(xrdb, specifier, value);
+}
+
+void
+put_resource(XrmDatabase *xrdb, const char *resource, const char *value)
+{
+	put_nc_resource(xrdb, RESCLAS, resource, value);
+}
+
+char *
+putXrmInt(int integer)
+{
+	return g_strdup_printf("%d", integer);
+}
+
+char *
+putXrmUint(unsigned int integer)
+{
+	return g_strdup_printf("%u", integer);
+}
+
+char *
+putXrmBlanking(unsigned int integer)
+{
+	switch (integer) {
+	case DontPreferBlanking:
+		return g_strdup("DontPreferBlanking");
+	case PreferBlanking:
+		return g_strdup("PreferBlanking");
+	case DefaultBlanking:
+		return g_strdup("DefaultBlanking");
+	default:
+		return g_strdup_printf("%u", integer);
+	}
+}
+
+char *
+putXrmExposure(unsigned int integer)
+{
+	switch (integer) {
+	case DontAllowExposures:
+		return g_strdup("DontAllowExposures");
+	case AllowExposures:
+		return g_strdup("AllowExposures");
+	case DefaultExposures:
+		return g_strdup("DefaultExposures");
+	default:
+		return g_strdup_printf("%u", integer);
+	}
+}
+
+char *
+putXrmButton(unsigned int integer)
+{
+	switch (integer) {
+	case Button1:
+		return g_strdup("Button1");
+	case Button2:
+		return g_strdup("Button2");
+	case Button3:
+		return g_strdup("Button3");
+	case Button4:
+		return g_strdup("Button4");
+	case Button5:
+		return g_strdup("Button5");
+	default:
+		return g_strdup_printf("%u", integer);
+	}
+}
+
+char *
+putXrmDouble(double floating)
+{
+	return g_strdup_printf("%f", floating);
+}
+
+char *
+putXrmBool(Bool boolean)
+{
+	return g_strdup(boolean ? "true" : "false");
+}
+
+char *
+putXrmString(const char *string)
+{
+	return g_strdup(string);
+}
+
 const char *
 get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 		const char *resource)
@@ -2622,18 +2716,6 @@ getXrmButton(const char *val, unsigned int *integer)
 		*integer = 5;
 		return True;
 	}
-	if (!strcasecmp(val, "Button6")) {
-		*integer = 6;
-		return True;
-	}
-	if (!strcasecmp(val, "Button7")) {
-		*integer = 7;
-		return True;
-	}
-	if (!strcasecmp(val, "Button8")) {
-		*integer = 8;
-		return True;
-	}
 	return getXrmUint(val, integer);
 }
 
@@ -2693,6 +2775,10 @@ get_resources(int argc, char *argv[])
 	XTextProperty xtp;
 	Window root;
 	Atom atom;
+	char *sysdb, *usrdb;
+
+	sysdb = g_strdup_printf("/usr/share/X11/app-defaults/%s", RESCLAS);
+	usrdb = g_strdup_printf("%s/.config/xde/inputrc", getenv("HOME"));
 
 	DPRINT();
 	if (!(dpy = XOpenDisplay(NULL))) {
@@ -2712,7 +2798,8 @@ get_resources(int argc, char *argv[])
 	}
 	XrmInitialize();
 	rdb = XrmGetStringDatabase((char *) xtp.value);
-	XrmCombineFileDatabase(APPDFLT, &rdb, False);
+	XrmCombineFileDatabase(usrdb, &rdb, False);
+	XrmCombineFileDatabase(sysdb, &rdb, False);
 	XFree(xtp.value);
 	if (!rdb) {
 		DPRINTF("no resource manager database allocated\n");
