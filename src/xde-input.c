@@ -265,6 +265,61 @@ typedef struct {
 
 Controls controls;
 
+typedef struct {
+	struct {
+		Bool GlobalAutoRepeat;
+		int KeyClickPercent;
+		int BellPercent;
+		unsigned int BellPitch;
+		unsigned int BellDuration;
+	} Keyboard;
+	struct {
+		unsigned int AccelerationNumerator;
+		unsigned int AccelerationDenominator;
+		unsigned int Threshold;
+	} Pointer;
+	struct {
+		unsigned int Timeout;
+		unsigned int Interval;
+		unsigned int Preferblanking;
+		unsigned int Allowexposures;
+	} ScreenSaver;
+	struct {
+		int State;
+		unsigned int StandbyTimeout;
+		unsigned int SuspendTimeout;
+		unsigned int OffTimeout;
+	} DPMS;
+	struct {
+		Bool RepeatKeysEnabled;
+		unsigned int RepeatDelay;
+		unsigned int RepeatInterval;
+		Bool SlowKeysEnabled;
+		unsigned int SlowKeysDelay;
+		Bool BounceKeysEnabled;
+		unsigned int DebounceDelay;
+		Bool StickyKeysEnabled;
+		Bool MouseKeysEnabled;
+		unsigned int MouseKeysDfltBtn;
+		Bool MouseKeysAccelEnabled;
+		unsigned int MouseKeysDelay;
+		unsigned int MouseKeysInterval;
+		unsigned int MouseKeysTimeToMax;
+		unsigned int MouseKeysMaxSpeed;
+		unsigned int MouseKeysCurve;
+	} XKeyboard;
+	struct {
+		unsigned int KeyboardRate;
+		unsigned int KeyboardDelay;
+		Bool MouseEmulate3Buttons;
+		unsigned int MouseEmulate3Timeout;
+		Bool MouseChordMiddle;
+	} XF86Misc;
+} Resources;
+
+Resources resources = {
+};
+
 static const char *KFG_Pointer = "Pointer";
 static const char *KFG_Keyboard = "Keyboard";
 static const char *KFG_XKeyboard = "XKeyboard";
@@ -2495,7 +2550,7 @@ getXrmInt(const char *val, int *integer)
 }
 
 Bool
-getXrmUInt(const char *val, unsigned int *integer)
+getXrmUint(const char *val, unsigned int *integer)
 {
 	char *endptr = NULL;
 	unsigned int value;
@@ -2506,6 +2561,80 @@ getXrmUInt(const char *val, unsigned int *integer)
 		return True;
 	}
 	return False;
+}
+
+Bool
+getXrmBlanking(const char *val, unsigned int *integer)
+{
+	if (!strcasecmp(val, "DontPreferBlanking")) {
+		*integer = DontPreferBlanking;
+		return True;
+	}
+	if (!strcasecmp(val, "PreferBlanking")) {
+		*integer = PreferBlanking;
+		return True;
+	}
+	if (!strcasecmp(val, "DefaultBlanking")) {
+		*integer = DefaultBlanking;
+		return True;
+	}
+	return getXrmUint(val, integer);
+}
+
+Bool
+getXrmExposures(const char *val, unsigned int *integer)
+{
+	if (!strcasecmp(val, "DontAllowExposures")) {
+		*integer = DontAllowExposures;
+		return True;
+	}
+	if (!strcasecmp(val, "AllowExposures")) {
+		*integer = AllowExposures;
+		return True;
+	}
+	if (!strcasecmp(val, "DefaultExposures")) {
+		*integer = DefaultExposures;
+		return True;
+	}
+	return getXrmUint(val, integer);
+}
+
+Bool
+getXrmButton(const char *val, unsigned int *integer)
+{
+	if (!strcasecmp(val, "Button1")) {
+		*integer = 1;
+		return True;
+	}
+	if (!strcasecmp(val, "Button2")) {
+		*integer = 2;
+		return True;
+	}
+	if (!strcasecmp(val, "Button3")) {
+		*integer = 3;
+		return True;
+	}
+	if (!strcasecmp(val, "Button4")) {
+		*integer = 4;
+		return True;
+	}
+	if (!strcasecmp(val, "Button5")) {
+		*integer = 5;
+		return True;
+	}
+	if (!strcasecmp(val, "Button6")) {
+		*integer = 6;
+		return True;
+	}
+	if (!strcasecmp(val, "Button7")) {
+		*integer = 7;
+		return True;
+	}
+	if (!strcasecmp(val, "Button8")) {
+		*integer = 8;
+		return True;
+	}
+	return getXrmUint(val, integer);
 }
 
 Bool
@@ -2555,8 +2684,6 @@ getXrmString(const char *val, char **string)
 	return False;
 }
 
-
-
 void
 get_resources(int argc, char *argv[])
 {
@@ -2595,7 +2722,80 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "debug", "0"))) {
 		getXrmInt(val, &options.debug);
 	}
-	/* FIXME: get a bunch of resources */
+	/* get a bunch of resources */
+	if ((val = get_resource(rdb, "keyboard.globalAutoRepeat", NULL)))
+		getXrmBool(val, &resources.Keyboard.GlobalAutoRepeat);
+	if ((val = get_resource(rdb, "keyboard.keyClickPercent", NULL)))
+		getXrmInt(val, &resources.Keyboard.KeyClickPercent);
+	if ((val = get_resource(rdb, "keyboard.bellPercent", NULL)))
+		getXrmInt(val, &resources.Keyboard.BellPercent);
+	if ((val = get_resource(rdb, "keyboard.bellDuration", NULL)))
+		getXrmUint(val, &resources.Keyboard.BellDuration);
+	if ((val = get_resource(rdb, "pointer.accelerationNumerator", NULL)))
+		getXrmUint(val, &resources.Pointer.AccelerationNumerator);
+	if ((val = get_resource(rdb, "pointer.accelerationDenominator", NULL)))
+		getXrmUint(val, &resources.Pointer.AccelerationDenominator);
+	if ((val = get_resource(rdb, "pointer.threshold", NULL)))
+		getXrmUint(val, &resources.Pointer.Threshold);
+	if ((val = get_resource(rdb, "screenSaver.timeout", NULL)))
+		getXrmUint(val, &resources.ScreenSaver.Timeout);
+	if ((val = get_resource(rdb, "screenSaver.interval", NULL)))
+		getXrmUint(val, &resources.ScreenSaver.Interval);
+	if ((val = get_resource(rdb, "screenSaver.preferBlanking", NULL)))
+		getXrmBlanking(val, &resources.ScreenSaver.Preferblanking);
+	if ((val = get_resource(rdb, "screenSaver.allowExposures", NULL)))
+		getXrmExposures(val, &resources.ScreenSaver.Allowexposures);
+	if ((val = get_resource(rdb, "dPMS.state", NULL)))
+		getXrmInt(val, &resources.DPMS.State);
+	if ((val = get_resource(rdb, "dPMS.standbyTimeout", NULL)))
+		getXrmUint(val, &resources.DPMS.StandbyTimeout);
+	if ((val = get_resource(rdb, "dPMS.suspendTimeout", NULL)))
+		getXrmUint(val, &resources.DPMS.SuspendTimeout);
+	if ((val = get_resource(rdb, "dPMS.offTimeout", NULL)))
+		getXrmUint(val, &resources.DPMS.OffTimeout);
+	if ((val = get_resource(rdb, "xKeyboard.repeatKeysEnabled", NULL)))
+		getXrmBool(val, &resources.XKeyboard.RepeatKeysEnabled);
+	if ((val = get_resource(rdb, "xKeyboard.repeatDelay", NULL)))
+		getXrmUint(val, &resources.XKeyboard.RepeatDelay);
+	if ((val = get_resource(rdb, "xKeyboard.repeatInterval", NULL)))
+		getXrmUint(val, &resources.XKeyboard.RepeatInterval);
+	if ((val = get_resource(rdb, "xKeyboard.slowKeysEnabled", NULL)))
+		getXrmBool(val, &resources.XKeyboard.SlowKeysEnabled);
+	if ((val = get_resource(rdb, "xKeyboard.slowKeysDelay", NULL)))
+		getXrmUint(val, &resources.XKeyboard.SlowKeysDelay);
+	if ((val = get_resource(rdb, "xKeyboard.bounceKeysEnabled", NULL)))
+		getXrmBool(val, &resources.XKeyboard.BounceKeysEnabled);
+	if ((val = get_resource(rdb, "xKeyboard.debounceDelay", NULL)))
+		getXrmUint(val, &resources.XKeyboard.DebounceDelay);
+	if ((val = get_resource(rdb, "xKeyboard.stickyKeysEnabled", NULL)))
+		getXrmBool(val, &resources.XKeyboard.StickyKeysEnabled);
+	if ((val = get_resource(rdb, "xKeyboard.mouseKeysEnabled", NULL)))
+		getXrmBool(val, &resources.XKeyboard.MouseKeysEnabled);
+	if ((val = get_resource(rdb, "xKeyboard.mouseKeysDfltBtn", NULL)))
+		getXrmButton(val, &resources.XKeyboard.MouseKeysDfltBtn);
+	if ((val = get_resource(rdb, "xKeyboard.mouseKeysAccelEnabled", NULL)))
+		getXrmBool(val, &resources.XKeyboard.MouseKeysAccelEnabled);
+	if ((val = get_resource(rdb, "xKeyboard.mouseKeysDelay", NULL)))
+		getXrmUint(val, &resources.XKeyboard.MouseKeysDelay);
+	if ((val = get_resource(rdb, "xKeyboard.mouseKeysInterval", NULL)))
+		getXrmUint(val, &resources.XKeyboard.MouseKeysInterval);
+	if ((val = get_resource(rdb, "xKeyboard.mouseKeysTimeToMax", NULL)))
+		getXrmUint(val, &resources.XKeyboard.MouseKeysTimeToMax);
+	if ((val = get_resource(rdb, "xKeyboard.mouseKeysMaxSpeed", NULL)))
+		getXrmUint(val, &resources.XKeyboard.MouseKeysMaxSpeed);
+	if ((val = get_resource(rdb, "xKeyboard.mouseKeysCurve", NULL)))
+		getXrmUint(val, &resources.XKeyboard.MouseKeysCurve);
+	if ((val = get_resource(rdb, "xF86Misc.keyboardRate", NULL)))
+		getXrmUint(val, &resources.XF86Misc.KeyboardRate);
+	if ((val = get_resource(rdb, "xF86Misc.keyboardDelay", NULL)))
+		getXrmUint(val, &resources.XF86Misc.KeyboardDelay);
+	if ((val = get_resource(rdb, "xF86Misc.mouseEmulate3Buttons", NULL)))
+		getXrmBool(val, &resources.XF86Misc.MouseEmulate3Buttons);
+	if ((val = get_resource(rdb, "xF86Misc.mouseEmulate3Timeout", NULL)))
+		getXrmUint(val, &resources.XF86Misc.MouseEmulate3Timeout);
+	if ((val = get_resource(rdb, "xF86Misc.mouseChordMiddle", NULL)))
+		getXrmBool(val, &resources.XF86Misc.MouseChordMiddle);
+
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);
 	return;
