@@ -530,25 +530,33 @@ get_input()
 			fputs("\n", stderr);
 		}
 
+		resources.Keyboard.KeyClickPercent = state.Keyboard.key_click_percent;
 		g_key_file_set_integer(file, KFG_Keyboard,
 				       KFK_Keyboard_KeyClickPercent,
 				       state.Keyboard.key_click_percent);
 
+		resources.Keyboard.BellPercent = state.Keyboard.bell_percent;
 		g_key_file_set_integer(file, KFG_Keyboard,
 				       KFK_Keyboard_BellPercent, state.Keyboard.bell_percent);
 
+		resources.Keyboard.BellPitch = state.Keyboard.bell_pitch;
 		g_key_file_set_integer(file, KFG_Keyboard,
 				       KFK_Keyboard_BellPitch, state.Keyboard.bell_pitch);
 
+		resources.Keyboard.BellDuration = state.Keyboard.bell_duration;
 		g_key_file_set_integer(file, KFG_Keyboard,
 				       KFK_Keyboard_BellDuration, state.Keyboard.bell_duration);
 
-		g_key_file_set_string(file, KFG_Keyboard, KFK_Keyboard_LEDMask, buf);
+		/* FIXME: do resources */
+		g_key_file_set_integer(file, KFG_Keyboard,
+				KFK_Keyboard_LEDMask, state.Keyboard.led_mask);
 
+		resources.Keyboard.GlobalAutoRepeat = state.Keyboard.global_auto_repeat ? True : False;
 		g_key_file_set_boolean(file, KFG_Keyboard,
 				       KFK_Keyboard_GlobalAutoRepeat,
 				       state.Keyboard.global_auto_repeat);
 
+		/* FIXME: do resources */
 		for (i = 0, j = 0; i < 32; i++, j += 2)
 			snprintf(buf + j, sizeof(buf) - j, "%02X", state.Keyboard.auto_repeats[i]);
 		g_key_file_set_string(file, KFG_Keyboard, KFK_Keyboard_AutoRepeats, buf);
@@ -567,12 +575,15 @@ get_input()
 			fprintf(stderr, "\tthreshold: %d\n", state.Pointer.threshold);
 		}
 
+		resources.Pointer.AccelerationDenominator = state.Pointer.accel_denominator;
 		g_key_file_set_integer(file, KFG_Pointer,
 				       KFK_Pointer_AccelerationDenominator,
 				       state.Pointer.accel_denominator);
+		resources.Pointer.AccelerationNumerator = state.Pointer.accel_numerator;
 		g_key_file_set_integer(file, KFG_Pointer,
 				       KFK_Pointer_AccelerationNumerator,
 				       state.Pointer.accel_numerator);
+		resources.Pointer.Threshold = state.Pointer.threshold;
 		g_key_file_set_integer(file, KFG_Pointer,
 				       KFK_Pointer_Threshold, state.Pointer.threshold);
 	}
@@ -635,8 +646,10 @@ get_input()
 			snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.allow_exposures);
 			break;
 		}
+		resources.ScreenSaver.Allowexposures = state.ScreenSaver.allow_exposures;
 		g_key_file_set_string(file, KFG_ScreenSaver, KFK_ScreenSaver_AllowExposures, buf);
 
+		resources.ScreenSaver.Interval = state.ScreenSaver.interval;
 		g_key_file_set_integer(file, KFG_ScreenSaver,
 				       KFK_ScreenSaver_Interval, state.ScreenSaver.interval);
 
@@ -654,7 +667,9 @@ get_input()
 			snprintf(buf, sizeof(buf), "%d", state.ScreenSaver.prefer_blanking);
 			break;
 		}
+		resources.ScreenSaver.Preferblanking = state.ScreenSaver.prefer_blanking;
 		g_key_file_set_string(file, KFG_ScreenSaver, KFK_ScreenSaver_PreferBlanking, buf);
+		resources.ScreenSaver.Timeout = state.ScreenSaver.timeout;
 		g_key_file_set_integer(file, KFG_ScreenSaver,
 				       KFK_ScreenSaver_Timeout, state.ScreenSaver.timeout);
 	}
@@ -706,11 +721,16 @@ get_input()
 			snprintf(buf, sizeof(buf), "%d (unknown)", state.DPMS.power_level);
 			break;
 		}
+		/* FIXME: resources.DPMS.PowerLevel = state.DPMS.power_level; */
 		g_key_file_set_string(file, KFG_DPMS, KFK_DPMS_PowerLevel, buf);
+		resources.DPMS.State = state.DPMS.state;
 		g_key_file_set_boolean(file, KFG_DPMS,
 				       KFK_DPMS_State, state.DPMS.state ? TRUE : FALSE);
+		resources.DPMS.StandbyTimeout = state.DPMS.standby;
 		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_StandbyTimeout, state.DPMS.standby);
+		resources.DPMS.SuspendTimeout = state.DPMS.suspend;
 		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_SuspendTimeout, state.DPMS.suspend);
+		resources.DPMS.OffTimeout = state.DPMS.off;
 		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_OffTimeout, state.DPMS.off);
 	}
 
@@ -2580,6 +2600,23 @@ putXrmButton(unsigned int integer)
 }
 
 char *
+putXrmPowerLevel(unsigned integer)
+{
+	switch (integer) {
+	case DPMSModeOn:
+		return g_strdup("DPMSModeOn");
+	case DPMSModeStandby:
+		return g_strdup("DPMSModeStandby");
+	case DPMSModeSuspend:
+		return g_strdup("DPMSModeSuspend");
+	case DPMSModeOff:
+		return g_strdup("DPMSModeOff");
+	default:
+		return putXrmUint(integer);
+	}
+}
+
+char *
 putXrmDouble(double floating)
 {
 	return g_strdup_printf("%f", floating);
@@ -2764,6 +2801,177 @@ put_resources(void)
 	return;
 }
 
+void
+put_keyfile(void)
+{
+	char *val, buf[256] = { 0, };
+
+	if (support.Keyboard) {
+		int i, j;
+
+		g_key_file_set_integer(file, KFG_Keyboard,
+				       KFK_Keyboard_KeyClickPercent,
+				       state.Keyboard.key_click_percent);
+		g_key_file_set_integer(file, KFG_Keyboard,
+				       KFK_Keyboard_BellPercent, state.Keyboard.bell_percent);
+		g_key_file_set_integer(file, KFG_Keyboard,
+				       KFK_Keyboard_BellPitch, state.Keyboard.bell_pitch);
+		g_key_file_set_integer(file, KFG_Keyboard,
+				       KFK_Keyboard_BellDuration, state.Keyboard.bell_duration);
+		g_key_file_set_integer(file, KFG_Keyboard,
+				KFK_Keyboard_LEDMask, state.Keyboard.led_mask);
+		g_key_file_set_boolean(file, KFG_Keyboard,
+				       KFK_Keyboard_GlobalAutoRepeat,
+				       state.Keyboard.global_auto_repeat);
+		for (i = 0, j = 0; i < 32; i++, j += 2)
+			snprintf(buf + j, sizeof(buf) - j, "%02X", state.Keyboard.auto_repeats[i]);
+		g_key_file_set_value(file, KFG_Keyboard, KFK_Keyboard_AutoRepeats, buf);
+	}
+	if (support.Pointer) {
+		g_key_file_set_integer(file, KFG_Pointer,
+				       KFK_Pointer_AccelerationDenominator,
+				       state.Pointer.accel_denominator);
+		g_key_file_set_integer(file, KFG_Pointer,
+				       KFK_Pointer_AccelerationNumerator,
+				       state.Pointer.accel_numerator);
+		g_key_file_set_integer(file, KFG_Pointer,
+				       KFK_Pointer_Threshold, state.Pointer.threshold);
+	}
+	if (support.ScreenSaver) {
+		if ((val = putXrmExposures(state.ScreenSaver.allow_exposures))) {
+			g_key_file_set_value(file, KFG_ScreenSaver, KFK_ScreenSaver_AllowExposures, val);
+			g_free(val);
+		}
+		g_key_file_set_integer(file, KFG_ScreenSaver,
+				       KFK_ScreenSaver_Interval, state.ScreenSaver.interval);
+		if ((val = putXrmBlanking(state.ScreenSaver.prefer_blanking))) {
+			g_key_file_set_value(file, KFG_ScreenSaver, KFK_ScreenSaver_PreferBlanking, val);
+			g_free(val);
+		}
+		g_key_file_set_integer(file, KFG_ScreenSaver,
+				       KFK_ScreenSaver_Timeout, state.ScreenSaver.timeout);
+	}
+	if (support.DPMS) {
+		if ((val = putXrmPowerLevel(state.DPMS.power_level))) {
+			g_key_file_set_value(file, KFG_DPMS, KFK_DPMS_PowerLevel, val);
+			g_free(val);
+		}
+		g_key_file_set_boolean(file, KFG_DPMS,
+				       KFK_DPMS_State, state.DPMS.state ? TRUE : FALSE);
+		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_StandbyTimeout, state.DPMS.standby);
+		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_SuspendTimeout, state.DPMS.suspend);
+		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_OffTimeout, state.DPMS.off);
+	}
+	if (support.XKeyboard) {
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysDfltBtn,
+				       state.XKeyboard.desc->ctrls->mk_dflt_btn);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_RepeatKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbRepeatKeysMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_SlowKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbSlowKeysMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_BounceKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbBounceKeysMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_StickyKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbStickyKeysMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbMouseKeysMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysAccelEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbMouseKeysAccelMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AccessXKeysEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAccessXKeysMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AccessXTimeoutMaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAccessXTimeoutMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AccessXFeedbackMaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAccessXFeedbackMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AudibleBellMaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAudibleBellMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_Overlay1MaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbOverlay1Mask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_Overlay2MaskEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbOverlay2Mask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_IgnoreGroupLockModsEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbIgnoreGroupLockMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_GroupsWrapEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbGroupsWrapMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_InternalModsEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbInternalModsMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_IgnoreLockModsEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbIgnoreLockModsMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_PerKeyRepeatEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbPerKeyRepeatMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_ControlsEnabledEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbControlsEnabledMask ? TRUE : FALSE);
+		g_key_file_set_boolean(file, KFG_XKeyboard,
+				       KFK_XKeyboard_AccessXOptionsEnabled,
+				       state.XKeyboard.desc->ctrls->enabled_ctrls &
+				       XkbAccessXOptionsMask ? TRUE : FALSE);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_RepeatDelay,
+				       state.XKeyboard.desc->ctrls->repeat_delay);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_RepeatInterval,
+				       state.XKeyboard.desc->ctrls->repeat_interval);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_SlowKeysDelay,
+				       state.XKeyboard.desc->ctrls->slow_keys_delay);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_DebounceDelay,
+				       state.XKeyboard.desc->ctrls->debounce_delay);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysDelay,
+				       state.XKeyboard.desc->ctrls->mk_delay);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysInterval,
+				       state.XKeyboard.desc->ctrls->mk_interval);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysTimeToMax,
+				       state.XKeyboard.desc->ctrls->mk_time_to_max);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysMaxSpeed,
+				       state.XKeyboard.desc->ctrls->mk_max_speed);
+		g_key_file_set_integer(file, KFG_XKeyboard,
+				       KFK_XKeyboard_MouseKeysCurve,
+				       state.XKeyboard.desc->ctrls->mk_curve);
+	}
+}
+
 const char *
 get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 		const char *resource)
@@ -2881,6 +3089,28 @@ getXrmButton(const char *val, unsigned int *integer)
 	}
 	if (!strcasecmp(val, "Button5")) {
 		*integer = 5;
+		return True;
+	}
+	return getXrmUint(val, integer);
+}
+
+Bool
+getXrmPowerLevel(const char *val, unsigned int *integer)
+{
+	if (!strcasecmp(val, "DPMSModeOn")) {
+		*integer = DPMSModeOn;
+		return True;
+	}
+	if (!strcasecmp(val, "DPMSModeStandby")) {
+		*integer = DPMSModeStandby;
+		return True;
+	}
+	if (!strcasecmp(val, "DPMSModeSuspend")) {
+		*integer = DPMSModeSuspend;
+		return True;
+	}
+	if (!strcasecmp(val, "DPMSModeOff")) {
+		*integer = DPMSModeOff;
 		return True;
 	}
 	return getXrmUint(val, integer);
@@ -3064,6 +3294,11 @@ get_resources(int argc, char *argv[])
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);
 	return;
+}
+
+void
+get_keyfile(void)
+{
 }
 
 void
