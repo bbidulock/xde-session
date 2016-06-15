@@ -2871,10 +2871,13 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn, Bool noshow)
 	gdk_window_move_resize(win, 0, 0, xscr->width, xscr->height);
 
 	GdkDisplay *disp = gdk_screen_get_display(scrn);
+#if 0
+	/* does not work well with broken intel video drivers */
 	GdkCursor *curs = gdk_cursor_new_for_display(disp, GDK_LEFT_PTR);
 
 	gdk_window_set_cursor(win, curs);
 	gdk_cursor_unref(curs);
+#endif
 
 	GdkWindow *root = gdk_screen_get_root_window(scrn);
 	GdkEventMask mask = gdk_window_get_events(root);
