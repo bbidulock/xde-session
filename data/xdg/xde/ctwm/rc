@@ -587,9 +587,11 @@ Button1 = m4|c	: frame|window|icon	: f.movepush
 "Tab"	    = m		: all		: f.function "next-cycle-focus"
 "Tab"	    = m | s	: all		: f.function "prev-cycle-focus"
 
-"F1"	    = m		: all		: f.exec "exec uxterm &"
-"F2"	    = m		: all		: f.exec "exec fbrun &"
+"F1"	    = m		: all		: f.exec "exec xdg-launch uxterm &"
+"F2"	    = m		: all		: f.exec "exec xde-run &"
 
+"XF86MonBrightnessUp"	= : all		: f.exec "xbrightness +4096"
+"XF86MonBrightnessDown"	= : all		: f.exec "xbrightness -4096"
 "XF86AudioRaiseVolume"	= : all		: f.exec "amixer sset Master,0 1+"
 "XF86AudioLowerVolume"	= : all		: f.exec "amixer sset Master,0 1-"
 "XF86AudioMut"		= : all		: f.exec "amixer sset Master,0 toggle"
@@ -627,17 +629,17 @@ Button1 = m4|c	: frame|window|icon	: f.movepush
 "l"	    = c | m	: all		: f.exec "exec uxterm -fn 6x13 -fb 6x13bold -geometry 120x88 -sl 15000"
 "b"	    = c | m	: all		: f.exec "exec uxterm -fn 7x13 -fb 7x13bold -geometry 104x88 -sl 15000"
 "h"	    = c | m	: all		: f.exec "exec uxterm -fn 9x15 -fb 9x15bold -geometry  81x76 -sl 15000"
-"w"	    = c | m	: all		: f.exec "exec firefox &"
-"f"	    = c | m	: all		: f.exec "exec pcmanfm &"
+"w"	    = c | m	: all		: f.exec "exec xdg-launch firefox &"
+"f"	    = c | m	: all		: f.exec "exec xdg-launch pcmanfm &"
 
 # for fun
 "m"	    = c | m4	: all		: f.menu "TwmWindows"
 
 # keys from LXDE
-"e"	    = m4	: all		: f.exec "exec pcmanfm &"
-"r"	    = m4	: all		: f.exec "exec lxpanelctrl run &"
-#"F1"	    = m		: all		: f.exec "exec lxpanelctrl run &"
-"Escape"   = c		: all		: f.exec "exec lxpanelctrl menu &"
+"e"	    = m4	: all		: f.exec "exec xdg-launch pcmanfm &"
+"r"	    = m4	: all		: f.exec "exec xde-run &"
+#"F1"	    = m		: all		: f.exec "exec xde-run &"
+"Escape"   = c		: all		: f.exec "exec xde-menu -P &"
 
 # current window commands
 "F4"	    = m		: window|icon	: f.deleteordestroy

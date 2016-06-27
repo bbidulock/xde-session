@@ -7,13 +7,13 @@
       <!-- Additional TrayButton attribute: label -->
       <TrayButton label="Start">root:1</TrayButton>
 
-      <TrayButton border="true" label="" popup="Web Browser" icon="/usr/share/icons/gnome/16x16/apps/web-browser.png">exec:firefox</TrayButton>
-      <TrayButton border="true" label="" popup="File Manager" icon="/usr/share/icons/gnome/16x16/apps/file-manager.png">exec:pcmanfm</TrayButton>
-      <TrayButton border="true" label="" popup="Terminal" icon="/usr/share/icons/gnome/16x16/apps/terminal.png">exec:roxterm</TrayButton>
-      <TrayButton border="true" label="" popup="Visual Editor" icon="/usr/share/icons/gnome/16x16/apps/text-editor.png">exec:gvim</TrayButton>
+      <TrayButton border="true" label="" popup="Web Browser" icon="/usr/share/icons/gnome/16x16/apps/web-browser.png">exec:xdg-launch firefox</TrayButton>
+      <TrayButton border="true" label="" popup="File Manager" icon="/usr/share/icons/gnome/16x16/apps/file-manager.png">exec:xdg-launch pcmanfm</TrayButton>
+      <TrayButton border="true" label="" popup="Terminal" icon="/usr/share/icons/gnome/16x16/apps/terminal.png">exec:xdg-launch roxterm</TrayButton>
+      <TrayButton border="true" label="" popup="Visual Editor" icon="/usr/share/icons/gnome/16x16/apps/text-editor.png">exec:xdg-launch gvim</TrayButton>
       <TrayButton border="true" label="" popup="Run Command" icon="/usr/share/icons/gnome/16x16/actions/gtk-execute.png">exec:xde-run</TrayButton>
-      <TrayButton border="true" label="" popup="Calculator" icon="/usr/share/icons/gnome/16x16/apps/accessories-calculator.png">exec:calculator</TrayButton>
-      <TrayButton border="true" label="" popup="Network" icon="/usr/share/icons/gnome/16x16/places/gtk-network.png">exec:pcmanfm ~/Network</TrayButton>
+      <TrayButton border="true" label="" popup="Calculator" icon="/usr/share/icons/gnome/16x16/apps/accessories-calculator.png">exec:xdg-launch calculator</TrayButton>
+      <TrayButton border="true" label="" popup="Network" icon="/usr/share/icons/gnome/16x16/places/gtk-network.png">exec:xdg-launch pcmanfm ~/Network</TrayButton>
       <TrayButton border="true" label="" popup="Logout" icon="/usr/share/icons/gnome/16x16/actions/system-log-out.png">exec:xde-logout</TrayButton>
       <TrayButton border="true" label="" popup="Show Desktop" icon="/usr/share/icons/gnome/16x16/actions/go-down.png">showdesktop</TrayButton>
 

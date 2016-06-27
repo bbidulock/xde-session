@@ -560,7 +560,8 @@ UseRootButtons=255
 
 #  Command to run on mailbox
 # MailCommand="xterm -name alpine -title ALPINE -e alpine"
-MailCommand="xterm -name mutt -title MUTT -e mutt"
+# MailCommand="xterm -name mutt -title MUTT -e mutt"
+MailCommand="xdg-launch mutt"
 
 #  WM_CLASS to allow runonce for MailCommand
 # MailClassHint="alpine.XTerm"
@@ -571,7 +572,7 @@ MailClassHint="mutt.XTerm"
 
 #  Command to lock display/screensaver
 # LockCommand=""
-LockCommand="xlock"
+LockCommand="xdg-launch xde-xlock"
 
 #  Command to run on clock
 # ClockCommand="xclock -name icewm -title Clock"
@@ -590,7 +591,7 @@ OpenCommand="xdg-open"
 
 #  Terminal emulator must accept -e option.
 # TerminalCommand="xterm"
-TerminalCommand="xterm"
+TerminalCommand="xdg-launch uxterm"
 
 #  Command to start logout
 # LogoutCommand=""
@@ -609,7 +610,8 @@ RebootCommand="xde-logout"
 
 #  Command to run on CPU status
 # CPUStatusCommand="xterm -name top -title Process\ Status -e top"
-CPUStatusCommand="xterm -name htop -title Process\ Status -e htop"
+# CPUStatusCommand="xterm -name htop -title Process\ Status -e htop"
+CPUStatusCommand="xdg-launch htop"
 
 #  WM_CLASS to allow runonce for CPUStatusCommand
 # CPUStatusClassHint="top.XTerm"
@@ -618,6 +620,7 @@ CPUStatusClassHint="htop.XTerm"
 #  Command to run on Net status
 # NetStatusCommand="xterm -name netstat -title 'Network Status' -e netstat -c"
 NetStatusCommand="xterm -name iftop -title 'Network Status' -e iftop"
+# NetStatusCommand="xdg-launch iftop"
 
 #  WM_CLASS to allow runonce for NetStatusCommand
 # NetStatusClassHint="netstat.XTerm"

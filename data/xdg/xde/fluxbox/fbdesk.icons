@@ -1,48 +1,48 @@
 [Desktop Entry]
 Name=File Manager
-Exec=pcmanfm
+Exec=xdg-launch pcmanfm
 Icon=/usr/share/icons/gnome/32x32/apps/file-manager.png
 Pos= 24 80
 [end]
 
 [Desktop Entry]
 Name=Web Browser
-Exec=firefox
+Exec=xdg-launch firefox
 Icon=/usr/share/icons/gnome/32x32/apps/web-browser.png
 Pos= 24 144
 [end]
 
 [Desktop Entry]
 Name=Terminal
-Exec=lxterminal
+Exec=xdg-launch lxterminal
 Icon=/usr/share/icons/gnome/32x32/apps/terminal.png
 Pos= 24 208
 [end]
 
 [Desktop Entry]
 Name=Visual Editor
-Exec=gvim
+Exec=xdg-launch gvim
 Icon=/usr/share/icons/gnome/32x32/apps/text-editor.png
 Pos= 24 272
 [end]
 
 [Desktop Entry]
 Name=Desktop
-Exec=pcmanfm ~/Desktop
+Exec=xdg-launch pcmanfm ~/Desktop
 Icon=/usr/share/icons/Mist/32x32/places/desktop.png
 Pos= 24 336
 [end]
 
 [Desktop Entry]
 Name=Network
-Exec=pcmanfm ~/Network
+Exec=xdg-launch pcmanfm ~/Network
 Icon=/usr/share/icons/gnome/32x32/places/gtk-network.png
 Pos= 24 400
 [end]
 
 [Desktop Entry]
 Name=Traffic
-Exec=wireshark
+Exec=xdg-launch wireshark
 Icon=/usr/share/icons/hicolor/32x32/apps/wireshark.png
 Pos= 24 464
 [end]

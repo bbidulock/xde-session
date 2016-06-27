@@ -26,8 +26,8 @@
    <Key mask="AC" key="Down">ddesktop</Key>
 
    <Key mask="4" key="m">window</Key>
-   <Key mask="4" key="e">exec:pcmanfm</Key>
-   <Key mask="4" key="r">exec:gmrun</Key>
+   <Key mask="4" key="e">exec:xdg-launch pcmanfm</Key>
+   <Key mask="4" key="r">exec:xde-run</Key>
 
    <Key mask="A" key="F4">close</Key>
    <Key mask="A" key="F5">exec:xdotool getactivewindow windowkill</Key>
@@ -48,7 +48,7 @@
    <Key mask="CS" key="Left">maximize</Key>
    <Key mask="CS" key="Return">stick</Key>
 
-   <Key mask="AC" key="t">exec:roxterm</Key>
+   <Key mask="AC" key="t">exec:xdg-launch roxterm</Key>
    <Key mask="AC" key="n">exec:roxterm --geometry=90x70</Key>
    <Key mask="AC" key="x">exec:uxterm -ls -geometry 90x70</Key>
    <Key mask="AC" key="v">exec:gvim -geometry 90x70</Key>
@@ -59,10 +59,10 @@
    <Key mask="AC" key="h">exec:uxterm -ls -fn 9x15 -fb 9x15bold -geometry  81x76 -sl 15000</Key>
 
    <Key mask="4" key="r">exec:xde-run</Key>
-   <Key mask="4" key="t">exec:roxterm</Key>
-   <Key mask="4" key="w">exec:firefox</Key>
-   <Key mask="4" key="v">exec:gvim</Key>
-   <Key mask="4" key="f">exec:pcmanfm</Key>
+   <Key mask="4" key="t">exec:xdg-launch roxterm</Key>
+   <Key mask="4" key="w">exec:xdg-launch firefox</Key>
+   <Key mask="4" key="v">exec:xdg-launch gvim</Key>
+   <Key mask="4" key="f">exec:xdg-launch pcmanfm</Key>
 
    <Key mask="C" key="F1">exec:wmctrl -s 0</Key>
    <Key mask="C" key="F2">exec:wmctrl -s 1</Key>

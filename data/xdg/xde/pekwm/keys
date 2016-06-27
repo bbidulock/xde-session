@@ -174,7 +174,7 @@ Global {
 	KeyPress = "Mod1 Left"			{ Actions = "Toggle AlwaysBelow" }
 	KeyPress = "Mod1 Right"			{ Actions = "Toggle AlwaysOnTop" }
 	# primary function keys
-	KeyPress = "Mod1 F1"			{ Actions = "Exec uxterm &" }
+	KeyPress = "Mod1 F1"			{ Actions = "Exec xdg-launch uxterm &" }
 	KeyPress = "Mod1 F2"			{ Actions = "Exec xde-run &" }
 	KeyPress = "Mod1 F4"			{ Actions = "Close" }
 	KeyPress = "Mod1 F5"			{ Actions = "Kill" }
@@ -232,20 +232,20 @@ Global {
 	# External Commands
 #	KeyPress = "Mod1 Print"			{ Actions = "Exec scrot -s &" }
 	KeyPress = "Mod1 Print"			{ Actions = "Exec $_PEKWM_SCRIPT_PATH/pekwm_screenshot.sh" }
-#	KeyPress = "Mod4 E"			{ Actions = "Exec $TERM" }
-	KeyPress = "Mod4 E"			{ Actions = "Exec pcmanfm &" }
-#	KeyPress = "Mod1 Ctrl F"		{ Actions = "Exec pcmanfm &" }
-	KeyPress = "Mod1 Ctrl N"		{ Actions = "Exec uxterm &" }
+#	KeyPress = "Mod4 E"			{ Actions = "Exec xdg-launch $TERM" }
+	KeyPress = "Mod4 E"			{ Actions = "Exec xdg-launch pcmanfm &" }
+#	KeyPress = "Mod1 Ctrl F"		{ Actions = "Exec xdg-launch pcmanfm &" }
+	KeyPress = "Mod1 Ctrl N"		{ Actions = "Exec xdg-launch uxterm &" }
 	KeyPress = "Mod1 Ctrl R"		{ Actions = "Exec xde-run &" }
-	KeyPress = "Mod1 Ctrl Return"		{ Actions = "Exec uxterm &" }
-#	KeyPress = "Mod1 Ctrl T"		{ Actions = "Exec roxterm &" }
-	KeyPress = "Mod1 Ctrl V"		{ Actions = "Exec gvim &" }
-	KeyPress = "Mod1 Ctrl W"		{ Actions = "Exec firefox &" }
-	KeyPress = "Mod1 Ctrl X"		{ Actions = "Exec uxterm &" }
-	KeyPress = "Mod1 Shift Return"		{ Actions = "Exec uxterm &" }
-	KeyPress = "Mod1 X"			{ Actions = "Exec uxterm &" }
-	KeyPress = "Mod4 Shift Delete"		{ Actions = "Exec xde-lock -l &" }
-	KeyPress = "Mod4 Shift Return"		{ Actions = "Exec uxterm &" }
+	KeyPress = "Mod1 Ctrl Return"		{ Actions = "Exec xdg-launch uxterm &" }
+#	KeyPress = "Mod1 Ctrl T"		{ Actions = "Exec xdg-launch roxterm &" }
+	KeyPress = "Mod1 Ctrl V"		{ Actions = "Exec xdg-launch gvim &" }
+	KeyPress = "Mod1 Ctrl W"		{ Actions = "Exec xdg-launch firefox &" }
+	KeyPress = "Mod1 Ctrl X"		{ Actions = "Exec xdg-launch uxterm &" }
+	KeyPress = "Mod1 Shift Return"		{ Actions = "Exec xdg-launch uxterm &" }
+	KeyPress = "Mod1 X"			{ Actions = "Exec xdg-launch uxterm &" }
+	KeyPress = "Mod4 Shift Delete"		{ Actions = "Exec xdg-launch xde-lock &" }
+	KeyPress = "Mod4 Shift Return"		{ Actions = "Exec xdg-launch uxterm &" }
 	KeyPress = "Mod4 Shift S"		{ Actions = "Exec scrot -s &" }
 	KeyPress = "Mod4 Shift slash"		{ Actions = "Exec xde-namews &" }
 	KeyPress = "Mod4 slash"			{ Actions = "Exec xde-findws &" }
@@ -413,8 +413,8 @@ Global {
 #	}
 	# External commands
 	Chain = "Mod1 Ctrl E" {
-		KeyPress = "E"		{ Actions = "Exec $TERM" }
-		KeyPress = "L"		{ Actions = "Exec xlock -mode blank &" }
+		KeyPress = "E"		{ Actions = "Exec xdg-launch $TERM" }
+		KeyPress = "L"		{ Actions = "Exec xdg-launch xde-xlock&" }
 		KeyPress = "S"		{ Actions = "Exec scrot &" }
 		KeyPress = "C"		{ Actions = "ShowCmdDialog" }
 	}

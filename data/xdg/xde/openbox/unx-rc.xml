@@ -1306,7 +1306,7 @@
     </keybind>
     <keybind key="A-F1">
       <action name="Execute">
-	<command>uxterm</command>
+	<command>xdg-launch uxterm</command>
       </action>
     </keybind>
     <keybind key="A-F2">
@@ -1321,7 +1321,7 @@
     </keybind>
     <keybind key="A-x">
       <action name="Execute">
-	<command>uxterm</command>
+	<command>xdg-launch uxterm</command>
       </action>
     </keybind>
     <keybind key="A-C-Delete">
@@ -1331,17 +1331,17 @@
     </keybind>
     <keybind key="A-C-Return">
       <action name="Execute">
-	<command>uxterm</command>
+	<command>xdg-launch uxterm</command>
       </action>
     </keybind>
     <keybind key="A-C-f">
       <action name="Execute">
-	<command>pcmanfm</command>
+	<command>xdg-launch pcmanfm</command>
       </action>
     </keybind>
     <keybind key="A-C-n">
       <action name="Execute">
-	<command>uxterm</command>
+	<command>xdg-launch uxterm</command>
       </action>
     </keybind>
     <keybind key="A-C-r">
@@ -1351,32 +1351,32 @@
     </keybind>
     <keybind key="A-C-t">
       <action name="Execute">
-	<command>roxterm</command>
+	<command>xdg-launch roxterm</command>
       </action>
     </keybind>
     <keybind key="A-C-v">
       <action name="Execute">
-	<command>gvim</command>
+	<command>xdg-launch gvim</command>
       </action>
     </keybind>
     <keybind key="A-C-w">
       <action name="Execute">
-	<command>firefox</command>
+	<command>xdg-launch firefox</command>
       </action>
     </keybind>
     <keybind key="A-C-x">
       <action name="Execute">
-	<command>uxterm</command>
+	<command>xdg-launch uxterm</command>
       </action>
     </keybind>
     <keybind key="A-S-Return">
       <action name="Execute">
-	<command>uxterm</command>
+	<command>xdg-launch uxterm</command>
       </action>
     </keybind>
     <keybind key="W-e">
       <action name="Execute">
-	<command>pcmanfm</command>
+	<command>xdg-launch pcmanfm</command>
       </action>
     </keybind>
     <keybind key="W-r">
@@ -1396,12 +1396,12 @@
     </keybind>
     <keybind key="W-S-Delete">
       <action name="Execute">
-	<command>xde-xlock -l</command>
+	<command>xdg-launch xde-xlock</command>
       </action>
     </keybind>
     <keybind key="W-S-Return">
       <action name="Execute">
-	<command>uxterm</command>
+	<command>xdg-launch uxterm</command>
       </action>
     </keybind>
     <keybind key="W-S-s">
@@ -1517,12 +1517,12 @@
       </keybind>
       <keybind key="e">
 	<action name="Execute">
-	  <command>uxterm</command>
+	  <command>xdg-launch uxterm</command>
 	</action>
       </keybind>
       <keybind key="l">
 	<action name="Execute">
-	  <command>xde-xlock -l</command>
+	  <command>xdg-launch xde-xlock</command>
 	</action>
       </keybind>
       <keybind key="s">

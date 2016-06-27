@@ -51,7 +51,7 @@
 #   [nextWindowOnAllScreens]  (Mod1-Control-Escape)
 #   [prevWindowOnAllScreens]  (Mod1-Control-Shift-Escape)
 
-    [execute]  (Mod1-F1) {uxterm}
+    [execute]  (Mod1-F1) {xdg-launch uxterm}
     [execute]  (Mod1-F2) {xde-run}
 
 # brian's keybindings
@@ -68,11 +68,11 @@
     [execute]  (Mod1-Control-h) {uxterm -ls -fn 9x15 -fb 9x15bold -geometry  70x54 -sl 15000}
 
 # from LXDE
-    [execute]  (Mod4-m) {pcmanfm}
+    [execute]  (Mod4-m) {xdg-launch pcmanfm}
 #   [execute]  (Mod4-r) {lxpanelctl run}
     [execute]  (Mod4-r) {xde-run}
 #   [execute]  (Control-Escape) {lxpanelctl menu}
-    [execute]  (Control-Escape) {xdg-traymenu -p}
+    [execute]  (Control-Escape) {xde-menu -P}
 
 # current window commands
     [close]  (Mod1-F4)
@@ -295,26 +295,33 @@
 #   [execute]  (Mod4-E) {kfmclient openProfile filemanagement}
 #   [execute]  (F20) {kfmclient openProfile filemanagement}
 #   [execute]  (Mod4-E) {nautilus ~}
-    [execute]  (Mod4-e) {pcmanfm}
+    [execute]  (Mod4-e) {xdg-launch pcmanfm}
 #   [execute]  (F20) {nautilus ~}
 
     [execute]  (Mod1-Print) {scrot -s}
     [execute]  (Mod1-space) {xde-winmenu -w active -W center}
-    [execute]  (Mod1-x) {uxterm}
+    [execute]  (Mod1-x) {xdg-launch uxterm}
     [execute]  (Mod1-Control-Delete) {xde-logout}
-    [execute]  (Mod1-Control-Return) {uxterm}
-    [execute]  (Mod1-Control-f) {pcmanfm}
-    [execute]  (Mod1-Control-w) {firefox}
-    [execute]  (Mod1-Shift-Return) {uxterm}
+    [execute]  (Mod1-Control-Return) {xdg-launch uxterm}
+    [execute]  (Mod1-Control-f) {xdg-launch pcmanfm}
+    [execute]  (Mod1-Control-w) {xdg-launch firefox}
+    [execute]  (Mod1-Shift-Return) {xdg-launch uxterm}
     [execute]  (Shift-Escape) {xde-winmenu -w active -W center}
     [execute]  (Mod4-s) {scrot}
     [execute]  (Mod4-slash) {xde-findws}
-    [execute]  (Mod4-Shift-Delete) {xde-xlock -l}
-    [execute]  (Mod4-Shift-Return) {uxterm}
+    [execute]  (Mod4-Shift-Delete) {xdg-launch xde-xlock}
+    [execute]  (Mod4-Shift-Return) {xdg-launch uxterm}
     [execute]  (Mod4-Shift-s) {scrot -s}
     [execute]  (Mod4-Shift-slash) {xde-namews}
     [execute]  (XF86MonBrightnessUp) {xbrightness +4096}
     [execute]  (XF86MonBrightnessDown) {xbrightness -4096}
+    [execute]  (XF86AudioRaiseVolume) {amixer sset Master,0 1+}
+    [execute]  (XF86AudioLowerVolume) {amixer sset Master,0 1-}
+    [execute]  (XF86AudioMute) {amixer sset Master,0 toggle}
+    [execute]  (Mod1-Mod4-Control-Left) {xrandr -o left}
+    [execute]  (Mod1-Mod4-Control-Right) {xrandr -o right}
+    [execute]  (Mod1-Mod4-Control-Down) {xrandr -o inverted}
+    [execute]  (Mod1-Mod4-Control-Up) {xrandr -o normal}
 
     [chain] (Mod1-Control-p)
         [execute]  (d) {xde-run}
@@ -322,8 +329,8 @@
 
     [chain] (Mod1-Control-e)
         [execute]  (c) {xde-run}
-        [execute]  (e) {uxterm}
-        [execute]  (l) {xde-lock -l}
+        [execute]  (e) {xdg-launch uxterm}
+        [execute]  (l) {xdg-launch xde-xlock}
         [execute]  (s) {scrot -s}
     [end]
 

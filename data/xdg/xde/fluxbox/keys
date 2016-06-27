@@ -2,7 +2,7 @@
 OnDesktop Mouse1 :HideMenus
 OnDesktop Mouse2 :WorkspaceMenu
 # OnDesktop Mouse3 :RootMenu
-OnDesktop Mouse3 :MacroCmd {RootMenu} {ExecCommand xdg_menu --format fluxbox /etc/xdg/menus/arch-applications.menu >~/.fluxbox/xdgmenu}
+OnDesktop Mouse3 :MacroCmd {RootMenu} {ExecCommand xde-menu -P -b 3}
 
 # scroll on the desktop to change workspaces
 OnDesktop Mouse4 :NextWorkspace
@@ -90,10 +90,13 @@ Mod4 8 :Tab 8
 Mod4 9 :Tab 9
 
 # open a terminal
-Mod1 F1 :Exec xterm
+Mod1 F1 :Exec xdg-launch xterm
 
 # open a dialog to run programs
-Mod1 F2 :Exec fbrun
+Mod1 F2 :Exec xde-run
+
+XF86MonBrightnessUp :Exec xbrightness +4096
+XF86MonBrightnessDown :Exec xbrightness -4096
 
 # volume settings, using common keycodes
 # if these don't work, use xev to find out your real keycodes
@@ -111,12 +114,12 @@ Control Shift Left :Maximize
 
 Mod1 Shift F1 :MaximizeVertical
 
-Mod1 Control t :ExecCommand roxterm
+Mod1 Control t :ExecCommand xdg-launch roxterm
 Mod1 Control n :ExecCommand roxterm --geometry=90x70
 Mod1 Control x :ExecCommand uxterm -ls -geometry 90x70
 Mod1 Control v :ExecCommand gvim -geometry 90x70
-Mod1 Control f :ExecCommand pcmanfm
-Mod1 Control w :ExecCommand firefox
+Mod1 Control f :ExecCommand xdg-launch pcmanfm
+Mod1 Control w :ExecCommand xdg-launch firefox
 Mod1 Control r :Reconfigure
 Mod1 Control s :ExecCommand uxterm -ls -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-50-iso646.1991-irv -fb -schumacher-clean-medium-r-bold--8-80-75-75-c-50-iso646.1991-irv -geometry 146x143 -sl 15000
 Mod1 Control y :ExecCommand uxterm -ls -fn -schumacher-clean-medium-r-normal--8-80-75-75-c-60-iso646.1991-irv -fb -schumacher-clean-bold-r-normal--8-80-75-75-c-60-iso646.1991-irv -geometry 120x143 -sl 15000
@@ -124,12 +127,12 @@ Mod1 Control l :ExecCommand uxterm -ls -fn 6x13 -fb 6x13bold -geometry 120x88 -s
 Mod1 Control b :ExecCommand uxterm -ls -fn 7x13 -fb 7x13bold -geometry 104x88 -sl 15000
 Mod1 Control h :ExecCommand uxterm -ls -fn 9x15 -fb 9x15bold -geometry  81x76 -sl 15000
 
-Mod1 Control Return :ExecCommand uxterm
+Mod1 Control Return :ExecCommand xdg-launch uxterm
 
 # exec chain
 Mod1 Control e c :ExecCommand xde-run
-Mod1 Control e e :ExecCommand uxterm
-Mod1 Control e l :ExecCommand xde-lock -l
+Mod1 Control e e :ExecCommand xdg-launch uxterm
+Mod1 Control e l :ExecCommand xdg-launch xde-xlock
 Mod1 Control e s :ExecCommand scrot -s
 
 # control chain
@@ -140,13 +143,10 @@ Mod1 Control p Prior :Restart twm
 Mod1 Control p d :ExecCommand xde-run
 
 # keys from LXDE
-Mod4 e :ExecCommand pcmanfm
-#Mod4 r :ExecCommand lxpanelctl run
+Mod4 e :ExecCommand xdg-launch pcmanfm
 Mod4 r :ExecCommand xde-run
-#Mod1 F2 :ExecCommand lxpanelctl run
 Mod1 F2 :ExecCommand xde-run
-#Control Escape :ExecCommand lxpanelctl menu
-Control Escape :ExecCommand xdg-traymenu -p
+Control Escape :ExecCommand xde-menu -P
 
 # more commands
 Mod1 F1 :ExecCommand uxterm -ls -geometry 90x70
@@ -155,7 +155,7 @@ Mod1 x :ExecCommand uxterm -ls -geometry 90x70
 Mod1 Shift Return :ExecCommand uxterm -ls -geometry 90x70
 Mod4 s :ExecCommand scrot
 Mod4 slash :ExecCommand xde-findws
-Mod4 Shift Delete :ExecCommand xde-xlock -l
+Mod4 Shift Delete :ExecCommand xdg-launch xde-xlock
 Mod4 Shift Return :ExecCommand uxterm -ls -geometry 90x70
 Mod4 Shift s :ExecCommand scrot -s
 

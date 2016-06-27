@@ -319,7 +319,7 @@
     <!-- Keybindings for running applications -->
     <keybind key="C-A-t">
       <action name="Execute">
-        <command>lxterminal</command>
+        <command>xdg-launch lxterminal</command>
       </action>
     </keybind>
     <keybind key="C-A-n">
@@ -371,23 +371,23 @@
           <enabled>true</enabled>
           <name>PCManFM</name>
         </startupnotify>
-        <command>pcmanfm</command>
+        <command>xdg-launch pcmanfm</command>
       </action>
     </keybind>
     <!--keybindings for LXPanel -->
     <keybind key="W-r">
       <action name="Execute">
-        <command>lxpanelctl run</command>
+        <command>xde-run</command>
       </action>
     </keybind>
     <keybind key="A-F2">
       <action name="Execute">
-        <command>lxpanelctl run</command>
+        <command>xde-run</command>
       </action>
     </keybind>
     <keybind key="C-Escape">
       <action name="Execute">
-        <command>lxpanelctl menu</command>
+        <command>xde-menu -P</command>
       </action>
     </keybind>
     <keybind key="F11">
@@ -396,7 +396,7 @@
     <!-- Launch Task Manager with Ctrl+Alt+Del -->
     <keybind key="A-C-Delete">
       <action name="Execute">
-        <command>lxtask</command>
+        <command>xdg-launch lxtask</command>
       </action>
     </keybind>
   </keyboard>
