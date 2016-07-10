@@ -1,7 +1,7 @@
 
 ## xde-session
 
-Package xde-session-1.2.41 was released under GPL license 2016-06-02.
+Package xde-session-1.2.48 was released under GPL license 2016-06-27.
 
 This package provides a number of "C"-language tools for working with
 the X Desktop Environment.  Most of these tools were previously written
@@ -25,13 +25,11 @@ Primary tools included are:
 
 ### Release
 
-This is the `xde-session-1.2.41` package, released 2016-06-02.  This release,
+This is the `xde-session-1.2.48` package, released 2016-06-27.  This release,
 and the latest version, can be obtained from the GitHub repository at
 https://github.com/bbidulock/xde-session, using a command such as:
 
-```bash
-git clone https://github.com/bbidulock/xde-session.git
-```
+    git clone https://github.com/bbidulock/xde-session.git
 
 Please see the [NEWS](NEWS) file for release notes and history of user visible
 changes for the current version, and the [ChangeLog](ChangeLog) file for a more
@@ -47,19 +45,18 @@ appears below.
 This release is published under the GPL license that can be found in
 the file [COPYING](COPYING).
 
+
 ### Quick Start:
 
 The quickest and easiest way to get xde-session up and running is to run
 the following commands:
 
-```bash
-git clone https://github.com/bbidulock/xde-session.git xde-session
-cd xde-session
-./autogen.sh
-./configure --prefix=/usr
-make V=0
-make DESTDIR="$pkgdir" install
-```
+    $> git clone https://github.com/bbidulock/xde-session.git xde-session
+    $> cd xde-session
+    $> ./autogen.sh
+    $> ./configure --prefix=/usr
+    $> make V=0
+    $> make DESTDIR="$pkgdir" install
 
 This will configure, compile and install xde-session the quickest.  For
 those who would like to spend the extra 15 seconds reading `./configure
@@ -68,11 +65,13 @@ build.
 
 For general information on GNU's `./configure`, see the file [INSTALL](INSTALL).
 
+
 ### Running xde-session
 
 Read the manual pages after installation:
 
     man xde-session
+
 
 ### Issues
 
