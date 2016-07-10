@@ -1,5 +1,99 @@
 # created with git log --stat=76 -M -C|fmt -sct -w80
 
+commit 1c57fa517b2dfa517a7dad265dd24a7cc55d9c46
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sat Jul 9 18:43:53 2016 -0600
+
+    correct segfault
+
+ src/xde-input.c | 58 ++++++++++++++++++-----------------------------------
+ 1 file changed, 19 insertions(+), 39 deletions(-)
+
+commit de5f4ac2ca92f0392dbf26419a294eacc341d8cd
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sat Jul 9 18:19:42 2016 -0600
+
+    update readme
+
+ README.md    | 25 ++++++++++++-------------
+ README.md.in | 21 ++++++++++-----------
+ 2 files changed, 22 insertions(+), 24 deletions(-)
+
+commit d9ce469f971bd86bf36e4f909b462b7538f36868
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sat Jul 9 18:18:03 2016 -0600
+
+    simplify distribution
+
+ .gitignore                         |   18 +-
+ AUTHORS.in => AUTHORS              |    2 +-
+ ChangeLog                          | 5697 ++++++++++++++++++++++++++++++++
+ Makefile.am                        |   78 +-
+ NEWS.in => NEWS                    |    6 +-
+ README.in                          |   92 -
+ THANKS.in => THANKS                |    2 +-
+ TODO.in => TODO                    |    2 +-
+ autogen.sh                         |   55 +-
+ configure.template => configure.ac |    6 +-
+ dist.sh                            |    9 +
+ gennews.sh                         |   34 +
+ rebuild.sh                         |    4 +-
+ 13 files changed, 5829 insertions(+), 176 deletions(-)
+
+commit e71827ab6d8da806f8be4f4768ffff4a36763abf
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 27 12:56:18 2016 -0600
+
+    use xdg-launch for key bindings
+
+ data/xdg/xde/blackbox/keys        | 33 ++++++++++++++++++++-------------
+ data/xdg/xde/ctwm/keys            | 18 +++++++++---------
+ data/xdg/xde/ctwm/rc              | 18 ++++++++++--------
+ data/xdg/xde/etwm/keys            | 18 ++++++++++--------
+ data/xdg/xde/etwm/rc              | 18 ++++++++++--------
+ data/xdg/xde/fluxbox/fbdesk.icons | 14 +++++++-------
+ data/xdg/xde/fluxbox/keys         | 30 +++++++++++++++---------------
+ data/xdg/xde/icewm/preferences    | 11 +++++++----
+ data/xdg/xde/jwm/keys             | 14 +++++++-------
+ data/xdg/xde/jwm/tray             | 12 ++++++------
+ data/xdg/xde/openbox/keys.xml     | 30 +++++++++++++++---------------
+ data/xdg/xde/openbox/lxde-rc.xml  | 12 ++++++------
+ data/xdg/xde/openbox/rc.xml       | 30 +++++++++++++++---------------
+ data/xdg/xde/openbox/unx-rc.xml   | 30 +++++++++++++++---------------
+ data/xdg/xde/pekwm/keys           | 32 ++++++++++++++++----------------
+ data/xdg/xde/twm/keys             | 18 ++++++++++--------
+ data/xdg/xde/twm/rc               | 18 ++++++++++--------
+ data/xdg/xde/vtwm/keys            | 18 ++++++++++--------
+ data/xdg/xde/vtwm/rc              | 18 ++++++++++--------
+ 19 files changed, 208 insertions(+), 184 deletions(-)
+
+commit ff76b043c737f864d8c4622706234b34d05ea837
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 27 11:14:17 2016 -0600
+
+    use xdg-launch for keyboard commands
+
+ data/xdg/xde/adwm/keysrc | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
+
+commit 625820c2f0d58970c5e012a547fdeaece5c4fac4
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Jun 19 23:36:32 2016 -0600
+
+    renamed struts to strutsactive
+
+ data/xdg/xde/adwm/adwmrc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 1f097a22d66cae82cb1ad45191dbcb2091ca09d4
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Jun 19 22:07:48 2016 -0600
+
+    use autohide docks and panels in adwm
+
+ data/xdg/xde/adwm/adwmrc | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
 commit e63b44772c9c230636d228a9566811528c4e1b6a
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Thu Jun 16 20:32:31 2016 -0600
