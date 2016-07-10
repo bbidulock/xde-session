@@ -129,6 +129,7 @@
 #define RESCLAS "XDE-Input"
 #define RESTITL "X11 Input"
 
+#define USRDFLT "%s/.config/" RESNAME "/rc"
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
 
 Display *dpy;
@@ -3166,51 +3167,32 @@ getXrmString(const char *val, char **string)
 void
 get_resources(int argc, char *argv[])
 {
-	Display *dpy;
 	XrmDatabase rdb;
+	Display *dpy;
 	const char *val;
-	char *sysdb, *usrdb;
-
-	sysdb = g_strdup_printf("/usr/share/X11/app-defaults/%s", RESCLAS);
-	usrdb = g_strdup_printf("%s/.config/xde/inputrc", getenv("HOME"));
+	char *usrdflt;
 
 	DPRINT();
-	if (!(dpy = XOpenDisplay(NULL))) {
-		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
-		exit(EXIT_FAILURE);
-	}
 	XrmInitialize();
-#if 0
-	{
-		Window root;
-		Atom atom;
-		XTextProperty xtp;
-
-		root = DefaultRootWindow(dpy);
-		if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
-			XCloseDisplay(dpy);
+	if (getenv("DISPLAY")) {
+		if (!(dpy = XOpenDisplay(NULL))) {
+			EPRINTF("could not open display %s\n", getenv("DISPLAY"));
+			exit(EXIT_FAILURE);
+		}
+		rdb = XrmGetDatabase(dpy);
+		if (!rdb)
 			DPRINTF("no resource manager database allocated\n");
-			return;
-		}
-		if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
-			XCloseDisplay(dpy);
-			EPRINTF("could not retrieve RESOURCE_MANAGER property\n");
-			return;
-		}
-		rdb = XrmGetStringDatabase((char *) xtp.value);
-	}
-#else
-	XrmGetDatabase(dpy);
-#endif
-	XrmCombineFileDatabase(usrdb, &rdb, False);
-	XrmCombineFileDatabase(sysdb, &rdb, False);
-#if 0
-	XFree(xtp.value);
-#endif
-	if (!rdb) {
-		DPRINTF("no resource manager database allocated\n");
 		XCloseDisplay(dpy);
-		return;
+	}
+	usrdflt = g_strdup_printf(USRDFLT, getenv("HOME"));
+	if (!XrmCombineFileDatabase(usrdflt, &rdb, False))
+		DPRINTF("could not open rcfile %s\n", usrdflt);
+	g_free(usrdflt);
+	if (!XrmCombineFileDatabase(APPDFLT, &rdb, False))
+		DPRINTF("could not open rcfile %s\n", APPDFLT);
+	if (!rdb) {
+		DPRINTF("no resource manager database found\n");
+		rdb = XrmGetStringDatabase("");
 	}
 	if ((val = get_resource(rdb, "debug", "0"))) {
 		getXrmInt(val, &options.debug);
@@ -3292,8 +3274,6 @@ get_resources(int argc, char *argv[])
 		getXrmBool(val, &resources.XF86Misc.MouseChordMiddle);
 
 	XrmDestroyDatabase(rdb);
-	XCloseDisplay(dpy);
-	return;
 }
 
 void
