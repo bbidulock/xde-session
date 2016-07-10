@@ -67,6 +67,9 @@
 #include <sys/wait.h>
 #include <sys/poll.h>
 #include <fcntl.h>
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
 #include <dirent.h>
 #include <time.h>
 #include <signal.h>
@@ -78,6 +81,8 @@
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <wordexp.h>
+#include <execinfo.h>
 #include <math.h>
 
 #include <X11/Xatom.h>
@@ -103,27 +108,36 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stderr, "I: "); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
+#define XPRINTF(_args...) do { } while (0)
 
+#define DPRINTF(_num, _args...) do { if (options.debug >= _num) { \
+		fprintf(stderr, NAME ": D: %12s: +%4d : %s() : ", __FILE__, __LINE__, __func__); \
+		fprintf(stderr, _args); fflush(stderr); } } while (0)
 
-#ifdef _GNU_SOURCE
-#include <getopt.h>
-#endif
+#define EPRINTF(_args...) do { \
+		fprintf(stderr, NAME ": E: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
+		fprintf(stderr, _args); fflush(stderr); } while (0)
+
+#define OPRINTF(_num, _args...) do { if (options.debug >= _num || options.output > _num) { \
+		fprintf(stdout, NAME ": I: "); \
+		fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define PTRACE(_num) do { if (options.debug >= _num || options.output >= _num) { \
+		fprintf(stderr, NAME ": T: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
+		fflush(stderr); } } while (0)
+
+void
+dumpstack(const char *file, const int line, const char *func)
+{
+	void *buffer[32];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 32)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
+}
 
 #define RESNAME "xde-input"
 #define RESCLAS "XDE-Input"
@@ -1101,25 +1115,25 @@ startup()
 	Window window = None;
 
 	support.Keyboard = True;
-	DPRINTF("Keyboard: core protocol support\n");
+	DPRINTF(1, "Keyboard: core protocol support\n");
 	support.Pointer = True;
-	DPRINTF("Pointer: core protocol support\n");
+	DPRINTF(1, "Pointer: core protocol support\n");
 	if (XkbQueryExtension(dpy, &state.XKeyboard.opcode, &state.XKeyboard.event,
 			      &state.XKeyboard.error, &state.XKeyboard.major_version,
 			      &state.XKeyboard.minor_version)) {
 		support.XKeyboard = True;
-		DPRINTF("XKeyboard: opcode=%d, event=%d, error=%d, major=%d, minor=%d\n",
+		DPRINTF(1, "XKeyboard: opcode=%d, event=%d, error=%d, major=%d, minor=%d\n",
 			state.XKeyboard.opcode, state.XKeyboard.event, state.XKeyboard.error,
 			state.XKeyboard.major_version, state.XKeyboard.minor_version);
 	} else {
 		support.XKeyboard = False;
-		DPRINTF("XKeyboard: not supported\n");
+		DPRINTF(1, "XKeyboard: not supported\n");
 	}
 	if (XScreenSaverQueryExtension(dpy, &state.ScreenSaver.event, &state.ScreenSaver.error) &&
 	    XScreenSaverQueryVersion(dpy, &state.ScreenSaver.major_version,
 				     &state.ScreenSaver.minor_version)) {
 		support.ScreenSaver = True;
-		DPRINTF("ScreenSaver: event=%d, error=%d, major=%d, minor=%d\n",
+		DPRINTF(1, "ScreenSaver: event=%d, error=%d, major=%d, minor=%d\n",
 			state.ScreenSaver.event, state.ScreenSaver.error,
 			state.ScreenSaver.major_version, state.ScreenSaver.minor_version);
 		XScreenSaverQueryInfo(dpy, window, &state.ScreenSaver.info);
@@ -1167,28 +1181,28 @@ startup()
 		}
 	} else {
 		support.ScreenSaver = False;
-		DPRINTF("ScreenSaver: not supported\n");
+		DPRINTF(1, "ScreenSaver: not supported\n");
 	}
 	if (DPMSQueryExtension(dpy, &state.DPMS.event, &state.DPMS.error) &&
 	    DPMSGetVersion(dpy, &state.DPMS.major_version, &state.DPMS.minor_version)) {
 		support.DPMS = True;
-		DPRINTF("DPMS: event=%d, error=%d, major=%d, minor=%d\n",
+		DPRINTF(1, "DPMS: event=%d, error=%d, major=%d, minor=%d\n",
 			state.DPMS.event, state.DPMS.error, state.DPMS.major_version,
 			state.DPMS.minor_version);
 	} else {
 		support.DPMS = False;
-		DPRINTF("DPMS: not supported\n");
+		DPRINTF(1, "DPMS: not supported\n");
 	}
 	if (XF86MiscQueryExtension(dpy, &state.XF86Misc.event, &state.XF86Misc.error) &&
 	    XF86MiscQueryVersion(dpy, &state.XF86Misc.major_version,
 				 &state.XF86Misc.minor_version)) {
 		support.XF86Misc = True;
-		DPRINTF("XF86Misc: event=%d, error=%d, major=%d, minor=%d\n",
+		DPRINTF(1, "XF86Misc: event=%d, error=%d, major=%d, minor=%d\n",
 			state.XF86Misc.event, state.XF86Misc.error, state.XF86Misc.major_version,
 			state.XF86Misc.minor_version);
 	} else {
 		support.XF86Misc = False;
-		DPRINTF("XF86Misc: not supported\n");
+		DPRINTF(1, "XF86Misc: not supported\n");
 	}
 }
 
@@ -2645,7 +2659,7 @@ put_resources(void)
 
 	rdb = XrmGetStringDatabase("");
 	if (!rdb) {
-		DPRINTF("no resource manager database allocated\n");
+		DPRINTF(1, "no resource manager database allocated\n");
 		return;
 	}
 	/* put a bunch of resources */
@@ -2986,12 +3000,12 @@ get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
 	if (XrmGetResource(xrdb, name, clas, &type, &value)) {
 		if (value.addr && *(char *) value.addr) {
-			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			DPRINTF(1, "%s:\t\t%s\n", clas, value.addr);
 			return (const char *) value.addr;
 		} else
-			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			DPRINTF(1, "%s:\t\t%s\n", clas, value.addr);
 	} else
-		DPRINTF("%s:\t\t%s\n", clas, "ERROR!");
+		DPRINTF(1, "%s:\t\t%s\n", clas, "ERROR!");
 	return (NULL);
 }
 
@@ -3127,7 +3141,7 @@ getXrmDouble(const char *val, double *floating)
 		*strchr(copy, '.') = radix;
 
 	*floating = strtod(copy, NULL);
-	DPRINTF("Got decimal value %s, translates to %f\n", val, *floating);
+	DPRINTF(1, "Got decimal value %s, translates to %f\n", val, *floating);
 	free(copy);
 	return True;
 }
@@ -3172,7 +3186,7 @@ get_resources(int argc, char *argv[])
 	const char *val;
 	char *usrdflt;
 
-	DPRINT();
+	PTRACE(5);
 	XrmInitialize();
 	if (getenv("DISPLAY")) {
 		if (!(dpy = XOpenDisplay(NULL))) {
@@ -3181,17 +3195,17 @@ get_resources(int argc, char *argv[])
 		}
 		rdb = XrmGetDatabase(dpy);
 		if (!rdb)
-			DPRINTF("no resource manager database allocated\n");
+			DPRINTF(1, "no resource manager database allocated\n");
 		XCloseDisplay(dpy);
 	}
 	usrdflt = g_strdup_printf(USRDFLT, getenv("HOME"));
 	if (!XrmCombineFileDatabase(usrdflt, &rdb, False))
-		DPRINTF("could not open rcfile %s\n", usrdflt);
+		DPRINTF(1, "could not open rcfile %s\n", usrdflt);
 	g_free(usrdflt);
 	if (!XrmCombineFileDatabase(APPDFLT, &rdb, False))
-		DPRINTF("could not open rcfile %s\n", APPDFLT);
+		DPRINTF(1, "could not open rcfile %s\n", APPDFLT);
 	if (!rdb) {
-		DPRINTF("no resource manager database found\n");
+		DPRINTF(1, "no resource manager database found\n");
 		rdb = XrmGetStringDatabase("");
 	}
 	if ((val = get_resource(rdb, "debug", "0"))) {
