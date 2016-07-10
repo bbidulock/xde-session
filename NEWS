@@ -1,9 +1,9 @@
-@PACKAGE@ -- NEWS file.  @DATE@
+xde-session -- NEWS file.  2016-06-16
 
 History of major user-visible changes:
 ======================================
 
-Release @PACKAGE@-@VERSION@ released @DATE@
+Release xde-session-1.2.44 released 2016-06-16
 -------------------------------------------
 
 git shortlog -e -n -w80,6,8 1.1...1.2
@@ -353,7 +353,7 @@ Release xde-session-1.0 released 2014-05-31
 
 git shortlog -e -n -w80,6,8 ...1.0
 
-This is the initial development release of @PACKAGE@.
+This is the initial development release of xde-session.
 
 
 # vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:

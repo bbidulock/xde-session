@@ -1,4 +1,4 @@
-@PACKAGE@ -- TODO file.  @DATE@
+xde-session -- TODO file.  2016-06-16
 
 - [ ] do not autostart tray icons; make an xde-trayicons instead (or
       maybe just use xde-tray) that is autostarted, but which will only
