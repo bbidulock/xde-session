@@ -67,9 +67,6 @@
 #include <sys/wait.h>
 #include <sys/poll.h>
 #include <fcntl.h>
-#ifdef _GNU_SOURCE
-#include <getopt.h>
-#endif
 #include <dirent.h>
 #include <time.h>
 #include <signal.h>
@@ -105,8 +102,22 @@
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
+#include <X11/SM/SMlib.h>
+#include <gio/gio.h>
+#include <glib.h>
+#include <gdk/gdkx.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
+
+#define WNCK_I_KNOW_THIS_IS_UNSTABLE
+#include <libwnck/libwnck.h>
+
+#include <pwd.h>
+
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
 
 #define XPRINTF(_args...) do { } while (0)
 
@@ -139,6 +150,21 @@ dumpstack(const char *file, const int line, const char *func)
 			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
 }
 
+#undef EXIT_SUCCESS
+#undef EXIT_FAILURE
+#undef EXIT_SYNTAXERR
+
+#define EXIT_SUCCESS	0
+#define EXIT_FAILURE	1
+#define EXIT_SYNTAXERR	2
+
+const char *program = NAME;
+
+#define XA_SELECTION_NAME	"_XDE_INPUT_S%d"
+
+static int saveArgc;
+static char **saveArgv;
+
 #define RESNAME "xde-input"
 #define RESCLAS "XDE-Input"
 #define RESTITL "X11 Input"
@@ -146,23 +172,60 @@ dumpstack(const char *file, const int line, const char *func)
 #define USRDFLT "%s/.config/" RESNAME "/rc"
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
 
+static Atom _XA_XDE_THEME_NAME;
+static Atom _XA_GTK_READ_RCFILES;
+static Atom _XA_XDE_INPUT_EDIT;
+
+typedef enum {
+	CommandDefault = 0,
+	CommandRun,
+	CommandReplace,
+	CommandQuit,
+	CommandEditor,
+	CommandHelp,
+	CommandVersion,
+	CommandCopying,
+} Command;
+
 Display *dpy;
 
 typedef struct {
-	int output;
 	int debug;
+	int output;
+	char *display;
+	int screen;
+	int button;
 	Bool dryrun;
-	Bool editor;
 	char *filename;
+	Command command;
+	char *clientId;
+	char *saveFile;
 } Options;
 
 Options options = {
-	.output = 1,
 	.debug = 0,
+	.output = 1,
+	.display = NULL,
+	.screen = -1,
+	.button = 0,
 	.dryrun = False,
-	.editor = False,
 	.filename = NULL,
+	.command = CommandDefault,
+	.clientId = NULL,
+	.saveFile = NULL,
 };
+
+typedef struct {
+	int index;	    /* index */
+	GdkDisplay *disp;
+	GdkScreen *scrn;    /* screen */
+	GdkWindow *root;
+	char *theme;	    /* XDE theme name */
+	Window selwin;	    /* selection owner window */
+	Atom atom;	    /* selection atom for this screen */
+} XdeScreen;
+
+XdeScreen *screens;			/* array of screens */
 
 typedef struct {
 	Bool Keyboard;	    /* support for core Keyboard */
@@ -279,6 +342,8 @@ typedef struct {
 } Controls;
 
 Controls controls;
+
+GtkWindow *editor = NULL;
 
 typedef struct {
 	struct {
@@ -1110,7 +1175,7 @@ reprocess_input()
 }
 
 void
-startup()
+startitup()
 {
 	Window window = None;
 
@@ -2426,6 +2491,891 @@ considered independent.");
 }
 
 static void
+pop_editor(XdeScreen *xscr)
+{
+	if (editor || (editor = create_window())) {
+		gtk_window_set_screen(editor, xscr->scrn);
+		edit_set_values();
+		gtk_widget_show_all(GTK_WIDGET(editor));
+	}
+}
+
+static void
+update_theme(XdeScreen *xscr, Atom prop)
+{
+	Display *dpy = GDK_DISPLAY_XDISPLAY(xscr->disp);
+	Window root = RootWindow(dpy, xscr->index);
+	XTextProperty xtp = { NULL, };
+	char **list = NULL;
+	int strings = 0;
+	Bool changed = False;
+	GtkSettings *set;
+
+	PTRACE(5);
+	gtk_rc_reparse_all();
+	if (XGetTextProperty(dpy, root, &xtp, _XA_XDE_THEME_NAME)) {
+		if (Xutf8TextPropertyToTextList(dpy, &xtp, &list, &strings) == Success) {
+			if (strings >= 1) {
+				static const char *prefix = "gtk-theme-name=\"";
+				static const char *suffix = "\"";
+				char *rc_string;
+				int len;
+
+				len = strlen(prefix) + strlen(list[0]) + strlen(suffix) + 1;
+				rc_string = calloc(len, sizeof(*rc_string));
+				strncpy(rc_string, prefix, len);
+				strncat(rc_string, list[0], len);
+				strncat(rc_string, suffix, len);
+				gtk_rc_parse_string(rc_string);
+				free(rc_string);
+				if (!xscr->theme || strcmp(xscr->theme, list[0])) {
+					free(xscr->theme);
+					xscr->theme = strdup(list[0]);
+					changed = True;
+				}
+			}
+			if (list)
+				XFreeStringList(list);
+		} else
+			EPRINTF("could not get text list for property\n");
+		if (xtp.value)
+			XFree(xtp.value);
+	} else
+		DPRINTF(1, "could not get _XDE_THEME_NAME for root 0x%lx\n", root);
+	if ((set = gtk_settings_get_for_screen(xscr->scrn))) {
+		GValue theme_v = G_VALUE_INIT;
+		const char *theme;
+
+		g_value_init(&theme_v, G_TYPE_STRING);
+		g_object_get_property(G_OBJECT(set), "gtk-theme-name", &theme_v);
+		theme = g_value_get_string(&theme_v);
+		if (theme && (!xscr->theme || strcmp(xscr->theme, theme))) {
+			free(xscr->theme);
+			xscr->theme = strdup(theme);
+			changed = True;
+		}
+		g_value_unset(&theme_v);
+	}
+	if (changed) {
+		DPRINTF(1, "New theme is %s\n", xscr->theme);
+		/* FIXME: do something more about it. */
+	}
+}
+
+static GdkFilterReturn
+event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	PTRACE(5);
+	if (options.debug > 1) {
+		fprintf(stderr, "==> SelectionClear: %p\n", xscr);
+		fprintf(stderr, "    --> send_event = %s\n",
+			xev->xselectionclear.send_event ? "true" : "false");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xselectionclear.window);
+		fprintf(stderr, "    --> selection = %s\n",
+			XGetAtomName(dpy, xev->xselectionclear.selection));
+		fprintf(stderr, "    --> time = %lu\n", xev->xselectionclear.time);
+		fprintf(stderr, "<== SelectionClear: %p\n", xscr);
+	}
+	if (xscr && xev->xselectionclear.window == xscr->selwin) {
+		XDestroyWindow(dpy, xscr->selwin);
+		EPRINTF("selection cleared, exiting\n");
+		exit(EXIT_SUCCESS);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = data;
+	Display *dpy = GDK_DISPLAY_XDISPLAY(xscr->disp);
+
+	PTRACE(5);
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case SelectionClear:
+		return event_handler_SelectionClear(dpy, xev, xscr);
+	}
+	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	PTRACE(5);
+	if (options.debug > 2) {
+		fprintf(stderr, "==> PropertyNotify:\n");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xproperty.window);
+		fprintf(stderr, "    --> atom = %s\n", XGetAtomName(dpy, xev->xproperty.atom));
+		fprintf(stderr, "    --> time = %ld\n", xev->xproperty.time);
+		fprintf(stderr, "    --> state = %s\n",
+			(xev->xproperty.state == PropertyNewValue) ? "NewValue" : "Delete");
+		fprintf(stderr, "<== PropertyNotify:\n");
+	}
+	if (xev->xproperty.atom == _XA_XDE_THEME_NAME
+	    && xev->xproperty.state == PropertyNewValue) {
+		PTRACE(5);
+		update_theme(xscr, xev->xproperty.atom);
+		return GDK_FILTER_REMOVE;	/* event handled */
+	}
+	return GDK_FILTER_CONTINUE;	/* event not handled */
+}
+
+static GdkFilterReturn
+root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = (typeof(xscr)) data;
+	Display *dpy = GDK_DISPLAY_XDISPLAY(xscr->disp);
+
+	PTRACE(5);
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case PropertyNotify:
+		return event_handler_PropertyNotify(dpy, xev, xscr);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+event_handler_ClientMessage(Display *dpy, XEvent *xev)
+{
+	XdeScreen *xscr = NULL;
+	int s, nscr = ScreenCount(dpy);
+
+	for (s = 0; s < nscr; s++)
+		if (xev->xclient.window == RootWindow(dpy, s)) {
+			xscr = screens + s;
+			break;
+		}
+
+	PTRACE(5);
+	if (options.debug > 1) {
+		fprintf(stderr, "==> ClientMessage: %p\n", xscr);
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xclient.window);
+		fprintf(stderr, "    --> message_type = %s\n",
+			XGetAtomName(dpy, xev->xclient.message_type));
+		fprintf(stderr, "    --> format = %d\n", xev->xclient.format);
+		switch (xev->xclient.format) {
+			int i;
+
+		case 8:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 20; i++)
+				fprintf(stderr, " %02x", xev->xclient.data.b[i]);
+			fprintf(stderr, "\n");
+			break;
+		case 16:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 10; i++)
+				fprintf(stderr, " %04x", xev->xclient.data.s[i]);
+			fprintf(stderr, "\n");
+			break;
+		case 32:
+			fprintf(stderr, "    --> data =");
+			for (i = 0; i < 5; i++)
+				fprintf(stderr, " %08lx", xev->xclient.data.l[i]);
+			fprintf(stderr, "\n");
+			break;
+		}
+		fprintf(stderr, "<== ClientMessage: %p\n", xscr);
+	}
+	if (xscr) {
+		if (xev->xclient.message_type == _XA_GTK_READ_RCFILES) {
+			update_theme(xscr, xev->xclient.message_type);
+			return GDK_FILTER_REMOVE;	/* event handled */
+		} else
+		if (xev->xclient.message_type == _XA_XDE_INPUT_EDIT) {
+			pop_editor(xscr);
+			return GDK_FILTER_REMOVE;
+		}
+	}
+	return GDK_FILTER_CONTINUE;	/* event not handled */
+}
+
+static GdkFilterReturn
+client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	Display *dpy = (typeof(dpy)) data;
+
+	PTRACE(5);
+	switch (xev->type) {
+	case ClientMessage:
+		return event_handler_ClientMessage(dpy, xev);
+	}
+	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;	/* event not handled, continue processing */
+}
+
+static Window
+get_selection(Bool replace, Window selwin)
+{
+	char selection[64] = { 0, };
+	GdkDisplay *disp;
+	Display *dpy;
+	int s, nscr;
+	Window owner;
+	Atom atom;
+	Window gotone = None;
+
+	PTRACE(5);
+	disp = gdk_display_get_default();
+	nscr = gdk_display_get_n_screens(disp);
+
+	dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	for (s = 0; s < nscr; s++) {
+		snprintf(selection, sizeof(selection), XA_SELECTION_NAME, s);
+		atom = XInternAtom(dpy, selection, False);
+		if (!(owner = XGetSelectionOwner(dpy, atom)))
+			DPRINTF(1, "No owner for %s\n", selection);
+		if ((owner && replace) || (!owner && selwin)) {
+			DPRINTF(1, "Setting owner of %s to 0x%08lx from 0x%08lx\n", selection,
+				selwin, owner);
+			XSetSelectionOwner(dpy, atom, selwin, CurrentTime);
+			XSync(dpy, False);
+		}
+		if (!gotone && owner)
+			gotone = owner;
+	}
+	if (replace) {
+		if (gotone) {
+			if (selwin)
+				DPRINTF(1, "%s: replacing running instance\n", NAME);
+			else
+				DPRINTF(1, "%s: quitting running instance\n", NAME);
+		} else {
+			if (selwin)
+				DPRINTF(1, "%s: no running instance to replace\n", NAME);
+			else
+				DPRINTF(1, "%s: no running instance to quit\n", NAME);
+		}
+		if (selwin) {
+			XEvent ev = { 0, };
+			Atom manager = XInternAtom(dpy, "MANAGER", False);
+			GdkScreen *scrn;
+			Window root;
+
+			for (s = 0; s < nscr; s++) {
+				scrn = gdk_display_get_screen(disp, s);
+				root = GDK_WINDOW_XID(gdk_screen_get_root_window(scrn));
+				snprintf(selection, sizeof(selection), XA_SELECTION_NAME, s);
+				atom = XInternAtom(dpy, selection, False);
+
+				ev.xclient.type = ClientMessage;
+				ev.xclient.serial = 0;
+				ev.xclient.send_event = False;
+				ev.xclient.display = dpy;
+				ev.xclient.window = root;
+				ev.xclient.message_type = manager;
+				ev.xclient.format = 32;
+				ev.xclient.data.l[0] = CurrentTime;	/* FIXME:
+									   mimestamp */
+				ev.xclient.data.l[1] = atom;
+				ev.xclient.data.l[2] = selwin;
+				ev.xclient.data.l[3] = 0;
+				ev.xclient.data.l[4] = 0;
+
+				XSendEvent(dpy, root, False, StructureNotifyMask, &ev);
+				XFlush(dpy);
+			}
+		}
+	} else if (gotone)
+		DPRINTF(1, "%s: not replacing running instance\n", NAME);
+	return (gotone);
+}
+
+static void
+do_run(int argc, char *argv[], Bool replace)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	GdkScreen *scrn = gdk_display_get_default_screen(disp);
+	GdkWindow *root = gdk_screen_get_root_window(scrn), *sel;
+	char selection[64] = { 0, };
+	Window selwin, owner;
+	XdeScreen *xscr;
+	int s, nscr;
+
+	PTRACE(5);
+	selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
+
+	if ((owner = get_selection(replace, selwin))) {
+		if (!replace) {
+			XDestroyWindow(dpy, selwin);
+			EPRINTF("%s: instance already running\n", NAME);
+			exit(EXIT_FAILURE);
+		}
+	}
+	XSelectInput(dpy, selwin,
+		     StructureNotifyMask | SubstructureNotifyMask | PropertyChangeMask);
+
+	nscr = gdk_display_get_n_screens(disp);
+	screens = calloc(nscr, sizeof(*screens));
+
+	sel = gdk_x11_window_foreign_new_for_display(disp, selwin);
+	gdk_window_add_filter(sel, selwin_handler, screens);
+
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
+		snprintf(selection, sizeof(selection), XA_SELECTION_NAME, s);
+		xscr->index = s;
+		xscr->atom = XInternAtom(dpy, selection, False);
+		xscr->disp = disp;
+		xscr->scrn = gdk_display_get_screen(disp, s);
+		xscr->root = gdk_screen_get_root_window(xscr->scrn);
+		xscr->selwin = selwin;
+		gdk_window_add_filter(xscr->root, root_handler, xscr);
+		update_theme(xscr, None);
+	}
+	gtk_main();
+}
+
+/** @brief Ask a running instance to quit.
+  *
+  * This is performed by checking for an owner of the selection and clearing the
+  * selection if it exists.
+  */
+static void
+do_quit(int argc, char *argv[])
+{
+	PTRACE(5);
+	get_selection(True, None);
+}
+
+/** @brief Ask running instance to launch an editor (or run a new instance and
+  * launch the editor)
+  */
+static void
+do_editor(int argc, char *argv[])
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	GdkScreen *scrn = gdk_display_get_default_screen(disp);
+	GdkWindow *root = gdk_screen_get_root_window(scrn), *sel;
+	char selection[64] = { 0, };
+	Window selwin, owner;
+	XdeScreen *xscr;
+	int s, nscr;
+
+	PTRACE(5);
+	selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
+
+	if ((owner = get_selection(False, selwin))) {
+		XEvent ev = { 0, };
+
+		/* existing instance running, ask it to launch editor */
+		XDestroyWindow(dpy, selwin);
+		DPRINTF(1, "%s: instance running: asking it to launch editor\n", NAME);
+		scrn = gdk_display_get_screen(disp, options.screen);
+		root = gdk_screen_get_root_window(scrn);
+
+		ev.xclient.type = ClientMessage;
+		ev.xclient.serial = 0;
+		ev.xclient.send_event = False;
+		ev.xclient.display = dpy;
+		ev.xclient.window = GDK_WINDOW_XID(root);
+		ev.xclient.message_type = _XA_XDE_INPUT_EDIT;
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = CurrentTime;
+		ev.xclient.data.l[1] = 0;
+		ev.xclient.data.l[2] = 0;
+		ev.xclient.data.l[3] = 0;
+		ev.xclient.data.l[4] = 0;
+		XSendEvent(dpy, GDK_WINDOW_XID(root), False, StructureNotifyMask, &ev);
+		XSync(dpy, False);
+		/* might be more graceful than just exiting */
+		gtk_main_quit();
+		return;
+		exit(EXIT_SUCCESS);
+	}
+	XSelectInput(dpy, selwin,
+		     StructureNotifyMask | SubstructureNotifyMask | PropertyChangeMask);
+
+	nscr = gdk_display_get_n_screens(disp);
+	screens = calloc(nscr, sizeof(*screens));
+
+	sel = gdk_x11_window_foreign_new_for_display(disp, selwin);
+	gdk_window_add_filter(sel, selwin_handler, screens);
+
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
+		snprintf(selection, sizeof(selection), XA_SELECTION_NAME, s);
+		xscr->index = s;
+		xscr->atom = XInternAtom(dpy, selection, False);
+		xscr->disp = disp;
+		xscr->scrn = gdk_display_get_screen(disp, s);
+		xscr->root = gdk_screen_get_root_window(xscr->scrn);
+		xscr->selwin = selwin;
+		gdk_window_add_filter(xscr->root, root_handler, xscr);
+		update_theme(xscr, None);
+	}
+	xscr = screens + options.screen;
+	pop_editor(xscr);
+	gtk_main();
+}
+
+static void
+clientSetProperties(SmcConn smcConn, SmPointer data)
+{
+	char userID[20];
+	int i, j, argc = saveArgc;
+	char **argv = saveArgv;
+	char *cwd = NULL;
+	char hint;
+	struct passwd *pw;
+	SmPropValue *penv = NULL, *prst = NULL, *pcln = NULL;
+	SmPropValue propval[11];
+	SmProp prop[11];
+
+	SmProp *props[11] = {
+		&prop[0], &prop[1], &prop[2], &prop[3], &prop[4],
+		&prop[5], &prop[6], &prop[7], &prop[8], &prop[9],
+		&prop[10]
+	};
+
+	j = 0;
+
+	/* CloneCommand: This is like the RestartCommand except it restarts a copy of the 
+	   application.  The only difference is that the application doesn't supply its
+	   client id at register time.  On POSIX systems the type should be a
+	   LISTofARRAY8. */
+	prop[j].name = SmCloneCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = pcln = calloc(argc, sizeof(*pcln));
+	prop[j].num_vals = 0;
+	props[j] = &prop[j];
+	for (i = 0; i < argc; i++) {
+		if (!strcmp(argv[i], "-clientId") || !strcmp(argv[i], "-restore"))
+			i++;
+		else {
+			prop[j].vals[prop[j].num_vals].value = (SmPointer) argv[i];
+			prop[j].vals[prop[j].num_vals++].length = strlen(argv[i]);
+		}
+	}
+	j++;
+
+#if 0
+	/* CurrentDirectory: On POSIX-based systems, specifies the value of the current
+	   directory that needs to be set up prior to starting the program and should be
+	   of type ARRAY8. */
+	prop[j].name = SmCurrentDirectory;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = NULL;
+	propval[j].length = 0;
+	cwd = calloc(PATH_MAX + 1, sizeof(propval[j].value[0]));
+	if (getcwd(cwd, PATH_MAX)) {
+		propval[j].value = cwd;
+		propval[j].length = strlen(propval[j].value);
+		j++;
+	} else {
+		free(cwd);
+		cwd = NULL;
+	}
+#endif
+
+#if 0
+	/* DiscardCommand: The discard command contains a command that when delivered to
+	   the host that the client is running on (determined from the connection), will
+	   cause it to discard any information about the current state.  If this command
+	   is not specified, the SM will assume that all of the client's state is encoded
+	   in the RestartCommand [and properties].  On POSIX systems the type should be
+	   LISTofARRAY8. */
+	prop[j].name = SmDiscardCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = "/bin/true";
+	propval[j].length = strlen("/bin/true");
+	j++;
+#endif
+
+#if 0
+	char **env;
+
+	/* Environment: On POSIX based systems, this will be of type LISTofARRAY8 where
+	   the ARRAY8s alternate between environment variable name and environment
+	   variable value. */
+	/* XXX: we might want to filter a few out */
+	for (i = 0, env = environ; *env; i += 2, env++) ;
+	prop[j].name = SmEnvironment;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = penv = calloc(i, sizeof(*penv));
+	prop[j].num_vals = i;
+	props[j] = &prop[j];
+	for (i = 0, env = environ; *env; i += 2, env++) {
+		char *equal;
+		int len;
+
+		equal = strchrnul(*env, '=');
+		len = (int) (*env - equal);
+		if (*equal)
+			equal++;
+		prop[j].vals[i].value = *env;
+		prop[j].vals[i].length = len;
+		prop[j].vals[i + 1].value = equal;
+		prop[j].vals[i + 1].length = strlen(equal);
+	}
+	j++;
+#endif
+
+#if 0
+	char procID[20];
+
+	/* ProcessID: This specifies an OS-specific identifier for the process. On POSIX
+	   systems this should be of type ARRAY8 and contain the return of getpid()
+	   turned into a Latin-1 (decimal) string. */
+	prop[j].name = SmProcessID;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	snprintf(procID, sizeof(procID), "%ld", (long) getpid());
+	propval[j].value = procID;
+	propval[j].length = strlen(procID);
+	j++;
+#endif
+
+	/* Program: The name of the program that is running.  On POSIX systems, this
+	   should eb the first parameter passed to execve(3) and should be of type
+	   ARRAY8. */
+	prop[j].name = SmProgram;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	propval[j].value = argv[0];
+	propval[j].length = strlen(argv[0]);
+	j++;
+
+	/* RestartCommand: The restart command contains a command that when delivered to
+	   the host that the client is running on (determined from the connection), will
+	   cause the client to restart in its current state.  On POSIX-based systems this 
+	   if of type LISTofARRAY8 and each of the elements in the array represents an
+	   element in the argv[] array.  This restart command should ensure that the
+	   client restarts with the specified client-ID.  */
+	prop[j].name = SmRestartCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = prst = calloc(argc + 4, sizeof(*prst));
+	prop[j].num_vals = 0;
+	props[j] = &prop[j];
+	for (i = 0; i < argc; i++) {
+		if (!strcmp(argv[i], "-clientId") || !strcmp(argv[i], "-restore"))
+			i++;
+		else {
+			prop[j].vals[prop[j].num_vals].value = (SmPointer) argv[i];
+			prop[j].vals[prop[j].num_vals++].length = strlen(argv[i]);
+		}
+	}
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) "-clientId";
+	prop[j].vals[prop[j].num_vals++].length = 9;
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) options.clientId;
+	prop[j].vals[prop[j].num_vals++].length = strlen(options.clientId);
+
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) "-restore";
+	prop[j].vals[prop[j].num_vals++].length = 9;
+	prop[j].vals[prop[j].num_vals].value = (SmPointer) options.saveFile;
+	prop[j].vals[prop[j].num_vals++].length = strlen(options.saveFile);
+	j++;
+
+	/* ResignCommand: A client that sets the RestartStyleHint to RestartAnyway uses
+	   this property to specify a command that undoes the effect of the client and
+	   removes any saved state. */
+	prop[j].name = SmResignCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = calloc(2, sizeof(*prop[j].vals));
+	prop[j].num_vals = 2;
+	props[j] = &prop[j];
+	prop[j].vals[0].value = "/usr/bin/xde-pager";
+	prop[j].vals[0].length = strlen("/usr/bin/xde-pager");
+	prop[j].vals[1].value = "-quit";
+	prop[j].vals[1].length = strlen("-quit");
+	j++;
+
+	/* RestartStyleHint: If the RestartStyleHint property is present, it will contain 
+	   the style of restarting the client prefers.  If this flag is not specified,
+	   RestartIfRunning is assumed.  The possible values are as follows:
+	   RestartIfRunning(0), RestartAnyway(1), RestartImmediately(2), RestartNever(3). 
+	   The RestartIfRunning(0) style is used in the usual case.  The client should be 
+	   restarted in the next session if it is connected to the session manager at the
+	   end of the current session. The RestartAnyway(1) style is used to tell the SM
+	   that the application should be restarted in the next session even if it exits
+	   before the current session is terminated. It should be noted that this is only
+	   a hint and the SM will follow the policies specified by its users in
+	   determining what applications to restart.  A client that uses RestartAnyway(1)
+	   should also set the ResignCommand and ShutdownCommand properties to the
+	   commands that undo the state of the client after it exits.  The
+	   RestartImmediately(2) style is like RestartAnyway(1) but in addition, the
+	   client is meant to run continuously.  If the client exits, the SM should try to 
+	   restart it in the current session.  The RestartNever(3) style specifies that
+	   the client does not wish to be restarted in the next session. */
+	prop[j].name = SmRestartStyleHint;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[0];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	hint = SmRestartImmediately;	/* <--- */
+	propval[j].value = &hint;
+	propval[j].length = 1;
+	j++;
+
+	/* ShutdownCommand: This command is executed at shutdown time to clean up after a 
+	   client that is no longer running but retained its state by setting
+	   RestartStyleHint to RestartAnyway(1).  The command must not remove any saved
+	   state as the client is still part of the session. */
+	prop[j].name = SmShutdownCommand;
+	prop[j].type = SmLISTofARRAY8;
+	prop[j].vals = calloc(2, sizeof(*prop[j].vals));
+	prop[j].num_vals = 2;
+	props[j] = &prop[j];
+	prop[j].vals[0].value = "/usr/bin/xde-pager";
+	prop[j].vals[0].length = strlen("/usr/bin/xde-pager");
+	prop[j].vals[1].value = "-quit";
+	prop[j].vals[1].length = strlen("-quit");
+	j++;
+
+	/* UserID: Specifies the user's ID.  On POSIX-based systems this will contain the 
+	   user's name (the pw_name field of struct passwd).  */
+	errno = 0;
+	prop[j].name = SmUserID;
+	prop[j].type = SmARRAY8;
+	prop[j].vals = &propval[j];
+	prop[j].num_vals = 1;
+	props[j] = &prop[j];
+	if ((pw = getpwuid(getuid())))
+		strncpy(userID, pw->pw_name, sizeof(userID) - 1);
+	else {
+		EPRINTF("%s: %s\n", "getpwuid()", strerror(errno));
+		snprintf(userID, sizeof(userID), "%ld", (long) getuid());
+	}
+	propval[j].value = userID;
+	propval[j].length = strlen(userID);
+	j++;
+
+	SmcSetProperties(smcConn, j, props);
+
+	free(cwd);
+	free(pcln);
+	free(prst);
+	free(penv);
+}
+
+static Bool saving_yourself;
+static Bool shutting_down;
+
+static void
+clientSaveYourselfPhase2CB(SmcConn smcConn, SmPointer data)
+{
+	clientSetProperties(smcConn, data);
+	SmcSaveYourselfDone(smcConn, True);
+}
+
+/** @brief save yourself
+  *
+  * The session manager sends a "Save Yourself" message to a client either to
+  * check-point it or just before termination so that it can save its state.
+  * The client responds with zero or more calls to SmcSetProperties to update
+  * the properties indicating how to restart the client.  When all the
+  * properties have been set, the client calls SmcSaveYourselfDone.
+  *
+  * If interact_type is SmcInteractStyleNone, the client must not interact with
+  * the user while saving state.  If interact_style is SmInteractStyleErrors,
+  * the client may interact with the user only if an error condition arises.  If
+  * interact_style is  SmInteractStyleAny then the client may interact with the
+  * user for any purpose.  Because only one client can interact with the user at
+  * a time, the client must call SmcInteractRequest and wait for an "Interact"
+  * message from the session maanger.  When the client is done interacting with
+  * the user, it calls SmcInteractDone.  The client may only call
+  * SmcInteractRequest() after it receives a "Save Yourself" message and before
+  * it calls SmcSaveYourSelfDone().
+  */
+static void
+clientSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
+		     int interactStyle, Bool fast)
+{
+	if (!(shutting_down = shutdown)) {
+		if (!SmcRequestSaveYourselfPhase2(smcConn, clientSaveYourselfPhase2CB, data))
+			SmcSaveYourselfDone(smcConn, False);
+		return;
+	}
+	clientSetProperties(smcConn, data);
+	SmcSaveYourselfDone(smcConn, True);
+}
+
+/** @brief die
+  *
+  * The session manager sends a "Die" message to a client when it wants it to
+  * die.  The client should respond by calling SmcCloseConnection.  A session
+  * manager that behaves properly will send a "Save Yourself" message before the
+  * "Die" message.
+  */
+static void
+clientDieCB(SmcConn smcConn, SmPointer data)
+{
+	SmcCloseConnection(smcConn, 0, NULL);
+	shutting_down = False;
+	gtk_main_quit();
+}
+
+static void
+clientSaveCompleteCB(SmcConn smcConn, SmPointer data)
+{
+	if (saving_yourself) {
+		saving_yourself = False;
+		gtk_main_quit();
+	}
+
+}
+
+/** @brief shutdown cancelled
+  *
+  * The session manager sends a "Shutdown Cancelled" message when the user
+  * cancelled the shutdown during an interaction (see Section 5.5, "Interacting
+  * With the User").  The client can now continue as if the shutdown had never
+  * happended.  If the client has not called SmcSaveYourselfDone() yet, it can
+  * either abort the save and then send SmcSaveYourselfDone() with the success
+  * argument set to False or it can continue with the save and then call
+  * SmcSaveYourselfDone() with the success argument set to reflect the outcome
+  * of the save.
+  */
+static void
+clientShutdownCancelledCB(SmcConn smcConn, SmPointer data)
+{
+	shutting_down = False;
+	gtk_main_quit();
+}
+
+/* *INDENT-OFF* */
+static unsigned long clientCBMask =
+	SmcSaveYourselfProcMask |
+	SmcDieProcMask |
+	SmcSaveCompleteProcMask |
+	SmcShutdownCancelledProcMask;
+
+static SmcCallbacks clientCBs = {
+	.save_yourself = {
+		.callback = &clientSaveYourselfCB,
+		.client_data = NULL,
+	},
+	.die = {
+		.callback = &clientDieCB,
+		.client_data = NULL,
+	},
+	.save_complete = {
+		.callback = &clientSaveCompleteCB,
+		.client_data = NULL,
+	},
+	.shutdown_cancelled = {
+		.callback = &clientShutdownCancelledCB,
+		.client_data = NULL,
+	},
+};
+/* *INDENT-ON* */
+
+static gboolean
+on_ifd_watch(GIOChannel *chan, GIOCondition cond, pointer data)
+{
+	SmcConn smcConn = data;
+	IceConn iceConn = SmcGetIceConnection(smcConn);
+
+	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
+		EPRINTF("poll failed: %s %s %s\n",
+			(cond & G_IO_NVAL) ? "NVAL" : "",
+			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
+		return G_SOURCE_REMOVE;	/* remove event source */
+	} else if (cond & (G_IO_IN | G_IO_PRI)) {
+		IceProcessMessages(iceConn, NULL, NULL);
+	}
+	return G_SOURCE_CONTINUE;	/* keep event source */
+}
+
+static void
+init_smclient(void)
+{
+	char err[256] = { 0, };
+	GIOChannel *chan;
+	int ifd, mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
+	char *env;
+	SmcConn smcConn;
+	IceConn iceConn;
+
+	if (!(env = getenv("SESSION_MANAGER"))) {
+		if (options.clientId)
+			EPRINTF("clientId provided but no SESSION_MANAGER\n");
+		return;
+	}
+	smcConn = SmcOpenConnection(env, NULL, SmProtoMajor, SmProtoMinor,
+				    clientCBMask, &clientCBs, options.clientId,
+				    &options.clientId, sizeof(err), err);
+	if (!smcConn) {
+		EPRINTF("SmcOpenConnection: %s\n", err);
+		return;
+	}
+	iceConn = SmcGetIceConnection(smcConn);
+	ifd = IceConnectionNumber(iceConn);
+	chan = g_io_channel_unix_new(ifd);
+	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
+}
+
+static void
+startup(int argc, char *argv[])
+{
+	GdkAtom atom;
+	GdkEventMask mask;
+	GdkDisplay *disp;
+	GdkScreen *scrn;
+	GdkWindow *root;
+	Display *dpy;
+	char *file;
+	int nscr;
+
+	file = g_strdup_printf("%s/.gtkrc-2.0.xde", g_get_home_dir());
+	gtk_rc_add_default_file(file);
+	g_free(file);
+
+	init_smclient();
+
+	gtk_init(&argc, &argv);
+
+	disp = gdk_display_get_default();
+	nscr = gdk_display_get_n_screens(disp);
+
+	if (options.screen >= 0 && options.screen >= nscr) {
+		EPRINTF("bad screen specified: %d\n", options.screen);
+		exit(EXIT_FAILURE);
+	}
+
+	dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	atom = gdk_atom_intern_static_string("_XDE_THEME_NAME");
+	_XA_XDE_THEME_NAME = gdk_x11_atom_to_xatom_for_display(disp, atom);
+
+	atom = gdk_atom_intern_static_string("_GTK_READ_RCFILES");
+	_XA_GTK_READ_RCFILES = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+
+	atom = gdk_atom_intern_static_string("_XDE_INPUT_EDIT");
+	_XA_XDE_INPUT_EDIT = gdk_x11_atom_to_xatom_for_display(disp, atom);
+
+	scrn = gdk_display_get_default_screen(disp);
+	root = gdk_screen_get_root_window(scrn);
+	mask = gdk_window_get_events(root);
+	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK;
+	gdk_window_set_events(root, mask);
+}
+
+static void
 copying(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
@@ -3295,19 +4245,21 @@ get_keyfile(void)
 {
 }
 
-void
+static void
 set_defaults(void)
 {
 	char *file, *p;
-	const char *s;
+	const char *env;
 
+	if ((env = getenv("DISPLAY")))
+		options.display = strdup(env);
 	if ((p = getenv("XDE_DEBUG")))
 		options.debug = atoi(p);
 	file = calloc(PATH_MAX, sizeof(*file));
-	if ((s = getenv("XDG_CONFIG_HOME")))
-		strcpy(file, s);
-	else if ((s = getenv("HOME"))) {
-		strcpy(file, s);
+	if ((env = getenv("XDG_CONFIG_HOME")))
+		strcpy(file, env);
+	else if ((env = getenv("HOME"))) {
+		strcpy(file, env);
 		strcat(file, "/.config");
 	} else {
 		strcpy(file, ".");
@@ -3317,23 +4269,76 @@ set_defaults(void)
 	free(file);
 }
 
+static int
+find_pointer_screen(void)
+{
+	return 0; /* FIXME: write this */
+}
+
+static int
+find_focus_screen(void)
+{
+	return 0; /* FIXME: write this */
+}
+
+static void
+get_defaults(void)
+{
+	const char *p;
+	int n;
+
+	if (!options.display) {
+		EPRINTF("No DISPLAY environment variable nor --display option\n");
+		exit(EXIT_FAILURE);
+	}
+	if (options.screen < 0 && (p = strrchr(options.display, '.'))
+	    && (n = strspn(++p, "0123456789")) && *(p + n) == '\0')
+		options.screen = atoi(p);
+	if (options.screen < 0 && options.command == CommandEditor) {
+		if (options.button)
+			options.screen = find_pointer_screen();
+		else
+			options.screen = find_focus_screen();
+	}
+	if (options.command == CommandDefault)
+		options.command = CommandRun;
+}
+
 int
 main(int argc, char *argv[])
 {
+	Command command = CommandDefault;
+
 	setlocale(LC_ALL, "");
 
 	set_defaults();
+
+	saveArgc = argc;
+	saveArgv = argv;
+
 	get_resources(argc, argv);
 
-	while(1) {
+	while (1) {
 		int c, val;
+		char *endptr = NULL;
+
 #ifdef _GNU_SOURCE
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+			{"display",	required_argument,	NULL, 'd'},
+			{"screen",	required_argument,	NULL, 's'},
+			{"button",	required_argument,	NULL, 'b'},
+			{"replace",	no_argument,		NULL, 'r'},
+			{"quit",	no_argument,		NULL, 'q'},
 			{"editor",	no_argument,		NULL, 'e'},
+
+			{"clientId",	required_argument,	NULL, '8'},
+			{"restore",	required_argument,	NULL, '9'},
+
 			{"filename",	required_argument,	NULL, 'f'},
 			{"dry-run",	no_argument,		NULL, 'n'},
+
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},
 			{"help",	no_argument,		NULL, 'h'},
@@ -3344,8 +4349,7 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "nD::v::hVCH?",
-				     long_options, &option_index);
+		c = getopt_long_only(argc, argv, "nD::v::hVCH?", long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "nDvhVC?");
 #endif				/* defined _GNU_SOURCE */
@@ -3358,9 +4362,45 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case 'e':	/* -e, --editor */
-			options.editor = True;
+		case 'd':	/* -d, --display DISPLAY */
+			setenv("DISPLAY", optarg, TRUE);
+			free(options.display);
+			options.display = strdup(optarg);
 			break;
+		case 's':	/* -s, --screen SCREEN */
+			options.screen = strtoul(optarg, &endptr, 0);
+			if (endptr && *endptr)
+				goto bad_option;
+			break;
+		case 'b':	/* -b, --button BUTTON */
+			options.button = strtoul(optarg, &endptr, 0);
+			if (endptr && *endptr)
+				goto bad_option;
+			if (options.button < 0 || options.button > 5)
+				goto bad_option;
+			break;
+		case 'r':	/* -r, --replace */
+			if (options.command != CommandDefault)
+				goto bad_command;
+			if (command == CommandDefault)
+				command = CommandReplace;
+			options.command = CommandReplace;
+			break;
+		case 'q':	/* -q, --quit */
+			if (options.command != CommandDefault)
+				goto bad_command;
+			if (command == CommandDefault)
+				command = CommandQuit;
+			options.command = CommandQuit;
+			break;
+		case 'e':	/* -e, --editor */
+			if (options.command != CommandDefault)
+				goto bad_command;
+			if (command == CommandDefault)
+				command = CommandEditor;
+			options.command = CommandEditor;
+			break;
+
 		case 'f':	/* -f, --filename FILENAME */
 			free(options.filename);
 			options.filename = strdup(optarg);
@@ -3370,8 +4410,7 @@ main(int argc, char *argv[])
 			break;
 		case 'D':	/* -D, --debug [level] */
 			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n",
-					argv[0]);
+				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
@@ -3382,8 +4421,7 @@ main(int argc, char *argv[])
 			break;
 		case 'v':	/* -v, --verbose [level] */
 			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n",
-					argv[0]);
+				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.output++;
 				break;
@@ -3394,22 +4432,22 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (options.debug)
-				fprintf(stderr, "%s: printing help message\n", argv[0]);
-			help(argc, argv);
-			exit(0);
+			command = CommandHelp;
+			break;
 		case 'V':	/* -V, --version */
-			if (options.debug)
-				fprintf(stderr, "%s: printing version message\n",
-					argv[0]);
-			version(argc, argv);
-			exit(0);
+			if (options.command != CommandDefault)
+				goto bad_command;
+			if (command == CommandDefault)
+				command = CommandVersion;
+			options.command = CommandVersion;
+			break;
 		case 'C':	/* -C, --copying */
-			if (options.debug)
-				fprintf(stderr, "%s: printing copying message\n",
-					argv[0]);
-			copying(argc, argv);
-			exit(0);
+			if (options.command != CommandDefault)
+				goto bad_command;
+			if (command == CommandDefault)
+				command = CommandCopying;
+			options.command = CommandCopying;
+			break;
 		case '?':
 		default:
 		      bad_option:
@@ -3418,31 +4456,75 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '",
-						argv[0]);
-					while (optind < argc)
-						fprintf(stderr, "%s ", argv[optind++]);
+					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					while (optind < argc) {
+						fprintf(stderr, "%s", argv[optind++]);
+						fprintf(stderr, "%s", (optind < argc) ? " " : "");
+					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument",
-						argv[0]);
+					fprintf(stderr, "%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(2);
+			exit(EXIT_SYNTAXERR);
+		      bad_command:
+			fprintf(stderr, "%s: only one command option allowed\n", argv[0]);
+			goto bad_usage;
 		}
 	}
-	if (options.debug) {
-		fprintf(stderr, "%s: option index = %d\n", argv[0], optind);
-		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
-	}
+	DPRINTF(1, "%s: option index = %d\n", argv[0], optind);
+	DPRINTF(1, "%s: option count = %d\n", argv[0], argc);
 	if (optind < argc) {
-		goto bad_nonopt;
+		fprintf(stderr, "%s: excess non-option arguments near '", argv[0]);
+		while (optind < argc) {
+			fprintf(stderr, "%s", argv[optind++]);
+			fprintf(stderr, "%s", (optind < argc) ? " " : "");
+		}
+		fprintf(stderr, "'\n");
+		usage(argc, argv);
+		exit(EXIT_SYNTAXERR);
 	}
-	exit(0);
+	get_defaults();
+	startup(argc, argv);
+	switch (command) {
+	case CommandDefault:
+	case CommandRun:
+		DPRINTF(1, "%s: running a new instance\n", argv[0]);
+		do_run(argc, argv, False);
+		break;
+	case CommandReplace:
+		DPRINTF(1, "%s: replacing existing instance\n", argv[0]);
+		do_run(argc, argv, True);
+		break;
+	case CommandQuit:
+		DPRINTF(1, "%s: asking xisting instance to quit\n", argv[0]);
+		do_quit(argc, argv);
+		break;
+	case CommandEditor:
+		DPRINTF(1, "%s: invoking the editor\n", argv[0]);
+		do_editor(argc, argv);
+		break;
+	case CommandHelp:
+		DPRINTF(1, "%s: printing help message\n", argv[0]);
+		help(argc, argv);
+		break;
+	case CommandVersion:
+		DPRINTF(1, "%s: printing version message\n", argv[0]);
+		version(argc, argv);
+		break;
+	case CommandCopying:
+		DPRINTF(1, "%s: printing copying message\n", argv[0]);
+		copying(argc, argv);
+		break;
+	default:
+		usage(argc, argv);
+		exit(EXIT_FAILURE);
+	}
+	exit(EXIT_SUCCESS);
 }
 
 // vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
