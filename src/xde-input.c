@@ -1066,7 +1066,7 @@ get_input()
   * Read the input settings from the configuration file.  Simple and direct.
   * The file is an .ini-style keyfile.  Use glib to read in the values.
   */
-void
+static void
 read_input(const char *filename)
 {
 	GError *error = NULL;
@@ -1087,7 +1087,7 @@ write_input()
 {
 }
 
-void
+static void
 set_input(const char *filename)
 {
 	read_input(filename);
@@ -2836,6 +2836,8 @@ do_run(int argc, char *argv[], Bool replace)
 		gdk_window_add_filter(xscr->root, root_handler, xscr);
 		update_theme(xscr, None);
 	}
+	get_input();
+	set_input(options.filename);
 	gtk_main();
 }
 
@@ -2917,6 +2919,8 @@ do_editor(int argc, char *argv[])
 		gdk_window_add_filter(xscr->root, root_handler, xscr);
 		update_theme(xscr, None);
 	}
+	get_input();
+	set_input(options.filename);
 	xscr = screens + options.screen;
 	pop_editor(xscr);
 	gtk_main();
