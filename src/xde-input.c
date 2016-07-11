@@ -105,6 +105,7 @@
 #include <X11/SM/SMlib.h>
 #include <gio/gio.h>
 #include <glib.h>
+#include <glib-unix.h>
 #include <gdk/gdkx.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
@@ -482,7 +483,7 @@ edit_set_values()
 	gboolean flag;
 
 	if (!file) {
-		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
+		EPRINTF("no key file!\n");
 		return;
 	}
 	if (support.Keyboard) {
@@ -594,18 +595,45 @@ purge_queue()
   * The file is an .ini-style keyfile.  Use glib to read in the values.
   */
 static void
-read_input(const char *filename)
+read_input(void)
 {
 	GError *error = NULL;
+	gchar *filename;
+	const gchar *const *dirs;
 
 	PTRACE(5);
-	if (!file && (file = g_key_file_new())) {
-		g_key_file_load_from_file(file, filename, G_KEY_FILE_NONE, &error);
-		if (error) {
-			EPRINTF("COULD NOT LOAD KEY FILE %s! <============= %s\n", filename, error->message);
-			g_error_free(error);
+	if (file) {
+		EPRINTF("key file already loaded!\n");
+		return;
+	}
+	if (!(file = g_key_file_new())) {
+		EPRINTF("could not create key file\n");
+		return;
+	}
+	filename = options.filename ? g_strdup(options.filename) :
+	    g_build_filename(g_get_user_config_dir(), "xde", "input.ini", NULL);
+	if (!g_file_test(filename, G_FILE_TEST_IS_REGULAR)) {
+		DPRINTF(1, "file %s does not yet exist\n", filename);
+		g_free(filename);
+		filename = NULL;
+		for (dirs = g_get_system_config_dirs(); dirs && *dirs; dirs++) {
+			filename = g_build_filename(dirs[0], "xde", "input.ini", NULL);
+			if (g_file_test(filename, G_FILE_TEST_IS_REGULAR))
+				break;
+			g_free(filename);
+			filename = NULL;
 		}
 	}
+	if (!filename) {
+		DPRINTF(1, "could not find input file\n");
+		return;
+	}
+	g_key_file_load_from_file(file, filename, G_KEY_FILE_NONE, &error);
+	if (error) {
+		EPRINTF("could not load key file %s: %s\n", filename, error->message);
+		g_error_free(error);
+	}
+	g_free(filename);
 }
 
 static void
@@ -615,7 +643,7 @@ get_input()
 	int i, j;
 
 	PTRACE(5);
-	read_input(options.filename);
+	read_input();
 	if (!file) {
 		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
 		return;
@@ -1110,16 +1138,39 @@ get_input()
 void
 write_input()
 {
+	GError *error = NULL;
+	gchar *filename, *dir;
+
 	PTRACE(5);
+	if (!file) {
+		EPRINTF("no key file!\n");
+		return;
+	}
+	filename = options.filename ? g_strdup(options.filename) :
+	    g_build_filename(g_get_user_config_dir(), "xde", "input.ini", NULL);
+	dir = g_path_get_dirname(filename);
+	if (g_mkdir_with_parents(dir, 0755) == -1) {
+		EPRINTF("could not create directory %s: %s\n", dir, strerror(errno));
+		g_free(dir);
+		g_free(filename);
+		return;
+	}
+	g_free(dir);
+	g_key_file_save_to_file(file, filename, &error);
+	if (error) {
+		EPRINTF("COULD NOT SAVE KEY FILE %s: %s\n", filename, error->message);
+		g_error_free(error);
+	}
+	g_free(filename);
 }
 
 static void
-set_input(const char *filename)
+set_input(void)
 {
 	PTRACE(5);
-	read_input(filename);
+	read_input();
 	if (!file) {
-		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
+		EPRINTF("no key file!\n");
 		return;
 	}
 	PTRACE(5);
@@ -2594,13 +2645,26 @@ considered independent.");
 }
 
 static void
-pop_editor(XdeScreen *xscr)
+edit_input(XdeScreen *xscr)
 {
 	if (editor || (editor = create_window())) {
 		gtk_window_set_screen(editor, xscr->scrn);
 		edit_set_values();
 		gtk_widget_show_all(GTK_WIDGET(editor));
 	}
+}
+
+static void
+term_input(void)
+{
+	if (editor) {
+		gtk_widget_destroy(GTK_WIDGET(editor));
+		editor = NULL;
+	}
+	/* grab once more before exiting, in case we missed and update */
+	get_input();
+	/* write the file */
+	write_input();
 }
 
 static void
@@ -2813,7 +2877,7 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 		} else
 		if (xev->xclient.message_type == _XA_XDE_INPUT_EDIT) {
 			PTRACE(5);
-			pop_editor(xscr);
+			edit_input(xscr);
 			PTRACE(5);
 			return GDK_FILTER_REMOVE;
 		}
@@ -2951,6 +3015,13 @@ iohandler(Display *display)
 int (*oldhandler) (Display *, XErrorEvent *) = NULL;
 int (*oldiohandler) (Display *) = NULL;
 
+gboolean
+signal_handler(gpointer user_data)
+{
+	gtk_main_quit();
+	return G_SOURCE_CONTINUE;	/* XXX: leave in place? */
+}
+
 static void
 do_run(int argc, char *argv[], Bool replace)
 {
@@ -2996,14 +3067,19 @@ do_run(int argc, char *argv[], Bool replace)
 		gdk_window_add_filter(xscr->root, root_handler, xscr);
 		update_theme(xscr, None);
 	}
+	g_unix_signal_add(SIGTERM, &signal_handler, NULL);
+	g_unix_signal_add(SIGINT, &signal_handler, NULL);
+	g_unix_signal_add(SIGQUIT, &signal_handler, NULL);
 	PTRACE(5);
 	startitup();
 	PTRACE(5);
 	get_input();
 	PTRACE(5);
-	set_input(options.filename);
+	set_input();
 	PTRACE(5);
 	gtk_main();
+	PTRACE(5);
+	term_input();
 	PTRACE(5);
 }
 
@@ -3085,17 +3161,22 @@ do_editor(int argc, char *argv[])
 		gdk_window_add_filter(xscr->root, root_handler, xscr);
 		update_theme(xscr, None);
 	}
+	g_unix_signal_add(SIGTERM, &signal_handler, NULL);
+	g_unix_signal_add(SIGINT, &signal_handler, NULL);
+	g_unix_signal_add(SIGQUIT, &signal_handler, NULL);
 	PTRACE(5);
 	startitup();
 	PTRACE(5);
 	get_input();
 	PTRACE(5);
-	set_input(options.filename);
+	set_input();
 	PTRACE(5);
 	xscr = screens + options.screen;
-	pop_editor(xscr);
+	edit_input(xscr);
 	PTRACE(5);
 	gtk_main();
+	PTRACE(5);
+	term_input();
 	PTRACE(5);
 }
 
@@ -3949,7 +4030,7 @@ put_keyfile(void)
 	char *val, buf[256] = { 0, };
 
 	if (!file) {
-		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
+		EPRINTF("no key file!\n");
 		return;
 	}
 	if (support.Keyboard) {
