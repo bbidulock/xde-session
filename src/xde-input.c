@@ -176,13 +176,13 @@ static char **saveArgv;
 static Atom _XA_XDE_THEME_NAME;
 static Atom _XA_GTK_READ_RCFILES;
 static Atom _XA_XDE_INPUT_EDIT;
+static Atom _XA_XDE_INPUT_TRAY;
 
 typedef enum {
 	CommandDefault = 0,
 	CommandRun,
 	CommandReplace,
 	CommandQuit,
-	CommandEditor,
 	CommandHelp,
 	CommandVersion,
 	CommandCopying,
@@ -198,6 +198,8 @@ typedef struct {
 	int button;
 	Bool dryrun;
 	char *filename;
+	Bool editor;
+	Bool trayicon;
 	Command command;
 	char *clientId;
 	char *saveFile;
@@ -210,6 +212,8 @@ Options options = {
 	.screen = -1,
 	.button = 0,
 	.dryrun = False,
+	.editor = False,
+	.trayicon = False,
 	.filename = NULL,
 	.command = CommandDefault,
 	.clientId = NULL,
@@ -1365,6 +1369,21 @@ startitup()
 			XFreeExtensionList(list);
 		}
 	}
+}
+
+GtkStatusIcon *trayicon = NULL;
+
+static GtkStatusIcon *
+create_icon(XdeScreen *xscr)
+{
+	return (trayicon);
+}
+
+static void
+show_tray(XdeScreen *xscr)
+{
+	if (!trayicon)
+		trayicon = create_icon(xscr);
 }
 
 static gchar *
@@ -2892,6 +2911,12 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 			edit_input(xscr);
 			PTRACE(5);
 			return GDK_FILTER_REMOVE;
+		} else
+		if (xev->xclient.message_type == _XA_XDE_INPUT_TRAY) {
+			PTRACE(5);
+			show_tray(xscr);
+			PTRACE(5);
+			return GDK_FILTER_REMOVE;
 		}
 		PTRACE(5);
 	}
@@ -3036,18 +3061,62 @@ do_run(int argc, char *argv[], Bool replace)
 	GdkScreen *scrn = gdk_display_get_default_screen(disp);
 	GdkWindow *root = gdk_screen_get_root_window(scrn), *sel;
 	char selection[64] = { 0, };
-	Window selwin, owner;
+	Window selwin, owner, broadcast = GDK_WINDOW_XID(root);
 	XdeScreen *xscr;
 	int s, nscr;
 
 	PTRACE(5);
-	selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
+	selwin = XCreateSimpleWindow(dpy, broadcast, 0, 0, 1, 1, 0, 0, 0);
 
 	if ((owner = get_selection(replace, selwin))) {
 		if (!replace) {
 			XDestroyWindow(dpy, selwin);
-			EPRINTF("%s: instance already running\n", NAME);
-			exit(EXIT_FAILURE);
+			if (!options.editor && !options.trayicon) {
+				EPRINTF("%s: instance already running\n", NAME);
+				exit(EXIT_FAILURE);
+			}
+			scrn = gdk_display_get_screen(disp, options.screen);
+			root = gdk_screen_get_root_window(scrn);
+			broadcast = GDK_WINDOW_XID(root);
+			if (options.editor) {
+				XEvent ev = { 0, };
+
+				DPRINTF(1, "instance running: asking it to launch editor\n");
+				ev.xclient.type = ClientMessage;
+				ev.xclient.serial = 0;
+				ev.xclient.send_event = False;
+				ev.xclient.display = dpy;
+				ev.xclient.window = broadcast;
+				ev.xclient.message_type = _XA_XDE_INPUT_EDIT;
+				ev.xclient.format = 32;
+				ev.xclient.data.l[0] = CurrentTime;
+				ev.xclient.data.l[1] = owner;
+				ev.xclient.data.l[2] = 0;
+				ev.xclient.data.l[3] = 0;
+				ev.xclient.data.l[4] = 0;
+				XSendEvent(dpy, broadcast, False, NoEventMask, &ev);
+				XSync(dpy, False);
+			}
+			if (options.trayicon) {
+				XEvent ev = { 0, };
+
+				DPRINTF(1, "instance running: asking it to install trayicon\n");
+				ev.xclient.type = ClientMessage;
+				ev.xclient.serial = 0;
+				ev.xclient.send_event = False;
+				ev.xclient.display = dpy;
+				ev.xclient.window = broadcast;
+				ev.xclient.message_type = _XA_XDE_INPUT_TRAY;
+				ev.xclient.format = 32;
+				ev.xclient.data.l[0] = CurrentTime;
+				ev.xclient.data.l[1] = owner;
+				ev.xclient.data.l[2] = 0;
+				ev.xclient.data.l[3] = 0;
+				ev.xclient.data.l[4] = 0;
+				XSendEvent(dpy, broadcast, False, NoEventMask, &ev);
+				XSync(dpy, False);
+			}
+			exit(EXIT_SUCCESS);
 		}
 	}
 	XSelectInput(dpy, selwin,
@@ -3084,6 +3153,11 @@ do_run(int argc, char *argv[], Bool replace)
 	PTRACE(5);
 	set_input();
 	PTRACE(5);
+	if (options.editor) {
+		xscr = screens + options.screen;
+		edit_input(xscr);
+	}
+	PTRACE(5);
 	gtk_main();
 	PTRACE(5);
 	term_input();
@@ -3100,92 +3174,6 @@ do_quit(int argc, char *argv[])
 {
 	PTRACE(5);
 	get_selection(True, None);
-}
-
-/** @brief Ask running instance to launch an editor (or run a new instance and
-  * launch the editor)
-  */
-static void
-do_editor(int argc, char *argv[])
-{
-	GdkDisplay *disp = gdk_display_get_default();
-	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
-	GdkScreen *scrn = gdk_display_get_default_screen(disp);
-	GdkWindow *root = gdk_screen_get_root_window(scrn), *sel;
-	char selection[64] = { 0, };
-	Window selwin, owner;
-	XdeScreen *xscr;
-	int s, nscr;
-
-	PTRACE(5);
-	selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
-
-	if ((owner = get_selection(False, selwin))) {
-		XEvent ev = { 0, };
-
-		/* existing instance running, ask it to launch editor */
-		XDestroyWindow(dpy, selwin);
-		DPRINTF(1, "%s: instance running: asking it to launch editor\n", NAME);
-		scrn = gdk_display_get_screen(disp, options.screen);
-		root = gdk_screen_get_root_window(scrn);
-
-		ev.xclient.type = ClientMessage;
-		ev.xclient.serial = 0;
-		ev.xclient.send_event = False;
-		ev.xclient.display = dpy;
-		ev.xclient.window = GDK_WINDOW_XID(root);
-		ev.xclient.message_type = _XA_XDE_INPUT_EDIT;
-		ev.xclient.format = 32;
-		ev.xclient.data.l[0] = CurrentTime;
-		ev.xclient.data.l[1] = 0;
-		ev.xclient.data.l[2] = 0;
-		ev.xclient.data.l[3] = 0;
-		ev.xclient.data.l[4] = 0;
-		XSendEvent(dpy, GDK_WINDOW_XID(root), False, StructureNotifyMask, &ev);
-		XSync(dpy, False);
-		exit(EXIT_SUCCESS);
-	}
-	XSelectInput(dpy, selwin,
-		     StructureNotifyMask | SubstructureNotifyMask | PropertyChangeMask);
-
-	oldhandler = XSetErrorHandler(handler);
-	oldiohandler = XSetIOErrorHandler(iohandler);
-
-	nscr = gdk_display_get_n_screens(disp);
-	screens = calloc(nscr, sizeof(*screens));
-
-	sel = gdk_x11_window_foreign_new_for_display(disp, selwin);
-	gdk_window_add_filter(sel, selwin_handler, screens);
-	gdk_window_add_filter(NULL, events_handler, NULL);
-
-	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
-		snprintf(selection, sizeof(selection), XA_SELECTION_NAME, s);
-		xscr->index = s;
-		xscr->atom = XInternAtom(dpy, selection, False);
-		xscr->disp = disp;
-		xscr->scrn = gdk_display_get_screen(disp, s);
-		xscr->root = gdk_screen_get_root_window(xscr->scrn);
-		xscr->selwin = selwin;
-		gdk_window_add_filter(xscr->root, root_handler, xscr);
-		update_theme(xscr, None);
-	}
-	g_unix_signal_add(SIGTERM, &signal_handler, NULL);
-	g_unix_signal_add(SIGINT, &signal_handler, NULL);
-	g_unix_signal_add(SIGHUP, &signal_handler, NULL);
-	PTRACE(5);
-	startitup();
-	PTRACE(5);
-	get_input();
-	PTRACE(5);
-	set_input();
-	PTRACE(5);
-	xscr = screens + options.screen;
-	edit_input(xscr);
-	PTRACE(5);
-	gtk_main();
-	PTRACE(5);
-	term_input();
-	PTRACE(5);
 }
 
 static void
@@ -3632,6 +3620,10 @@ startup(int argc, char *argv[])
 
 	atom = gdk_atom_intern_static_string("_XDE_INPUT_EDIT");
 	_XA_XDE_INPUT_EDIT = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+
+	atom = gdk_atom_intern_static_string("_XDE_INPUT_TRAY");
+	_XA_XDE_INPUT_TRAY = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
 
 	scrn = gdk_display_get_default_screen(disp);
@@ -4564,7 +4556,7 @@ get_defaults(void)
 	if (options.screen < 0 && (p = strrchr(options.display, '.'))
 	    && (n = strspn(++p, "0123456789")) && *(p + n) == '\0')
 		options.screen = atoi(p);
-	if (options.screen < 0 && options.command == CommandEditor) {
+	if (options.screen < 0 && options.editor) {
 		if (options.button)
 			options.screen = find_pointer_screen();
 		else
@@ -4602,6 +4594,7 @@ main(int argc, char *argv[])
 			{"replace",	no_argument,		NULL, 'r'},
 			{"quit",	no_argument,		NULL, 'q'},
 			{"editor",	no_argument,		NULL, 'e'},
+			{"trayicon",	no_argument,		NULL, 't'},
 
 			{"clientId",	required_argument,	NULL, '8'},
 			{"restore",	required_argument,	NULL, '9'},
@@ -4664,11 +4657,10 @@ main(int argc, char *argv[])
 			options.command = CommandQuit;
 			break;
 		case 'e':	/* -e, --editor */
-			if (options.command != CommandDefault)
-				goto bad_command;
-			if (command == CommandDefault)
-				command = CommandEditor;
-			options.command = CommandEditor;
+			options.editor = True;
+			break;
+		case 't':	/* -t, --trayicon */
+			options.trayicon = True;
 			break;
 
 		case 'f':	/* -f, --filename FILENAME */
@@ -4773,10 +4765,6 @@ main(int argc, char *argv[])
 	case CommandQuit:
 		DPRINTF(1, "%s: asking xisting instance to quit\n", argv[0]);
 		do_quit(argc, argv);
-		break;
-	case CommandEditor:
-		DPRINTF(1, "%s: invoking the editor\n", argv[0]);
-		do_editor(argc, argv);
 		break;
 	case CommandHelp:
 		DPRINTF(1, "%s: printing help message\n", argv[0]);
