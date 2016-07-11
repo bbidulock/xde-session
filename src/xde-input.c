@@ -2894,9 +2894,6 @@ do_editor(int argc, char *argv[])
 		ev.xclient.data.l[4] = 0;
 		XSendEvent(dpy, GDK_WINDOW_XID(root), False, StructureNotifyMask, &ev);
 		XSync(dpy, False);
-		/* might be more graceful than just exiting */
-		gtk_main_quit();
-		return;
 		exit(EXIT_SUCCESS);
 	}
 	XSelectInput(dpy, selwin,
