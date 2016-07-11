@@ -2428,7 +2428,7 @@ enabled.");
 
 		f = gtk_frame_new(NULL);
 		gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
-		gtk_check_button_new_with_label("Allow Exposures");
+		u = gtk_check_button_new_with_label("Allow Exposures");
 		gtk_container_add(GTK_CONTAINER(f), u);
 		gtk_widget_set_tooltip_markup(u, "\
 When set, use a screensaver even when the server\n\
