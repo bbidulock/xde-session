@@ -579,16 +579,6 @@ edit_set_values()
 	}
 }
 
-static void
-process_errors()
-{
-}
-
-static void
-purge_queue()
-{
-}
-
 /** @brief read input settings
   * 
   * Read the input settings from the configuration file.  Simple and direct.
@@ -602,11 +592,7 @@ read_input(void)
 	const gchar *const *dirs;
 
 	PTRACE(5);
-	if (file) {
-		EPRINTF("key file already loaded!\n");
-		return;
-	}
-	if (!(file = g_key_file_new())) {
+	if (!file && !(file = g_key_file_new())) {
 		EPRINTF("could not create key file\n");
 		return;
 	}
@@ -643,10 +629,9 @@ get_input()
 	int i, j;
 
 	PTRACE(5);
-	read_input();
-	if (!file) {
-		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
-		return;
+	if (!file && !(file = g_key_file_new())) {
+		EPRINTF("could not create key file\n");
+		exit(EXIT_FAILURE);
 	}
 	if (support.Keyboard) {
 		XGetKeyboardControl(dpy, &state.Keyboard);
@@ -1264,8 +1249,6 @@ reprocess_input()
 	PTRACE(5);
 	get_input();
 	edit_set_values();
-	process_errors();
-	purge_queue();
 }
 
 static void
@@ -1286,6 +1269,7 @@ startitup()
 		DPRINTF(1, "XKeyboard: opcode=%d, event=%d, error=%d, major=%d, minor=%d\n",
 			state.XKeyboard.opcode, state.XKeyboard.event, state.XKeyboard.error,
 			state.XKeyboard.major_version, state.XKeyboard.minor_version);
+		XkbSelectEvents(dpy, XkbUseCoreKbd, XkbControlsNotifyMask, XkbControlsNotifyMask);
 	} else {
 		missing = True;
 		support.XKeyboard = False;
@@ -2745,9 +2729,10 @@ event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
 	}
 	PTRACE(5);
 	if (xscr && xev->xselectionclear.window == xscr->selwin) {
-		XDestroyWindow(dpy, xscr->selwin);
+		// XDestroyWindow(dpy, xscr->selwin); /* will be destroyed when we exit */
 		EPRINTF("selection cleared, exiting\n");
-		exit(EXIT_SUCCESS);
+		gtk_main_quit();
+		return GDK_FILTER_REMOVE;
 	}
 	PTRACE(5);
 	return GDK_FILTER_CONTINUE;
@@ -2819,6 +2804,33 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	}
 	PTRACE(5);
 	EPRINTF("wrong message type for handler %d\n", xev->type);
+	return GDK_FILTER_CONTINUE;
+}
+
+static guint deferred = 0;
+
+static gboolean
+deferred_action(gpointer user_data)
+{
+	deferred = 0;
+	get_input();
+	if (editor)
+		edit_set_values();
+	return G_SOURCE_REMOVE;
+}
+
+
+static GdkFilterReturn
+events_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+
+	/* defer action in case we get a burst of events */
+	if (xev->type == state.XKeyboard.event) {
+		DPRINTF(1, "got XKB event %d\n", xev->type);
+		if (!deferred)
+			deferred = g_timeout_add(1, &deferred_action, NULL);
+	}
 	return GDK_FILTER_CONTINUE;
 }
 
@@ -2994,6 +3006,7 @@ handler(Display *display, XErrorEvent *xev)
 		if (XGetErrorText(dpy, xev->error_code, msg, sizeof(msg)) != Success)
 			msg[0] = '\0';
 		fprintf(stderr, "X error %s(0x%08lx): %s\n", req, xev->resourceid, msg);
+		dumpstack(__FILE__, __LINE__, __func__);
 	}
 	return (0);
 }
@@ -3001,14 +3014,7 @@ handler(Display *display, XErrorEvent *xev)
 int
 iohandler(Display *display)
 {
-	void *buffer[1024];
-	int nptr;
-	char **strings;
-	int i;
-
-	if ((nptr = backtrace(buffer, 1023)) && (strings = backtrace_symbols(buffer, nptr)))
-		for (i = 0; i < nptr; i++)
-			fprintf(stderr, "backtrace> %s\n", strings[i]);
+	dumpstack(__FILE__, __LINE__, __func__);
 	exit(EXIT_FAILURE);
 }
 
@@ -3055,6 +3061,7 @@ do_run(int argc, char *argv[], Bool replace)
 
 	sel = gdk_x11_window_foreign_new_for_display(disp, selwin);
 	gdk_window_add_filter(sel, selwin_handler, screens);
+	gdk_window_add_filter(NULL, events_handler, NULL);
 
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
 		snprintf(selection, sizeof(selection), XA_SELECTION_NAME, s);
@@ -3069,7 +3076,7 @@ do_run(int argc, char *argv[], Bool replace)
 	}
 	g_unix_signal_add(SIGTERM, &signal_handler, NULL);
 	g_unix_signal_add(SIGINT, &signal_handler, NULL);
-	g_unix_signal_add(SIGQUIT, &signal_handler, NULL);
+	g_unix_signal_add(SIGHUP, &signal_handler, NULL);
 	PTRACE(5);
 	startitup();
 	PTRACE(5);
@@ -3149,6 +3156,7 @@ do_editor(int argc, char *argv[])
 
 	sel = gdk_x11_window_foreign_new_for_display(disp, selwin);
 	gdk_window_add_filter(sel, selwin_handler, screens);
+	gdk_window_add_filter(NULL, events_handler, NULL);
 
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
 		snprintf(selection, sizeof(selection), XA_SELECTION_NAME, s);
@@ -3163,7 +3171,7 @@ do_editor(int argc, char *argv[])
 	}
 	g_unix_signal_add(SIGTERM, &signal_handler, NULL);
 	g_unix_signal_add(SIGINT, &signal_handler, NULL);
-	g_unix_signal_add(SIGQUIT, &signal_handler, NULL);
+	g_unix_signal_add(SIGHUP, &signal_handler, NULL);
 	PTRACE(5);
 	startitup();
 	PTRACE(5);
