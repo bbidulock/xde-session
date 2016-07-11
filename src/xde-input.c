@@ -287,7 +287,7 @@ typedef struct {
 
 State state;
 
-GKeyFile *file;
+GKeyFile *file = NULL;
 
 typedef struct {
 	struct {
@@ -481,6 +481,10 @@ edit_set_values()
 	int value;
 	gboolean flag;
 
+	if (!file) {
+		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
+		return;
+	}
 	if (support.Keyboard) {
 		value = g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_KeyClickPercent, NULL);
 		gtk_range_set_value(GTK_RANGE(controls.Keyboard.KeyClickPercent), value);
@@ -584,12 +588,38 @@ purge_queue()
 {
 }
 
+/** @brief read input settings
+  * 
+  * Read the input settings from the configuration file.  Simple and direct.
+  * The file is an .ini-style keyfile.  Use glib to read in the values.
+  */
+static void
+read_input(const char *filename)
+{
+	GError *error = NULL;
+
+	PTRACE(5);
+	if (!file && (file = g_key_file_new())) {
+		g_key_file_load_from_file(file, filename, G_KEY_FILE_NONE, &error);
+		if (error) {
+			EPRINTF("COULD NOT LOAD KEY FILE %s! <============= %s\n", filename, error->message);
+			g_error_free(error);
+		}
+	}
+}
+
 static void
 get_input()
 {
 	char buf[256] = { 0, };
 	int i, j;
 
+	PTRACE(5);
+	read_input(options.filename);
+	if (!file) {
+		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
+		return;
+	}
 	if (support.Keyboard) {
 		XGetKeyboardControl(dpy, &state.Keyboard);
 
@@ -814,13 +844,23 @@ get_input()
 		g_key_file_set_integer(file, KFG_DPMS, KFK_DPMS_OffTimeout, state.DPMS.off);
 	}
 
+	PTRACE(5);
 	if (support.XKeyboard) {
+		state.XKeyboard.desc = XkbGetKeyboard(dpy, XkbControlsMask, XkbUseCoreKbd);
+		if (!state.XKeyboard.desc) {
+			EPRINTF("NO XKEYBOARD DESCRIPTION!\n");
+			exit(EXIT_FAILURE);
+		}
+		XkbGetControls(dpy, XkbAllControlsMask, state.XKeyboard.desc);
+		if (!state.XKeyboard.desc->ctrls) {
+			EPRINTF("NO XKEYBOARD DESCRIPTION CONTROLS!\n");
+			exit(EXIT_FAILURE);
+		}
 #if 0
 		unsigned int which = XkbControlsMask;
 #endif
 
-		state.XKeyboard.desc = XkbGetKeyboard(dpy, XkbControlsMask, XkbUseCoreKbd);
-
+		PTRACE(5);
 		g_key_file_set_integer(file, KFG_XKeyboard,
 				       KFK_XKeyboard_MouseKeysDfltBtn,
 				       state.XKeyboard.desc->ctrls->mk_dflt_btn);
@@ -1059,22 +1099,7 @@ get_input()
 				       KFK_XF86Misc_MouseChordMiddle,
 				       state.XF86Misc.mouse.chordmiddle ? TRUE : FALSE);
 	}
-}
-
-/** @brief read input settings
-  * 
-  * Read the input settings from the configuration file.  Simple and direct.
-  * The file is an .ini-style keyfile.  Use glib to read in the values.
-  */
-static void
-read_input(const char *filename)
-{
-	GError *error = NULL;
-
-	file = g_key_file_new();
-	if (!g_key_file_load_from_file(file, filename, G_KEY_FILE_NONE, &error)) {
-		return;
-	}
+	PTRACE(5);
 }
 
 /** @brief write input settings
@@ -1085,16 +1110,24 @@ read_input(const char *filename)
 void
 write_input()
 {
+	PTRACE(5);
 }
 
 static void
 set_input(const char *filename)
 {
+	PTRACE(5);
 	read_input(filename);
+	if (!file) {
+		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
+		return;
+	}
+	PTRACE(5);
 	if (g_key_file_has_group(file, KFG_Keyboard) && support.Keyboard) {
 		XKeyboardControl kbd = { 0, };
 		unsigned long value_mask = 0;
 
+		PTRACE(5);
 		if ((kbd.key_click_percent =
 		     g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_KeyClickPercent,
 					    NULL)))
@@ -1115,10 +1148,12 @@ set_input(const char *filename)
 		if (value_mask)
 			XChangeKeyboardControl(dpy, value_mask, &kbd);
 	}
+	PTRACE(5);
 	if (g_key_file_has_group(file, KFG_Pointer) && support.Pointer) {
 		Bool do_accel, do_threshold;
 		int accel_numerator, accel_denominator, threshold;
 
+		PTRACE(5);
 		accel_denominator =
 		    g_key_file_get_integer(file, KFG_Pointer, KFK_Pointer_AccelerationDenominator,
 					   NULL);
@@ -1131,11 +1166,15 @@ set_input(const char *filename)
 		XChangePointerControl(dpy, do_accel, do_threshold, accel_numerator,
 				      accel_denominator, threshold);
 	}
+	PTRACE(5);
 	if (g_key_file_has_group(file, KFG_XKeyboard) && support.XKeyboard) {
+		PTRACE(5);
 	}
+	PTRACE(5);
 	if (g_key_file_has_group(file, KFG_ScreenSaver) && support.ScreenSaver) {
 		int timeout, interval, prefer_blanking, allow_exposures;
 
+		PTRACE(5);
 		timeout =
 		    g_key_file_get_integer(file, KFG_ScreenSaver, KFK_ScreenSaver_Timeout, NULL);
 		interval =
@@ -1148,9 +1187,11 @@ set_input(const char *filename)
 					   NULL);
 		XSetScreenSaver(dpy, timeout, interval, prefer_blanking, allow_exposures);
 	}
+	PTRACE(5);
 	if (g_key_file_has_group(file, KFG_DPMS) && support.DPMS) {
 		int standby, suspend, off, level;
 
+		PTRACE(5);
 		standby = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_StandbyTimeout, NULL);
 		suspend = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_SuspendTimeout, NULL);
 		off = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_OffTimeout, NULL);
@@ -1163,22 +1204,26 @@ set_input(const char *filename)
 		level = g_key_file_get_integer(file, KFG_DPMS, KFK_DPMS_PowerLevel, NULL);
 		DPMSForceLevel(dpy, level);
 	}
+	PTRACE(5);
 }
 
 void
 reprocess_input()
 {
+	PTRACE(5);
 	get_input();
 	edit_set_values();
 	process_errors();
 	purge_queue();
 }
 
-void
+static void
 startitup()
 {
-	Window window = None;
+	Window window = RootWindow(dpy, options.screen);
+	Bool missing = False;
 
+	PTRACE(5);
 	support.Keyboard = True;
 	DPRINTF(1, "Keyboard: core protocol support\n");
 	support.Pointer = True;
@@ -1191,6 +1236,7 @@ startitup()
 			state.XKeyboard.opcode, state.XKeyboard.event, state.XKeyboard.error,
 			state.XKeyboard.major_version, state.XKeyboard.minor_version);
 	} else {
+		missing = True;
 		support.XKeyboard = False;
 		DPRINTF(1, "XKeyboard: not supported\n");
 	}
@@ -1245,6 +1291,7 @@ startitup()
 			fputs("\n", stderr);
 		}
 	} else {
+		missing = True;
 		support.ScreenSaver = False;
 		DPRINTF(1, "ScreenSaver: not supported\n");
 	}
@@ -1255,6 +1302,7 @@ startitup()
 			state.DPMS.event, state.DPMS.error, state.DPMS.major_version,
 			state.DPMS.minor_version);
 	} else {
+		missing = True;
 		support.DPMS = False;
 		DPRINTF(1, "DPMS: not supported\n");
 	}
@@ -1266,33 +1314,46 @@ startitup()
 			state.XF86Misc.event, state.XF86Misc.error, state.XF86Misc.major_version,
 			state.XF86Misc.minor_version);
 	} else {
+		missing = True;
 		support.XF86Misc = False;
 		DPRINTF(1, "XF86Misc: not supported\n");
+	}
+	if (missing && options.debug > 0) {
+		char **list;
+		int i, n = 0;
+
+		if ((list = XListExtensions(dpy, &n))) {
+			fputs("Extensions are:", stderr);
+			for (i = 0; i < n; i++)
+				fprintf(stderr, " %s", list[i]);
+			fputs("\n", stderr);
+			XFreeExtensionList(list);
+		}
 	}
 }
 
 static gchar *
 format_value_milliseconds(GtkScale *scale, gdouble value, gpointer user_data)
 {
-	return g_strdup_printf("%0.*g ms", gtk_scale_get_digits(scale), value);
+	return g_strdup_printf("%.6g ms", /* gtk_scale_get_digits(scale), */ value);
 }
 
 static gchar *
 format_value_seconds(GtkScale *scale, gdouble value, gpointer user_data)
 {
-	return g_strdup_printf("%0.*g s", gtk_scale_get_digits(scale), value);
+	return g_strdup_printf("%.6g s", /* gtk_scale_get_digits(scale), */ value);
 }
 
 static gchar *
 format_value_percent(GtkScale *scale, gdouble value, gpointer user_data)
 {
-	return g_strdup_printf("%0.*g%%", gtk_scale_get_digits(scale), value);
+	return g_strdup_printf("%.6g%%", /* gtk_scale_get_digits(scale), */ value);
 }
 
 static char *
 format_value_hertz(GtkScale *scale, gdouble value, gpointer user_data)
 {
-	return g_strdup_printf("%0.*g Hz", gtk_scale_get_digits(scale), value);
+	return g_strdup_printf("%.6g Hz", /* gtk_scale_get_digits(scale), */ value);
 }
 
 static void
@@ -1302,6 +1363,7 @@ accel_numerator_value_changed(GtkRange * range, gpointer user_data)
 	int val = round(value);
 
 	if (val != state.Pointer.accel_numerator) {
+		PTRACE(5);
 		XChangePointerControl(dpy, True, False, val, state.Pointer.accel_denominator,
 				      state.Pointer.threshold);
 		reprocess_input();
@@ -1315,6 +1377,7 @@ accel_denominator_value_changed(GtkRange * range, gpointer user_data)
 	int val = round(value);
 
 	if (val != state.Pointer.accel_denominator) {
+		PTRACE(5);
 		XChangePointerControl(dpy, True, False, state.Pointer.accel_numerator, val,
 				      state.Pointer.threshold);
 		reprocess_input();
@@ -1330,6 +1393,7 @@ threshold_value_changed(GtkRange * range, gpointer user_data)
 	value = gtk_range_get_value(range);
 	val = round(value);
 	if (val != state.Pointer.threshold) {
+		PTRACE(5);
 		XChangePointerControl(dpy, False, True,
 				      state.Pointer.accel_denominator,
 				      state.Pointer.accel_numerator, val);
@@ -1347,6 +1411,7 @@ global_autorepeat_toggled(GtkToggleButton * button, gpointer user_data)
 		XKeyboardControl kb = {
 			.auto_repeat_mode = val,
 		};
+		PTRACE(5);
 		XChangeKeyboardControl(dpy, KBAutoRepeatMode, &kb);
 		reprocess_input();
 	}
@@ -1363,6 +1428,7 @@ keyclick_percent_value_changed(GtkRange * range, gpointer user_data)
 		XKeyboardControl kb = {
 			.key_click_percent = val,
 		};
+		PTRACE(5);
 		XChangeKeyboardControl(dpy, KBKeyClickPercent, &kb);
 		reprocess_input();
 	}
@@ -1378,6 +1444,7 @@ bell_percent_value_changed(GtkRange * range, gpointer user_data)
 		XKeyboardControl kb = {
 			.bell_percent = val,
 		};
+		PTRACE(5);
 		XChangeKeyboardControl(dpy, KBBellPercent, &kb);
 		reprocess_input();
 	}
@@ -1393,6 +1460,7 @@ bell_pitch_value_changed(GtkRange * range, gpointer user_data)
 		XKeyboardControl kb = {
 			.bell_pitch = val,
 		};
+		PTRACE(5);
 		XChangeKeyboardControl(dpy, KBBellPitch, &kb);
 		reprocess_input();
 	}
@@ -1416,6 +1484,7 @@ bell_duration_value_changed(GtkRange * range, gpointer user_data)
 		XKeyboardControl kb = {
 			.bell_duration = val,
 		};
+		PTRACE(5);
 		XChangeKeyboardControl(dpy, KBBellDuration, &kb);
 		reprocess_input();
 	}
@@ -1429,6 +1498,7 @@ repeat_keys_toggled(GtkToggleButton * button, gpointer user_data)
 
 	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbRepeatKeysMask)) {
 #if 1
+		PTRACE(5);
 		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbRepeatKeysMask, value);
 #else
 		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbRepeatKeysMask;
@@ -1450,6 +1520,7 @@ repeat_delay_value_changed(GtkRange * range, gpointer user_data)
 		XkbSetAutoRepeatRate(dpy, XkbUseCoreKbd, state.XKeyboard.desc->ctrls->repeat_delay,
 				     state.XKeyboard.desc->ctrls->repeat_interval);
 #else
+		PTRACE(5);
 		XkbSetControls(dpy, XkbRepeatKeysMask, state.XKeyboard.desc);
 #endif
 		reprocess_input();
@@ -1468,6 +1539,7 @@ repeat_interval_value_changed(GtkRange * range, gpointer user_data)
 		XkbSetAutoRepeatRate(dpy, XkbUseCoreKbd, state.XKeyboard.desc->ctrls->repeat_delay,
 				     state.XKeyboard.desc->ctrls->repeat_interval);
 #else
+		PTRACE(5);
 		XkbSetControls(dpy, XkbRepeatKeysMask, state.XKeyboard.desc);
 #endif
 		reprocess_input();
@@ -1482,6 +1554,7 @@ slow_keys_toggled(GtkToggleButton *button, gpointer user_data)
 
 	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbSlowKeysMask)) {
 #if 1
+		PTRACE(5);
 		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbSlowKeysMask, value);
 #else
 		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbSlowKeysMask;
@@ -1498,6 +1571,7 @@ slow_keys_delay_value_changed(GtkRange *range, gpointer user_data)
 	unsigned short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->slow_keys_delay) {
+		PTRACE(5);
 		state.XKeyboard.desc->ctrls->slow_keys_delay = val;
 		XkbSetControls(dpy, XkbSlowKeysMask, state.XKeyboard.desc);
 		reprocess_input();
@@ -1512,6 +1586,7 @@ bounce_keys_toggled(GtkToggleButton *button, gpointer user_data)
 
 	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbBounceKeysMask)) {
 #if 1
+		PTRACE(5);
 		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbBounceKeysMask, value);
 #else
 		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbBounceKeysMask;
@@ -1528,6 +1603,7 @@ debounce_delay_value_changed(GtkRange * range, gpointer user_data)
 	unsigned short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->debounce_delay) {
+		PTRACE(5);
 		state.XKeyboard.desc->ctrls->debounce_delay = val;
 		XkbSetControls(dpy, XkbBounceKeysMask, state.XKeyboard.desc);
 		reprocess_input();
@@ -1542,6 +1618,7 @@ sticky_keys_toggled(GtkToggleButton *button, gpointer user_data)
 
 	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbStickyKeysMask)) {
 #if 1
+		PTRACE(5);
 		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbStickyKeysMask, value);
 #else
 		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbStickyKeysMask;
@@ -1559,6 +1636,7 @@ mouse_keys_toggled(GtkToggleButton *button, gpointer user_data)
 
 	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbMouseKeysMask)) {
 #if 1
+		PTRACE(5);
 		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbMouseKeysMask, value);
 #else
 		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbMouseKeysMask;
@@ -1575,6 +1653,7 @@ default_mouse_button_changed(GtkComboBox *box, gpointer user_data)
 	unsigned char val = value + 1;
 
 	if (val != state.XKeyboard.desc->ctrls->mk_dflt_btn) {
+		PTRACE(5);
 		state.XKeyboard.desc->ctrls->mk_dflt_btn = val;
 		XkbSetControls(dpy, XkbMouseKeysMask, state.XKeyboard.desc);
 		reprocess_input();
@@ -1589,6 +1668,7 @@ mouse_keys_accel_toggled(GtkToggleButton *button, gpointer user_data)
 
 	if (value != (state.XKeyboard.desc->ctrls->enabled_ctrls & XkbMouseKeysAccelMask)) {
 #if 1
+		PTRACE(5);
 		XkbChangeEnabledControls(dpy, XkbUseCoreKbd, XkbMouseKeysAccelMask, value);
 #else
 		state.XKeyboard.desc->ctrls->enabled_ctrls ^= XkbMouseKeysAccelMask;
@@ -1605,6 +1685,7 @@ mouse_keys_delay_value_changed(GtkRange *range, gpointer user_data)
 	unsigned short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->mk_delay) {
+		PTRACE(5);
 		state.XKeyboard.desc->ctrls->mk_delay = val;
 		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
 		reprocess_input();
@@ -1618,6 +1699,7 @@ mouse_keys_interval_value_changed(GtkRange *range, gpointer user_data)
 	unsigned short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->mk_interval) {
+		PTRACE(5);
 		state.XKeyboard.desc->ctrls->mk_interval = val;
 		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
 		reprocess_input();
@@ -1631,6 +1713,7 @@ mouse_keys_time_to_max_value_changed(GtkRange *range, gpointer user_data)
 	unsigned short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->mk_time_to_max) {
+		PTRACE(5);
 		state.XKeyboard.desc->ctrls->mk_time_to_max = val;
 		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
 		reprocess_input();
@@ -1644,6 +1727,7 @@ mouse_keys_max_speed_value_changed(GtkRange *range, gpointer user_data)
 	unsigned short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->mk_max_speed) {
+		PTRACE(5);
 		state.XKeyboard.desc->ctrls->mk_max_speed = val;
 		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
 		reprocess_input();
@@ -1657,6 +1741,7 @@ mouse_keys_curve_value_changed(GtkRange *range, gpointer user_data)
 	short val = round(value);
 
 	if (val != state.XKeyboard.desc->ctrls->mk_curve) {
+		PTRACE(5);
 		state.XKeyboard.desc->ctrls->mk_curve = val;
 		XkbSetControls(dpy, XkbMouseKeysAccelMask, state.XKeyboard.desc);
 		reprocess_input();
@@ -1670,6 +1755,7 @@ screensaver_timeout_value_changed(GtkRange * range, gpointer user_data)
 	int val = round(value);
 
 	if (val != state.ScreenSaver.timeout) {
+		PTRACE(5);
 		state.ScreenSaver.timeout = val;
 		XSetScreenSaver(dpy,
 				state.ScreenSaver.timeout,
@@ -1683,6 +1769,7 @@ screensaver_timeout_value_changed(GtkRange * range, gpointer user_data)
 static void
 activate_screensaver_clicked(GtkButton *button, gpointer user_data)
 {
+	PTRACE(5);
 	XForceScreenSaver(dpy, ScreenSaverActive);
 	XFlush(dpy);
 }
@@ -1694,6 +1781,7 @@ screensaver_interval_value_changed(GtkRange *range, gpointer user_data)
 	int val = round(value);
 
 	if (val != state.ScreenSaver.interval) {
+		PTRACE(5);
 		state.ScreenSaver.interval = val;
 		XSetScreenSaver(dpy,
 				state.ScreenSaver.timeout,
@@ -1707,6 +1795,7 @@ screensaver_interval_value_changed(GtkRange *range, gpointer user_data)
 static void
 rotate_screensaver_clicked(GtkButton *button, gpointer user_data)
 {
+	PTRACE(5);
 	XForceScreenSaver(dpy, ScreenSaverActive);
 	XFlush(dpy);
 }
@@ -1718,6 +1807,7 @@ prefer_blanking_toggled(GtkToggleButton *button, gpointer user_data)
 	int value = active ? PreferBlanking : DontPreferBlanking;
 
 	if (value != state.ScreenSaver.prefer_blanking) {
+		PTRACE(5);
 		state.ScreenSaver.prefer_blanking = value;
 		XSetScreenSaver(dpy,
 				state.ScreenSaver.timeout,
@@ -1735,6 +1825,7 @@ allow_exposures_toggled(GtkToggleButton *button, gpointer user_data)
 	int value = active ? AllowExposures : DontAllowExposures;
 
 	if (value != state.ScreenSaver.allow_exposures) {
+		PTRACE(5);
 		state.ScreenSaver.allow_exposures = value;
 		XSetScreenSaver(dpy,
 				state.ScreenSaver.timeout,
@@ -1749,6 +1840,7 @@ static void
 dpms_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
+	PTRACE(5);
 	if (active)
 		DPMSEnable(dpy);
 	else
@@ -1764,6 +1856,7 @@ standby_timeout_value_changed(GtkRange *range, gpointer user_data)
 	CARD16 val = round(value);
 
 	if (val != state.DPMS.standby) {
+		PTRACE(5);
 		state.DPMS.standby = val;
 		DPMSSetTimeouts(dpy,
 				state.DPMS.standby,
@@ -1776,6 +1869,7 @@ standby_timeout_value_changed(GtkRange *range, gpointer user_data)
 static void
 activate_standby_clicked(GtkButton *button, gpointer user_data)
 {
+	PTRACE(5);
 	DPMSForceLevel(dpy, DPMSModeStandby);
 }
 
@@ -1786,6 +1880,7 @@ suspend_timeout_value_changed(GtkRange *range, gpointer user_data)
 	CARD16 val = round(value);
 
 	if (val != state.DPMS.suspend) {
+		PTRACE(5);
 		state.DPMS.suspend = val;
 		DPMSSetTimeouts(dpy,
 				state.DPMS.standby,
@@ -1808,6 +1903,7 @@ off_timeout_value_changed(GtkRange *range, gpointer user_data)
 	CARD16 val = round(value);
 
 	if (val != state.DPMS.off) {
+		PTRACE(5);
 		state.DPMS.off = val;
 		DPMSSetTimeouts(dpy,
 				state.DPMS.standby,
@@ -1820,6 +1916,7 @@ off_timeout_value_changed(GtkRange *range, gpointer user_data)
 static void
 activate_off_clicked(GtkButton *button, gpointer user_data)
 {
+	PTRACE(5);
 	DPMSForceLevel(dpy, DPMSModeOff);
 }
 
@@ -1829,6 +1926,7 @@ keyboard_rate_value_changed(GtkRange *range, gpointer user_data)
 	gdouble value = gtk_range_get_value(range);
 	int val = round(value);
 	if (val != state.XF86Misc.keyboard.rate) {
+		PTRACE(5);
 		state.XF86Misc.keyboard.rate = val;
 		XF86MiscSetKbdSettings(dpy, &state.XF86Misc.keyboard);
 	}
@@ -1842,6 +1940,7 @@ keyboard_delay_value_changed(GtkRange *range, gpointer user_data)
 	int val = round(value);
 
 	if (val != state.XF86Misc.keyboard.delay) {
+		PTRACE(5);
 		state.XF86Misc.keyboard.delay = val;
 		XF86MiscSetKbdSettings(dpy, &state.XF86Misc.keyboard);
 	}
@@ -1852,6 +1951,7 @@ static void
 emulate_3_buttons_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
+	PTRACE(5);
 	if (active) {
 		state.XF86Misc.mouse.emulate3buttons = True;
 	} else {
@@ -1868,6 +1968,7 @@ emulate_3_timeout_value_changed(GtkRange *range, gpointer user_data)
 	int val = round(value);
 
 	if (val != state.XF86Misc.mouse.emulate3timeout) {
+		PTRACE(5);
 		state.XF86Misc.mouse.emulate3timeout = val;
 		XF86MiscSetMouseSettings(dpy, &state.XF86Misc.mouse);
 	}
@@ -1878,6 +1979,7 @@ static void
 chord_middle_toggled(GtkToggleButton *button, gpointer user_data)
 {
 	gboolean active = gtk_toggle_button_get_active(button);
+	PTRACE(5);
 	if (active) {
 		state.XF86Misc.mouse.chordmiddle = True;
 	} else {
@@ -1999,6 +2101,7 @@ maximum volume: from 0% to 100%.");
 		gtk_box_pack_start(GTK_BOX(v), f, FALSE, FALSE, 0);
 		h = gtk_hscale_new_with_range(60.0, 2000.0, 20.0);
 		gtk_scale_set_draw_value(GTK_SCALE(h), TRUE);
+		g_signal_connect(G_OBJECT(h), "format-value", G_CALLBACK(format_value_hertz), NULL);
 		gtk_container_add(GTK_CONTAINER(f), h);
 		gtk_widget_set_tooltip_markup(h, "\
 Set the bell pitch in Hertz.  Usable values\n\
@@ -2576,11 +2679,13 @@ event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
 		fprintf(stderr, "    --> time = %lu\n", xev->xselectionclear.time);
 		fprintf(stderr, "<== SelectionClear: %p\n", xscr);
 	}
+	PTRACE(5);
 	if (xscr && xev->xselectionclear.window == xscr->selwin) {
 		XDestroyWindow(dpy, xscr->selwin);
 		EPRINTF("selection cleared, exiting\n");
 		exit(EXIT_SUCCESS);
 	}
+	PTRACE(5);
 	return GDK_FILTER_CONTINUE;
 }
 
@@ -2596,10 +2701,12 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
 	}
+	PTRACE(5);
 	switch (xev->type) {
 	case SelectionClear:
 		return event_handler_SelectionClear(dpy, xev, xscr);
 	}
+	PTRACE(5);
 	EPRINTF("wrong message type for handler %d\n", xev->type);
 	return GDK_FILTER_CONTINUE;
 }
@@ -2617,12 +2724,14 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 			(xev->xproperty.state == PropertyNewValue) ? "NewValue" : "Delete");
 		fprintf(stderr, "<== PropertyNotify:\n");
 	}
+	PTRACE(5);
 	if (xev->xproperty.atom == _XA_XDE_THEME_NAME
 	    && xev->xproperty.state == PropertyNewValue) {
 		PTRACE(5);
 		update_theme(xscr, xev->xproperty.atom);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
+	PTRACE(5);
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
@@ -2638,10 +2747,14 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
 	}
+	PTRACE(5);
 	switch (xev->type) {
 	case PropertyNotify:
+		PTRACE(5);
 		return event_handler_PropertyNotify(dpy, xev, xscr);
 	}
+	PTRACE(5);
+	EPRINTF("wrong message type for handler %d\n", xev->type);
 	return GDK_FILTER_CONTINUE;
 }
 
@@ -2651,6 +2764,7 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 	XdeScreen *xscr = NULL;
 	int s, nscr = ScreenCount(dpy);
 
+	PTRACE(5);
 	for (s = 0; s < nscr; s++)
 		if (xev->xclient.window == RootWindow(dpy, s)) {
 			xscr = screens + s;
@@ -2688,16 +2802,24 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 		}
 		fprintf(stderr, "<== ClientMessage: %p\n", xscr);
 	}
+	PTRACE(5);
 	if (xscr) {
+		PTRACE(5);
 		if (xev->xclient.message_type == _XA_GTK_READ_RCFILES) {
+			PTRACE(5);
 			update_theme(xscr, xev->xclient.message_type);
+			PTRACE(5);
 			return GDK_FILTER_REMOVE;	/* event handled */
 		} else
 		if (xev->xclient.message_type == _XA_XDE_INPUT_EDIT) {
+			PTRACE(5);
 			pop_editor(xscr);
+			PTRACE(5);
 			return GDK_FILTER_REMOVE;
 		}
+		PTRACE(5);
 	}
+	PTRACE(5);
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
@@ -2710,8 +2832,10 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	PTRACE(5);
 	switch (xev->type) {
 	case ClientMessage:
+		PTRACE(5);
 		return event_handler_ClientMessage(dpy, xev);
 	}
+	PTRACE(5);
 	EPRINTF("wrong message type for handler %d\n", xev->type);
 	return GDK_FILTER_CONTINUE;	/* event not handled, continue processing */
 }
@@ -2794,6 +2918,39 @@ get_selection(Bool replace, Window selwin)
 	return (gotone);
 }
 
+int
+handler(Display *display, XErrorEvent *xev)
+{
+	if (options.debug) {
+		char msg[80], req[80], num[80], def[80];
+
+		snprintf(num, sizeof(num), "%d", xev->request_code);
+		snprintf(def, sizeof(def), "[request_code=%d]", xev->request_code);
+		XGetErrorDatabaseText(dpy, "xdg-launch", num, def, req, sizeof(req));
+		if (XGetErrorText(dpy, xev->error_code, msg, sizeof(msg)) != Success)
+			msg[0] = '\0';
+		fprintf(stderr, "X error %s(0x%08lx): %s\n", req, xev->resourceid, msg);
+	}
+	return (0);
+}
+
+int
+iohandler(Display *display)
+{
+	void *buffer[1024];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 1023)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, "backtrace> %s\n", strings[i]);
+	exit(EXIT_FAILURE);
+}
+
+int (*oldhandler) (Display *, XErrorEvent *) = NULL;
+int (*oldiohandler) (Display *) = NULL;
+
 static void
 do_run(int argc, char *argv[], Bool replace)
 {
@@ -2819,6 +2976,9 @@ do_run(int argc, char *argv[], Bool replace)
 	XSelectInput(dpy, selwin,
 		     StructureNotifyMask | SubstructureNotifyMask | PropertyChangeMask);
 
+	oldhandler = XSetErrorHandler(handler);
+	oldiohandler = XSetIOErrorHandler(iohandler);
+
 	nscr = gdk_display_get_n_screens(disp);
 	screens = calloc(nscr, sizeof(*screens));
 
@@ -2836,9 +2996,15 @@ do_run(int argc, char *argv[], Bool replace)
 		gdk_window_add_filter(xscr->root, root_handler, xscr);
 		update_theme(xscr, None);
 	}
+	PTRACE(5);
+	startitup();
+	PTRACE(5);
 	get_input();
+	PTRACE(5);
 	set_input(options.filename);
+	PTRACE(5);
 	gtk_main();
+	PTRACE(5);
 }
 
 /** @brief Ask a running instance to quit.
@@ -2899,6 +3065,9 @@ do_editor(int argc, char *argv[])
 	XSelectInput(dpy, selwin,
 		     StructureNotifyMask | SubstructureNotifyMask | PropertyChangeMask);
 
+	oldhandler = XSetErrorHandler(handler);
+	oldiohandler = XSetIOErrorHandler(iohandler);
+
 	nscr = gdk_display_get_n_screens(disp);
 	screens = calloc(nscr, sizeof(*screens));
 
@@ -2916,11 +3085,18 @@ do_editor(int argc, char *argv[])
 		gdk_window_add_filter(xscr->root, root_handler, xscr);
 		update_theme(xscr, None);
 	}
+	PTRACE(5);
+	startitup();
+	PTRACE(5);
 	get_input();
+	PTRACE(5);
 	set_input(options.filename);
+	PTRACE(5);
 	xscr = screens + options.screen;
 	pop_editor(xscr);
+	PTRACE(5);
 	gtk_main();
+	PTRACE(5);
 }
 
 static void
@@ -3337,7 +3513,6 @@ startup(int argc, char *argv[])
 	GdkDisplay *disp;
 	GdkScreen *scrn;
 	GdkWindow *root;
-	Display *dpy;
 	char *file;
 	int nscr;
 
@@ -3368,11 +3543,12 @@ startup(int argc, char *argv[])
 
 	atom = gdk_atom_intern_static_string("_XDE_INPUT_EDIT");
 	_XA_XDE_INPUT_EDIT = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
 
 	scrn = gdk_display_get_default_screen(disp);
 	root = gdk_screen_get_root_window(scrn);
 	mask = gdk_window_get_events(root);
-	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK;
+	mask |= GDK_PROPERTY_CHANGE_MASK;
 	gdk_window_set_events(root, mask);
 }
 
@@ -3772,6 +3948,10 @@ put_keyfile(void)
 {
 	char *val, buf[256] = { 0, };
 
+	if (!file) {
+		EPRINTF("KEY FILE NOT ALLOCATED! <============\n");
+		return;
+	}
 	if (support.Keyboard) {
 		int i, j;
 
