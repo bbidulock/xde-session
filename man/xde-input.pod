@@ -10,12 +10,13 @@ B<xde-input> [I<OPTIONS>]
 
 =head1 DESCRIPTION
 
-B<xde-input> is a X Display mouse and keyboard settings tool for the X
-Desktop Environment.  It can be used to set initial X Display settings
-from a configuration file, or can launch a dialogue to interactively set
-X Desktop input settings.  B<xde-input> runs as a daemon and monitors
-for changes made by other configuration tools (such as L<xset(1)> or
-L<lxinput(1)>) and log changes to its configuration file.
+B<xde-input> is a X display, mouse and keyboard settings tool for the
+I<X Desktop Environment>.  It can be used to set initial X Display
+settings from a configuration file, or can launch a dialogue to
+interactively set X Desktop input settings.  B<xde-input> runs as a
+daemon and monitors for changes made by other configuration tools (such
+as L<xset(1)> or L<lxinput(1)>) and log changes to its configuration
+file.
 
 The settings that can be set are those that can normally be performed
 with L<xset(1)>, and are as follows:
@@ -65,13 +66,83 @@ or off.
 
 B<xde-input> understands the following options:
 
+=head2 COMMAND OPTIONS
+
+Command options alter the major operating mode of the program.  When no
+command options are specified, the default is to run the program,
+monitor input settings, and write out the values on exit or session
+management shutdown.
+
 =over
+
+=item B<--replace>, B<-r>
+
+When running an new instance of the program, replace existing instances.
+
+=item B<--quit>, B<-q>
+
+Ask any existing instances to quit.
 
 =item B<--help>, B<-h>
 
 Prints usage information and defaults to standard output and exits.
 
-=item B<--verbose>, B<-v>
+=item B<--version>, B<-V>
+
+Prints detailed version information to standard output and exits.
+
+=item B<--copying>, B<-C>
+
+Prints detailed copying permissions to standard output and exits.
+
+=item B<--editor>, B<-e>
+
+When running the program, launch the editor.  This can be combined with
+other command options.  If an existing instance is running, this option
+will request that the running instance launch the editor, unless
+B<--replace> is also specified.
+
+=item B<--trayicon>, B<-t>
+
+When running the program, show the status icon in the system tray.  This
+can be combined with other command options.  If an existing instance is
+running, this instance will request that the running instance launch the
+tray icon, unless B<--replace> is also specified.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+General options modify the operation of the program.  The following
+general options are recognized:
+
+=over
+
+=item B<--display>, B<-d> I<DISPLAY>
+
+Specifies the display to use.  For the most part, just use the
+B<$DISPLAY> environment variable.
+
+=item B<--screen>, B<-s> I<SCREEN>
+
+Specifies the screen on which to launch the editor.
+
+=item B<--button>, B<-b> I<BUTTON>
+
+Specifies which button, I<BUTTON>, was used to launch the program.
+Specifying a I<BUTTON> of zero (0), specifies that the program was
+launched from the keyboard.  When this option is not present,
+B<xde-input> applies heuristics to determine on which monitor the editor
+should be launched.
+
+This option is useful for selecting the active monitor when launching
+the editor.
+
+=item B<--verbose>, B<-v> [I<LEVEL>]
+
+Prints additional information to standard output while operating.
+
+=item B<--debug>, B<-D> [I<LEVEL>]
 
 Prints debugging information to standard error while operating.
 
@@ -86,6 +157,28 @@ F<xde-input-edit>.
 Specify the file to use as the configuration file instead of the
 default.  The default is F<$XDG_CONFIG_HOME/xde/input.ini>.  This option
 does not recognize C<-> as standard input: use F</dev/stdin> instead.
+
+=back
+
+=head2 SESSION MANAGEMENT OPTIONS
+
+Session management options are used by the program to communicate with
+itself and should not normally be specified by users.  The following
+session management options are recognized:
+
+=over
+
+=item B<-clientId> I<SESSIONID>
+
+Specifies the session ID, I<SESSIONID>, used by B<xde-input> in the
+previous session.  Normally only invoked in this fashion when restarted
+by a session manager.
+
+=item B<-restore> I<SAVEFILE>
+
+Specifies the file, I<SAVEFILE>, used by B<xde-input> to save state in
+the previous session.  Normally only invoked in this fashion when
+restarted by a session manager.
 
 =back
 
@@ -118,16 +211,21 @@ B<xde-input> intercepts and acts upon the following signals:
 
 =over
 
-=item B<$SIG{HUP}>
+=item I<SIGHUP>
 
-When B<xde-input> receives a C<$SIG{HUP}> signal, it rereads the
-configuration from the X Server.
+When B<xde-input> receives a I<SIGHUP> signal, it rereads the
+configuration from the X Server and writes the configuration file.
 
-=item B<$SIG{TERM}>
+=item I<SIGINT>
 
-When B<xde-input> receives a C<$SIG{TERM}> signal, it rereads the
+When B<xde-input> receives a I<SIGHUP> signal (interrupt from the
+keyboard), it exits without writing the configuration file.
+
+=item I<SIGTERM>
+
+When B<xde-input> receives a I<SIGTERM> signal, it rereads the
 configuration from the X Server, and writes the current settings into
-the configuration file if possible before exitting gracefully.
+the configuration file if possible before exiting gracefully.
 
 =back
 
@@ -143,7 +241,7 @@ configuration to the configuration file.
 
 B<xde-input> monitors the configuration file for changes and applies
 changes when detected.  Note that the file parser is not very robust,
-so when editting by hand, avoid syntax errors.
+so when editing by hand, avoid syntax errors.
 
 The configuration file is F<.ini> format and has several sections
 containing the following information as follows:
@@ -155,48 +253,48 @@ containing the following information as follows:
  [DPMS]
  OffTimeout=600
  PowerLevel=DPMSModeOn
- StandbyTimeout=600
- State=1
- SuspendTimeout=660
+ StandbyTimeout=300
+ State=false
+ SuspendTimeout=450
 
 =item Keyboard
 
  [Keyboard]
- AutoRepeats=00FFFFFFDFFFFBBFFADFFFEFFFEDFFFF9FFFFFFFFFFFFFFFFFF7FFFFFFFFFFFF
+ AutoRepeats=00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
  BellDuration=100
- BellPercent=50
- BellPitch=400
- GlobalAutoRepeat=On
- KeyClickPercent=0
- LEDMask=8192
+ BellPercent=78
+ BellPitch=480
+ GlobalAutoRepeat=true
+ KeyClickPercent=10
+ LEDMask=0
 
 =item Pointer
 
  [Pointer]
- AccelerationDenominator=10
- AccelerationNumerator=24
- Threshold=10
+ AccelerationDenominator=1
+ AccelerationNumerator=2
+ Threshold=4
 
 =item ScreenSaver
 
  [ScreenSaver]
- AllowExposures=Yes
- Interval=600
- PreferBlanking=Yes
- Timeout=600
+ AllowExposures=DontAllowExposures
+ Interval=300
+ PreferBlanking=DontPreferBlanking
+ Timeout=240
 
 =item XKeyboard
 
  [XKeyboard]
  AccessXFeedbackMaskEnabled=true
  AccessXKeysEnabled=false
- AccessXOptions=3119
+ AccessXOptions=SlowKeysPress;SlowKeysAccept;Feature;SlowWarn;StickyKeys;BounceKeysReject;DumbBell
  AccessXTimeout=120
- AccessXTimeoutMask=30
+ AccessXTimeoutMask=SlowKeysAccept;Feature;SlowWarn;Indicator
  AccessXTimeoutMaskEnabled=true
- AccessXTimeoutOptionsMask=16
- AccessXTimeoutOptionsValues=0
- AccessXTimeoutValues=0
+ AccessXTimeoutOptionsMask=Indicator
+ AccessXTimeoutOptionsValues=
+ AccessXTimeoutValues=
  AudibleBellMaskEnabled=true
  BounceKeysEnabled=false
  ControlsEnabledEnabled=false
@@ -209,7 +307,7 @@ containing the following information as follows:
  MouseKeysCurve=500
  MouseKeysDelay=160
  MouseKeysDfltBtn=1
- MouseKeysEnabled=true
+ MouseKeysEnabled=false
  MouseKeysInterval=40
  MouseKeysMaxSpeed=30
  MouseKeysTimeToMax=30
@@ -217,13 +315,16 @@ containing the following information as follows:
  Overlay2MaskEnabled=false
  PerKeyRepeat=00FFFFFFDFFFFBBFFADFFFEFFFEDFFFF9FFFFFFFFFFFFFFFFFF7FFFFFFFFFFFF
  PerKeyRepeatEnabled=false
- RepeatDelay=300
- RepeatInterval=12
+ RepeatDelay=285
+ RepeatInterval=16
  RepeatKeysEnabled=true
- RepeatRate=83
+ RepeatRate=62
  SlowKeysDelay=300
  SlowKeysEnabled=false
  StickyKeysEnabled=false
+ Overlay2MaskENabled=false
+ IgnoreGroupLockModsEnabled=true
+ AccessXOptionsEnabled=true
 
 =back
 
@@ -254,17 +355,21 @@ B<xde-input> had no known bugs at the time of release.  Please report
 bugs for current versions to the source code repository at
 L<https://github.com/bbidulock/xde-session/issues>.
 
+The status icon doesn't do much yet: don't use it.
+
 =head1 HISTORY
 
-I wrote this tool because none of the lightweight window managers (with
-the notable exception of WindowMaker) save or restore the L<xset(1)>
-settings.  I got tired of typing C<xset r rate 300 66> every time I
-entered an X Window session under L<fluxbox(1)>, so I wrote this tool.
-Unfortunately, I also had to write the
-L<X11::Protocol::Ext::XKEYBOARD(3pm)> extension module to change just
-that: the repeat delay and rate on the keyboard.  Then, after
+I originally wrote this tool in L<perl(1)> because none of the
+lightweight window managers (with the notable exception of WindowMaker)
+save or restore the L<xset(1)> settings.  I got tired of typing C<xset r
+rate 300 66> every time I entered an X Window session under
+L<fluxbox(1)>, so I wrote this tool.  Unfortunately, I also had to write
+the L<X11::Protocol::Ext::XKEYBOARD(3pm)> extension module to change
+just that: the repeat delay and rate on the keyboard.  Then, after
 discovering that L<lxinput(1)> incorrectly sets the rate to the interval
 (or visa versa), I had to include an input editor.
+
+The program was converted to C<C> for the I<X Desktop Environment>.
 
 =head1 AUTHOR
 
@@ -275,10 +380,7 @@ See B<--copying> for full copyright notice and copying permissions.
 =head1 SEE ALSO
 
 L<xset(1)>,
-L<lxinput(1)>,
-L<XDE::Input(3pm)>,
-L<X11::Protocol(3pm)>.
-L<X11::Protocol::Ext::XKEYBOARD(3pm)>.
+L<lxinput(1)>.
 
 =head1 LICENSE
 

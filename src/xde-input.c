@@ -245,6 +245,7 @@ typedef struct {
 	Bool DPMS;	    /* support for extension DPMS */
 	Bool XKeyboard;	    /* support for extension XKEYBOARD */
 	Bool XF86Misc;	    /* support for extension XF86MISC */
+	Bool RANDR;	    /* suppott for extension RANDR */
 } Support;
 
 Support support;
@@ -265,8 +266,8 @@ typedef struct {
 		XkbDescPtr desc;
 	} XKeyboard;
 	struct {
-		int event; /* event base */
-		int error; /* error base */
+		int event;		/* event base */
+		int error;		/* error base */
 		int major_version;
 		int minor_version;
 		int timeout;
@@ -276,8 +277,8 @@ typedef struct {
 		XScreenSaverInfo info;
 	} ScreenSaver;
 	struct {
-		int event; /* event base */
-		int error; /* error base */
+		int event;		/* event base */
+		int error;		/* error base */
 		int major_version;
 		int minor_version;
 		CARD16 power_level;
@@ -287,13 +288,19 @@ typedef struct {
 		CARD16 off;
 	} DPMS;
 	struct {
-		int event; /* event base */
-		int error; /* error base */
+		int event;		/* event base */
+		int error;		/* error base */
 		int major_version;
 		int minor_version;
 		XF86MiscMouseSettings mouse;
 		XF86MiscKbdSettings keyboard;
 	} XF86Misc;
+	struct {
+		int event;		/* event base */
+		int error;		/* error base */
+		int major_version;
+		int minor_version;
+	} RANDR;
 } State;
 
 State state;
@@ -1367,6 +1374,16 @@ startitup()
 		missing = True;
 		support.XF86Misc = False;
 		DPRINTF(1, "XF86Misc: not supported\n");
+	}
+	if (XRRQueryExtension(dpy, &state.RANDR.event, &state.RANDR.error) &&
+	    XRRQueryVersion(dpy, &state.RANDR.major_version, &state.RANDR.minor_version)) {
+		support.RANDR = True;
+		DPRINTF(1, "RANDR: event=%d, error=%d, major=%d, minor=%d\n",
+			state.RANDR.event, state.RANDR.error, state.RANDR.major_version,
+			state.RANDR.minor_version);
+	} else {
+		missing = True;
+		support.RANDR = False;
 	}
 	if (missing && options.debug > 0) {
 		char **list;
@@ -3471,10 +3488,25 @@ int (*oldhandler) (Display *, XErrorEvent *) = NULL;
 int (*oldiohandler) (Display *) = NULL;
 
 gboolean
-signal_handler(gpointer user_data)
+hup_signal_handler(gpointer user_data)
+{
+	get_input();
+	write_input();
+	return G_SOURCE_CONTINUE;
+}
+
+gboolean
+int_signal_handler(gpointer user_data)
+{
+	exit(EXIT_SUCCESS);
+	return G_SOURCE_CONTINUE;
+}
+
+gboolean
+term_signal_handler(gpointer user_data)
 {
 	gtk_main_quit();
-	return G_SOURCE_CONTINUE;	/* XXX: leave in place? */
+	return G_SOURCE_CONTINUE;
 }
 
 static void
@@ -3567,9 +3599,9 @@ do_run(int argc, char *argv[], Bool replace)
 		gdk_window_add_filter(xscr->root, root_handler, xscr);
 		update_theme(xscr, None);
 	}
-	g_unix_signal_add(SIGTERM, &signal_handler, NULL);
-	g_unix_signal_add(SIGINT, &signal_handler, NULL);
-	g_unix_signal_add(SIGHUP, &signal_handler, NULL);
+	g_unix_signal_add(SIGTERM, &term_signal_handler, NULL);
+	g_unix_signal_add(SIGINT, &int_signal_handler, NULL);
+	g_unix_signal_add(SIGHUP, &hup_signal_handler, NULL);
 	PTRACE(5);
 	startitup();
 	PTRACE(5);
@@ -5041,9 +5073,9 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "nD::v::hVCH?", long_options, &option_index);
+		c = getopt_long_only(argc, argv, "d:s:b:rqetf:nD::v::hVCH?", long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "nDvhVC?");
+		c = getopt(argc, argv, "d:s:b:rqetf:nDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			if (options.debug)
