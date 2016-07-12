@@ -1,7 +1,7 @@
 
 AC_PREREQ(2.69)
-AC_INIT([xde-session],[1.3],[http://github.com/bbidulock/xde-session],[xde-session],[http://github.com/bbidulock/xde-session/issues])
-AC_REVISION([1.3])
+AC_INIT([xde-session],[1.3.13],[http://github.com/bbidulock/xde-session],[xde-session],[http://github.com/bbidulock/xde-session/issues])
+AC_REVISION([1.3.13])
 
 AC_CONFIG_SRCDIR([src/xde-session.c])
 AC_CONFIG_HEADERS([autoconf.h])
@@ -9,7 +9,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([scripts])
 AC_USE_SYSTEM_EXTENSIONS
 
-DATE='2016-07-09'
+DATE='2016-07-11'
 AC_SUBST([DATE])
 
 AM_INIT_AUTOMAKE([subdir-objects gnits 1.14 dist-xz no-dist-gzip std-options -Wall color-tests silent-rules tar-pax])
@@ -55,7 +55,6 @@ PKG_CHECK_MODULES([X11],[x11])
 PKG_CHECK_MODULES([XEXT],[xext])
 PKG_CHECK_MODULES([XAU],[xau])
 PKG_CHECK_MODULES([XSCRNSAVER],[xscrnsaver])
-PKG_CHECK_MODULES([XF86MISC],[xxf86misc])
 PKG_CHECK_MODULES([XDMCP],[xdmcp])
 PKG_CHECK_MODULES([ICE],[ice])
 PKG_CHECK_MODULES([SMLIB],[sm])

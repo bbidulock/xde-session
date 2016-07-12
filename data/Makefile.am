@@ -41,9 +41,7 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/autostart/wmtimer.desktop \
 	xdg/xde/autostart/wmWeather.desktop \
 	xdg/xde/autostart/wmweather+.desktop \
-	xdg/xde/autostart/xde-input.desktop \
 	xdg/xde/autostart/xde-panel.desktop \
-	xdg/xde/autostart/xde-setbg.desktop \
 	xdg/xde/autostart/xde-xlock.desktop
 
 nobase_dist_xdgconf_DATA += \

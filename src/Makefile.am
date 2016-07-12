@@ -10,7 +10,6 @@ bin_PROGRAMS = \
 	xde-autostart \
 	xde-chooser \
 	xde-dockmgr \
-	xde-input \
 	xde-login \
 	xde-logout \
 	xde-session \
@@ -39,11 +38,6 @@ xde_dockmgr_CPPFLAGS = -DNAME=\"xde-dockmgr\"
 xde_dockmgr_SOURCES = xde-dockmgr.c
 xde_dockmgr_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
 xde_dockmgr_LDFLAGS = $(AM_LDFLAGS) $(SMLIB_LIBS) $(ICE_LIBS)
-
-xde_input_CPPFLAGS = -DNAME=\"xde-input\"
-xde_input_SOURCES = xde-input.c
-xde_input_CFLAGS = $(AM_CFLAGS) $(XF86MISC_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
-xde_input_LDFLAGS =  $(SMLIB_LIBS) $(ICE_LIBS) $(XF86MISC_LIBS) -lm $(AM_LDFLAGS)
 
 xde_login_CPPFLAGS = -DNAME=\"xde-login\"
 xde_login_SOURCES = xde-login.c

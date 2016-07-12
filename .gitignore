@@ -41,7 +41,6 @@ src/test-root
 src/xde-autostart
 src/xde-chooser
 src/xde-dockmgr
-src/xde-input
 src/xde-login
 src/xde-logout
 src/xde-session
