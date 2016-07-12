@@ -1,11 +1,34 @@
-xde-session -- history of user-visible changes.  2016-07-09
+xde-session -- history of user-visible changes.  2016-07-12
+
+Release xde-session-1.4 released 2016-07-12
+-------------------------------------------
+
+git shortlog -e -n -w80,6,8 1.3...1.4
+
+Brian Bidulock <bidulock@openss7.org> (15):
+      git hates trailing space
+      better formatting
+      limit changelog
+      update debug statement format
+      working up xde-input
+      strap in full xde-input function
+      no main loop running
+      working better
+      bug
+      handle files better
+      xde-input working fine now
+      add tray option to xde-input
+      add a popup window to tray icon
+      update documentation; make operation consistent
+      xde-input program moved to xde-ctools package
+
 
 Release xde-session-1.3 released 2016-07-09
 -------------------------------------------
 
 git shortlog -e -n -w80,6,8 1.2...1.3
 
-Brian Bidulock <bidulock@openss7.org> (51):
+Brian Bidulock <bidulock@openss7.org> (52):
       update manual
       handle missing XDG_SESSION_ID a bit better
       handle missing XDG_SESSION_ID even better
@@ -57,6 +80,7 @@ Brian Bidulock <bidulock@openss7.org> (51):
       simplify distribution
       update readme
       correct segfault
+      update release files
 
 
 Release xde-session-1.2 released 2016-04-01

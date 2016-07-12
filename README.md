@@ -3,7 +3,7 @@
 xde-session
 ===============
 
-Package `xde-session-1.3` was released under GPLv3 license 2016-07-09.
+Package `xde-session-1.4` was released under GPLv3 license 2016-07-12.
 
 This package provides a number of "C"-language tools for working with
 the _X Desktop Environment_.  Most of these tools were previously written
@@ -28,7 +28,7 @@ Primary tools included are:
 Release
 -------
 
-This is the `xde-session-1.3` package, released 2016-07-09.  This
+This is the `xde-session-1.4` package, released 2016-07-12.  This
 release, and the latest version, can be obtained from the [GitHub
 repository][1], using a command such as:
 
