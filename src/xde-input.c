@@ -159,9 +159,13 @@ dumpstack(const char *file, const int line, const char *func)
 #define EXIT_FAILURE	1
 #define EXIT_SYNTAXERR	2
 
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
+
 const char *program = NAME;
 
 #define XA_SELECTION_NAME	"_XDE_INPUT_S%d"
+#define LOGO_NAME		"input-keyboard"
 
 static int saveArgc;
 static char **saveArgv;
@@ -200,6 +204,7 @@ typedef struct {
 	char *filename;
 	Bool editor;
 	Bool trayicon;
+	unsigned long timeout;
 	Command command;
 	char *clientId;
 	char *saveFile;
@@ -215,6 +220,7 @@ Options options = {
 	.editor = False,
 	.trayicon = False,
 	.filename = NULL,
+	.timeout = 10000,
 	.command = CommandDefault,
 	.clientId = NULL,
 	.saveFile = NULL,
@@ -296,6 +302,9 @@ GKeyFile *file = NULL;
 
 typedef struct {
 	struct {
+		GtkWidget *BellPercent;
+	} Icon;
+	struct {
 		GtkWidget *GlobalAutoRepeat;
 		GtkWidget *KeyClickPercent;
 		GtkWidget *BellPercent;
@@ -349,6 +358,8 @@ typedef struct {
 Controls controls;
 
 GtkWindow *editor = NULL;
+GtkStatusIcon *trayicon = NULL;
+
 
 typedef struct {
 	struct {
@@ -479,7 +490,6 @@ static const char *KFK_XF86Misc_MouseEmulate3Buttons = "MouseEmulate3Buttons";
 static const char *KFK_XF86Misc_MouseEmulate3Timeout = "MouseEmulate3Timeout";
 static const char *KFK_XF86Misc_MouseChordMiddle = "MouseChordMiddle";
 
-
 static void
 edit_set_values()
 {
@@ -495,6 +505,7 @@ edit_set_values()
 		gtk_range_set_value(GTK_RANGE(controls.Keyboard.KeyClickPercent), value);
 		value = g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellPercent, NULL);
 		gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPercent), value);
+		gtk_range_set_value(GTK_RANGE(controls.Icon.BellPercent), value);
 		value = g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellPitch, NULL);
 		gtk_range_set_value(GTK_RANGE(controls.Keyboard.BellPitch), value);
 		value = g_key_file_get_integer(file, KFG_Keyboard, KFK_Keyboard_BellDuration, NULL);
@@ -1371,19 +1382,432 @@ startitup()
 	}
 }
 
-GtkStatusIcon *trayicon = NULL;
+void present_popup(XdeScreen *xscr);
+
+void
+applet_refresh(XdeScreen *xscr)
+{
+}
+
+/** @brief restart the applet
+  *
+  * We restart the applet by executing ourselves with the same arguments that were
+  * provided in the command that started us.  However, if we are running under
+  * session management with restart hint SmRestartImmediately, the session
+  * manager will restart us if we simply exit.
+  */
+void
+applet_restart(void)
+{
+	/* asked to restart the applet (as though we were re-executed) */
+	char **argv;
+	int i;
+
+#if 0
+	if (smcConn) {
+		/* When running under a session manager, simply exit and the session
+		   manager will restart us immediately. */
+		exit(EXIT_SUCCESS);
+	}
+#endif
+
+	argv = calloc(saveArgc + 1, sizeof(*argv));
+	for (i = 0; i < saveArgc; i++)
+		argv[i] = saveArgv[i];
+
+	DPRINTF(1, "%s: restarting the applet\n", NAME);
+	if (execvp(argv[0], argv) == -1)
+		EPRINTF("%s: %s\n", argv[0], strerror(errno));
+	return;
+}
+
+static gboolean
+on_button_press(GtkStatusIcon *icon, GdkEvent *event, gpointer user_data)
+{
+	XdeScreen *xscr = user_data;
+	GdkEventButton *ev;
+
+	(void) xscr;
+	ev = (typeof(ev)) event;
+	if (ev->button != 1)
+		return GTK_EVENT_PROPAGATE;
+	/* FIXME: do something */
+	present_popup(xscr);
+	return GTK_EVENT_STOP;
+}
+
+static void edit_input(XdeScreen *xscr);
+
+void
+on_edit_selected(GtkMenuItem *item, gpointer user_data)
+{
+	edit_input(user_data);
+}
+
+static void term_input();
+
+void
+on_save_selected(GtkMenuItem *item, gpointer user_data)
+{
+	term_input();
+}
+
+void
+on_refresh_selected(GtkMenuItem *item, gpointer user_data)
+{
+}
+
+void
+on_redo_selected(GtkMenuItem *item, gpointer user_data)
+{
+}
+
+void
+on_about_selected(GtkMenuItem *item, gpointer user_data)
+{
+	gchar *authors[] = { "Brian F. G. Bidulock <bidulock@openss7.org>", NULL };
+	gtk_show_about_dialog(NULL,
+			      "authors", authors,
+			      "comments", "An keyboard system tray icon.",
+			      "copyright", "Copyright (c) 2013, 2014, 2015, 2016  OpenSS7 Corporation",
+			      "license", "Do what thou wilt shall be the whole of the law.\n\n-- Aleister Crowley",
+			      "logo-icon-name", LOGO_NAME,
+			      "program-name", NAME,
+			      "version", VERSION,
+			      "website", "http://www.unexicon.com/",
+			      "website-label", "Unexicon - Linux spun for telecom",
+			      NULL);
+	return;
+}
+
+void
+on_quit_selected(GtkMenuItem *item, gpointer user_data)
+{
+	gtk_main_quit();
+}
+
+static void
+on_popup_menu(GtkStatusIcon *icon, guint button, guint time, gpointer user_data)
+{
+	XdeScreen *xscr = user_data;
+	GtkWidget *menu, *item;
+
+	menu = gtk_menu_new();
+
+	item = gtk_image_menu_item_new_from_stock("gtk-edit", NULL);
+	g_signal_connect(item, "activate", G_CALLBACK(on_edit_selected), xscr);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-save", NULL);
+	g_signal_connect(item, "activate", G_CALLBACK(on_save_selected), xscr);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-about", NULL);
+	g_signal_connect(item, "activate", G_CALLBACK(on_about_selected), xscr);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_separator_menu_item_new();
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-refresh", NULL);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_refresh_selected), xscr);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-redo", NULL);
+	g_signal_connect(item, "activate", G_CALLBACK(on_redo_selected), xscr);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_image_menu_item_new_from_stock("gtk-quit", NULL);
+	g_signal_connect(item, "activate", G_CALLBACK(on_quit_selected), xscr);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, gtk_status_icon_position_menu, icon, button, time);
+	return;
+}
+
+static guint popuptimer = 0;
+
+static void drop_popup(XdeScreen *xscr);
+
+static gboolean
+popup_timeout(gpointer user)
+{
+	XdeScreen *xscr = user;
+
+	DPRINTF(1, "popup timeout\n");
+	drop_popup(xscr);
+	popuptimer = 0;
+	return G_SOURCE_REMOVE;
+}
+
+static gboolean
+stop_popup_timer(XdeScreen *xscr)
+{
+	if (popuptimer) {
+		DPRINTF(1, "stopped popup timer\n");
+		g_source_remove(popuptimer);
+		popuptimer = 0;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
+start_popup_timer(XdeScreen *xscr)
+{
+	if (popuptimer)
+		return FALSE;
+	DPRINTF(1, "started popup timer\n");
+	popuptimer = g_timeout_add(options.timeout, popup_timeout, xscr);
+	return TRUE;
+}
+
+void
+restart_popup_timer(XdeScreen *xscr)
+{
+	stop_popup_timer(xscr);
+	start_popup_timer(xscr);
+}
+
+static GtkWidget *ttwindow = NULL;
+Bool gotit = False;
+
+static gchar *format_value_percent(GtkScale *scale, gdouble value, gpointer user_data);
+static void bell_percent_value_changed(GtkRange *range, gpointer user_data);
+
+static gboolean inside = False;
+
+void
+present_popup(XdeScreen *xscr)
+{
+	if (!gtk_widget_get_mapped(ttwindow)) {
+#if 0
+		GdkEventMask mask =
+		    GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK |
+		    GDK_BUTTON_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
+		    GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK;
+#endif
+		gtk_window_set_position(GTK_WINDOW(ttwindow), GTK_WIN_POS_MOUSE);
+		gtk_window_present(GTK_WINDOW(ttwindow));
+		gtk_widget_show_now(GTK_WIDGET(ttwindow));
+		gdk_window_focus(ttwindow->window, GDK_CURRENT_TIME);
+
+#if 0
+		gdk_keyboard_grab(ttwindow->window, TRUE, GDK_CURRENT_TIME);
+		gdk_pointer_grab(ttwindow->window, FALSE, mask, NULL, NULL, GDK_CURRENT_TIME);
+#endif
+		stop_popup_timer(xscr);
+		inside = TRUE;
+	}
+}
+
+gboolean
+on_query_tooltip(GtkStatusIcon *icon, gint x, gint y, gboolean keyboard_mode,
+		GtkTooltip *tooltip, gpointer user_data)
+{
+	XdeScreen *xscr = user_data;
+
+	(void) xscr;
+#if 0
+	if (ttwindow) {
+		present_popup(xscr);
+		start_popup_timer(xscr);
+		return FALSE;
+	}
+#endif
+	return TRUE;	/* show it now */
+}
+
+static void
+drop_popup(XdeScreen *xscr)
+{
+	if (gtk_widget_get_mapped(ttwindow)) {
+		stop_popup_timer(xscr);
+		gtk_widget_hide(ttwindow);
+	}
+}
+
+static gboolean
+popup_grab_broken_event(GtkWidget *widget, GdkEvent *event, gpointer user)
+{
+	XdeScreen *xscr = (typeof(xscr)) user;
+	GdkEventGrabBroken *ev = (typeof(ev)) event;
+
+	if (ev->keyboard) {
+		start_popup_timer(xscr);
+	} else {
+		drop_popup(xscr);
+	}
+	return GTK_EVENT_STOP; /* event handled */
+}
+
+static GdkFilterReturn
+popup_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = data;
+
+	switch (xev->type) {
+	case KeyPress:
+		DPRINTF(2, "KeyPress\n");
+		if (!inside) {
+			drop_popup(xscr);
+			return GDK_FILTER_REMOVE;
+		}
+		return GDK_FILTER_CONTINUE;
+	case KeyRelease:
+		DPRINTF(2, "KeyRelease\n");
+		return GDK_FILTER_CONTINUE;
+	case ButtonPress:
+		DPRINTF(2, "ButtonPress\n");
+		if (!inside) {
+			drop_popup(xscr);
+			return GDK_FILTER_REMOVE;
+		}
+		return GDK_FILTER_CONTINUE;
+	case ButtonRelease:
+		DPRINTF(2, "ButtonRelease\n");
+		return GDK_FILTER_CONTINUE;
+	case EnterNotify:
+		DPRINTF(2, "EnterNotify\n");
+		if (xev->xcrossing.mode == NotifyNormal) {
+			DPRINTF(2, "EnterNotify: NotifyNormal\n");
+			if (!inside) {
+				DPRINTF(2, "now I'm inside\n");
+				stop_popup_timer(xscr);
+				inside = TRUE;
+			}
+		}
+		return GDK_FILTER_CONTINUE;
+	case LeaveNotify:
+		DPRINTF(2, "LeaveNotify\n");
+		if (xev->xcrossing.mode == NotifyNormal) {
+			DPRINTF(2, "LeaveNotify: NotifyNormal\n");
+			if (inside) {
+				DPRINTF(2, "now I'm outside\n");
+				start_popup_timer(xscr);
+				inside = FALSE;
+			}
+		}
+		return GDK_FILTER_CONTINUE;
+	case FocusIn:
+		DPRINTF(0, "FocusIn\n");
+		switch (xev->xfocus.mode) {
+		case NotifyNormal:
+		case NotifyGrab:
+		default:
+			stop_popup_timer(xscr);
+			DPRINTF(0, "focused popup\n");
+			break;
+		}
+		return GDK_FILTER_CONTINUE;
+	case FocusOut:
+		DPRINTF(0, "FocusOut\n");
+		switch (xev->xfocus.mode) {
+		case NotifyNormal:
+		case NotifyUngrab:
+		case NotifyWhileGrabbed:
+		default:
+			DPRINTF(0, "unfocused popup\n");
+			drop_popup(xscr);
+			break;
+		}
+		return GDK_FILTER_CONTINUE;
+	default:
+		DPRINTF(2, "unhandled event\n");
+		return GDK_FILTER_CONTINUE;
+	}
+}
+
+static void
+popup_widget_realize(GtkWidget *popup, gpointer user)
+{
+	gdk_window_add_filter(popup->window, popup_handler, user);
+	gdk_window_set_override_redirect(popup->window, TRUE);
+	// gdk_window_set_accept_focus(popup->window, TRUE);
+	// gdk_window_set_focus_on_map(popup->window, TRUE);
+}
+
+void
+create_tooltip(XdeScreen *xscr)
+{
+	GtkWidget *w, *h, *f, *s;
+
+	if (ttwindow)
+		return;
+
+	w = gtk_window_new(GTK_WINDOW_POPUP);
+	gtk_widget_add_events(w, GDK_ALL_EVENTS_MASK);
+	gtk_window_set_accept_focus(GTK_WINDOW(w), TRUE);
+	gtk_window_set_focus_on_map(GTK_WINDOW(w), TRUE);
+	// gtk_window_set_type_hint(GTK_WINDOW(w), GDK_WINDOW_TEMP);
+	gtk_window_stick(GTK_WINDOW(w));
+	gtk_window_set_keep_above(GTK_WINDOW(w), TRUE);
+
+	h = gtk_hbox_new(FALSE, 5);
+	gtk_container_set_border_width(GTK_CONTAINER(h), 3);
+	f = gtk_frame_new("Bell");
+	gtk_container_set_border_width(GTK_CONTAINER(f), 3);
+	gtk_frame_set_label_align(GTK_FRAME(f), 0.5, 0.5);
+	gtk_box_pack_start(GTK_BOX(h), f, FALSE, FALSE, 0);
+	s = gtk_vscale_new_with_range(0.0, 100.0, 1.0);
+	gtk_scale_set_draw_value(GTK_SCALE(s), TRUE);
+	gtk_scale_set_value_pos(GTK_SCALE(s), GTK_POS_TOP);
+	g_signal_connect(G_OBJECT(s), "format-value", G_CALLBACK(format_value_percent), NULL);
+	gtk_container_add(GTK_CONTAINER(f), s);
+	gtk_widget_set_tooltip_markup(s, "\
+Set the bell volume as a percentage of\n\
+maximum volume: from 0% to 100%.");
+	g_signal_connect(G_OBJECT(s), "value-changed", G_CALLBACK(bell_percent_value_changed), NULL);
+	controls.Icon.BellPercent = s;
+
+	gtk_container_add(GTK_CONTAINER(w), h);
+	gtk_widget_show_all(h);
+
+	gtk_window_set_position(GTK_WINDOW(w), GTK_WIN_POS_MOUSE);
+	gtk_container_set_border_width(GTK_CONTAINER(w), 3);
+	gtk_window_set_default_size(GTK_WINDOW(w), -1, 200);
+	gtk_widget_set_size_request(w, -1, 200);
+
+	g_signal_connect(G_OBJECT(w), "grab_broken_event", G_CALLBACK(popup_grab_broken_event), xscr);
+	g_signal_connect(G_OBJECT(w), "realize", G_CALLBACK(popup_widget_realize), xscr);
+
+	ttwindow = w;
+}
 
 static GtkStatusIcon *
 create_icon(XdeScreen *xscr)
 {
-	return (trayicon);
+	GtkStatusIcon *icon;
+
+	icon = gtk_status_icon_new_from_icon_name(LOGO_NAME);
+	gtk_status_icon_set_tooltip_text(icon, "Click for menu...");
+	g_signal_connect(icon, "button_press_event", G_CALLBACK(on_button_press), xscr);
+	g_signal_connect(icon, "popup_menu", G_CALLBACK(on_popup_menu), xscr);
+	// g_signal_connect(icon, "query_tooltip", G_CALLBACK(on_query_tooltip), xscr);
+	create_tooltip(xscr);
+	return (icon);
 }
+
+GtkWindow *create_window();
 
 static void
 show_tray(XdeScreen *xscr)
 {
+	if (!editor)
+		editor = create_window();
 	if (!trayicon)
 		trayicon = create_icon(xscr);
+
+	edit_set_values();
+	gtk_status_icon_set_visible(trayicon, TRUE);
 }
 
 static gchar *
@@ -3153,6 +3577,11 @@ do_run(int argc, char *argv[], Bool replace)
 	PTRACE(5);
 	set_input();
 	PTRACE(5);
+	if (options.trayicon) {
+		xscr = screens + options.screen;
+		show_tray(xscr);
+	}
+	PTRACE(5);
 	if (options.editor) {
 		xscr = screens + options.screen;
 		edit_input(xscr);
@@ -4556,7 +4985,7 @@ get_defaults(void)
 	if (options.screen < 0 && (p = strrchr(options.display, '.'))
 	    && (n = strspn(++p, "0123456789")) && *(p + n) == '\0')
 		options.screen = atoi(p);
-	if (options.screen < 0 && options.editor) {
+	if (options.screen < 0 && (options.editor || options.trayicon)) {
 		if (options.button)
 			options.screen = find_pointer_screen();
 		else
