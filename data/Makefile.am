@@ -26,7 +26,6 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/autostart/retrovol.desktop \
 	xdg/xde/autostart/smproxy.desktop \
 	xdg/xde/autostart/wmappl.desktop \
-	xdg/xde/autostart/wmbattery.desktop \
 	xdg/xde/autostart/wmblob.desktop \
 	xdg/xde/autostart/wmbubble.desktop \
 	xdg/xde/autostart/wmCalClock.desktop \
@@ -39,7 +38,6 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/autostart/wmsysmon.desktop \
 	xdg/xde/autostart/wmsystemtray.desktop \
 	xdg/xde/autostart/wmtimer.desktop \
-	xdg/xde/autostart/wmWeather.desktop \
 	xdg/xde/autostart/wmweather+.desktop \
 	xdg/xde/autostart/xde-panel.desktop \
 	xdg/xde/autostart/xde-xlock.desktop
