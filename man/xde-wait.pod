@@ -25,6 +25,9 @@ line.  I<COMMAND> is the command to execute and I<ARGUMENT>s are the
 arguments for I<COMMAND>.  B<xde-wait> will L<execvp(3)> the command and
 arguments.
 
+When no command is specified, B<xde-wait> will simply exit after the
+necessary resources have arrived.
+
 =back
 
 =head1 OPTIONS
