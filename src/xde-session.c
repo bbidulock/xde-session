@@ -261,17 +261,49 @@ setup_environment()
 	}
 	/* add overrides for XDE and for vendor */
 	if (options.vendor) {
-		snprintf(buf, PATH_MAX, "/etc/xdg/xde:/etc/xdg/%s:%s", options.vendor, envir.XDG_CONFIG_DIRS);
+		strncpy(buf, "/etc/xdg/xde", PATH_MAX);
+		if (options.vendor) {
+			strncat(buf, ":/etc/xdg/", PATH_MAX);
+			strncat(buf, options.vendor, PATH_MAX);
+		}
+		if (envir.XDG_CONFIG_DIRS) {
+			strncat(buf, ":", PATH_MAX);
+			strncat(buf, envir.XDG_CONFIG_DIRS, PATH_MAX);
+		}
 		free(envir.XDG_CONFIG_DIRS);
 		envir.XDG_CONFIG_DIRS = strdup(buf);
-		snprintf(buf, PATH_MAX, "/usr/share/xde:/usr/share/%s:%s", options.vendor, envir.XDG_CONFIG_DIRS);
+		strncpy(buf, "/usr/share/xde", PATH_MAX);
+		if (options.vendor) {
+			strncat(buf, ":/usr/share/", PATH_MAX);
+			strncat(buf, options.vendor, PATH_MAX);
+		}
+		if (envir.XDG_CONFIG_DIRS) {
+			strncat(buf, ":", PATH_MAX);
+			strncat(buf, envir.XDG_CONFIG_DIRS, PATH_MAX);
+		}
 		free(envir.XDG_DATA_DIRS);
 		envir.XDG_DATA_DIRS = strdup(buf);
 	} else {
-		snprintf(buf, PATH_MAX, "/etc/xdg/xde:%s:%s", options.vendor, envir.XDG_CONFIG_DIRS);
+		strncpy(buf, "/etc/xdg/xde", PATH_MAX);
+		if (options.vendor) {
+			strncat(buf, ":", PATH_MAX);
+			strncat(buf, options.vendor, PATH_MAX);
+		}
+		if (envir.XDG_CONFIG_DIRS) {
+			strncat(buf, ":", PATH_MAX);
+			strncat(buf, envir.XDG_CONFIG_DIRS, PATH_MAX);
+		}
 		free(envir.XDG_CONFIG_DIRS);
 		envir.XDG_CONFIG_DIRS = strdup(buf);
-		snprintf(buf, PATH_MAX, "/usr/share/xde:%s:%s", options.vendor, envir.XDG_CONFIG_DIRS);
+		strncpy(buf, "/usr/share/xde", PATH_MAX);
+		if (options.vendor) {
+			strncat(buf, ":", PATH_MAX);
+			strncat(buf, options.vendor, PATH_MAX);
+		}
+		if (envir.XDG_CONFIG_DIRS) {
+			strncat(buf, ":", PATH_MAX);
+			strncat(buf, envir.XDG_CONFIG_DIRS, PATH_MAX);
+		}
 		free(envir.XDG_DATA_DIRS);
 		envir.XDG_DATA_DIRS = strdup(buf);
 	}
