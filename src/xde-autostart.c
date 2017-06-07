@@ -1481,7 +1481,7 @@ send_new(Sequence * seq)
 {
 	char *msg, *p;
 
-	p = msg = calloc(4096, sizeof(*msg));
+	p = msg = calloc(BUFSIZ, sizeof(*msg));
 	strcat(p, "new:");
 	add_field(seq, &p, " ID=", FIELD_OFFSET_ID);
 	add_fields(seq, p);
@@ -1502,7 +1502,7 @@ send_change(Sequence * seq)
 {
 	char *msg, *p;
 
-	p = msg = calloc(4096, sizeof(*msg));
+	p = msg = calloc(BUFSIZ, sizeof(*msg));
 	strcat(p, "change:");
 	add_field(seq, &p, " ID=", FIELD_OFFSET_ID);
 	add_fields(seq, p);
@@ -1522,7 +1522,7 @@ send_remove(Sequence * seq)
 {
 	char *msg, *p;
 
-	p = msg = calloc(4096, sizeof(*msg));
+	p = msg = calloc(BUFSIZ, sizeof(*msg));
 	strcat(p, "remove:");
 	add_field(seq, &p, " ID=", FIELD_OFFSET_ID);
 	send_msg(msg);
@@ -4191,15 +4191,15 @@ get_data_dirs(int *np)
 	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
 
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
-	dirs = calloc(len, sizeof(*dirs));
+	dirs = calloc(len + 1, sizeof(*dirs));
 	if (xhome)
-		strcpy(dirs, xhome);
+		strncpy(dirs, xhome, len);
 	else {
-		strcpy(dirs, home);
-		strcat(dirs, "/.local/share");
+		strncpy(dirs, home, len);
+		strncat(dirs, "/.local/share", len);
 	}
-	strcat(dirs, ":");
-	strcat(dirs, xdata);
+	strncat(dirs, ":", len);
+	strncat(dirs, xdata, len);
 	end = dirs + strlen(dirs);
 	for (n = 0, pos = dirs; pos < end;
 	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
@@ -4223,15 +4223,15 @@ get_config_dirs(int *np)
 	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
 
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
-	dirs = calloc(len, sizeof(*dirs));
+	dirs = calloc(len + 1, sizeof(*dirs));
 	if (xhome)
-		strcpy(dirs, xhome);
+		strncpy(dirs, xhome, len);
 	else {
-		strcpy(dirs, home);
-		strcat(dirs, "/.config");
+		strncpy(dirs, home, len);
+		strncat(dirs, "/.config", len);
 	}
-	strcat(dirs, ":");
-	strcat(dirs, xconf);
+	strncat(dirs, ":", len);
+	strncat(dirs, xconf, len);
 	end = dirs + strlen(dirs);
 	for (n = 0, pos = dirs; pos < end;
 	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
@@ -4254,25 +4254,25 @@ get_autostart_dirs(int *np)
 	xhome = getenv("XDG_CONFIG_HOME");
 	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
 
-	len = (xconf ? strlen(xconf) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
-	dirs = calloc(len, sizeof(*dirs));
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
+	dirs = calloc(len + 1, sizeof(*dirs));
 	if (xhome)
-		strcpy(dirs, xhome);
+		strncpy(dirs, xhome, len);
 	else {
-		strcpy(dirs, home);
-		strcat(dirs, "/.config");
+		strncpy(dirs, home, len);
+		strncat(dirs, "/.config", len);
 	}
-	strcat(dirs, ":");
-	strcat(dirs, xconf);
+	strncat(dirs, ":", len);
+	strncat(dirs, xconf, len);
 	end = dirs + strlen(dirs);
 	for (n = 0, pos = dirs; pos < end; n++,
 	     *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
 	xdg_dirs = calloc(n, sizeof(*xdg_dirs));
 	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1) {
 		len = strlen(pos) + strlen("/autostart") + 1;
-		xdg_dirs[n] = calloc(len, sizeof(*xdg_dirs[n]));
-		strcpy(xdg_dirs[n], pos);
-		strcat(xdg_dirs[n], "/autostart");
+		xdg_dirs[n] = calloc(len + 1, sizeof(*xdg_dirs[n]));
+		strncpy(xdg_dirs[n], pos, len);
+		strncat(xdg_dirs[n], "/autostart", len);
 	}
 	free(dirs);
 	if (np)
@@ -4424,11 +4424,11 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 		     *strchrnul(dir, ':') = '\0', dir += strlen(dir) + 1) ;
 		for (dir = path; dir < end; dir += strlen(dir) + 1) {
 			int len = strlen(dir) + blen;
-			char *file = calloc(len, sizeof(*file));
+			char *file = calloc(len + 1, sizeof(*file));
 
-			strcpy(file, dir);
-			strcat(file, "/");
-			strcat(file, binary);
+			strncpy(file, dir, len);
+			strncat(file, "/", len);
+			strncat(file, binary, len);
 			if (!access(file, X_OK)) {
 				execok = TRUE;
 				free(file);
@@ -4483,10 +4483,10 @@ get_autostarts(void)
 				continue;
 			}
 			len = strlen(*dirs) + strlen(d->d_name) + 2;
-			file = calloc(len, sizeof(*file));
-			strcpy(file, *dirs);
-			strcat(file, "/");
-			strcat(file, d->d_name);
+			file = calloc(len + 1, sizeof(*file));
+			strncpy(file, *dirs, len);
+			strncat(file, "/", len);
+			strncat(file, d->d_name, len);
 			if (stat(file, &st)) {
 				EPRINTF("%s: %s\n", file, strerror(errno));
 				free(file);
