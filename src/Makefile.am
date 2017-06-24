@@ -81,18 +81,18 @@ xde_wmproxy_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
 
 xde_xchooser_CPPFLAGS = -DNAME=\"xde-xchooser\"
 xde_xchooser_SOURCES = xde-xchooser.c
-xde_xchooser_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_xchooser_LDFLAGS = -lpam $(XDMCP_LIBS) $(XVNC_LIBS) $(XFT_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_xchooser_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_xchooser_LDFLAGS = -lpam $(XDMCP_LIBS) $(XVNC_LIBS) $(XFT_LIBS) $(SMLIB_LIBS) $(ICE_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_xlock_CPPFLAGS = -DNAME=\"xde-xlock\"
 xde_xlock_SOURCES = xde-xlock.c
-xde_xlock_CFLAGS = $(AM_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_xlock_LDFLAGS = -lpam $(XVNC_LIBS) $(XFT_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_xlock_CFLAGS = $(AM_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_xlock_LDFLAGS = -lpam $(XVNC_LIBS) $(XFT_LIBS) $(SMLIB_LIBS) $(ICE_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_xlogin_CPPFLAGS = -DNAME=\"xde-xlogin\"
 xde_xlogin_SOURCES = xde-xlogin.c
-xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_xlogin_LDFLAGS = -lpam $(XDMCP_LIBS) $(XVNC_LIBS) $(XFT_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_xlogin_CFLAGS = $(AM_CFLAGS) $(XDMCP_CFLAGS) $(XVNC_CFLAGS) $(XFT_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(SYSTEMD_CFLAGS)
+xde_xlogin_LDFLAGS = -lpam $(XDMCP_LIBS) $(XVNC_LIBS) $(XFT_LIBS) $(SMLIB_LIBS) $(ICE_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_xsession_CPPFLAGS = -DNAME=\"xde-xsession\"
 xde_xsession_CFLAGS = $(AM_CFLAGS) $(XFT_CFLAGS)
