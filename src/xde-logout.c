@@ -1,7 +1,7 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>
- Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
+ Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2001-2009  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
  All Rights Reserved.
@@ -1693,8 +1693,8 @@ get_data_dirs(int *np)
 	return (xdg_dirs);
 }
 
-static GtkWidget *buttons[5];
 #ifndef DO_LOGOUT
+static GtkWidget *buttons[5];
 static GtkWidget *l_uname;
 static GtkWidget *l_pword;
 static GtkWidget *l_lstat;
@@ -3019,6 +3019,8 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_widget_set_sensitive(pass, FALSE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			if (!GTK_IS_WIDGET(user))
+				EPRINTF("user is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 			DPRINTF("running main loop...\n");
@@ -3041,6 +3043,8 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			gtk_widget_set_sensitive(pass, TRUE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			if (!GTK_IS_WIDGET(pass))
+				EPRINTF("pass is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
 			DPRINTF("running main loop...\n");
@@ -3205,6 +3209,8 @@ append_power_action(GtkWidget *submenu, Bool islocal, const char *name, const ch
 		imag = gtk_image_new_from_icon_name(icon, GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
+		if (!callback)
+			EPRINTF("callback is null!\n");
 		g_signal_connect_data(G_OBJECT(item), "activate",
 				      callback, (gpointer) value, free_value, G_CONNECT_AFTER);
 		if (islocal && (!strcmp(value, "yes") || !strcmp(value, "challenge"))) {
@@ -3543,11 +3549,11 @@ get_user_menu(void)
 		qsort(sessions, count, sizeof(char *), comparevts);
 	}
 	for (s = sessions; s && *s; free(*s), s++) {
-		char *type = NULL, *klass = NULL, *user = NULL, *host = NULL,
-		    *tty = NULL, *disp = NULL;
+		char *type = NULL, *klass = NULL, *user = NULL, *host = NULL, *tty = NULL, *disp = NULL;
 		unsigned int vtnr = 0;
 		uid_t uid = -1;
 		Bool isactive = False;
+		GCallback callback = G_CALLBACK(on_switch_session);
 
 		DPRINTF("%s(%s): considering session\n", seat, *s);
 		if (sess && !strcmp(*s, sess)) {
@@ -3607,9 +3613,10 @@ get_user_menu(void)
 		DPRINTF("%s(%s): adding item to menu: %s\n", seat, *s, label);
 		g_free(label);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		if (!callback)
+			EPRINTF("callback is null!\n");
 		g_signal_connect_data(G_OBJECT(item), "activate",
-				      G_CALLBACK(on_switch_session),
-				      strdup(*s), free_string, G_CONNECT_AFTER);
+				      callback, strdup(*s), free_string, G_CONNECT_AFTER);
 		gtk_widget_show(item);
 		if (islocal && !isactive) {
 			gtk_widget_set_sensitive(item, TRUE);
@@ -4125,7 +4132,7 @@ ungrabbed_window(GtkWidget *window)
 		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
 		grab_broken_handler = 0;
 	}
-	g_signal_connect(G_OBJECT(window), "grab-broken-event", NULL, NULL);
+//	g_signal_connect(G_OBJECT(window), "grab-broken-event", NULL, NULL);
 #endif
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
@@ -5102,6 +5109,8 @@ GetWindow(Bool noshow)
 		gtk_widget_set_sensitive(buttons[0], TRUE);
 		gtk_widget_set_sensitive(buttons[3], FALSE);
 		if (!noshow) {
+			if (!GTK_IS_WIDGET(pass))
+				EPRINTF("pass is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
 		}
@@ -5113,6 +5122,8 @@ GetWindow(Bool noshow)
 		gtk_widget_set_sensitive(buttons[0], TRUE);
 		gtk_widget_set_sensitive(buttons[3], FALSE);
 		if (!noshow) {
+			if (!GTK_IS_WIDGET(user))
+				EPRINTF("user is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 		}
@@ -5142,8 +5153,10 @@ GetWindow(Bool noshow)
 		grabbed_window(xscr->wind, NULL);
 #else				/* DO_LOGOUT */
 	if (!noshow) {
-		gtk_widget_grab_default(buttons[LOGOUT_ACTION_LOGOUT]);
-		gtk_widget_grab_focus(buttons[LOGOUT_ACTION_LOGOUT]);
+		if (!GTK_IS_WIDGET(controls[LOGOUT_ACTION_LOGOUT]))
+			EPRINTF("controls[LOGOUT_ACTION_LOGOUT] is not a widget\n");
+		gtk_widget_grab_default(controls[LOGOUT_ACTION_LOGOUT]);
+		gtk_widget_grab_focus(controls[LOGOUT_ACTION_LOGOUT]);
 		grabbed_window(xscr->wind, NULL);
 	}
 #endif				/* DO_LOGOUT */
@@ -5295,6 +5308,8 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			DPRINTF("grabbing password entry widget\n");
+			if (!GTK_IS_WIDGET(pass))
+				EPRINTF("pass is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
 		} else {
@@ -5302,13 +5317,17 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, FALSE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			if (!GTK_IS_WIDGET(user))
+				EPRINTF("user is not a widget\n");
 			DPRINTF("grabbing username entry widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 		}
 #else
-		gtk_widget_grab_default(buttons[LOGOUT_ACTION_LOGOUT]);
-		gtk_widget_grab_focus(buttons[LOGOUT_ACTION_LOGOUT]);
+		if (!GTK_IS_WIDGET(controls[LOGOUT_ACTION_LOGOUT]))
+			EPRINTF("controls[LOGOUT_ACTION_LOGOUT] is not a widget\n");
+		gtk_widget_grab_default(controls[LOGOUT_ACTION_LOGOUT]);
+		gtk_widget_grab_focus(controls[LOGOUT_ACTION_LOGOUT]);
 #endif
 		grabbed_window(GTK_WIDGET(xscr->wind), NULL);
 	}
@@ -6284,8 +6303,8 @@ copying(int argc, char *argv[])
 --------------------------------------------------------------------------------\n\
 %1$s\n\
 --------------------------------------------------------------------------------\n\
-Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>\n\
-Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
+Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>\n\
 Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
 \n\
 All Rights Reserved.\n\
@@ -6328,8 +6347,8 @@ version(int argc, char *argv[])
 %1$s (OpenSS7 %2$s) %3$s\n\
 Written by Brian Bidulock.\n\
 \n\
-Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016  Monavacon Limited.\n\
-Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
+Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017  Monavacon Limited.\n\
+Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009  OpenSS7 Corporation.\n\
 Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
@@ -7743,6 +7762,13 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+#ifdef DO_XLOCKING
+			{"locker",	    no_argument,	NULL, 'L'},
+			{"replace",	    no_argument,	NULL, 'r'},
+			{"lock",	    no_argument,	NULL, 'l'},
+			{"unlock",	    no_argument,	NULL, 'U'},
+			{"quit",	    no_argument,	NULL, 'q'},
+#endif					/* DO_XLOCKING */
 #ifdef DO_XCHOOSER
 			{"xdmaddress",	    required_argument,	NULL, 'x'},
 			{"clientaddress",   required_argument,	NULL, 'c'},
@@ -7751,38 +7777,31 @@ main(int argc, char *argv[])
 #else					/* DO_XCHOOSER */
 			{"prompt",	    required_argument,	NULL, 'p'},
 #endif					/* DO_XCHOOSER */
-#ifdef DO_XLOCKING
-			{"locker",	    no_argument,	NULL, 'L'},
-			{"replace",	    no_argument,	NULL, 'r'},
-			{"lock",	    no_argument,	NULL, 'l'},
-			{"unlock",	    no_argument,	NULL, 'U'},
-			{"quit",	    no_argument,	NULL, 'q'},
-#endif					/* DO_XLOCKING */
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'S'},
 			{"side",	    required_argument,	NULL, 's'},
-			{"noask",	    no_argument,	NULL, 'n'},
+			{"noask",	    no_argument,	NULL, 'N'},
 			{"charset",	    required_argument,	NULL, '1'},
 			{"language",	    required_argument,	NULL, '2'},
 			{"icons",	    required_argument,	NULL, 'i'},
-			{"theme",	    required_argument,	NULL, 'T'},
+			{"theme",	    required_argument,	NULL, 'e'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
 			{"timeout",	    required_argument,	NULL, 'T'},
 			{"vendor",	    required_argument,	NULL, '5'},
 			{"xsessions",	    no_argument,	NULL, 'X'},
 			{"default",	    required_argument,	NULL, '6'},
-#ifndef DO_XLOCKING
+#ifndef DO_LOGOUT
 			{"username",	    required_argument,	NULL, '7'},
 			{"guard",	    required_argument,	NULL, 'g'},
-#endif
+#endif				/* !defined DO_LOGOUT */
 			{"setbg",	    no_argument,	NULL, '8'},
 			{"transparent",	    no_argument,	NULL, '9'},
-			{"tray",	    no_argument,	NULL, 't'},
+			{"tray",	    no_argument,	NULL, 'y'},
 
 			{"clientId",	    required_argument,	NULL, '3'},
 			{"restore",	    required_argument,	NULL, '4'},
 
-			{"dry-run",	    no_argument,	NULL, 'N'},
+			{"dry-run",	    no_argument,	NULL, 'n'},
 			{"debug",	    optional_argument,	NULL, 'D'},
 			{"verbose",	    optional_argument,	NULL, 'v'},
 			{"help",	    no_argument,	NULL, 'h'},
@@ -7814,6 +7833,36 @@ main(int argc, char *argv[])
 				command = CommandLocker;
 			options.command = CommandLocker;
 			options.replace = False;
+			break;
+		case 'r':	/* -r, --replace */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandReplace;
+			options.command = CommandReplace;
+			options.replace = True;
+			break;
+		case 'l':	/* -l, --lock */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandLock;
+			options.command = CommandLock;
+			break;
+		case 'U':	/* -U, --unlock */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandUnlock;
+			options.command = CommandUnlock;
+			break;
+		case 'q':	/* -q, --quit */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandQuit;
+			options.command = CommandQuit;
+			options.replace = True;
 			break;
 #endif
 #ifdef DO_XCHOOSER
@@ -7849,32 +7898,6 @@ main(int argc, char *argv[])
 			break;
 #endif				/* DO_XCHOOSER */
 
-#ifdef DO_XLOCKING
-		case 'r':	/* -r, --replace */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandReplace;
-			options.command = CommandReplace;
-			options.replace = True;
-			break;
-		case 'q':	/* -q, --quit */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandQuit;
-			options.command = CommandQuit;
-			options.replace = True;
-			break;
-		case 'l':	/* -l, --lock */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandLock;
-			options.command = CommandLock;
-			break;
-#endif				/* DO_XLOCKING */
-
 		case 'b':	/* -b, --banner BANNER */
 			free(options.banner);
 			options.banner = strdup(optarg);
@@ -7901,6 +7924,9 @@ main(int argc, char *argv[])
 				break;
 			}
 			goto bad_option;
+		case 'N':	/* -N, --noask */
+			options.noask = True;
+			break;
 		case '1':	/* -c, --charset CHARSET */
 			free(options.charset);
 			options.charset = strdup(optarg);
@@ -7908,9 +7934,6 @@ main(int argc, char *argv[])
 		case '2':	/* -l, --language LANG */
 			free(options.language);
 			options.language = strdup(optarg);
-			break;
-		case 'N':	/* -N, --noask */
-			options.noask = True;
 			break;
 		case 'i':	/* -i, --icons THEME */
 			free(options.icon_theme);
@@ -7953,7 +7976,7 @@ main(int argc, char *argv[])
 				goto bad_option;
 			options.guard = val;
 			break;
-#endif
+#endif				/* !defined DO_LOGOUT */
 		case '3':	/* -clientId CLIENTID */
 			free(options.clientId);
 			options.clientId = strdup(optarg);
@@ -8057,9 +8080,6 @@ main(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 		if (optind >= argc) {
 			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
-			goto bad_nonopt;
-		} else {
-			fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
 			goto bad_nonopt;
 		}
 #endif
