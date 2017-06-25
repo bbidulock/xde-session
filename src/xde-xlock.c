@@ -6132,6 +6132,11 @@ on_popup_menu(GtkStatusIcon *icon, guint button, guint time, gpointer user_data)
 	GtkWidget *menu, *item;
 
 	menu = gtk_menu_new();
+
+	append_power_actions(GTK_MENU(menu));
+	append_session_tasks(GTK_MENU(menu));
+	append_switch_users(GTK_MENU(menu));
+
 	item = gtk_image_menu_item_new_from_stock("gtk-refresh", NULL);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_refresh_selected), NULL);
 	gtk_widget_show(item);
