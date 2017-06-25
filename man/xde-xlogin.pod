@@ -16,6 +16,25 @@ It is designed to let L<xdm(1)> do the heavy lifting of coordinating the
 majority of the XDMCP protocol while providing a more aesthetic
 appearance.
 
+=head1 ARGUMENTS
+
+=over 4
+
+=item I<ADDRESSES ...>
+
+Provides the human-readable (decimal and dot notation, host names)
+specification of the display managers to query to determine whether they
+are willing to manage a display.  In addition to all manner of textual
+IP addresses, the special value C<BROADCAST> can be specified to indicate
+to the chooser that it should (also) broadcast queries to discover
+display managers.  The special value C<DNS-SD> can be specified to
+indicate to the chooser that it should (also) use C<DNS-SD> to discover
+display managers that offer the C<tcp.xdmcp> service.  The special
+value C<MULTICAST> can be specified to indicate to the chooser that it
+should (also) use multicast to discover display managers.
+
+=back
+
 =head1 OPTIONS
 
 No options are necessary.  When launched by L<xdm(1)>, it will provide
@@ -55,6 +74,62 @@ permissions and exits.
 
 =back
 
+=head2 XDM OPTIONS
+
+XDM options are not normally specified by the user of the program on the
+command line: they are, instead, provided by L<xdm(1)> when
+B<xde-xlogin> is being used as a I<chooser> program.  Note that none
+of these options are provided when L<xdm(1)> runs the program as a
+I<greeter>.  See L</HISTORY>.
+
+=over 4
+
+=item B<-xdmAddress> I<ADDRESS>
+
+Specifies the address of a TCP socket upon which L<xdm(1)> is awaiting
+instructions for the server.  L<xdm(1)> encodes this I<ADDRESS> as a
+string of hexadecimal characters (with no 0x prefix) representing the
+binary socket address.  The first two bytes are a host-byte-order 16-bit
+address family (e.g. AF_INET); the second and third bytes are the
+host-byte-order 16-bit port number; and the remaining 4 or 16 bytes are
+the IPv4 or IPv6 network-byte-order IP address.
+
+B<xde-xlogin> uses the socket address communicated in this option to
+communicate the selection back to L<xdm(1)>.
+
+=item B<-clientAddress> I<IPADDR>
+
+Specifies the client IP address I<IPADDR> that initiated the request.
+L<xdm(1)> encodes this as a string of hexadecimal characters (with no 0x
+prefix) representing the 4- or 16-byte IPv4 or IPv6 network-byte-order
+IP address.
+
+B<xde-xlogin> uses this option to identify the originating client back
+to L<xdm(1)> when a selection is made.
+
+=item B<-connectionType> I<TYPE>
+
+Specifies the connection type supported by the client as a decimal
+number, I<TYPE>.
+
+B<xde-xlogin> uses this option to filter the list of willing display
+managers to those that support this connection type.  The three types of
+interest to L<xdm(1)> (see F</usr/include/X11/Xdmcp.h>) are:
+
+=over 4
+
+=item 0 - B<FamilyInternet> (AF_INET addresses only)
+
+=item 6 - B<FamilyInternet6> (AF_INET6 addresses only)
+
+=item 256 - B<FamilyLocal> (AF_UNIX addresses only)
+
+=back
+
+L<xdm(1)> will only supply B<FamilyInternet>(0) or B<FamilyInternet6>(6).
+
+=back
+
 =head2 GENERAL OPTIONS
 
 B<xde-xlogin> provides a set of general options that are not supported
@@ -82,9 +157,8 @@ shell script between L<xdm(1)> and B<xde-xlogin> that adds the
 options:
 
  #!/bin/sh
- XDM=/usr/lib/X11/xdm
- $XDM/xde-xlogin -prompt "Welcome to X!" \
-	 -banner $XDM/banner.png $@
+ /usr/lib/X11/xdm/xde-xlogin -prompt "Welcome to X!" \
+	 -banner /usr/lib/X11/xdm/banner.png $@
 
 =item B<-b>, B<--banner> I<BANNER>
 
@@ -94,12 +168,11 @@ invoked by a shell script invoked by L<xdm(1)> that adds the options.
 For example:
 
  #!/bin/sh
- XDM=/usr/lib/X11/xdm
- $XDM/xde-xlogin -banner $XDM/xde/banner.png $@
+ /usr/lib/X11/xdm/xde-xlogin -banner /usr/lib/X11/xdm/xde/banner.png $@
 
 The default is obtained by looking for the file
 F<${XDG_MENU_PREFIX}banner.{xpm,png,jpg,svg}> in the F<images>
-sub-directory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
+subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
 L</ENVIRONMENT>.
 
 =item B<-S>, B<--splash> I<SPLASH>
@@ -109,7 +182,7 @@ The default is to use the background image currently installed on the
 screen, and if no background image is installed on the screen, to search
 for the background image file in the file named
 F<${XDG_MENU_PREFIX}splash.{xpm,png,jpg,svg}> in the F<images>
-sub-directory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
+subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
 L</ENVIRONMENT>.
 
 L<xdm(1)> does not provide this option, but it can easily be
@@ -117,8 +190,7 @@ invoked by a shell script by L<xdm(1)> that adds the options.  For
 example:
 
  #!/bin/sh
- XDM=/usr/lib/X11/xdm
- $XDM/xde-xlogin -splash $XDM/xde/splash.jpg $@
+ /usr/lib/X11/xdm/xde-xlogin -splash /usr/lib/X11/xdm/xde/splash.jpg $@
 
 =item B<-s>, B<--side> {B<left>|B<top>|B<right>|B<bottom>}
 
@@ -141,7 +213,7 @@ determined using the current locale: see L<locale(7)>.
 Specifies the GTK+ icon theme to use.  When unspecified, the icon theme
 is automatically determined using desktop and toolkit files.
 
-=item B<-T>, B<--theme> I<GTK2-THEME>
+=item B<-e>, B<--theme> I<GTK2-THEME>
 
 Specifies the GTK+ theme name to use.  When unspecified, the GTK2 theme
 is automatically determined using desktop and toolkit files.
@@ -181,7 +253,7 @@ Specifies that the background image should not be set by the program.
 The default behaviour is to set the background in accordance with the
 B<-banner> option.
 
-=item B<-transparent>
+=item B<--transparent>
 
 Specifies that the login panel should be transparent and that the
 widgets should be embedded in the background image.  The default is to
@@ -291,7 +363,7 @@ Provides the banner to use for the branding logo in the same fashion as
 the B<-banner> command line option.  Specifies the I<PATH> to the banner
 graphic to display in the left pane of the host menu.  When unspecified,
 the program searches for an image file name
-F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the sub-directory
+F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the subdirectory
 F<images> in XDG data directories.
 
 =item B<xde-xlogin>.B<splash>: I<PATH>
@@ -776,6 +848,11 @@ F</usr/bin> directory.
 
 The default location of the banner graphic.
 
+=item F<$XDG_DATA_DIRS/images/${XDG_MENU_PREFIX}splash.png>
+
+The default location of the background splash to display on the login
+screen when no other background is available.
+
 =item F</etc/X11/xdm/Xresources>
 
 The normal location of the X resources file for L<xdm(1)>.  Normally,
@@ -788,7 +865,7 @@ greeter or chooser programs.
 Because the greeter and chooser is associated with XDE, a complete set of
 L<xdm(1)> configuration files, including the X resources file containing
 B<XDE-XLogin> resources are contained in the F</etc/X11/xdm/xde>
-sub-directory.  Application defaults are not loaded from anywhere else
+subdirectory.  Application defaults are not loaded from anywhere else
 for security.
 
 =item F</usr/share/X11/app-defaults/XDE-XLogin>

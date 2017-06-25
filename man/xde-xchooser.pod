@@ -213,7 +213,7 @@ determined using the current locale: see L<locale(7)>.
 Specifies the GTK+ icon theme to use.  When unspecified, the icon theme
 is automatically determined using desktop and toolkit files.
 
-=item B<-T>, B<--theme> I<GTK2-THEME>
+=item B<-e>, B<--theme> I<GTK2-THEME>
 
 Specifies the GTK+ theme name to use.  When unspecified, the GTK2 theme
 is automatically determined using desktop and toolkit files.
@@ -253,7 +253,7 @@ Specifies that the background image should not be set by the program.
 The default behaviour is to set the background in accordance with the
 B<-banner> option.
 
-=item B<-transparent>
+=item B<--transparent>
 
 Specifies that the login panel should be transparent and that the
 widgets should be embedded in the background image.  The default is to
@@ -874,6 +874,11 @@ F</usr/bin> directory.
 =item F</usr/lib/X11/xdm/banner.png>
 
 The default location of the banner graphic.
+
+=item F<$XDG_DATA_DIRS/images/${XDG_MENU_PREFIX}splash.png>
+
+The default location of the background splash to display on the chooser
+screen when no other background is available.
 
 =item F</etc/X11/xdm/Xresources>
 

@@ -93,9 +93,23 @@ area of the panel.
 When unspecified, the default welcome text is C<Welcome to %s!>, where C<%s>
 is the fully qualified domain name of the local host.
 
+As with the B<-banner> option, this option can easily be supplied by a
+shell script between L<xdm(1)> and B<xde-xlock> that adds the
+options:
+
+ #!/bin/sh
+ /usr/bin/xde-xlock -prompt "Welcome to X!" \
+         -banner /usr/lib/X11/xdm/banner.png $@
+
 =item B<-b>, B<--banner> I<BANNER>
 
 Specifies the banner graphic to display in the left pane of the panel.
+L<xdm(1)> does not provide this option, but it can easily be
+invoked by a shell script invoked by L<xdm(1)> that adds the options.
+For example:
+
+ #!/bin/sh
+ /usr/bin/xde-xlock -banner /usr/lib/X11/xdm/xde/banner.png $@
 
 The default is obtained by looking for the file
 F<${XDG_MENU_PREFIX}banner.{xpm,png,jpg,svg}> in the F<images>
@@ -112,11 +126,20 @@ F<${XDG_MENU_PREFIX}splash.{xpm,png,jpg,svg}> in the F<images>
 subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
 L</ENVIRONMENT>.
 
+L<xdm(1)> does not provide this option, but it can easily be
+invoked by a shell script by L<xdm(1)> that adds the options.  For
+example:
+
+ #!/bin/sh
+ /usr/bin/xde-xlock -splash /usr/lib/X11/xdm/xde/splash.jpg $@
+
 =item B<-s>, B<--side> {B<left>|B<top>|B<right>|B<bottom>}
 
 Specifies the side on which to display branding (the banner graphic).
 Can be one of I<top>, I<left>, I<bottom> or I<right>.  When unspecified,
 the default is I<left>.
+
+=item B<-n>, B<--noask>
 
 =item B<--charset> I<CHARSET>
 
@@ -133,7 +156,7 @@ determined using the current locale: see L<locale(7)>.
 Specifies the GTK+ icon theme to use.  When unspecified, the icon theme
 is automatically determined using desktop and toolkit files.
 
-=item B<-T>, B<--theme> I<GTK2-THEME>
+=item B<-e>, B<--theme> I<GTK2-THEME>
 
 Specifies the GTK+ theme name to use.  When unspecified, the GTK2 theme
 is automatically determined using desktop and toolkit files.
@@ -143,6 +166,8 @@ is automatically determined using desktop and toolkit files.
 Specifies that the GTK+ icon theme and theme name to be used are those
 of the X Desktop Environment (XDE) rather than the system default theme.
 The default is to specify this flag.
+
+=item B<-T>, B<--timeout> I<TIMEOUT>
 
 =item B<--vendor> I<VENDOR>
 
@@ -184,7 +209,7 @@ Specifies that the login panel should be transparent and that the
 widgets should be embedded in the background image.  The default is to
 paint the login panel.
 
-=item B<--tray>
+=item B<-y>, B<--tray>
 
 Specifies that a status icon for the locker should be placed in the
 system tray.
@@ -243,6 +268,11 @@ D-BUS service.
 
 =item 5.
 
+Installs itself in the system tray when the B<--tray> option is
+specified.
+
+=item 6.
+
 Monitors for changes.
 
 =back
@@ -281,6 +311,49 @@ locker to quit (remove itself and exit).
 
 The B<--lock> option can be used to ask a running instance of the screen
 locker to lock the screen.
+
+=head2 SYSTEM TRAY
+
+When installed in the system tray using the B<--tray> option, the
+program provides system tray access to a lock menu, configuration menu,
+and a X session switcher.  The lock menu provides the ability to lock
+the screen from the system tray by left-clicking the lock icon or
+right-clicking the icon and selecting the lock from the menu.  The X
+session switch provides an X session switcher that can perform VT
+switches on the local host.  This menu is also available from the lock
+screen.  A configuration menu is also available to manage the options
+associated with the program and contained in the user's resource file.
+
+=head2 LOCKING
+
+To permit a flexible locking policy, locking under the following
+conditions can be activated or deactivated:
+
+=over 4
+
+=item B<VT switches>
+
+Switches between virtual terminals (any users).
+
+=item B<VT switches between users>
+
+Switches between virtual terminals where the users of the switched-from
+and switched-to virtual terminals are different.
+
+=item B<Screen saver timeouts>
+
+When the screen saver is activated.
+
+=item B<systemd lock signals>
+
+When a C<Lock> signal is received from L<systemd(1)>.
+
+=item B<Inactivity timeout>
+
+When user input has been inactive for a given period of time.
+
+=back
+
 
 =head1 X RESOURCES
 
