@@ -39,7 +39,6 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/autostart/wmsystemtray.desktop \
 	xdg/xde/autostart/wmtimer.desktop \
 	xdg/xde/autostart/wmweather+.desktop \
-	xdg/xde/autostart/xde-panel.desktop \
 	xdg/xde/autostart/xde-xlock.desktop
 
 nobase_dist_xdgconf_DATA += \
@@ -84,20 +83,6 @@ nobase_dist_xdgconf_DATA += \
 	xdg/xde/pcmanfm/LXDE/pcmanfm.conf \
 	xdg/xde/pcmanfm/PEKWM/desktop-items-0.conf \
 	xdg/xde/pcmanfm/PEKWM/pcmanfm.conf \
-	xdg/xde/xde-panel/ADWM/rc.xml \
-	xdg/xde/xde-panel/BLACKBOX/rc.xml \
-	xdg/xde/xde-panel/default/rc.xml \
-	xdg/xde/xde-panel/ECHINUS/rc.xml \
-	xdg/xde/xde-panel/FLUXBOX/rc.xml \
-	xdg/xde/xde-panel/FVWM/rc.xml \
-	xdg/xde/xde-panel/ICEWM/rc.xml \
-	xdg/xde/xde-panel/JWM/rc.xml \
-	xdg/xde/xde-panel/METACITY/rc.xml \
-	xdg/xde/xde-panel/MVWM/rc.xml \
-	xdg/xde/xde-panel/OPENBOX/rc.xml \
-	xdg/xde/xde-panel/PEKWM/rc.xml \
-	xdg/xde/xde-panel/WAIMEA/rc.xml \
-	xdg/xde/xde-panel/WMAKER/rc.xml \
 	xdg/xde/xde-session/BLACKBOX/desktop.conf \
 	xdg/xde/xde-session/default/input.ini \
 	xdg/xde/xde-session/default/xsettings.ini \
