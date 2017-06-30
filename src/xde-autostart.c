@@ -1,7 +1,7 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>
- Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
+ Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
  All Rights Reserved.
@@ -4825,8 +4825,8 @@ copying(int argc, char *argv[])
 --------------------------------------------------------------------------------\n\
 %1$s\n\
 --------------------------------------------------------------------------------\n\
-Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>\n\
-Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
+Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>\n\
 Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
 \n\
 All Rights Reserved.\n\
@@ -4869,8 +4869,8 @@ version(int argc, char *argv[])
 %1$s (OpenSS7 %2$s) %3$s\n\
 Written by Brian Bidulock.\n\
 \n\
-Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016  Monavacon Limited.\n\
-Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
+Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017  Monavacon Limited.\n\
+Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009  OpenSS7 Corporation.\n\
 Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
@@ -5149,16 +5149,16 @@ set_defaults(void)
 }
 
 typedef enum {
-	COMMAND_AUTOSTART,
-	COMMAND_HELP,
-	COMMAND_VERSION,
-	COMMAND_COPYING,
+	CommandAutostart,
+	CommandHelp,
+	CommandVersion,
+	CommandCopying,
 } CommandType;
 
 int
 main(int argc, char *argv[])
 {
-	CommandType command = COMMAND_AUTOSTART;
+	CommandType command = CommandAutostart;
 
 	setlocale(LC_ALL, "");
 
@@ -5356,19 +5356,19 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (command != COMMAND_AUTOSTART)
+			if (command != CommandAutostart)
 				goto bad_option;
-			command = COMMAND_HELP;
+			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (command != COMMAND_AUTOSTART)
+			if (command != CommandAutostart)
 				goto bad_option;
-			command = COMMAND_VERSION;
+			command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (command != COMMAND_AUTOSTART)
+			if (command != CommandAutostart)
 				goto bad_option;
-			command = COMMAND_COPYING;
+			command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -5404,22 +5404,22 @@ main(int argc, char *argv[])
 	set_default_file();
 	split_desktops();
 	switch (command) {
-	case COMMAND_AUTOSTART:
+	case CommandAutostart:
 		if (options.debug)
 			fprintf(stderr, "%s: running autostart\n", argv[0]);
 		run_autostart(argc, argv);
 		break;
-	case COMMAND_HELP:
+	case CommandHelp:
 		if (options.debug)
 			fprintf(stderr, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
-	case COMMAND_VERSION:
+	case CommandVersion:
 		if (options.debug)
 			fprintf(stderr, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
-	case COMMAND_COPYING:
+	case CommandCopying:
 		if (options.debug)
 			fprintf(stderr, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
