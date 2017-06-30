@@ -125,10 +125,10 @@
 #include <locale.h>
 
 typedef enum _LogoSide {
-	LOGO_SIDE_LEFT,
-	LOGO_SIDE_TOP,
-	LOGO_SIDE_RIGHT,
-	LOGO_SIDE_BOTTOM,
+	LogoSideLeft,
+	LogoSideTop,
+	LogoSideRight,
+	LogoSideBottom,
 } LogoSide;
 
 typedef struct {
@@ -178,7 +178,7 @@ Options options = {
 	.delay = 0,
 	.charset = NULL,
 	.language = NULL,
-	.side = LOGO_SIDE_TOP,
+	.side = LogoSideTop,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
 	.usexde = False,
@@ -4900,13 +4900,13 @@ static const char *
 show_side(LogoSide side)
 {
 	switch (side) {
-	case LOGO_SIDE_LEFT:
+	case LogoSideLeft:
 		return ("left");
-	case LOGO_SIDE_TOP:
+	case LogoSideTop:
 		return ("top");
-	case LOGO_SIDE_RIGHT:
+	case LogoSideRight:
 		return ("right");
-	case LOGO_SIDE_BOTTOM:
+	case LogoSideBottom:
 		return ("bottom");
 	}
 	return ("unknown");
@@ -5294,19 +5294,19 @@ main(int argc, char *argv[])
 			break;
 		case 'S':	/* -S, --side {top|bottom|left|right} */
 			if (!strncasecmp(optarg, "left", strlen(optarg))) {
-				options.side = LOGO_SIDE_LEFT;
+				options.side = LogoSideLeft;
 				break;
 			}
 			if (!strncasecmp(optarg, "top", strlen(optarg))) {
-				options.side = LOGO_SIDE_TOP;
+				options.side = LogoSideTop;
 				break;
 			}
 			if (!strncasecmp(optarg, "right", strlen(optarg))) {
-				options.side = LOGO_SIDE_RIGHT;
+				options.side = LogoSideRight;
 				break;
 			}
 			if (!strncasecmp(optarg, "bottom", strlen(optarg))) {
-				options.side = LOGO_SIDE_BOTTOM;
+				options.side = LogoSideBottom;
 				break;
 			}
 			goto bad_option;
