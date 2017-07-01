@@ -10,7 +10,7 @@ B<xde-login> [I<OPTIONS>] [[-e|--exec|--] I<COMMAND> [I<ARGUMENT> [...]]
 
 =head1 DESCRIPTION
 
-B<xde-login> is a simple C<C> language program the establishes a user
+B<xde-login> is a simple C<C> language program that establishes a user
 X session.
 
 =head1 ARGUMENTS
@@ -22,7 +22,7 @@ X session.
 When specified, this sequence must be the last portion of the command
 line.  I<COMMAND> is the command to execute and I<ARGUMENT>s are the
 arguments for I<COMMAND>.  B<xde-login> will L<execvpe(3)> the command
-and arguments with the PAM environment.
+and arguments within the PAM environment.
 
 When unspecified, defaults to
 
@@ -36,7 +36,7 @@ when F<$HOME/.xinitrc> exists and is executable.  Otherwise, defaults to
 
 =head1 OPTIONS
 
-The options that are detailed below are recognized by B<xdg-login>.
+The options that are detailed below are recognized by B<xde-login>.
 B<xdg-login> uses L<getopt_long_only(3)>, so unambiguous abbreviations
 of long options and long options with a single dash are also supported.
 
