@@ -225,7 +225,7 @@ Options options = {
  *
  * RunStatePhase5 - awaiting startup completion.  Await the startup completion
  *	or failure of each launched task.  We should provide desktop
- *	notification for tasks that fail or fail to signal competion.  Once all
+ *	notification for tasks that fail or fail to signal completion.  Once all
  *	tasks have finalized, move to RunStateMonitor.
  *
  * RunStateMonitor - monitoring.  Monitor child processes checking whether we
