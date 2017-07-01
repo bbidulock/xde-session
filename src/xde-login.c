@@ -396,7 +396,7 @@ run_login(int argc, char **argv)
 	caught_signal = 0;
 
 	for (;;) {
-		DPRINTF("waiting or child\n");
+		DPRINTF("waiting for child\n");
 		if (waitpid(pid, &status, WUNTRACED | WCONTINUED) == -1) {
 			if (errno != EINTR) {
 				EPRINTF("waitpid: %s\n", strerror(errno));
