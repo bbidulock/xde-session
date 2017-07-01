@@ -1,0 +1,282 @@
+=pod
+
+=head1 NAME
+
+xde-xswitch - swtich between sessions of the X Desktop Environment (XDE)
+
+=head1 SYNOPSIS
+
+B<xde-xswitch> [I<OPTIONS>]
+
+=head1 DESCRIPTION
+
+B<xde-xswitch> is a X session switching replacement that provides tight
+integration with the L<systemd(8)> multi-session environment.  It acts as
+a desktop switcher, detects L<logind(8)> C<Lock> signals, and
+performs VT switching.
+
+=head1 OPTIONS
+
+No options are necessary.  When launched by L<xdm(1)>, it will provide
+the appropriate arguments.  B<xde-xswitch> can be launched directly on
+the command line of an x-terminal to test its appearance and operation.
+In this mode, arguments are still required but no options.  Absence of
+the B<-xdmAddress>, B<-clientAddress> and B<-connectionType> options
+indicates to B<xde-xswitch> that it was not launched by L<xdm(1)> or an
+L<xdm(1)> work-alike as a chooser.  See L</USAGE> for more information.
+
+=head2 COMMAND OPTIONS
+
+Command options affect the major operating mode of the program.  Only
+one command option may be specified (with the exception that B<--help>
+can be specified in conjunction with any other command option).
+When no command option is specified, B<--switcher> is assumed.
+The command options recognized by the program are as follows:
+
+=over 4
+
+=item [B<-S>, B<--switcher>]
+
+Run continuously as a session switcher instance.  This process will monitor
+for switching requests, VT changes and virtual
+terminal changes will invoke switching as appropriate.
+
+=item B<-r>, B<--replace>
+
+Replace a currently running screen switcher instance with the current
+process.
+
+=item B<-s>, B<--switch>
+
+Ask a running instance to switch the screen now.
+
+=item B<-q>, B<--quit>
+
+Ask a running instance to exit.
+
+=item B<-H>, B<-help>
+
+Instead of operating normally, the program prints usage information to
+standard output and exits.
+
+=item B<-V>, B<--version>
+
+Instead of operating normally, the program prints detailed version
+information and exits.
+
+=item B<-C>, B<--copying>
+
+Instead of operating normally, the program prints detailed copying
+permissions and exits.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+B<xde-xswitch> provides a set of general options that are not supported
+by the L<xdm(1)> greeter or chooser.  To supply these options requires
+an intermediate script that specifies them and echoes the L<xdm(1)>
+chooser options.  So that an intermediate script is not necessary,
+L<xdm(1)> provides an F<Xresources> files containing X resources that
+are used instead of command line options to tailor the look and feel of
+the greeter and chooser.  As a result, the use of the following command
+line options are not necessary and are really only used for testing.
+
+The following are the more general options:
+
+=over 4
+
+=item B<-p>, B<--prompt> I<MARKUP>
+
+Specifies the F<pango> markup text that is to be displayed in the title
+area of the panel.
+When unspecified, the default welcome text is C<Welcome to %s!>, where C<%s>
+is the fully qualified domain name of the local host.
+
+As with the B<-banner> option, this option can easily be supplied by a
+shell script between L<xdm(1)> and B<xde-xswitch> that adds the
+options:
+
+ #!/bin/sh
+ /usr/bin/xde-xswitch -prompt "Welcome to X!"  \
+         -banner /usr/lib/X11/xdm/banner.png $@
+
+=item B<-b>, B<--banner> I<BANNER>
+
+Specifies the banner graphic to display in the left pane of the panel.
+L<xdm(1)> does not provide this option, but it can easily be
+invoked by a shell script invoked by L<xdm(1)> that adds the options.
+For example:
+
+ #!/bin/sh
+ /usr/bin/xde-xswitch -banner /usr/lib/X11/xdm/xde/banner.png $@
+
+The default is obtained by looking for the file
+F<${XDG_MENU_PREFIX}banner.{xpm,png,jpg,svg}> in the F<images>
+subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
+L</ENVIRONMENT>.
+
+=item B<-S>, B<--splash> I<SPLASH>
+
+Specifies the background image, I<SPLASH>, to display on the screen.
+The default is to use the background image currently installed on the
+screen, and if no background image is installed on the screen, to search
+for the background image file in the file named
+F<${XDG_MENU_PREFIX}splash.{xpm,png,jpg,svg}> in the F<images>
+subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
+L</ENVIRONMENT>.
+
+L<xdm(1)> does not provide this option, but it can easily be
+invoked by a shell script by L<xdm(1)> that adds the options.  For
+example:
+
+ #!/bin/sh
+ /usr/bin/xde-xswitch -splash /usr/lib/X11/xdm/xde/splash.jpg $@
+
+=item B<-s>, B<--side> {B<left>|B<top>|B<right>|B<bottom>}
+
+Specifies the side on which to display branding (the banner graphic).
+Can be one of I<top>, I<left>, I<bottom> or I<right>.  When unspecified,
+the default is I<left>.
+
+=item B<-n>, B<--noask>
+
+=item B<--charset> I<CHARSET>
+
+Specifies the character set to use.  When unspecified, the character
+set is determined using the current locale: see L<locale(7)>.
+
+=item B<--language> I<LANGUAGE>
+
+Specifies the language to use.  When unspecified, the language is
+determined using the current locale: see L<locale(7)>.
+
+=item B<-i>, B<--icons> I<ICON-THEME>
+
+Specifies the GTK+ icon theme to use.  When unspecified, the icon theme
+is automatically determined using desktop and toolkit files.
+
+=item B<-e>, B<--theme> I<GTK2-THEME>
+
+Specifies the GTK+ theme name to use.  When unspecified, the GTK2 theme
+is automatically determined using desktop and toolkit files.
+
+=item B<-u>, B<--xde-theme>
+
+Specifies that the GTK+ icon theme and theme name to be used are those
+of the X Desktop Environment (XDE) rather than the system default theme.
+The default is to specify this flag.
+
+=item B<-T>, B<--timeout> I<TIMEOUT>
+
+=item B<--vendor> I<VENDOR>
+
+Specifies the vendor identifier for branding.  The default, when
+unspecified, is to used the value of environment variables
+B<XDG_VENDOR_ID> and B<XDG_MENU_PREFIX> to determine the vendor name and
+prefix.
+
+=item B<-X>, B<--xsessions>
+
+Specifies that available X sessions (window managers) should be provided
+as a menu on the login window.  This allows a user to select an
+available session before logging in.
+
+=item B<--default> I<DEFAULT>
+
+Specifies the default X session (window manager) name that should be
+used when no X session is selected by the user.  This default is fed as
+an argument to F<~/.xinitrc>.
+
+=item B<--username> I<USERNAME>
+
+Specifies the default user name for login.
+
+=item B<-g>, B<--guard> I<SECONDS>
+
+Specifies the number of seconds within which user input will abort
+screen locking.  The default is 5 seconds.
+
+=item B<--nosetbg>
+
+Specifies that the background image should not be set by the program.
+The default behaviour is to set the background in accordance with the
+B<-banner> option.
+
+=item B<--transparent>
+
+Specifies that the login panel should be transparent and that the
+widgets should be embedded in the background image.  The default is to
+paint the login panel.
+
+=item B<-y>, B<--tray>
+
+Specifies that a status icon for the locker should be placed in the
+system tray.
+
+=item B<-n>, B<--dry-run>
+
+Specifies that the program should not perform any actions but should
+simply print intentions to standard output.  This option is for testing.
+
+=item B<-D>, B<--debug> [I<LEVEL>]
+
+Increase, or set to I<LEVEL>, the debugging verbosity.  The default
+debugging verbosity level is zero (0), which means to output no
+debugging information.  When non-zero, debugging information will be
+printed to standard error.
+
+=item B<-v>, B<--verbose> [I<LEVEL>]
+
+Increase, or set to I<LEVEL>, the output verbosity.  The default output
+verbosity level is one (1), which means to output normal information to
+standard output.  When set to zero (0), no output will be printed to
+standard output. 
+
+=back
+
+=head1 USAGE
+
+The B<--switcher> command option (the default), or the B<--replace>
+option, can be used to run the program as a background session switcher.
+In this mode the program installs itself as follows:
+
+=over 4
+
+=item  1.
+
+If possible, takes ownership of the B<_XDE_XSWITCH_S>C<%d> manager
+selections for each screen on the display.  If one of these manager
+selections is already owned, the program exits with a diagnostic unless
+B<--replace> was specified as a command option.
+
+=item 2.
+
+Installs itself as a screen saver using the C<MIT-SCREEN-SAVER>
+extension on the X server (if present).
+
+=item 3.
+
+Installs itself as a monitoring program on the controlling terminal for
+virtual terminal switches (when the X server is running on a local
+virtual terminal).
+
+=item 4.
+
+Listens for a C<Lock> signal from the L<systemd(8)> L<logind(8)>
+D-BUS service.
+
+=item 5.
+
+Installs itself in the system tray when the B<--tray> option is
+specified.
+
+=item 6.
+
+Monitors for changes.
+
+=back
+
+
+
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
