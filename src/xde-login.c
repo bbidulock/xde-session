@@ -652,6 +652,12 @@ set_defaults(void)
 	if ((pw = getpwuid(me))) {
 		options.user = strdup(pw->pw_name);
 		options.shell = pw->pw_shell ? strdup(pw->pw_shell) : NULL;
+		if (options.shell[0] == '\0') {
+			free(options.shell);
+			setusershell();
+			options.shell = strdup(getusershell());
+			endusershell();
+		}
 	}
 	if (gethostname(buf, HOST_NAME_MAX) == -1)
 		EPRINTF("gethostname: %s\n", strerror(errno));
