@@ -247,7 +247,7 @@ run_login(int argc, char * const *argv)
 	struct pam_conv conv = { pam_conv_cb, NULL };
 	FILE *dummy;
 	const char **var, *vars[] =
-	    { "PATH", "LANG", "USER", "LOGNAME", "HOME", "SHELL", "XDG_SEAT", "XDG_VNTR", NULL };
+	    { "PATH", "LANG", "USER", "LOGNAME", "HOME", "SHELL", "XDG_SEAT", "XDG_VNTR", "MAIL", "TERM", "HOME", "PWD", NULL };
 
 	uid = getuid();
 #if 0
@@ -280,44 +280,55 @@ run_login(int argc, char * const *argv)
 	pam_putenv(pamh, "XDG_SESSION_ID");
 
 	if (options.display) {
+		DPRINTF("setting DISPLAY=%s\n", options.display);
 		setenv("DISPLAY", options.display, 1);
 		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
 	}
 	if (options.authfile) {
+		DPRINTF("setting XAUTHORITY=%s\n", options.authfile);
 		setenv("XAUTHORITY", options.authfile, 1);
 		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
 	}
 	if (options.class) {
+		DPRINTF("setting XDG_SESSION_CLASS=%s\n", options.class);
 		setenv("XDG_SESSION_CLASS", options.class, 1);
 		pam_misc_setenv(pamh, "XDG_SESSION_CLASS", options.class, 1);
 	} else {
+		DPRINTF("unsetting XDG_SESSION_CLASS\n");
 		unsetenv("XDG_SESSION_CLASS");
 		pam_putenv(pamh, "XDG_SESSION_CLASS");
 	}
 	if (options.type) {
+		DPRINTF("setting XDG_SESSION_TYPE=%s\n", options.type);
 		setenv("XDG_SESSION_TYPE", options.type, 1);
 		pam_misc_setenv(pamh, "XDG_SESSION_TYPE", options.type, 1);
 	} else {
+		DPRINTF("unsetting XDG_SESSION_TYPE\n");
 		unsetenv("XDG_SESSION_TYPE");
 		pam_putenv(pamh, "XDG_SESSION_TYPE");
 	}
 	if (options.seat) {
+		DPRINTF("setting XDG_SEAT=%s\n", options.seat);
 		setenv("XDG_SEAT", options.seat, 1);
 		pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
 	} else {
+		DPRINTF("unsetting XDG_SEAT\n");
 		unsetenv("XDG_SEAT");
 		pam_putenv(pamh, "XDG_SEAT");
 	}
 	if (options.vtnr) {
+		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
 		setenv("XDG_VTNR", options.vtnr, 1);
 		pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
 	} else {
+		DPRINTF("unsetting XDG_VTNR\n");
 		unsetenv("XDG_VTNR");
 		pam_putenv(pamh, "XDG_VTNR");
 	}
 	if (options.desktop) {
+		DPRINTF("setting XDG_SESSION_DESKTOP=%s\n", options.desktop);
 		setenv("XDG_SESSION_DESKTOP", options.desktop, 1);
-		pam_misc_setenv(pamh, "XDG_SESSION_DESKTOP", options.vtnr, 1);
+		pam_misc_setenv(pamh, "XDG_SESSION_DESKTOP", options.desktop, 1);
 	} else {
 		unsetenv("XDG_SESSION_DESKTOP");
 		pam_putenv(pamh, "XDG_SESSION_DESKTOP");
