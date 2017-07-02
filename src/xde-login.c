@@ -237,7 +237,7 @@ pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp,
 }
 
 void
-run_login(int argc, char **argv)
+run_login(int argc, char * const *argv)
 {
 	pam_handle_t *pamh = NULL;
 	const char *env;
@@ -955,6 +955,24 @@ main(int argc, char *argv[])
 	case CommandDefault:
 	case CommandLogin:
 		if (optind >= argc) {
+			char *init = calloc(PATH_MAX + 1, sizeof(*init));
+			strcpy(init, options.homedir);
+			strcat(init, "/.xinitrc");
+			if (access(init, R_OK)) {
+				char * const args[5] = { "/bin/sh", "-ls", "-C", init, };
+
+				DPRINTF("%s: running login\n", argv[0]);
+				run_login(4, args);
+				break;
+			}
+			strcpy(init, "/etc/X11/xinit/xinitrc");
+			if (access(init, R_OK)) {
+				char * const args[4] = { "/bin/sh", "-l", init, };
+
+				DPRINTF("%s: running login\n", argv[0]);
+				run_login(3, args);
+				break;
+			}
 			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
 			goto bad_nonopt;
 		}
