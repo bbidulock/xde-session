@@ -354,6 +354,12 @@ run_login(int argc, char **argv)
 		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
 	if (options.authfile)
 		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+	if (options.maildir)
+		pam_misc_setenv(pamh, "MAIL", options.maildir, 1);
+	if (options.homedir) {
+		pam_misc_setenv(pamh, "HOME", options.homedir, 1);
+		pam_misc_setenv(pamh, "PWD", options.homedir, 1);
+	}
 	if (options.vtnr)
 		pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 1);
 
