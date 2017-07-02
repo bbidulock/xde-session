@@ -150,6 +150,8 @@ typedef struct {
 	char *desktop;
 	char *authfile;
 	char *shell;
+	char *maildir;
+	char *homedir;
 	int cmd_argc;
 	char **cmd_argv;
 	Command command;
@@ -170,6 +172,8 @@ Options options = {
 	.desktop = NULL,
 	.authfile = NULL,
 	.shell = NULL,
+	.maildir = NULL,
+	.homedir = NULL,
 	.cmd_argc = 0,
 	.cmd_argv = NULL,
 	.command = CommandDefault,
@@ -598,6 +602,10 @@ General options:\n\
         the X authority file\n\
     -l,  --shell SHELL         (%15$s)\n\
         the user shell\n\
+    -m, --maildir MAILDIR      (%16$s)\n\
+        the user mail directory\n\
+    -M, --homedir HOMEDIR      (%17$s)\n\
+        the user home directory\n\
     -E, --desktop DESKTOP      (%14$s)\n\
         target XDG desktop environment\n\
     -n, --dry-run              (%8$s)\n\
@@ -624,6 +632,8 @@ General options:\n\
 		, options.authfile
 		, options.desktop
 		, options.shell
+		, options.maildir
+		, options.homedir
 	);
 	/* *INDENT-ON* */
 }
@@ -650,6 +660,8 @@ set_defaults(void)
 	options.output = 1;
 	me = getuid();
 	if ((pw = getpwuid(me))) {
+		int len;
+
 		options.user = strdup(pw->pw_name);
 		options.shell = pw->pw_shell ? strdup(pw->pw_shell) : NULL;
 		if (options.shell[0] == '\0') {
@@ -658,6 +670,11 @@ set_defaults(void)
 			options.shell = strdup(getusershell());
 			endusershell();
 		}
+		len = strlen("/var/mail/") + strlen(pw->pw_name);
+		options.maildir = calloc(len + 1, sizeof(*options.maildir));
+		strcpy(options.maildir, "/var/mail/");
+		strcat(options.maildir, pw->pw_name);
+		options.homedir = strdup(pw->pw_dir);
 	}
 	if (gethostname(buf, HOST_NAME_MAX) == -1)
 		EPRINTF("gethostname: %s\n", strerror(errno));
@@ -762,6 +779,8 @@ main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"authfile",	required_argument,  NULL,   'A'},
 			{"shell",	required_argument,  NULL,   'l'},
+			{"maildir",	required_argument,  NULL,   'm'},
+			{"homedir",	required_argument,  NULL,   'M'},
 			{"desktop",	required_argument,  NULL,   'E'},
 //			{"user",	required_argument,  NULL,   'u'},
 			{"seat",	required_argument,  NULL,   's'},
@@ -783,10 +802,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "A:l:E:u:s:S:T:y:c:t:enD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "A:l:m:M:E:u:s:S:T:y:c:t:enD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* _GNU_SOURCE */
-		c = getopt(argc, argv, "A:l:E:u:s:S:T:y:c:t:enDvhVC?");
+		c = getopt(argc, argv, "A:l:m:M:E:u:s:S:T:y:c:t:enDvhVC?");
 #endif				/* _GNU_SOURCE */
 		if (c == -1 || c == 'e') {	/* -e, --exec COMMAND ARG ... */
 			if (options.debug)
@@ -804,6 +823,14 @@ main(int argc, char *argv[])
 		case 'l':	/* -l, --shell SHELL */
 			free(options.shell);
 			options.shell = strdup(optarg);
+			break;
+		case 'm':	/* -m, --maildir MAILDIR */
+			free(options.maildir);
+			options.maildir = strdup(optarg);
+			break;
+		case 'M':	/* -M, --homedir HOMEDIR */
+			free(options.homedir);
+			options.homedir = strdup(optarg);
 			break;
 		case 'E':	/* -E, --desktop DESKTOP */
 			free(options.desktop);
