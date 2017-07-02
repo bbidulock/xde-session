@@ -149,6 +149,7 @@ typedef struct {
 	char *type;
 	char *desktop;
 	char *authfile;
+	char *shell;
 	int cmd_argc;
 	char **cmd_argv;
 	Command command;
@@ -168,6 +169,7 @@ Options options = {
 	.type = NULL,
 	.desktop = NULL,
 	.authfile = NULL,
+	.shell = NULL,
 	.cmd_argc = 0,
 	.cmd_argv = NULL,
 	.command = CommandDefault,
@@ -244,10 +246,12 @@ run_login(int argc, char **argv)
 	    { "PATH", "LANG", "USER", "LOGNAME", "HOME", "SHELL", "XDG_SEAT", "XDG_VNTR", NULL };
 
 	uid = getuid();
+#if 0
 	if (setresuid(0, 0, 0)) {
 		EPRINTF("setresuid: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
+#endif
 	switch ((pid = fork())) {
 	case 0: /* the child */
 		dummy = freopen("/dev/null", "r", stdin);
@@ -269,32 +273,51 @@ run_login(int argc, char **argv)
 	}
 	DPRINTF("adjusting environment variables\n");
 	unsetenv("XDG_SESSION_ID");
+	pam_putenv(pamh, "XDG_SESSION_ID");
 
-	if (options.display)
+	if (options.display) {
 		setenv("DISPLAY", options.display, 1);
-	if (options.authfile)
+		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+	}
+	if (options.authfile) {
 		setenv("XAUTHORITY", options.authfile, 1);
-	if (options.class)
+		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+	}
+	if (options.class) {
 		setenv("XDG_SESSION_CLASS", options.class, 1);
-	else
+		pam_misc_setenv(pamh, "XDG_SESSION_CLASS", options.class, 1);
+	} else {
 		unsetenv("XDG_SESSION_CLASS");
-
-	if (options.type)
+		pam_putenv(pamh, "XDG_SESSION_CLASS");
+	}
+	if (options.type) {
 		setenv("XDG_SESSION_TYPE", options.type, 1);
-	else
+		pam_misc_setenv(pamh, "XDG_SESSION_TYPE", options.type, 1);
+	} else {
 		unsetenv("XDG_SESSION_TYPE");
-	if (options.seat)
+		pam_putenv(pamh, "XDG_SESSION_TYPE");
+	}
+	if (options.seat) {
 		setenv("XDG_SEAT", options.seat, 1);
-	else
+		pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
+	} else {
 		unsetenv("XDG_SEAT");
-	if (options.vtnr)
+		pam_putenv(pamh, "XDG_SEAT");
+	}
+	if (options.vtnr) {
 		setenv("XDG_VTNR", options.vtnr, 1);
-	else
+		pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
+	} else {
 		unsetenv("XDG_VTNR");
-	if (options.desktop)
+		pam_putenv(pamh, "XDG_VTNR");
+	}
+	if (options.desktop) {
 		setenv("XDG_SESSION_DESKTOP", options.desktop, 1);
-	else
+		pam_misc_setenv(pamh, "XDG_SESSION_DESKTOP", options.vtnr, 1);
+	} else {
 		unsetenv("XDG_SESSION_DESKTOP");
+		pam_putenv(pamh, "XDG_SESSION_DESKTOP");
+	}
 
 	DPRINTF("starting PAM\n");
 	result = pam_start(options.service, options.user, &conv, &pamh);
@@ -573,6 +596,8 @@ General options:\n\
         the XDG_SESSION_TYPE, TYPE\n\
     -A, --authfile FILE        (%13$s)\n\
         the X authority file\n\
+    -l,  --shell SHELL         (%15$s)\n\
+        the user shell\n\
     -E, --desktop DESKTOP      (%14$s)\n\
         target XDG desktop environment\n\
     -n, --dry-run              (%8$s)\n\
@@ -598,6 +623,7 @@ General options:\n\
 		, options.user
 		, options.authfile
 		, options.desktop
+		, options.shell
 	);
 	/* *INDENT-ON* */
 }
@@ -623,8 +649,10 @@ set_defaults(void)
 	options.debug = 0;
 	options.output = 1;
 	me = getuid();
-	if ((pw = getpwuid(me)))
+	if ((pw = getpwuid(me))) {
 		options.user = strdup(pw->pw_name);
+		options.shell = pw->pw_shell ? strdup(pw->pw_shell) : NULL;
+	}
 	if (gethostname(buf, HOST_NAME_MAX) == -1)
 		EPRINTF("gethostname: %s\n", strerror(errno));
 	else
@@ -727,6 +755,7 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"authfile",	required_argument,  NULL,   'A'},
+			{"shell",	required_argument,  NULL,   'l'},
 			{"desktop",	required_argument,  NULL,   'E'},
 //			{"user",	required_argument,  NULL,   'u'},
 			{"seat",	required_argument,  NULL,   's'},
@@ -748,10 +777,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "A:E:u:s:S:T:y:c:t:enD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "A:l:E:u:s:S:T:y:c:t:enD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* _GNU_SOURCE */
-		c = getopt(argc, argv, "A:E:u:s:S:T:y:c:t:enDvhVC?");
+		c = getopt(argc, argv, "A:l:E:u:s:S:T:y:c:t:enDvhVC?");
 #endif				/* _GNU_SOURCE */
 		if (c == -1 || c == 'e') {	/* -e, --exec COMMAND ARG ... */
 			if (options.debug)
@@ -765,6 +794,10 @@ main(int argc, char *argv[])
 		case 'A':	/* -A, --authfile FILE */
 			free(options.authfile);
 			options.authfile = strdup(optarg);
+			break;
+		case 'l':	/* -l, --shell SHELL */
+			free(options.shell);
+			options.shell = strdup(optarg);
 			break;
 		case 'E':	/* -E, --desktop DESKTOP */
 			free(options.desktop);
