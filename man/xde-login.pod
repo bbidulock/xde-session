@@ -149,6 +149,24 @@ When set, the B<RUSER> environment variable will be set to the user name
 in the user session.  The PAM environment variables B<USER> and
 B<LOGNAME> will also be set to the user name in the user session.
 
+=item B<-l>, B<--shell> I<SHELL>
+
+User shell.  Defaults to the shell specified in the password file or in
+F</etc/shells>.  When set, the B<SHELL> environment variable will be set
+to the user shell in the user session.
+
+=item B<-m>, B<--maildir> I<MAILDIR>
+
+User mail directory.  Defaults to F</var/mail/>B<USER>.  When set, the
+B<MAIL> environment variable will be set to the user mail directory in
+the user session.
+
+=item B<-M>, B<--homedir> I<HOMEDIR>
+
+User home directory.  Defaults to the home directory specified in the
+password file.  When set, the B<HOME> and B<PWD> environment variables
+will be set to the user home directory in the user session.
+
 =back
 
 =head2 GENERAL OPTIONS
