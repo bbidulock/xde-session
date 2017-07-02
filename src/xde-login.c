@@ -558,11 +558,28 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [options] {-e|--} COMMAND ARG ...\n\
+    %1$s [options] {-e|--} [COMMAND ARG ...]\n\
     %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 ", argv[0]);
+}
+
+const char *
+show_cmd(int argc, char **argv)
+{
+	static char cmd[PATH_MAX+1] = { 0, };
+	char **arg;
+	int len;
+
+	cmd[0] = '\0';
+	for (arg = argv; arg && *arg; arg++) {
+		strcat(cmd, *arg);
+		strcat(cmd, " ");
+	}
+	if ((len = strlen(cmd)))
+		cmd[len-1] = '\0';
+	return cmd;
 }
 
 static void
@@ -573,12 +590,12 @@ help(int argc, char *argv[])
 	/* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [options] {-e|--} COMMAND ARG ...\n\
+    %1$s [options] {-e|--} [COMMAND ARG ...]\n\
     %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Arguments:\n\
-    COMMAND ARG ...\n\
+    COMMAND ARG ...            (%18$s)\n\
         command and args to exec within session\n\
 Command options:\n\
     -h, --help, -?, --?\n\
@@ -640,6 +657,7 @@ General options:\n\
 		, options.shell
 		, options.maildir
 		, options.homedir
+		, show_cmd(options.cmd_argc, options.cmd_argv)
 	);
 	/* *INDENT-ON* */
 }
@@ -769,6 +787,7 @@ main(int argc, char *argv[])
 {
 	Command command = CommandDefault;
 	struct passwd *pw;
+	char *args[5] = { NULL, };
 
 	setlocale(LC_ALL, "");
 
@@ -947,37 +966,44 @@ main(int argc, char *argv[])
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	options.cmd_argc = argc - optind;
-	options.cmd_argv = argv + optind;
+	if (optind >= argc) {
+		char *init = calloc(PATH_MAX + 1, sizeof(*init));
+
+		strcpy(init, options.homedir);
+		strcat(init, "/.xinitrc");
+		if (access(init, R_OK) == 0) {
+			args[0] = "/bin/sh";
+			args[1] = "-ls";
+			args[2] = "-C";
+			args[3] = init;
+			args[4] = NULL;
+			options.cmd_argc = 4;
+			options.cmd_argv = args;
+		} else {
+			strcpy(init, "/etc/X11/xinit/xinitrc");
+			if (access(init, R_OK) == 0) {
+				args[0] = "/bin/sh";
+				args[1] = "-l";
+				args[2] = init;
+				args[3] = NULL;
+				options.cmd_argc = 3;
+				options.cmd_argv = args;
+			} else {
+				fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+				goto bad_nonopt;
+			}
+		}
+	} else {
+		options.cmd_argc = argc - optind;
+		options.cmd_argv = argv + optind;
+	}
 	get_defaults();
 	switch (command) {
 	default:
 	case CommandDefault:
 	case CommandLogin:
-		if (optind >= argc) {
-			char *init = calloc(PATH_MAX + 1, sizeof(*init));
-			strcpy(init, options.homedir);
-			strcat(init, "/.xinitrc");
-			if (access(init, R_OK)) {
-				char * const args[5] = { "/bin/sh", "-ls", "-C", init, };
-
-				DPRINTF("%s: running login\n", argv[0]);
-				run_login(4, args);
-				break;
-			}
-			strcpy(init, "/etc/X11/xinit/xinitrc");
-			if (access(init, R_OK)) {
-				char * const args[4] = { "/bin/sh", "-l", init, };
-
-				DPRINTF("%s: running login\n", argv[0]);
-				run_login(3, args);
-				break;
-			}
-			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
-			goto bad_nonopt;
-		}
 		DPRINTF("%s: running login\n", argv[0]);
-		run_login(argc - optind, argv + optind);
+		run_login(options.cmd_argc, options.cmd_argv);
 		break;
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);
