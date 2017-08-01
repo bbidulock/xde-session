@@ -168,6 +168,7 @@ static int saveArgc;
 static char **saveArgv;
 
 #undef DO_XCHOOSER
+#define DO_XLOGIN 1
 #undef DO_XLOCKING
 #undef DO_ONIDLE
 #undef DO_CHOOSER
@@ -190,10 +191,12 @@ static char **saveArgv;
 #   define RESNAME "xde-logout"
 #   define RESCLAS "XDE-Logout"
 #   define RESTITL "XDE X11 Session Logout"
-#else
+#elif defined(DO_XLOGIN)
 #   define RESNAME "xde-xlogin"
 #   define RESCLAS "XDE-XLogin"
 #   define RESTITL "XDMCP Greeter"
+#else
+#   error Undefined program type.
 #endif
 
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
@@ -522,7 +525,9 @@ LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
 
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
 static SmcConn smcConn;
+#endif
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
