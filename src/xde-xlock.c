@@ -168,6 +168,7 @@ static int saveArgc;
 static char **saveArgv;
 
 #undef DO_XCHOOSER
+#undef DO_XLOGIN
 #define DO_XLOCKING 1
 #undef DO_ONIDLE
 #undef DO_CHOOSER
@@ -190,10 +191,12 @@ static char **saveArgv;
 #   define RESNAME "xde-logout"
 #   define RESCLAS "XDE-Logout"
 #   define RESTITL "XDE X11 Session Logout"
-#else
+#elif defined(DO_XLOGIN)
 #   define RESNAME "xde-xlogin"
 #   define RESCLAS "XDE-XLogin"
 #   define RESTITL "XDMCP Greeter"
+#else
+#   error Undefined program type.
 #endif
 
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
@@ -522,7 +525,9 @@ LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
 
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
 static SmcConn smcConn;
+#endif
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
@@ -3894,6 +3899,9 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 
 	login_result = LoginResultLogout;
 	gtk_main_quit();
+#ifndef DO_XLOCKING
+	exit(OBEYSESS_DISPLAY);
+#endif
 }
 
 static void
@@ -4913,6 +4921,12 @@ GetPanel(void)
 	GtkWidget *i;
 	GtkWidget *b;
 
+#ifdef DO_XCHOOSER
+	buttons[1] = b = gtk_button_new_from_stock(GTK_STOCK_REFRESH);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(DoPing), NULL);
+	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
+#endif
+
 	if ((getenv("DISPLAY") ? : "")[0] == ':') {
 		b = gtk_button_new_from_stock(GTK_STOCK_QUIT);
 	} else {
@@ -4940,6 +4954,13 @@ GetPanel(void)
 		gtk_widget_set_sensitive(b, TRUE);
 	else
 		gtk_widget_set_sensitive(b, FALSE);
+
+#ifdef DO_XCHOOSER
+	buttons[2] = b = gtk_button_new_from_stock(GTK_STOCK_CONNECT);
+	gtk_widget_set_can_default(b, TRUE);
+	g_signal_connect(G_OBJECT(b), "clicked", G_CALLBACK(DoAccept), NULL);
+	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
+#endif
 
 	buttons[3] = b = gtk_button_new();
 	gtk_widget_set_can_default(b, TRUE);
@@ -5517,6 +5538,8 @@ HideWindow(void)
 	HideScreens();
 }
 
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
+
 static void
 xdeSetProperties(SmcConn smcConn, SmPointer data)
 {
@@ -5924,6 +5947,8 @@ init_smclient(void)
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
 }
 
+#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) */
+
 static int
 authenticate(void)
 {
@@ -5977,8 +6002,10 @@ authenticate(void)
 		DPRINTF("...running main loop\n");
 		if (login_result == LoginResultLogout)
 			break;
+#ifdef DO_XLOCKING
 		if (lock_state == LockStateAborted)
 			break;
+#endif
 	}
       done:
 	DPRINTF("closing PAM\n");
@@ -6183,13 +6210,17 @@ init_statusicon(void)
 	g_signal_connect(G_OBJECT(icon), "popup_menu", G_CALLBACK(on_popup_menu), NULL);
 }
 
+#endif				/* DO_XLOCKING */
+
 static void
 do_run(int argc, char *argv[])
 {
 	int status;
 
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
 	/* initialize session managerment functions */
 	init_smclient();
+#endif
 
 	startup(argc, argv);
 	setup_systemd();
@@ -6250,7 +6281,11 @@ do_run(int argc, char *argv[])
 #ifdef DO_XLOCKING
 			UnlockScreen();
 #else
+#if defined(DO_XLOGIN) | defined(DO_XCHOOSER)
+//			run_login(argc, argv);
+#else
 			exit(EXIT_SUCCESS);
+#endif
 #endif
 			continue;
 		}
@@ -6258,86 +6293,6 @@ do_run(int argc, char *argv[])
 	}
 	DPRINT();
 }
-
-#else				/* DO_XLOCKING */
-
-static void
-do_run(int argc, char *argv[])
-{
-	int status;
-
-	/* initialize session managerment functions */
-	init_smclient();
-
-	startup(argc, argv);
-
-	setup_systemd();
-	top = GetWindow(False);
-#ifdef DO_XLOCKING
-	setup_screensaver();
-#endif
-#if defined DO_XLOCKING || defined DO_LOGOUT
-	if (options.tray)
-		init_statusicon();
-#endif
-#ifdef DO_XCHOOSER
-	InitXDMCP(argv, argc);
-#endif
-#ifdef DO_XLOCKING
-	if (options.command != CommandLock)
-		UnlockScreen();
-#endif
-	for (;;) {
-#ifdef DO_XLOCKING
-		DPRINT();
-		ShowWindow();
-#endif
-		DPRINT();
-		status = authenticate();
-#ifdef DO_XLOCKING
-		DPRINT();
-		if (lock_state == LockStateAborted) {
-			UnlockScreen();
-			continue;
-		}
-#endif
-		DPRINT();
-		if (login_result == LoginResultLogout) {
-#ifdef DO_XLOCKING
-			RelockScreen();
-#else
-			exit(EXIT_FAILURE);
-#endif
-			continue;
-		}
-		DPRINT();
-		switch (status) {
-		case PAM_ABORT:
-			break;
-		case PAM_CRED_INSUFFICIENT:
-		case PAM_MAXTRIES:
-		default:
-			DPRINT();
-#ifdef DO_XLOCKING
-			RelockScreen();
-#else
-			exit(EXIT_FAILURE);
-#endif
-			continue;
-		case PAM_SUCCESS:
-			DPRINT();
-#ifdef DO_XLOCKING
-			UnlockScreen();
-#else
-			exit(EXIT_SUCCESS);
-#endif
-			continue;
-		}
-		break;
-	}
-	DPRINT();
-}
-#endif				/* DO_XLOCKING */
 
 #ifdef DO_XLOCKING
 /** @brief quit the running background locker
