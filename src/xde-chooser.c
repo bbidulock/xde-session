@@ -1161,11 +1161,60 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	return GDK_FILTER_CONTINUE;
 }
 
+#ifdef DO_XLOCKING
+static GdkFilterReturn
+event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
+{
+	DPRINT();
+	if (options.debug > 1) {
+		fprintf(stderr, "==> SelectionClear: %p\n", xscr);
+		fprintf(stderr, "    --> send_event = %s\n",
+			xev->xselectionclear.send_event ? "true" : "false");
+		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xselectionclear.window);
+		fprintf(stderr, "    --> selection = %s\n",
+			XGetAtomName(dpy, xev->xselectionclear.selection));
+		fprintf(stderr, "    --> time = %lu\n", xev->xselectionclear.time);
+		fprintf(stderr, "<== SelectionClear: %p\n", xscr);
+	}
+	if (xscr && xev->xselectionclear.window == xscr->selwin) {
+		XDestroyWindow(dpy, xscr->selwin);
+		EPRINTF("selection cleared, exiting\n");
+		exit(EXIT_SUCCESS);
+	}
+	return GDK_FILTER_CONTINUE;
+}
+
+static GdkFilterReturn
+selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
+{
+	XEvent *xev = (typeof(xev)) xevent;
+	XdeScreen *xscr = (typeof(xscr)) data;
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	DPRINT();
+	if (!xscr) {
+		EPRINTF("xscr is NULL\n");
+		exit(EXIT_FAILURE);
+	}
+	switch (xev->type) {
+	case SelectionClear:
+		return event_handler_SelectionClear(dpy, xev, xscr);
+	case ClientMessage:
+		break;
+	default:
+		EPRINTF("wrong message type for handler %d\n", xev->type);
+		break;
+	}
+	return GDK_FILTER_CONTINUE;
+}
+#endif
+
 static GdkFilterReturn
 client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 {
 	XEvent *xev = (typeof(xev)) xevent;
-	Display *dpy = (typeof(dpy)) data;
+	Display *dpy = xev->xany.display;
 
 	DPRINT();
 	switch (xev->type) {
@@ -1174,15 +1223,6 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	}
 	EPRINTF("wrong message type for handler %d\n", xev->type);
 	return GDK_FILTER_CONTINUE;
-}
-
-GtkWidget *top;
-
-void
-relax()
-{
-	while (gtk_events_pending())
-		gtk_main_iteration();
 }
 
 /** @brief get system data directories
@@ -1222,8 +1262,6 @@ get_data_dirs(int *np)
 		*np = n;
 	return (xdg_dirs);
 }
-
-static GtkWidget *buttons[5];
 
 char **
 get_config_dirs(int *np)
@@ -1639,13 +1677,13 @@ on_idle(gpointer data)
 	g_free(e);
 	g_free(t);
 	g_key_file_free(entry);
-#if 0
+#ifndef DO_CHOOSER
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
 					     GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
 					     GTK_SORT_ASCENDING);
 #endif
 
-#if 1
+#ifdef DO_CHOOSER
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 
 	if (gtk_tree_selection_get_selected(selection, NULL, NULL))
@@ -1683,7 +1721,140 @@ on_idle(gpointer data)
 	return G_SOURCE_CONTINUE;
 }
 
+#ifdef DO_XCHOOSER
+GtkListStore *model;
+GtkWidget *view;
+#endif				/* DO_XCHOOSER */
+
+GtkWidget *top;
+
 void
+relax()
+{
+	while (gtk_events_pending())
+		gtk_main_iteration();
+}
+
+#if !defined(DO_LOGOUT)
+static GtkWidget *buttons[5];
+#if !defined(DO_CHOOSER)
+static GtkWidget *l_uname;
+static GtkWidget *l_pword;
+static GtkWidget *l_lstat;
+static GtkWidget *user, *pass;
+#endif				/* !defined(DO_CHOOSER) */
+#endif				/* defined(DO_LOGOUT) */
+static GtkWidget *l_greet;
+
+gint
+xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, gpointer data)
+{
+	GValue a_v = G_VALUE_INIT;
+	GValue b_v = G_VALUE_INIT;
+	const gchar *astr;
+	const gchar *bstr;
+	gint ret;
+
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), a, XSESS_COL_NAME, &a_v);
+	gtk_tree_model_get_value(GTK_TREE_MODEL(store), b, XSESS_COL_NAME, &b_v);
+	astr = g_value_get_string(&a_v);
+	bstr = g_value_get_string(&b_v);
+	ret = g_ascii_strcasecmp(astr, bstr);
+	g_value_unset(&a_v);
+	g_value_unset(&b_v);
+	return (ret);
+}
+
+#ifdef DO_XCHOOSER
+Bool
+CanConnect(struct sockaddr *sa)
+{
+	int sock;
+	socklen_t salen;
+
+	switch (sa->sa_family) {
+	case AF_INET:
+		salen = sizeof(struct sockaddr_in);
+		break;
+	case AF_INET6:
+		salen = sizeof(struct sockaddr_in6);
+		break;
+	case AF_UNIX:
+		salen = sizeof(struct sockaddr_un);
+		break;
+	default:
+		EPRINTF("wrong socket family %d\n", (int) sa->sa_family);
+		return False;
+	}
+	if ((sock = socket(sa->sa_family, SOCK_DGRAM, 0)) == -1) {
+		EPRINTF("socket: %s\n", strerror(errno));
+		return False;
+	}
+	if (options.debug) {
+		char *p, *e, *rawbuf;
+		unsigned char *b;
+		int i, len;
+
+		len = 2 * salen + 1;
+		rawbuf = calloc(len, sizeof(*rawbuf));
+		for (i = 0, p = rawbuf, e = rawbuf + len, b = (typeof(b)) sa;
+		     i < salen; i++, p += 2, b++)
+			snprintf(p, e - p, "%02x", *b);
+		DPRINTF("raw socket address for connect: %s\n", rawbuf);
+		free(rawbuf);
+	}
+	if (connect(sock, sa, salen) == -1) {
+		DPRINTF("connect: %s\n", strerror(errno));
+		close(sock);
+		return False;
+	}
+	if (options.debug) {
+		struct sockaddr conn;
+		char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
+
+		if (getsockname(sock, &conn, &salen) == -1) {
+			EPRINTF("getsockname: %s\n", strerror(errno));
+			close(sock);
+			return False;
+		}
+		switch (conn.sa_family) {
+		case AF_INET:
+		{
+			struct sockaddr_in *sin = (typeof(sin)) & conn;
+			int port = ntohs(sin->sin_port);
+
+			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
+			DPRINTF("address is %s port %d\n", ipaddr, port);
+			break;
+		}
+		case AF_INET6:
+		{
+			struct sockaddr_in6 *sin6 = (typeof(sin6)) & conn;
+			int port = ntohs(sin6->sin6_port);
+
+			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
+			DPRINTF("address is %s port %d\n", ipaddr, port);
+			break;
+		}
+		case AF_UNIX:
+		{
+			struct sockaddr_un *sun = (typeof(sun)) & conn;
+
+			DPRINTF("family is AF_UNIX\n");
+			break;
+		}
+		default:
+			EPRINTF("bad connected family %d\n", (int) conn.sa_family);
+			close(sock);
+			return False;
+		}
+	}
+	close(sock);
+	return True;
+}
+#endif				/* DO_XCHOOSER */
+
+static void
 on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer data)
 {
 	GtkListStore *store = GTK_LIST_STORE(data);
@@ -2083,6 +2254,7 @@ ungrabbed_window(GtkWidget *window)
 		g_signal_handler_disconnect(G_OBJECT(window), grab_broken_handler);
 		grab_broken_handler = 0;
 	}
+//	g_signal_connect(G_OBJECT(window), "grab-broken-event", NULL, NULL);
 #endif
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
@@ -2395,6 +2567,52 @@ create_session(const char *label, const char *filename)
 	free(cdir);
 }
 #endif
+
+#ifdef DO_XLOCKING
+static Window
+get_selection(Window selwin, char *selection, int s)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	Atom atom;
+	Window owner;
+
+	snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
+	atom = XInternAtom(dpy, selection, False);
+	if (!(owner = XGetSelectionOwner(dpy, atom)))
+		DPRINTF("No owner for %s\n", selection);
+	if ((owner && options.replace) || (!owner && selwin)) {
+		DPRINTF("Setting owner of %s to 0x%lx from 0x%lx\n", selection, selwin, owner);
+		XSetSelectionOwner(dpy, atom, selwin, CurrentTime);
+		XSync(dpy, False);
+	}
+	if (options.replace && selwin) {
+		XEvent ev;
+		Atom manager = XInternAtom(dpy, "MANAGER", False);
+		GdkScreen *scrn = gdk_display_get_screen(disp, s);
+		GdkWindow *root = gdk_screen_get_root_window(scrn);
+		Window r = GDK_WINDOW_XID(root);
+		Atom atom = XInternAtom(dpy, selection, False);
+
+		ev.xclient.type = ClientMessage;
+		ev.xclient.serial = 0;
+		ev.xclient.send_event = False;
+		ev.xclient.display = dpy;
+		ev.xclient.window = r;
+		ev.xclient.message_type = manager;
+		ev.xclient.format = 32;
+		ev.xclient.data.l[0] = CurrentTime;
+		ev.xclient.data.l[1] = atom;
+		ev.xclient.data.l[2] = selwin;
+		ev.xclient.data.l[3] = 0;
+		ev.xclient.data.l[4] = 0;
+
+		XSendEvent(dpy, r, False, StructureNotifyMask, &ev);
+		XFlush(dpy);
+	}
+	return (owner);
+}
+#endif				/* DO_XLOCKING */
 
 GtkWidget *cont;			/* container of event box */
 GtkWidget *ebox;			/* event box window within the screen */
@@ -2728,6 +2946,23 @@ GetBanner(void)
 	return (ban);
 }
 
+void
+on_combo_popdown(GtkComboBox *combo, gpointer data)
+{
+	GtkWidget *window;
+
+	window = gtk_widget_get_toplevel(GTK_WIDGET(combo));
+
+	relax();
+	grabbed_window(window, NULL);
+}
+
+#define BB_INT_PADDING  0
+#define BB_BOX_SPACING  5
+#define BB_BORDER_WIDTH 5
+#define BU_BORDER_WIDTH 0
+#define BB_PACK_PADDING 0
+
 GtkWidget *
 GetPanel(void)
 {
@@ -2896,8 +3131,8 @@ GetPane(GtkWidget *cont)
 
 	gtk_container_add(GTK_CONTAINER(ebox), v);
 
-	GtkWidget *l_greet = gtk_label_new(NULL);
-	gtk_label_set_text(GTK_LABEL(l_greet), options.welcome);
+	l_greet = gtk_label_new(NULL);
+	gtk_label_set_markup(GTK_LABEL(l_greet), options.welcome);
 	gtk_misc_set_alignment(GTK_MISC(l_greet), 0.5, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l_greet), 3, 3);
 	switch (options.side) {
@@ -3001,7 +3236,7 @@ GetWindow(Bool noshow)
 	gtk_widget_show_now(cont);
 
 #ifndef DO_LOGOUT
-#if 0
+#ifndef DO_CHOOSER
 	if (options.username) {
 		gtk_entry_set_text(GTK_ENTRY(user), options.username);
 		gtk_entry_set_text(GTK_ENTRY(pass), "");

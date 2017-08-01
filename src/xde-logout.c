@@ -1225,6 +1225,76 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	return GDK_FILTER_CONTINUE;
 }
 
+/** @brief get system data directories
+  *
+  * Note that, unlike some other tools, there is no home directory at this point
+  * so just search the system XDG data directories for things, but treat the XDM
+  * home as /usr/lib/X11/xdm.
+  */
+char **
+get_data_dirs(int *np)
+{
+	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end;
+	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
+		xdg_dirs[n] = strdup(pos);
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
+char **
+get_config_dirs(int *np)
+{
+	char *home, *xhome, *xconf, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_CONFIG_HOME");
+	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.config");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xconf);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end;
+	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
+		xdg_dirs[n] = strdup(pos);
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
 GtkListStore *store;			/* list store for XSessions */
 GtkWidget *sess;
 
@@ -1607,13 +1677,13 @@ on_idle(gpointer data)
 	g_free(e);
 	g_free(t);
 	g_key_file_free(entry);
-#if 1
+#ifndef DO_CHOOSER
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
 					     GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
 					     GTK_SORT_ASCENDING);
 #endif
 
-#if 0
+#ifdef DO_CHOOSER
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 
 	if (gtk_tree_selection_get_selected(selection, NULL, NULL))
@@ -1665,55 +1735,15 @@ relax()
 		gtk_main_iteration();
 }
 
-/** @brief get system data directories
-  *
-  * Note that, unlike some other tools, there is no home directory at this point
-  * so just search the system XDG data directories for things, but treat the XDM
-  * home as /usr/lib/X11/xdm.
-  */
-char **
-get_data_dirs(int *np)
-{
-	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
-	int len, n;
-
-	home = getenv("HOME") ? : ".";
-#if defined DO_XLOCKING || defined DO_LOGOUT
-	xhome = getenv("XDG_DATA_HOME");
-#else
-	xhome = "/usr/lib/X11/xdm";
-#endif
-	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
-
-	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
-	dirs = calloc(len, sizeof(*dirs));
-	if (xhome)
-		strcpy(dirs, xhome);
-	else {
-		strcpy(dirs, home);
-		strcat(dirs, "/.local/share");
-	}
-	strcat(dirs, ":");
-	strcat(dirs, xdata);
-	end = dirs + strlen(dirs);
-	for (n = 0, pos = dirs; pos < end;
-	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
-	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
-	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
-		xdg_dirs[n] = strdup(pos);
-	free(dirs);
-	if (np)
-		*np = n;
-	return (xdg_dirs);
-}
-
-#ifndef DO_LOGOUT
+#if !defined(DO_LOGOUT)
 static GtkWidget *buttons[5];
+#if !defined(DO_CHOOSER)
 static GtkWidget *l_uname;
 static GtkWidget *l_pword;
 static GtkWidget *l_lstat;
 static GtkWidget *user, *pass;
-#endif					/* DO_LOGOUT */
+#endif				/* !defined(DO_CHOOSER) */
+#endif				/* defined(DO_LOGOUT) */
 static GtkWidget *l_greet;
 
 gint
@@ -1822,7 +1852,9 @@ CanConnect(struct sockaddr *sa)
 	close(sock);
 	return True;
 }
+#endif				/* DO_XCHOOSER */
 
+#ifdef DO_XCHOOSER
 #define IN_LINKLOCAL(a) ((((in_addr_t)(a)) & 0xffff0000) == 0xa9fe0000)
 #define IN_LOOPBACK(a)	((((in_addr_t)(a)) & 0xffffff00) == 0x7f000000)
 #define IN_ORGLOCAL(a) ( \
@@ -3318,38 +3350,6 @@ append_session_tasks(GtkMenu *menu)
 #endif				/* DO_LOGOUT */
 
 #ifdef DO_LOGOUT
-char **
-get_config_dirs(int *np)
-{
-	char *home, *xhome, *xconf, *dirs, *pos, *end, **xdg_dirs;
-	int len, n;
-
-	home = getenv("HOME") ? : ".";
-	xhome = getenv("XDG_CONFIG_HOME");
-	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
-
-	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
-	dirs = calloc(len, sizeof(*dirs));
-	if (xhome)
-		strcpy(dirs, xhome);
-	else {
-		strcpy(dirs, home);
-		strcat(dirs, "/.config");
-	}
-	strcat(dirs, ":");
-	strcat(dirs, xconf);
-	end = dirs + strlen(dirs);
-	for (n = 0, pos = dirs; pos < end;
-	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
-	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
-	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
-		xdg_dirs[n] = strdup(pos);
-	free(dirs);
-	if (np)
-		*np = n;
-	return (xdg_dirs);
-}
-
 /*
  * Determine whether we have been invoked under a session running lxsession(1).
  * When that is the case, we simply execute lxsession-logout(1) with the
@@ -5054,7 +5054,7 @@ GetPane(GtkWidget *cont)
 		break;
 	case LogoSideTop:
 	case LogoSideBottom:
-		box = gtk_vbox_new(FALSE, 5);
+		box = gtk_vbox_new(TRUE, 5);
 		break;
 	}
 
@@ -5114,7 +5114,7 @@ GetWindow(Bool noshow)
 	gtk_widget_show_now(cont);
 
 #ifndef DO_LOGOUT
-#if 1
+#ifndef DO_CHOOSER
 	if (options.username) {
 		gtk_entry_set_text(GTK_ENTRY(user), options.username);
 		gtk_entry_set_text(GTK_ENTRY(pass), "");
