@@ -7409,7 +7409,7 @@ set_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
-#if 0
+#ifdef DO_CHOOSER
 void
 set_default_session(void)
 {
@@ -7526,7 +7526,7 @@ set_defaults(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	set_default_address();
 #endif				/* DO_XCHOOSER */
-#if 0
+#ifdef DO_CHOOSER
 	set_default_session();
 #endif
 	set_default_choice();

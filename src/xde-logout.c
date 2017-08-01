@@ -168,6 +168,7 @@ static int saveArgc;
 static char **saveArgv;
 
 #undef DO_XCHOOSER
+#undef DO_XLOGIN
 #undef DO_XLOCKING
 #undef DO_ONIDLE
 #undef DO_CHOOSER
@@ -190,10 +191,12 @@ static char **saveArgv;
 #   define RESNAME "xde-logout"
 #   define RESCLAS "XDE-Logout"
 #   define RESTITL "XDE X11 Session Logout"
-#else
+#elif defined(DO_XLOGIN)
 #   define RESNAME "xde-xlogin"
 #   define RESCLAS "XDE-XLogin"
 #   define RESTITL "XDMCP Greeter"
+#else
+#   error Undefined program type.
 #endif
 
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
@@ -268,7 +271,9 @@ typedef struct {
 	char *gtk2_theme;
 	char *curs_theme;
 	LogoSide side;
+	Bool prompt;
 	Bool noask;
+	Bool setdflt;
 	Bool execute;
 	char *current;
 	Bool managed;
@@ -294,6 +299,7 @@ typedef struct {
 	double xposition;
 	double yposition;
 	Bool setstyle;
+	Bool filename;
 	unsigned guard;
 	Bool tray;
 } Options;
@@ -318,7 +324,9 @@ Options options = {
 	.gtk2_theme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
+	.prompt = False,
 	.noask = False,
+	.setdflt = False,
 	.execute = False,
 	.current = NULL,
 	.managed = True,
@@ -344,6 +352,7 @@ Options options = {
 	.xposition = 0.5,
 	.yposition = 0.5,
 	.setstyle = True,
+	.filename = False,
 	.guard = 5,
 	.tray = False,
 };
@@ -368,7 +377,9 @@ Options defaults = {
 	.gtk2_theme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
+	.prompt = False,
 	.noask = False,
+	.setdflt = False,
 	.execute = False,
 	.current = NULL,
 	.managed = True,
@@ -394,6 +405,7 @@ Options defaults = {
 	.xposition = 0.5,
 	.yposition = 0.5,
 	.setstyle = True,
+	.filename = False,
 	.guard = 5,
 	.tray = False,
 };
@@ -522,7 +534,9 @@ LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
 
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
 static SmcConn smcConn;
+#endif
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
@@ -5275,9 +5289,11 @@ startup(int argc, char *argv[])
 	atom = gdk_atom_intern_static_string("_GTK_READ_RCFILES");
 	_XA_GTK_READ_RCFILES = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+#ifdef DO_XLOCKING
 	atom = gdk_atom_intern_static_string("_XDE_XLOCK_COMMAND");
 	_XA_XDE_XLOCK_COMMAND = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+#endif				/* DO_XLOCKING */
 	atom = gdk_atom_intern_static_string("_XROOTPMAP_ID");
 	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
@@ -6368,7 +6384,7 @@ usage(int argc, char *argv[])
 	(void) fprintf(stderr, "\
 Usage:\n\
     %1$s [options]\n\
-    %1$s {-h|--help}\n\
+    %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 ", argv[0]);
@@ -6403,6 +6419,7 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
+        /* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [options]\n\
@@ -6442,6 +6459,7 @@ General options:\n\
         increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
 ", argv[0], options.welcome, options.banner, show_side(options.side), show_bool(options.noask), options.usexde ? "xde" : (options.icon_theme ? : "auto"), options.usexde ? "xde" : (options.gtk2_theme ? : "auto"), show_bool(options.usexde), options.timeout, show_bool(options.dryrun), options.debug, options.output);
+        /* *INDENT-ON* */
 }
 
 const char *
@@ -6628,13 +6646,14 @@ get_resources(int argc, char *argv[])
 	XrmInitialize();
 	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
 	rdb = XrmGetStringDatabase((char *) xtp.value);
-	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	XFree(xtp.value);
 	if (!rdb) {
 		DPRINTF("no resource manager database allocated\n");
 		XCloseDisplay(dpy);
 		return;
 	}
+	DPRINTF("combining database from %s\n", APPDFLT);
+	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	if ((val = get_resource(rdb, "debug", "0"))) {
 		getXrmInt(val, &options.debug);
 	}
@@ -6643,6 +6662,7 @@ get_resources(int argc, char *argv[])
 			char *endptr = NULL;
 			double width = strtod(val, &endptr);
 
+			DPRINTF("Got decimal value %s, translates to %f\n", val, width);
 			if (endptr != val && *endptr == '%' && width > 0) {
 				options.width =
 				    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
@@ -6660,6 +6680,7 @@ get_resources(int argc, char *argv[])
 			char *endptr = NULL;
 			double height = strtod(val, &endptr);
 
+			DPRINTF("Got decimal value %s, translates to %f\n", val, height);
 			if (endptr != val && *endptr == '%' && height > 0) {
 				options.height =
 				    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
@@ -7178,7 +7199,7 @@ set_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
-#if 0
+#ifdef DO_CHOOSER
 void
 set_default_session(void)
 {
@@ -7295,7 +7316,7 @@ set_defaults(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	set_default_address();
 #endif				/* DO_XCHOOSER */
-#if 0
+#ifdef DO_CHOOSER
 	set_default_session();
 #endif
 	set_default_choice();
@@ -8083,8 +8104,13 @@ main(int argc, char *argv[])
 			goto bad_nonopt;
 		}
 #endif
+#ifdef DO_CHOOSER
+		DPRINTF("%s: running chooser\n", argv[0]);
+		do_chooser(argc, argv);
+#else				/* DO_CHOOSER */
 		DPRINTF("%s: running default\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
+#endif				/* DO_CHOOSER */
 		break;
 #ifdef DO_XLOCKING
 	case CommandReplace:

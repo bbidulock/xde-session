@@ -315,7 +315,7 @@ Options options = {
 	.clientIface = 0,
 	.isLocal = False,
 	.lockscreen = NULL,
-	.banner = NULL,
+	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
 	.command = CommandDefault,
 	.charset = NULL,
@@ -368,7 +368,7 @@ Options defaults = {
 	.clientIface = 0,
 	.isLocal = False,
 	.lockscreen = NULL,
-	.banner = NULL,
+	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
 	.command = CommandDefault,
 	.charset = NULL,
@@ -479,18 +479,115 @@ Resources resources  = {
 };
 
 typedef enum {
+	LoginStateInit,
+	LoginStateUsername,
+	LoginStatePassword,
+	LoginStateReady,
+} LoginState;
+
+LoginState state = LoginStateInit;
+
+#ifdef DO_XLOCKING
+typedef enum {
+	LockStateLocked,
+	LockStateUnlocked,
+	LockStateAborted,
+} LockState;
+
+LockState lock_state = LockStateLocked;
+struct timeval lock_time = { 0, 0 };
+
+typedef enum {
+	LockCommandLock,
+	LockCommandUnlock,
+	LockCommandQuit,
+} LockCommand;
+
+#endif				/* DO_XLOCKING */
+
+typedef enum {
 	ChooseResultLogout,
 	ChooseResultLaunch,
 } ChooseResult;
 
 ChooseResult choose_result;
 
+#ifdef DO_LOGOUT
+typedef enum {
+	LOGOUT_ACTION_POWEROFF,		/* power off the computer */
+	LOGOUT_ACTION_REBOOT,		/* reboot the computer */
+	LOGOUT_ACTION_SUSPEND,		/* suspend the computer */
+	LOGOUT_ACTION_HIBERNATE,	/* hibernate the computer */
+	LOGOUT_ACTION_HYBRIDSLEEP,	/* hybrid sleep the computer */
+	LOGOUT_ACTION_SWITCHUSER,	/* switch users */
+	LOGOUT_ACTION_SWITCHDESK,	/* switch desktops */
+	LOGOUT_ACTION_LOCKSCREEN,	/* lock screen */
+	LOGOUT_ACTION_CHECKPOINT,	/* checkpoint the current session */
+	LOGOUT_ACTION_SHUTDOWN,		/* checkpoint and shutdown session */
+	LOGOUT_ACTION_LOGOUT,		/* logout of current session */
+	LOGOUT_ACTION_RESTART,		/* restart current session */
+	LOGOUT_ACTION_CANCEL,		/* cancel logout */
+	LOGOUT_ACTION_COUNT,
+} LogoutActionResult;
+
+LogoutActionResult action_result;
+LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
+#endif				/* DO_LOGOUT */
+
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
 static SmcConn smcConn;
+#endif
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
+Atom _XA_XDE_XLOCK_COMMAND;
 Atom _XA_XROOTPMAP_ID;
 Atom _XA_ESETROOT_PMAP_ID;
+
+#ifdef DO_XLOCKING
+int xssEventBase;
+int xssErrorBase;
+int xssMajorVersion;
+int xssMinorVersion;
+
+const char *
+xssState(int state)
+{
+	switch (state) {
+	case ScreenSaverOff:
+		return ("Off");
+	case ScreenSaverOn:
+		return ("On");
+	case ScreenSaverCycle:
+		return ("Cycle");
+	case ScreenSaverDisabled:
+		return ("Disabled");
+	}
+	return ("(unknown)");
+}
+
+const char *
+xssKind(int kind)
+{
+	switch (kind) {
+	case ScreenSaverBlanked:
+		return ("Blanked");
+	case ScreenSaverInternal:
+		return ("Internal");
+	case ScreenSaverExternal:
+		return ("External");
+	}
+	return ("(unknown)");
+}
+#endif
+
+const char *
+showBool(Bool boolean)
+{
+	if (boolean)
+		return ("True");
+	return ("False");
+}
 
 typedef struct {
 	int index;
@@ -509,9 +606,435 @@ typedef struct {
 	XdeMonitor *mons;		/* monitors for this screen */
 	GdkPixmap *pixmap;		/* pixmap for background image */
 	GdkPixbuf *pixbuf;		/* pixbuf for background image */
+#ifdef DO_XLOCKING
+	XScreenSaverInfo info;		/* screen saver info for this screen */
+	char selection[32];
+	Window selwin;
+#endif
 } XdeScreen;
 
 XdeScreen *screens;
+
+#ifdef DO_XLOCKING
+typedef struct {
+	int xfd;
+	Display *dpy;
+} XdeDisplay;
+
+XdeDisplay display;
+
+const char *
+show_state(int state)
+{
+	switch (state) {
+	case ScreenSaverOff:
+		return ("Off");
+	case ScreenSaverOn:
+		return ("On");
+	case ScreenSaverDisabled:
+		return ("Disabled");
+	default:
+		return ("(unknown)");
+	}
+}
+
+const char *
+show_kind(int kind)
+{
+	switch (kind) {
+	case ScreenSaverBlanked:
+		return ("Blanked");
+	case ScreenSaverInternal:
+		return ("Internal");
+	case ScreenSaverExternal:
+		return ("External");
+	default:
+		return ("(unknown)");
+	}
+}
+
+void
+setup_screensaver(void)
+{
+	Display *dpy = display.dpy;
+	int s, nscr = ScreenCount(dpy);
+	char **list, **ext;
+	int n, next = 0;
+	Bool gotext = False;
+	Bool present;
+	Status status;
+	XdeScreen *xscr;
+
+	if ((list = XListExtensions(dpy, &next)) && next)
+		for (n = 0, ext = list; n < next; n++, ext++)
+			if (!strcmp(*ext, "MIT-SCREEN-SAVER"))
+				gotext = True;
+	if (!gotext) {
+		DPRINTF("no MIT-SCREEN-SAVER extension\n");
+		return;
+	}
+	if (!(present = XScreenSaverQueryExtension(dpy, &xssEventBase, &xssErrorBase))) {
+		DPRINTF("MIT-SCREEN-SAVER extension not present\n");
+		return;
+	} else {
+		DPRINTF("xssEventBase = %d\n", xssEventBase);
+		DPRINTF("xssErrorBase = %d\n", xssErrorBase);
+	}
+	if (!(status = XScreenSaverQueryVersion(dpy, &xssMajorVersion, &xssMinorVersion))) {
+		DPRINTF("cannot query MIT-SCREEN-SAVER version\n");
+		return;
+	} else {
+		DPRINTF("xssMajorVersion = %d\n", xssMajorVersion);
+		DPRINTF("xssMinorVersion = %d\n", xssMinorVersion);
+	}
+	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
+		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
+		if (options.debug > 1) {
+			fprintf(stderr, "Before:\n");
+			fprintf(stderr, "\twindow:\t\t0x%08lx\n", xscr->info.window);
+			fprintf(stderr, "\tstate:\t\t%s\n", show_state(xscr->info.state));
+			fprintf(stderr, "\tkind:\t\t%s\n", show_kind(xscr->info.kind));
+			fprintf(stderr, "\ttil_or_since:\t%lu\n", xscr->info.til_or_since);
+			fprintf(stderr, "\tidle:\t\t%lu\n", xscr->info.idle);
+			fprintf(stderr, "\teventMask:\t0x%08lx\n", xscr->info.eventMask);
+		}
+		XScreenSaverSelectInput(dpy, RootWindow(dpy, s),
+					ScreenSaverNotifyMask | ScreenSaverCycleMask);
+		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
+		if (options.debug > 1) {
+			fprintf(stderr, "After:\n");
+			fprintf(stderr, "\twindow:\t\t0x%08lx\n", xscr->info.window);
+			fprintf(stderr, "\tstate:\t\t%s\n", show_state(xscr->info.state));
+			fprintf(stderr, "\tkind:\t\t%s\n", show_kind(xscr->info.kind));
+			fprintf(stderr, "\ttil_or_since:\t%lu\n", xscr->info.til_or_since);
+			fprintf(stderr, "\tidle:\t\t%lu\n", xscr->info.idle);
+			fprintf(stderr, "\teventMask:\t0x%08lx\n", xscr->info.eventMask);
+		}
+	}
+}
+
+#endif /* DO_XLOCKING */
+
+GDBusProxy *sd_manager = NULL;
+GDBusProxy *sd_session = NULL;
+GDBusProxy *sd_display = NULL;
+
+#ifdef DO_XLOCKING
+static void LockScreen(void);
+static void UnlockScreen(void);
+static void AbortLockScreen(void);
+#endif
+
+void
+on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
+			  GVariant *parameters, gpointer user_data)
+{
+	DPRINTF("received manager proxy signal %s( %s )\n", signal_name,
+		g_variant_get_type_string(parameters));
+
+	if (!strcmp(signal_name, "PrepareForSleep")) {
+	} else if (!strcmp(signal_name, "PrepareForShutdown")) {
+	}
+}
+
+void
+on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
+			  GVariant *parameters, gpointer user_data)
+{
+	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
+		g_variant_get_type_string(parameters));
+#ifdef DO_XLOCKING
+	if (!strcmp(signal_name, "Lock")) {
+		LockScreen();
+	} else if (!strcmp(signal_name, "Unlock")) {
+		UnlockScreen();
+	}
+#endif
+}
+
+void
+on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties,
+				 GStrv invalidated_properties, gpointer user_data)
+{
+	GVariantIter iter;
+	GVariant *prop;
+
+	DPRINTF("received session proxy properties changed signal ( %s )\n",
+		g_variant_get_type_string(changed_properties));
+
+	g_variant_iter_init(&iter, changed_properties);
+	while ((prop = g_variant_iter_next_value(&iter))) {
+		if (g_variant_is_container(prop)) {
+			GVariantIter iter2;
+			GVariant *key;
+			GVariant *val;
+			GVariant *boxed;
+			const gchar *name;
+
+			g_variant_iter_init(&iter2, prop);
+			if (!(key = g_variant_iter_next_value(&iter2))) {
+				EPRINTF("no key!\n");
+				continue;
+			}
+			if (!(name = g_variant_get_string(key, NULL))) {
+				EPRINTF("no name!\n");
+				g_variant_unref(key);
+				continue;
+			}
+			if (strcmp(name, "Active")) {
+				DPRINTF("not looking for %s\n", name);
+				g_variant_unref(key);
+				continue;
+			}
+			if (!(val = g_variant_iter_next_value(&iter2))) {
+				EPRINTF("no val!\n");
+				g_variant_unref(key);
+				continue;
+			}
+			if (!(boxed = g_variant_get_variant(val))) {
+				EPRINTF("no value!\n");
+				g_variant_unref(key);
+				g_variant_unref(val);
+				continue;
+			}
+			if (!g_variant_get_boolean(boxed)) {
+#ifdef DO_XLOCKING
+				DPRINTF("went inactive, locking screen\n");
+				LockScreen();
+#endif
+			}
+			g_variant_unref(key);
+			g_variant_unref(val);
+			g_variant_unref(boxed);
+			break;
+		}
+		g_variant_unref(prop);
+	}
+}
+
+void
+setup_systemd(void)
+{
+	GError *err = NULL;
+	gchar *s;
+	const char *env;
+
+	DPRINT();
+	if (!(sd_manager =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
+					    "/org/freedesktop/login1",
+					    "org.freedesktop.login1.Manager", NULL, &err)) || err) {
+		EPRINTF("could not create DBUS proxy sd_manager: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_signal_connect(G_OBJECT(sd_manager), "g-signal",
+			 G_CALLBACK(on_sd_prox_manager_signal), NULL);
+	s = g_strdup_printf("/org/freedesktop/login1/session/%s", getenv("XDG_SESSION_ID") ? : "self");
+	if (!(sd_session =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1", s,
+					    "org.freedesktop.login1.Session", NULL, &err)) || err) {
+		EPRINTF("could not create DBUS proxy sd_session: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		g_free(s);
+		return;
+	}
+	g_signal_connect(G_OBJECT(sd_session), "g-signal",
+			 G_CALLBACK(on_sd_prox_session_signal), NULL);
+	g_signal_connect(G_OBJECT(sd_session), "g-properties-changed",
+			 G_CALLBACK(on_sd_prox_session_props_changed), NULL);
+	g_free(s);
+	if ((env = getenv("XDG_SEAT_PATH")))
+		s = g_strdup(env);
+	else if ((env = getenv("XDG_SEAT")))
+		s = g_strdup_printf("/org/freedesktop/DisplayManager/%s", env);
+	else
+		s = g_strdup("/org/freedesktop/DisplayManager/Seat0");
+	if (!(sd_display =
+	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL,
+					    "org.freedesktop.DisplayManager", s,
+					    "org.freedesktop.DisplayManager.Seat", NULL, &err))
+	    || err) {
+		EPRINTF("counld not create DBUS proxy sd_display: %s\n",
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		g_free(s);
+		return;
+	}
+	g_free(s);
+}
+
+#ifdef DO_XLOCKING
+
+void
+setidlehint(gboolean flag)
+{
+	GError *err = NULL;
+	GVariant *result;
+
+	if (!sd_session) {
+		EPRINTF("No session proxy!\n");
+		return;
+	}
+	if (!(result =
+	      g_dbus_proxy_call_sync(sd_session, "SetIdleHint", g_variant_new("(b)", flag),
+				     G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err)) || err) {
+		EPRINTF("SetIdleHint: %s: call failed: %s\n", getenv("XDG_SESSION_ID") ? : "self",
+			err ? err->message : NULL);
+		g_clear_error(&err);
+		return;
+	}
+	g_variant_unref(result);
+}
+
+GdkFilterReturn
+handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
+{
+	XScreenSaverNotifyEvent *ev = (typeof(ev)) xev;
+
+	DPRINT();
+
+	if (options.debug > 1) {
+		fprintf(stderr, "==> XScreenSaverNotify:\n");
+		fprintf(stderr, "    --> send_event = %s\n", showBool(ev->send_event));
+		fprintf(stderr, "    --> window = 0x%lx\n", ev->window);
+		fprintf(stderr, "    --> root = 0x%lx\n", ev->root);
+		fprintf(stderr, "    --> state = %s\n", xssState(ev->state));
+		fprintf(stderr, "    --> kind = %s\n", xssKind(ev->kind));
+		fprintf(stderr, "    --> forced = %s\n", showBool(ev->forced));
+		fprintf(stderr, "    --> time = %lu\n", ev->time);
+		fprintf(stderr, "<== XScreenSaverNotify:\n");
+	}
+	switch (ev->state) {
+	case ScreenSaverDisabled:
+	default:
+		break;
+	case ScreenSaverOff:
+		/* Note that if we were not locked for more than a few seconds we should
+		   simply unlock the screen.  This way if the user presses a key or
+		   nudges the mouse fast enought when the screen blanks, they will not
+		   have to reenter a password.  This could be coupled with screen fading
+		   during the grace period.  */
+		setidlehint(FALSE);
+		AbortLockScreen();
+		break;
+	case ScreenSaverOn:
+		setidlehint(TRUE);
+		LockScreen();
+		break;
+	case ScreenSaverCycle:
+		LockScreen();
+		break;
+	}
+	return G_SOURCE_CONTINUE;
+}
+#endif				/* DO_XLOCKING */
+
+#ifdef DO_XCHOOSER
+#define PING_TRIES	3
+#define PING_INTERVAL	2	/* 2 seconds */
+
+XdmcpBuffer directBuffer;
+XdmcpBuffer broadcastBuffer;
+
+static gpointer
+sockaddr_copy_func(gpointer boxed)
+{
+	struct sockaddr_storage *sa = boxed;
+	struct sockaddr_storage *na = NULL;
+
+	if (sa && (na = calloc(1, sizeof(*na))))
+		memmove(na, sa, sizeof(*na));
+	return (na);
+}
+
+static void
+sockaddr_free_func(gpointer boxed)
+{
+	free(boxed);
+}
+
+static GType
+g_sockaddr_get_type(void)
+{
+	static int initialized = 0;
+	static GType mytype;
+
+	if (!initialized) {
+		mytype = g_boxed_type_register_static("sockaddr",
+						      sockaddr_copy_func, sockaddr_free_func);
+		initialized = 1;
+	}
+	return mytype;
+}
+
+#undef G_TYPE_SOCKADDR
+#define G_TYPE_SOCKADDR (g_sockaddr_get_type())
+
+enum {
+	XDM_COL_HOSTNAME,		/* the manager hostname */
+	XDM_COL_REMOTENAME,		/* the manager remote name */
+	XDM_COL_WILLING,		/* the willing status */
+	XDM_COL_STATUS,			/* the status */
+	XDM_COL_IPADDR,			/* the ip address */
+	XDM_COL_CTYPE,			/* the connection type */
+	XDM_COL_SERVICE,		/* the service */
+	XDM_COL_PORT,			/* the port number */
+	XDM_COL_MARKUP,			/* the combined markup description */
+	XDM_COL_TOOLTIP,		/* the tooltip information */
+	XDM_COL_SOCKADDR,		/* the socket address */
+	XDM_COL_SCOPE,			/* the socket address scope */
+	XDM_COL_IFINDEX,		/* the socket interface index */
+};
+#endif				/* DO_XCHOOSER */
+
+#ifdef DO_LOGOUT
+typedef enum {
+	AvailStatusUndef,		/* undefined */
+	AvailStatusUnknown,		/* not known */
+	AvailStatusNa,			/* not available */
+	AvailStatusNo,			/* available not permitted */
+	AvailStatusChallenge,		/* available with password */
+	AvailStatusYes,			/* available and permitted */
+} AvailStatus;
+
+AvailStatus
+status_of_string(const char *string)
+{
+	if (!string)
+		return AvailStatusUndef;
+	if (!string || !strcmp(string, "na"))
+		return AvailStatusNa;
+	if (!strcmp(string, "no"))
+		return AvailStatusNo;
+	if (!strcmp(string, "yes"))
+		return AvailStatusYes;
+	if (!strcmp(string, "challenge"))
+		return AvailStatusChallenge;
+	EPRINTF("unknown availability status %s\n", string);
+	return AvailStatusUnknown;
+}
+
+static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
+	/* *INDENT-OFF* */
+	[LOGOUT_ACTION_POWEROFF]	= AvailStatusUndef,
+	[LOGOUT_ACTION_REBOOT]		= AvailStatusUndef,
+	[LOGOUT_ACTION_SUSPEND]		= AvailStatusUndef,
+	[LOGOUT_ACTION_HIBERNATE]	= AvailStatusUndef,
+	[LOGOUT_ACTION_HYBRIDSLEEP]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SWITCHUSER]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SWITCHDESK]	= AvailStatusUndef,
+	[LOGOUT_ACTION_LOCKSCREEN]	= AvailStatusUndef,
+	[LOGOUT_ACTION_CHECKPOINT]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SHUTDOWN]	= AvailStatusUndef,
+	[LOGOUT_ACTION_LOGOUT]		= AvailStatusUndef,
+	[LOGOUT_ACTION_RESTART]		= AvailStatusUndef,
+	[LOGOUT_ACTION_CANCEL]		= AvailStatusUndef,
+	/* *INDENT-ON* */
+};
+#endif				/* DO_LOGOUT */
 
 enum {
 	XSESS_COL_PIXBUF,		/* the icon name for the pixbuf */
@@ -593,6 +1116,22 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 		reparse(dpy, xev->xclient.window);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
+#ifdef DO_XLOCKING
+	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
+		switch (xev->xclient.data.l[0]) {
+		case LockCommandLock:
+			LockScreen();
+			return GDK_FILTER_REMOVE;
+		case LockCommandUnlock:
+			UnlockScreen();
+			return GDK_FILTER_REMOVE;
+		case LockCommandQuit:
+			exit(EXIT_SUCCESS);
+		default:
+			break;
+		}
+	}
+#endif
 	return GDK_FILTER_CONTINUE;	/* event not handled */
 }
 
@@ -612,6 +1151,11 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	case PropertyNotify:
 		return event_handler_PropertyNotify(dpy, xev, xscr);
 	default:
+#ifdef DO_XLOCKING
+		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify)
+			return handle_XScreenSaverNotify(dpy, xev);
+		DPRINTF("unknown event type %d\n", xev->type);
+#endif				/* DO_XLOCKING */
 		break;
 	}
 	return GDK_FILTER_CONTINUE;
@@ -2456,6 +3000,7 @@ GetWindow(Bool noshow)
 	gtk_widget_show_all(cont);
 	gtk_widget_show_now(cont);
 
+#ifndef DO_LOGOUT
 #if 0
 	if (options.username) {
 		gtk_entry_set_text(GTK_ENTRY(user), options.username);
@@ -2507,8 +3052,99 @@ GetWindow(Bool noshow)
 #endif
 	if (!noshow)
 		grabbed_window(xscr->wind, NULL);
+#else				/* DO_LOGOUT */
+	if (!noshow) {
+		if (!GTK_IS_WIDGET(controls[LOGOUT_ACTION_LOGOUT]))
+			EPRINTF("controls[LOGOUT_ACTION_LOGOUT] is not a widget\n");
+		gtk_widget_grab_default(controls[LOGOUT_ACTION_LOGOUT]);
+		gtk_widget_grab_focus(controls[LOGOUT_ACTION_LOGOUT]);
+		grabbed_window(xscr->wind, NULL);
+	}
+#endif				/* DO_LOGOUT */
 	return xscr->wind;
 }
+
+#ifdef DO_XLOCKING
+Bool shutting_down;
+
+void
+handle_event(Display *dpy, XEvent *xev)
+{
+	DPRINTF("got event %d\n", xev->type);
+	switch (xev->type) {
+	case KeyPress:
+	case KeyRelease:
+	case ButtonPress:
+	case ButtonRelease:
+	case MotionNotify:
+	case EnterNotify:
+	case LeaveNotify:
+	case FocusIn:
+	case FocusOut:
+	case KeymapNotify:
+	case Expose:
+	case GraphicsExpose:
+	case NoExpose:
+	case VisibilityNotify:
+	case CreateNotify:
+	case DestroyNotify:
+	case UnmapNotify:
+	case MapNotify:
+	case MapRequest:
+	case ReparentNotify:
+	case ConfigureNotify:
+	case ConfigureRequest:
+	case GravityNotify:
+	case ResizeRequest:
+	case CirculateNotify:
+	case CirculateRequest:
+	case PropertyNotify:
+	case SelectionClear:
+	case SelectionRequest:
+	case SelectionNotify:
+	case ColormapNotify:
+	case ClientMessage:
+	case MappingNotify:
+	case GenericEvent:
+		break;
+	default:
+#ifdef DO_XLOCKING
+		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify) 
+			handle_XScreenSaverNotify(dpy, xev);
+		else
+			EPRINTF("unknown event type %d\n", xev->type);
+#endif
+		break;
+	}
+}
+
+void
+handle_events(void)
+{
+	XEvent ev;
+
+	XSync(display.dpy, False);
+	while (XPending(display.dpy) && !shutting_down) {
+		XNextEvent(display.dpy, &ev);
+		handle_event(display.dpy, &ev);
+	}
+}
+
+gboolean
+on_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
+{
+	if (cond & (G_IO_NVAL|G_IO_HUP|G_IO_ERR)) {
+		EPRINTF("poll failed: %s %s %s\n",
+				(cond & G_IO_NVAL) ? "NVAL" : "",
+				(cond & G_IO_HUP) ? "HUP" : "",
+				(cond & G_IO_ERR) ? "ERR" : "");
+		exit(EXIT_FAILURE);
+	} else if (cond & (G_IO_IN | G_IO_PRI)) {
+		handle_events();
+	}
+	return TRUE; /* keep event source */
+}
+#endif				/* DO_XLOCKING */
 
 static void
 startup(int argc, char *argv[])
@@ -3153,8 +3789,8 @@ copying(int argc, char *argv[])
 --------------------------------------------------------------------------------\n\
 %1$s\n\
 --------------------------------------------------------------------------------\n\
-Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>\n\
-Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
+Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>\n\
 Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
 \n\
 All Rights Reserved.\n\
@@ -3197,8 +3833,8 @@ version(int argc, char *argv[])
 %1$s (OpenSS7 %2$s) %3$s\n\
 Written by Brian Bidulock.\n\
 \n\
-Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016  Monavacon Limited.\n\
-Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
+Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017  Monavacon Limited.\n\
+Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009  OpenSS7 Corporation.\n\
 Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
@@ -4076,7 +4712,7 @@ set_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
-#if 1
+#ifdef DO_CHOOSER
 void
 set_default_session(void)
 {
@@ -4193,7 +4829,7 @@ set_defaults(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	set_default_address();
 #endif				/* DO_XCHOOSER */
-#if 1
+#ifdef DO_CHOOSER
 	set_default_session();
 #endif
 	set_default_choice();
@@ -4660,8 +5296,21 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-			{"prompt",	    no_argument,	NULL, 'p'},
+#ifdef DO_XLOCKING
+			{"locker",	    no_argument,	NULL, 'L'},
+			{"replace",	    no_argument,	NULL, 'r'},
+			{"lock",	    no_argument,	NULL, 'l'},
+			{"unlock",	    no_argument,	NULL, 'U'},
+			{"quit",	    no_argument,	NULL, 'q'},
+#endif					/* DO_XLOCKING */
+#ifdef DO_XCHOOSER
+			{"xdmaddress",	    required_argument,	NULL, 'x'},
+			{"clientaddress",   required_argument,	NULL, 'c'},
+			{"connectionType",  required_argument,	NULL, 't'},
 			{"welcome",	    required_argument,	NULL, 'w'},
+#else					/* DO_XCHOOSER */
+			{"prompt",	    no_argument,	NULL, 'p'},
+#endif					/* DO_XCHOOSER */
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'S'},
 			{"side",	    required_argument,	NULL, 's'},
@@ -4677,6 +5326,10 @@ main(int argc, char *argv[])
 			{"filename",	    no_argument,	NULL, 'f'},
 			{"vendor",	    required_argument,	NULL, '5'},
 			{"default",	    required_argument,	NULL, '6'},
+#ifndef DO_LOGOUT
+			{"username",	    required_argument,	NULL, '7'},
+			{"guard",	    required_argument,	NULL, 'g'},
+#endif				/* !defined DO_LOGOUT */
 			{"setbg",	    no_argument,	NULL, '8'},
 			{"transparent",	    no_argument,	NULL, '9'},
 
