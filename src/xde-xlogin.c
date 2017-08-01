@@ -5533,6 +5533,8 @@ HideWindow(void)
 	HideScreens();
 }
 
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
+
 static void
 xdeSetProperties(SmcConn smcConn, SmPointer data)
 {
@@ -5940,6 +5942,8 @@ init_smclient(void)
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
 }
 
+#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) */
+
 static int
 authenticate(void)
 {
@@ -6196,13 +6200,17 @@ init_statusicon(void)
 	g_signal_connect(G_OBJECT(icon), "popup_menu", G_CALLBACK(on_popup_menu), NULL);
 }
 
+#endif				/* DO_XLOCKING */
+
 static void
 do_run(int argc, char *argv[])
 {
 	int status;
 
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
 	/* initialize session managerment functions */
 	init_smclient();
+#endif
 
 	startup(argc, argv);
 	setup_systemd();
@@ -6263,7 +6271,11 @@ do_run(int argc, char *argv[])
 #ifdef DO_XLOCKING
 			UnlockScreen();
 #else
+#if defined(DO_XLOGIN) | defined(DO_XCHOOSER)
+//			run_login(argc, argv);
+#else
 			exit(EXIT_SUCCESS);
+#endif
 #endif
 			continue;
 		}
@@ -6271,87 +6283,6 @@ do_run(int argc, char *argv[])
 	}
 	DPRINT();
 }
-
-#else				/* DO_XLOCKING */
-
-static void
-do_run(int argc, char *argv[])
-{
-	int status;
-
-	/* initialize session managerment functions */
-	init_smclient();
-
-	startup(argc, argv);
-
-	setup_systemd();
-	top = GetWindow(False);
-#ifdef DO_XLOCKING
-	setup_screensaver();
-#endif
-#if defined DO_XLOCKING || defined DO_LOGOUT
-	if (options.tray)
-		init_statusicon();
-#endif
-#ifdef DO_XCHOOSER
-	InitXDMCP(argv, argc);
-#endif
-#ifdef DO_XLOCKING
-	if (options.command != CommandLock)
-		UnlockScreen();
-#endif
-	for (;;) {
-#ifdef DO_XLOCKING
-		DPRINT();
-		ShowWindow();
-#endif
-		DPRINT();
-		status = authenticate();
-#ifdef DO_XLOCKING
-		DPRINT();
-		if (lock_state == LockStateAborted) {
-			UnlockScreen();
-			continue;
-		}
-#endif
-		DPRINT();
-		if (login_result == LoginResultLogout) {
-#ifdef DO_XLOCKING
-			RelockScreen();
-#else
-			exit(EXIT_FAILURE);
-#endif
-			continue;
-		}
-		DPRINT();
-		switch (status) {
-		case PAM_ABORT:
-			break;
-		case PAM_CRED_INSUFFICIENT:
-		case PAM_MAXTRIES:
-		default:
-			DPRINT();
-#ifdef DO_XLOCKING
-			RelockScreen();
-#else
-			exit(EXIT_FAILURE);
-#endif
-			continue;
-		case PAM_SUCCESS:
-			DPRINT();
-#ifdef DO_XLOCKING
-			UnlockScreen();
-#else
-			exit(EXIT_SUCCESS);
-#endif
-			continue;
-		}
-		break;
-	}
-	DPRINT();
-}
-#endif				/* DO_XLOCKING */
-
 
 #ifdef DO_XLOCKING
 /** @brief quit the running background locker
