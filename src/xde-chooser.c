@@ -1,7 +1,7 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>
- Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
+ Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2001-2009  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
  All Rights Reserved.
@@ -94,16 +94,22 @@
 #ifdef VNC_SUPPORTED
 #include <X11/extensions/Xvnc.h>
 #endif
+#include <X11/extensions/scrnsaver.h>
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
 #include <X11/Xdmcp.h>
+#include <X11/Xauth.h>
 #include <X11/SM/SMlib.h>
+#include <gio/gio.h>
 #include <gdk/gdkx.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
+
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
 
 #include <pwd.h>
 #include <systemd/sd-login.h>
@@ -118,27 +124,51 @@
 #include <langinfo.h>
 #include <locale.h>
 
+const char *
+timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
+
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
 	fprintf(stderr, "I: "); \
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "E: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr);   } while (0)
 #define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
+
+#include <ctype.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 
 static int saveArgc;
 static char **saveArgv;
 
 #undef DO_XCHOOSER
+#undef DO_XLOGIN
 #undef DO_XLOCKING
 #undef DO_ONIDLE
 #define DO_CHOOSER 1
@@ -149,6 +179,7 @@ static char **saveArgv;
 #   define RESCLAS "XDE-XChooser"
 #   define RESTITL "XDMCP Chooser"
 #elif defined(DO_XLOCKING)
+#   define LOGO_NAME "gnome-lockscreen"
 #   define RESNAME "xde-xlock"
 #   define RESCLAS "XDE-XLock"
 #   define RESTITL "X11 Locker"
@@ -160,10 +191,12 @@ static char **saveArgv;
 #   define RESNAME "xde-logout"
 #   define RESCLAS "XDE-Logout"
 #   define RESTITL "XDE X11 Session Logout"
-#else
+#elif defined(DO_XLOGIN)
 #   define RESNAME "xde-xlogin"
 #   define RESCLAS "XDE-XLogin"
 #   define RESTITL "XDMCP Greeter"
+#else
+#   error Undefined program type.
 #endif
 
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
@@ -195,6 +228,13 @@ typedef enum {
 	CommandHelp,			/* command argument help */
 	CommandVersion,			/* command version information */
 	CommandCopying,			/* command copying information */
+	CommandXlogin,
+	CommandXchoose,
+	CommandLocker,			/* run as a background locker */
+	CommandReplace,			/* replace any running instance */
+	CommandLock,			/* ask running instance to lock */
+	CommandQuit,			/* ask running instance to quit */
+	CommandUnlock,			/* ask running instance to unlock */
 } CommandType;
 
 enum {
@@ -203,10 +243,25 @@ enum {
 	BackgroundSourceRoot = (1 << 2),
 };
 
+typedef enum {
+	SocketScopeLoopback,
+	SocketScopeLinklocal,
+	SocketScopeSitelocal,
+	SocketScopePrivate,
+	SocketScopeGlobal,
+} SocketScope;
+
 typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	ARRAY8 xdmAddress;
+	ARRAY8 clientAddress;
+	CARD16 connectionType;
+	SocketScope clientScope;
+	uint32_t clientIface;
+	Bool isLocal;
+	char *lockscreen;
 	char *banner;
 	char *welcome;
 	CommandType command;
@@ -227,6 +282,7 @@ typedef struct {
 	char *username;
 	char *password;
 	Bool usexde;
+	Bool replace;
 	unsigned int timeout;
 	char *clientId;
 	char *saveFile;
@@ -244,12 +300,21 @@ typedef struct {
 	double yposition;
 	Bool setstyle;
 	Bool filename;
+	unsigned guard;
+	Bool tray;
 } Options;
 
 Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.xdmAddress = {0, NULL},
+	.clientAddress = {0, NULL},
+	.connectionType = FamilyInternet6,
+	.clientScope = SocketScopeLoopback,
+	.clientIface = 0,
+	.isLocal = False,
+	.lockscreen = NULL,
 	.banner = NULL,
 	.welcome = NULL,
 	.command = CommandDefault,
@@ -270,6 +335,7 @@ Options options = {
 	.username = NULL,
 	.password = NULL,
 	.usexde = False,
+	.replace = False,
 	.timeout = 15,
 	.clientId = NULL,
 	.saveFile = NULL,
@@ -287,12 +353,21 @@ Options options = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.filename = False,
+	.guard = 5,
+	.tray = False,
 };
 
 Options defaults = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.xdmAddress = {0, NULL},
+	.clientAddress = {0, NULL},
+	.connectionType = FamilyInternet6,
+	.clientScope = SocketScopeLoopback,
+	.clientIface = 0,
+	.isLocal = False,
+	.lockscreen = NULL,
 	.banner = NULL,
 	.welcome = NULL,
 	.command = CommandDefault,
@@ -313,6 +388,7 @@ Options defaults = {
 	.username = NULL,
 	.password = NULL,
 	.usexde = False,
+	.replace = False,
 	.timeout = 15,
 	.clientId = NULL,
 	.saveFile = NULL,
@@ -330,6 +406,8 @@ Options defaults = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.filename = False,
+	.guard = 5,
+	.tray = False,
 };
 
 typedef struct {
@@ -1988,11 +2066,16 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn, Bool noshow)
 	gdk_window_set_override_redirect(win, TRUE);
 	gdk_window_move_resize(win, 0, 0, xscr->width, xscr->height);
 
+#ifdef DO_XLOCKING
 	GdkDisplay *disp = gdk_screen_get_display(scrn);
+#endif
+#if 0
+	/* does not work well with broken intel video drivers */
 	GdkCursor *curs = gdk_cursor_new_for_display(disp, GDK_LEFT_PTR);
 
 	gdk_window_set_cursor(win, curs);
 	gdk_cursor_unref(curs);
+#endif
 
 	GdkWindow *root = gdk_screen_get_root_window(scrn);
 	GdkEventMask mask = gdk_window_get_events(root);
@@ -2000,6 +2083,26 @@ GetScreen(XdeScreen *xscr, int s, GdkScreen *scrn, Bool noshow)
 	gdk_window_add_filter(root, root_handler, xscr);
 	mask |= GDK_PROPERTY_CHANGE_MASK | GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK;
 	gdk_window_set_events(root, mask);
+
+#ifdef DO_XLOCKING
+	Window owner = None;
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+
+	xscr->selwin = XCreateSimpleWindow(dpy, GDK_WINDOW_XID(root), 0, 0, 1, 1, 0, 0, 0);
+	if ((owner = get_selection(xscr->selwin, xscr->selection, s))) {
+		if (!options.replace) {
+			XDestroyWindow(dpy, xscr->selwin);
+			EPRINTF("%s: instance already running\n", NAME);
+			exit(EXIT_FAILURE);
+		}
+	}
+	GdkWindow *sel = gdk_x11_window_foreign_new_for_display(disp, xscr->selwin);
+
+	gdk_window_add_filter(sel, selwin_handler, xscr);
+	mask = gdk_window_get_events(sel);
+	mask |= GDK_STRUCTURE_MASK | GDK_SUBSTRUCTURE_MASK | GDK_PROPERTY_CHANGE_MASK;
+	gdk_window_set_events(sel, mask);
+#endif				/* DO_XLOCKING */
 }
 
 static void
@@ -2362,6 +2465,8 @@ GetWindow(Bool noshow)
 		gtk_widget_set_sensitive(buttons[0], TRUE);
 		gtk_widget_set_sensitive(buttons[3], FALSE);
 		if (!noshow) {
+			if (!GTK_IS_WIDGET(pass))
+				EPRINTF("pass is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
 		}
@@ -2373,6 +2478,8 @@ GetWindow(Bool noshow)
 		gtk_widget_set_sensitive(buttons[0], TRUE);
 		gtk_widget_set_sensitive(buttons[3], FALSE);
 		if (!noshow) {
+			if (!GTK_IS_WIDGET(user))
+				EPRINTF("user is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 		}
@@ -2433,10 +2540,27 @@ startup(int argc, char *argv[])
 	atom = gdk_atom_intern_static_string("_GTK_READ_RCFILES");
 	_XA_GTK_READ_RCFILES = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+#ifdef DO_XLOCKING
+	atom = gdk_atom_intern_static_string("_XDE_XLOCK_COMMAND");
+	_XA_XDE_XLOCK_COMMAND = gdk_x11_atom_to_xatom_for_display(disp, atom);
+	gdk_display_add_client_message_filter(disp, atom, client_handler, dpy);
+#endif				/* DO_XLOCKING */
 	atom = gdk_atom_intern_static_string("_XROOTPMAP_ID");
 	_XA_XROOTPMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
 	atom = gdk_atom_intern_static_string("ESETROOT_PMAP_ID");
 	_XA_ESETROOT_PMAP_ID = gdk_x11_atom_to_xatom_for_display(disp, atom);
+
+#ifdef DO_XLOCKING
+	if (!(display.dpy = XOpenDisplay(NULL))) {
+		EPRINTF("cannot open display\n");
+		exit(EXIT_FAILURE);
+	}
+	display.xfd = ConnectionNumber(display.dpy);
+	GIOChannel *chan = g_io_channel_unix_new(display.xfd);
+	guint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
+
+	g_io_add_watch(chan, mask, on_watch, NULL);
+#endif				/* DO_XLOCKING */
 }
 
 void
@@ -2450,6 +2574,9 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, TRUE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			DPRINTF("grabbing password entry widget\n");
+			if (!GTK_IS_WIDGET(pass))
+				EPRINTF("pass is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
 		} else {
@@ -2457,6 +2584,9 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, FALSE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
+			if (!GTK_IS_WIDGET(user))
+				EPRINTF("user is not a widget\n");
+			DPRINTF("grabbing username entry widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 		}
@@ -2505,6 +2635,8 @@ HideScreens(void)
 void
 HideWindow(void)
 {
+	DPRINT();
+
 	HideScreens();
 }
 
@@ -2771,7 +2903,7 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 }
 
 static Bool saving_yourself;
-static Bool shutting_down;
+static Bool sm_shutting_down;
 
 static void
 xdeSaveYourselfPhase2CB(SmcConn smcConn, SmPointer data)
@@ -2803,7 +2935,7 @@ static void
 xdeSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
 		     int interactStyle, Bool fast)
 {
-	if (!(shutting_down = shutdown)) {
+	if (!(sm_shutting_down = shutdown)) {
 		if (!SmcRequestSaveYourselfPhase2(smcConn, xdeSaveYourselfPhase2CB, data))
 			SmcSaveYourselfDone(smcConn, False);
 		return;
@@ -2823,7 +2955,7 @@ static void
 xdeDieCB(SmcConn smcConn, SmPointer data)
 {
 	SmcCloseConnection(smcConn, 0, NULL);
-	shutting_down = False;
+	sm_shutting_down = False;
 	gtk_main_quit();
 }
 
@@ -2850,7 +2982,7 @@ xdeSaveCompleteCB(SmcConn smcConn, SmPointer data)
 static void
 xdeShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 {
-	shutting_down = False;
+	sm_shutting_down = False;
 	gtk_main_quit();
 }
 
@@ -3467,11 +3599,13 @@ get_resources(int argc, char *argv[])
 	if ((val = get_any_resource(rdb, "face", "Sans:size=12:bold"))) {
 		getXrmFont(val, &resources.face);
 	}
+#ifndef DO_LOGOUT
 	// xlogin.greeting:		Welcome to CLIENTHOST
 	if ((val = get_xlogin_resource(rdb, "greeting", NULL))) {
 		getXrmString(val, &resources.greeting);
 		getXrmString(val, &options.welcome);
 	}
+#endif
 	// xlogin.unsecureGreeting:	This is an unsecure session
 	if ((val = get_xlogin_resource(rdb, "unsecureGreeting", NULL))) {
 		getXrmString(val, &resources.unsecureGreeting);
@@ -3502,9 +3636,12 @@ get_resources(int argc, char *argv[])
 	if ((val = get_any_resource(rdb, "promptColor", "grey20"))) {
 		getXrmColor(val, &resources.promptColor);
 	}
+	// xlogin.inputFace:		Sans-12:bold
+	// xlogin.inputFont:
 	if ((val = get_any_resource(rdb, "inputFace", "Sans:size=12:bold"))) {
 		getXrmFont(val, &resources.inputFace);
 	}
+	// xlogin.inputColor:		grey20
 	if ((val = get_any_resource(rdb, "inputColor", "grey20"))) {
 		getXrmColor(val, &resources.inputColor);
 	}
@@ -3604,9 +3741,11 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "splash", NULL))) {
 		getXrmString(val, &options.splash);
 	}
+#if defined DO_XCHOOSER || defined DO_XLOGIN
 	if ((val = get_resource(rdb, "welcome", NULL))) {
 		getXrmString(val, &options.welcome);
 	}
+#endif
 	if ((val = get_resource(rdb, "charset", NULL))) {
 		getXrmString(val, &options.charset);
 	}
@@ -3862,6 +4001,39 @@ set_default_splash(void)
 	free(xdg_dirs);
 }
 
+#ifdef DO_LOGOUT
+void
+set_default_welcome(void)
+{
+	char *session = NULL, *welcome, *p;
+	const char *s;
+	int i, len;
+
+	welcome = calloc(PATH_MAX, sizeof(*welcome));
+
+	if ((s = getenv("XDG_CURRENT_DESKTOP")) && *s) {
+		session = strdup(s);
+		while ((p = strchr(session, ';')))
+			*p = ':';
+	} else if ((s = defaults.vendor) && *s) {
+		session = strdup(s);
+	} else if ((s = defaults.prefix) && *s) {
+		session = strdup(s);
+		p = session + strlen(session) - 1;
+		if (*p == '-')
+			*p = '\0';
+	} else {
+		session = strdup("XDE");
+	}
+	len = strlen(session);
+	for (i = 0, p = session; i < len; i++, p++)
+		*p = toupper(*p);
+	snprintf(welcome, PATH_MAX - 1, "Logout of <b>%s</b> session?", session);
+	defaults.welcome = strdup(welcome);
+	free(session);
+	free(welcome);
+}
+#else				/* DO_LOGOUT */
 void
 set_default_welcome(void)
 {
@@ -3876,6 +4048,7 @@ set_default_welcome(void)
 	buf = defaults.welcome = calloc(len, sizeof(*buf));
 	snprintf(buf, len, format, hostname);
 }
+#endif				/* DO_LOGOUT */
 
 void
 set_default_language(void)
@@ -3890,6 +4063,18 @@ set_default_language(void)
 	}
 	defaults.charset = strdup(nl_langinfo(CODESET));
 }
+
+#ifdef DO_XCHOOSER
+void
+set_default_address(void)
+{
+	XdmcpReallocARRAY8(&defaults.clientAddress, sizeof(struct in6_addr));
+	*(struct in6_addr *) defaults.clientAddress.data = (struct in6_addr) IN6ADDR_LOOPBACK_INIT;
+	defaults.connectionType = FamilyInternet6;
+	defaults.clientScope = SocketScopeLoopback;
+	defaults.isLocal = True;
+}
+#endif				/* DO_XCHOOSER */
 
 #if 1
 void
@@ -4005,6 +4190,9 @@ set_defaults(int argc, char *argv[])
 	set_default_splash();
 	set_default_welcome();
 	set_default_language();
+#ifdef DO_XCHOOSER
+	set_default_address();
+#endif				/* DO_XCHOOSER */
 #if 1
 	set_default_session();
 #endif
@@ -4168,6 +4356,197 @@ get_default_language(void)
 	}
 }
 
+#ifdef DO_XCHOOSER
+SocketScope
+GetScope(ARRAY8Ptr clientAddress, CARD16 connectionType)
+{
+	switch (connectionType) {
+	case FamilyLocal:
+		break;
+	case FamilyInternet:
+	{
+		in_addr_t addr = ntohl(*(in_addr_t *) clientAddress->data);
+
+		if (IN_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN_ORGLOCAL(addr))
+			return SocketScopePrivate;
+		return SocketScopeGlobal;
+	}
+	case FamilyInternet6:
+	{
+		struct in6_addr *addr = (typeof(addr)) clientAddress->data;
+
+		if (IN6_IS_ADDR_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN6_IS_ADDR_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN6_IS_ADDR_SITELOCAL(addr))
+			return SocketScopeSitelocal;
+		if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
+			in_addr_t ipv4 = ntohl(((uint32_t *) addr)[3]);
+
+			if (IN_LOOPBACK(ipv4))
+				return SocketScopeLoopback;
+			if (IN_LINKLOCAL(ipv4))
+				return SocketScopeLinklocal;
+			if (IN_ORGLOCAL(ipv4))
+				return SocketScopePrivate;
+			return SocketScopeGlobal;
+		}
+		return SocketScopeGlobal;
+	}
+	default:
+		break;
+	}
+	return SocketScopeLoopback;
+}
+
+Bool
+TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
+{
+	sa_family_t family;
+	struct ifaddrs *ifa, *ifas = NULL;
+
+	switch (connectionType) {
+	case FamilyLocal:
+		family = AF_UNIX;
+		return True;
+	case FamilyInternet:
+		if (ntohl((*(in_addr_t *) clientAddress->data)) == INADDR_LOOPBACK)
+			return True;
+		family = AF_INET;
+		break;
+	case FamilyInternet6:
+		if (IN6_IS_ADDR_LOOPBACK(clientAddress->data))
+			return True;
+		family = AF_INET6;
+		break;
+	default:
+		family = AF_UNSPEC;
+		return False;
+	}
+	if (getifaddrs(&ifas) == 0) {
+		for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
+			struct sockaddr *ifa_addr;
+
+			if (!(ifa_addr = ifa->ifa_addr)) {
+				EPRINTF("interface %s has no address\n", ifa->ifa_name);
+				continue;
+			}
+			if (ifa_addr->sa_family != family) {
+				DPRINTF("interface %s has wrong family\n", ifa->ifa_name);
+				continue;
+			}
+			switch (family) {
+			case AF_INET:
+			{
+				struct sockaddr_in *sin = (typeof(sin)) ifa_addr;
+
+				if (!memcmp(&sin->sin_addr, clientAddress->data, 4)) {
+					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					freeifaddrs(ifas);
+					return True;
+				}
+
+				break;
+			}
+			case AF_INET6:
+			{
+				struct sockaddr_in6 *sin6 = (typeof(sin6)) ifa_addr;
+
+				if (!memcmp(&sin6->sin6_addr, clientAddress->data, 16)) {
+					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					freeifaddrs(ifas);
+					return True;
+				}
+				break;
+			}
+			}
+		}
+		freeifaddrs(ifas);
+	}
+	return False;
+}
+
+void
+get_default_address(void)
+{
+	switch (options.clientAddress.length) {
+	case 0:
+		options.clientAddress = defaults.clientAddress;
+		options.connectionType = defaults.connectionType;
+		options.clientScope = defaults.clientScope;
+		options.clientIface = defaults.clientIface;
+		options.isLocal = defaults.isLocal;
+		break;
+	case 4:
+	case 8:
+		if (options.connectionType != FamilyInternet) {
+			EPRINTF("Mismatch in connectionType %d != %d\n",
+				FamilyInternet, options.connectionType);
+			exit(EXIT_SYNTAXERR);
+		}
+		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
+		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		switch (options.clientAddress.length) {
+		case 4:
+			options.clientIface = defaults.clientIface;
+			break;
+		case 8:
+			memmove(&options.clientIface, options.clientAddress.data + 4, 4);
+			break;
+		}
+		switch (options.clientScope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			if (!options.clientIface) {
+				EPRINTF("link or site local address with no interface\n");
+				exit(EXIT_SYNTAXERR);
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	case 16:
+	case 20:
+		if (options.connectionType != FamilyInternet6) {
+			EPRINTF("Mismatch in connectionType %d != %d\n",
+				FamilyInternet, options.connectionType);
+			exit(EXIT_SYNTAXERR);
+		}
+		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
+		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		switch (options.clientAddress.length) {
+		case 16:
+			options.clientIface = defaults.clientIface;
+			break;
+		case 20:
+			memmove(&options.clientIface, options.clientAddress.data + 16, 4);
+			break;
+		}
+		switch (options.clientScope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			if (!options.clientIface) {
+				EPRINTF("link or site local address with no interface\n");
+				exit(EXIT_SYNTAXERR);
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		EPRINTF("Invalid client address length %d\n", options.clientAddress.length);
+		exit(EXIT_SYNTAXERR);
+	}
+}
+#endif				/* DO_XCHOOSER */
+
 void
 get_default_session(void)
 {
@@ -4222,10 +4601,42 @@ get_defaults(int argc, char *argv[])
 	get_default_splash();
 	get_default_welcome();
 	get_default_language();
+#ifdef DO_XCHOOSER
+	get_default_address();
+#endif				/* DO_XCHOOSER */
 	get_default_session();
 	get_default_choice();
 	get_default_username();
 }
+
+#ifdef DO_XCHOOSER
+Bool
+HexToARRAY8(ARRAY8 *array, char *hex)
+{
+	short len;
+	CARD8 *o, b;
+	char *p, c;
+
+	len = strlen(hex);
+	if (len & 0x01)
+		return False;
+	len >>= 1;
+	XdmcpReallocARRAY8(array, len);
+	for (p = hex, o = array->data; *p; p += 2, o++) {
+		c = tolower(p[0]);
+		if (!isxdigit(c))
+			return False;
+		b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+		b <<= 4;
+		c = tolower(p[1]);
+		if (!isxdigit(c))
+			return False;
+		b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+		*o = b;
+	}
+	return True;
+}
+#endif
 
 int
 main(int argc, char *argv[])
@@ -4243,6 +4654,7 @@ main(int argc, char *argv[])
 
 	while (1) {
 		int c, val;
+		char *endptr = NULL;
 
 #ifdef _GNU_SOURCE
 		int option_index = 0;
@@ -4295,6 +4707,46 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
+#ifdef DO_XLOCKING
+		case 'L':	/* -L, --locker */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandLocker;
+			options.command = CommandLocker;
+			options.replace = False;
+			break;
+		case 'r':	/* -r, --replace */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandReplace;
+			options.command = CommandReplace;
+			options.replace = True;
+			break;
+		case 'l':	/* -l, --lock */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandLock;
+			options.command = CommandLock;
+			break;
+		case 'U':	/* -U, --unlock */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandUnlock;
+			options.command = CommandUnlock;
+			break;
+		case 'q':	/* -q, --quit */
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandQuit;
+			options.command = CommandQuit;
+			options.replace = True;
+			break;
+#endif
 		case 'p':	/* -p, --prompt */
 			options.prompt = True;
 			break;
@@ -4357,7 +4809,11 @@ main(int argc, char *argv[])
 			options.usexde = True;
 			break;
 		case 'T':	/* -T, --timeout TIMEOUT */
-			options.timeout = strtoul(optarg, NULL, 0);
+			if ((val = strtoul(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && !*endptr)
+				goto bad_option;
+			options.timeout = val;
 			break;
 		case 'f':	/* -f, --filename */
 			options.filename = True;
@@ -4370,6 +4826,19 @@ main(int argc, char *argv[])
 			free(options.choice);
 			options.choice = strdup(optarg);
 			break;
+#ifndef DO_LOGOUT
+		case '7':	/* --username USERNAME */
+			free(options.username);
+			options.username = strdup(optarg);
+			break;
+		case 'g':	/* -g, --guard SECONDS */
+			if ((val = strtol(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && !*endptr)
+				goto bad_option;
+			options.guard = val;
+			break;
+#endif				/* !defined DO_LOGOUT */
 		case '3':	/* -clientId CLIENTID */
 			free(options.clientId);
 			options.clientId = strdup(optarg);
@@ -4393,7 +4862,9 @@ main(int argc, char *argv[])
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
-				if ((val = strtol(optarg, NULL, 0)) < 0)
+				if ((val = strtol(optarg, &endptr, 0)) < 0)
+					goto bad_option;
+				if (endptr && !*endptr)
 					goto bad_option;
 				options.debug = val;
 			}
@@ -4404,7 +4875,9 @@ main(int argc, char *argv[])
 				options.output++;
 				break;
 			}
-			if ((val = strtol(optarg, NULL, 0)) < 0)
+			if ((val = strtol(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && !*endptr)
 				goto bad_option;
 			options.output = val;
 			break;
@@ -4465,9 +4938,38 @@ main(int argc, char *argv[])
 	switch (command) {
 	default:
 	case CommandDefault:
+#ifdef DO_XCHOOSER
+		if (optind >= argc) {
+			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+			goto bad_nonopt;
+		}
+#endif
+#ifdef DO_CHOOSER
 		DPRINTF("%s: running chooser\n", argv[0]);
 		do_chooser(argc, argv);
+#else				/* DO_CHOOSER */
+		DPRINTF("%s: running default\n", argv[0]);
+		do_run(argc - optind, &argv[optind]);
+#endif				/* DO_CHOOSER */
 		break;
+#ifdef DO_XLOCKING
+	case CommandReplace:
+		DPRINTF("%s: running replace\n", argv[0]);
+		do_run(argc, argv);
+		break;
+	case CommandQuit:
+		DPRINTF("%s: running quit\n", argv[0]);
+		do_quit(argc, argv);
+		break;
+	case CommandLock:
+		DPRINTF("%s: running lock\n", argv[0]);
+		do_lock(argc, argv);
+		break;
+	case CommandUnlock:
+		DPRINTF("%s: running unlock\n", argv[0]);
+		do_unlock(argc, argv);
+		break;
+#endif				/* DO_XLOCKING */
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);
 		help(argc, argv);
