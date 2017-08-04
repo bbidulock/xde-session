@@ -6417,9 +6417,11 @@ do_run(int argc, char *argv[])
 
 	startup(argc, argv);
 	setup_systemd();
-	top = GetWindow(True);
 #ifdef DO_XLOCKING
+	top = GetWindow(True);
 	setup_screensaver();
+#else
+	top = GetWindow(False);
 #endif
 #if defined DO_XLOCKING || defined DO_LOGOUT
 	if (options.tray)
