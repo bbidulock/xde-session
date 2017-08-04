@@ -260,7 +260,6 @@ typedef struct {
 	char *service;
 	char *vtnr;
 	char *tty;
-	char *authfile;
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
@@ -308,9 +307,12 @@ typedef struct {
 	Bool filename;
 	unsigned guard;
 	Bool tray;
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	char *authfile;
 	Bool autologin;
 	Bool permitlogin;
 	Bool remotelogin;
+#endif
 } Options;
 
 Options options = {
@@ -322,7 +324,6 @@ Options options = {
 	.service = NULL,
 	.vtnr = NULL,
 	.tty = NULL,
-	.authfile = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
@@ -370,9 +371,12 @@ Options options = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	.authfile = NULL,
 	.autologin = False,
 	.permitlogin = True,
 	.remotelogin = True,
+#endif
 };
 
 Options defaults = {
@@ -384,7 +388,6 @@ Options defaults = {
 	.service = NULL,
 	.vtnr = NULL,
 	.tty = NULL,
-	.authfile = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
@@ -432,9 +435,12 @@ Options defaults = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	.authfile = NULL,
 	.autologin = False,
 	.permitlogin = True,
 	.remotelogin = True,
+#endif
 };
 
 typedef struct {
@@ -3109,6 +3115,12 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 						   echoing */
 		{
 			DPRINTF("PAM_PROMPT_ECHO_OFF: %s\n", (*m)->msg);
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+			if (!options.permitlogin) {
+				DPRINTF("login not permitted\n");
+				return (PAM_CONV_ERR);
+			}
+#endif
 			gtk_label_set_text(GTK_LABEL(l_pword), (*m)->msg);
 			gtk_entry_set_text(GTK_ENTRY(pass), "");
 			gtk_label_set_text(GTK_LABEL(l_lstat), "");
@@ -6024,13 +6036,23 @@ authenticate(void)
 {
 	pam_handle_t *pamh = NULL;
 	const char *uname = NULL;
-	int err, status, flags = 0;
+	int err, status = PAM_ABORT, flags = 0;
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 	const char *service = options.autologin ? "xde-autologin" : "xde";
+#else
+	const char *service = "system-login";
+#endif
 
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	if (!options.display || (options.display[0] != ':' && !options.remotelogin)) {
+		EPRINTF("remote login not permitted\n");
+		return (status);
+	}
+#endif
 	DPRINTF("starting PAM\n");
-	if ((err = pam_start(service, options.username, &xde_pam_conv, &pamh)) != PAM_SUCCESS) {
-		EPRINTF("pam_start: %s\n", pam_strerror(pamh, err));
-		exit(EXIT_FAILURE);
+	if ((status = pam_start(service, options.username, &xde_pam_conv, &pamh)) != PAM_SUCCESS) {
+		EPRINTF("pam_start: %s\n", pam_strerror(pamh, status));
+		return (status);
 	}
 	if (options.username) {
 		state = LoginStateUsername;
@@ -6091,7 +6113,7 @@ authenticate(void)
 			EPRINTF("PAM_ABORT\n");
 			goto done;
 		case PAM_AUTH_ERR:
-			/* The use was not authenticated. */
+			/* The user was not authenticated. */
 			EPRINTF("PAM_AUTH_ERR\n");
 			if ((err = pam_set_item(pamh, PAM_USER, uname)) != PAM_SUCCESS)
 				EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", uname, pam_strerror(pamh, err));
@@ -6397,7 +6419,6 @@ do_run(int argc, char *argv[])
 		DPRINT();
 		switch (status) {
 		case PAM_ABORT:
-			break;
 		case PAM_CRED_INSUFFICIENT:
 		case PAM_MAXTRIES:
 		default:
@@ -7227,9 +7248,11 @@ get_resources(int argc, char *argv[])
 		if ((val = get_resource(rdb, "user.default", NULL))) {
 			getXrmString(val, &options.username);
 		}
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 		if ((val = get_resource(rdb, "autologin", NULL))) {
 			getXrmBool(val, &options.autologin);
 		}
+#endif
 	}
 	if ((val = get_resource(rdb, "vendor", NULL))) {
 		getXrmString(val, &options.vendor);
@@ -7237,12 +7260,14 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "prefix", NULL))) {
 		getXrmString(val, &options.prefix);
 	}
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 	if ((val = get_resource(rdb, "login.permit", NULL))) {
 		getXrmBool(val, &options.permitlogin);
 	}
 	if ((val = get_resource(rdb, "login.remote", NULL))) {
 		getXrmBool(val, &options.remotelogin);
 	}
+#endif
 	if ((val = get_resource(rdb, "xsession.chooser", NULL))) {
 		getXrmBool(val, &options.xsession);
 	}
@@ -7302,6 +7327,7 @@ set_default_x11(void)
 	}
 }
 
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 void
 set_default_authfile(void)
 {
@@ -7312,6 +7338,7 @@ set_default_authfile(void)
 		options.authfile = strdup(env);
 	}
 }
+#endif
 
 void
 set_default_vendor(void)
@@ -7680,7 +7707,9 @@ set_defaults(int argc, char *argv[])
 	set_default_debug();
 	set_default_display();
 	set_default_x11();
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 	set_default_authfile();
+#endif
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
@@ -7757,12 +7786,14 @@ get_default_x11(void)
 	XCloseDisplay(dpy);
 }
 
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 void
 get_default_authfile(void)
 {
 	if (options.authfile)
 		setenv("XAUTHORITY", options.authfile, 1);
 }
+#endif
 
 void
 get_default_vendor(void)
@@ -8163,7 +8194,9 @@ get_defaults(int argc, char *argv[])
 {
 	get_default_display();
 	get_default_x11();
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 	get_default_authfile();
+#endif
 	get_default_vendor();
 	get_default_banner();
 	get_default_splash();
@@ -8229,7 +8262,9 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"display",	    required_argument,	NULL, 'd'},
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 			{"authfile",	    required_argument,	NULL, 'f'},
+#endif
 #ifdef DO_XLOCKING
 			{"locker",	    no_argument,	NULL, 'L'},
 			{"replace",	    no_argument,	NULL, 'r'},
@@ -8297,10 +8332,12 @@ main(int argc, char *argv[])
 			free(options.display);
 			options.display = strndup(optarg, 256);
 			break;
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 		case 'f':	/* -f, --authfile */
 			free(options.authfile);
 			options.authfile = strndup(optarg, PATH_MAX);
 			break;
+#endif
 #ifdef DO_XLOCKING
 		case 'L':	/* -L, --locker */
 			if (options.command != CommandDefault)
