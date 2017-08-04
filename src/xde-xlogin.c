@@ -6025,15 +6025,14 @@ authenticate(void)
 	pam_handle_t *pamh = NULL;
 	const char *uname = NULL;
 	int err, status, flags = 0;
+	const char *service = options.autologin ? "xde-autologin" : "xde";
 
 	DPRINTF("starting PAM\n");
-	if ((err = pam_start("system-login", NULL, &xde_pam_conv, &pamh)) != PAM_SUCCESS) {
+	if ((err = pam_start(service, options.username, &xde_pam_conv, &pamh)) != PAM_SUCCESS) {
 		EPRINTF("pam_start: %s\n", pam_strerror(pamh, err));
 		exit(EXIT_FAILURE);
 	}
 	if (options.username) {
-		if ((err = pam_set_item(pamh, PAM_USER, options.username)) != PAM_SUCCESS)
-			EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", options.username, pam_strerror(pamh, err));
 		state = LoginStateUsername;
 		if (getuid() != 0)
 			uname = strdup(options.username);
