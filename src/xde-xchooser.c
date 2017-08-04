@@ -475,6 +475,8 @@ typedef struct {
 	Bool echoPasswd;
 	char *echoPasswdChar;
 	unsigned int borderWidth;
+	Bool autoLock;
+	Bool systemLock;
 } Resources;
 
 Resources resources  = {
@@ -509,6 +511,8 @@ Resources resources  = {
 	.echoPasswd = False,
 	.echoPasswdChar = NULL,
 	.borderWidth = 0,
+	.autoLock = True,
+	.systemLock = True,
 };
 
 typedef enum {
@@ -756,6 +760,8 @@ GDBusProxy *sd_display = NULL;
 static void LockScreen(void);
 static void UnlockScreen(void);
 static void AbortLockScreen(void);
+static void AutoLockScreen(void);
+static void SystemLockScreen(void);
 #endif
 
 void
@@ -778,7 +784,7 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 		g_variant_get_type_string(parameters));
 #ifdef DO_XLOCKING
 	if (!strcmp(signal_name, "Lock")) {
-		LockScreen();
+		SystemLockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
 		UnlockScreen();
 	}
@@ -833,7 +839,7 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 			if (!g_variant_get_boolean(boxed)) {
 #ifdef DO_XLOCKING
 				DPRINTF("went inactive, locking screen\n");
-				LockScreen();
+				SystemLockScreen();
 #endif
 			}
 			g_variant_unref(key);
@@ -955,10 +961,10 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		break;
 	case ScreenSaverOn:
 		setidlehint(TRUE);
-		LockScreen();
+		AutoLockScreen();
 		break;
 	case ScreenSaverCycle:
-		LockScreen();
+		AutoLockScreen();
 		break;
 	}
 	return G_SOURCE_CONTINUE;
@@ -6164,6 +6170,8 @@ authenticate(void)
 	DPRINTF("closing PAM\n");
 	if ((err = pam_end(pamh, status)) != PAM_SUCCESS)
 		EPRINTF("pam_end: %s\n", pam_strerror(pamh, err));
+	if (login_result == LoginResultLogout)
+		return (PAM_ABORT);
 	return (status);
 }
 
@@ -6233,6 +6241,30 @@ AbortLockScreen(void)
 			gtk_main_quit();
 		}
 	}
+}
+
+static void
+AutoLockScreen(void)
+{
+	DPRINT();
+
+	if (!resources.autoLock) {
+		DPRINTF("not autolocking\n");
+		return;
+	}
+	LockScreen();
+}
+
+static void
+SystemLockScreen(void)
+{
+	DPRINT();
+
+	if (!resources.systemLock) {
+		DPRINTF("not system locking\n");
+		return;
+	}
+	LockScreen();
 }
 
 static gboolean
@@ -7185,6 +7217,12 @@ get_resources(int argc, char *argv[])
 	// xlogin.borderWidth:		3
 	if ((val = get_xlogin_resource(rdb, "borderWidth", "3"))) {
 		getXrmUint(val, &resources.borderWidth);
+	}
+	if ((val = get_xlogin_resource(rdb, "autoLock", "true"))) {
+		getXrmBool(val, &resources.autoLock);
+	}
+	if ((val = get_xlogin_resource(rdb, "systemLock", "true"))) {
+		getXrmBool(val, &resources.systemLock);
 	}
 
 	// xlogin.login.translations
