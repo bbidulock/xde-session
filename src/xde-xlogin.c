@@ -256,6 +256,10 @@ typedef struct {
 	int debug;
 	Bool dryrun;
 	char *display;
+	char *seat;
+	char *service;
+	char *vtnr;
+	char *tty;
 	char *authfile;
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
@@ -314,6 +318,10 @@ Options options = {
 	.debug = 0,
 	.dryrun = False,
 	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
 	.authfile = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
@@ -372,6 +380,10 @@ Options defaults = {
 	.debug = 0,
 	.dryrun = False,
 	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
 	.authfile = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
@@ -6022,6 +6034,26 @@ authenticate(void)
 		if (getuid() != 0)
 			uname = strdup(options.username);
 	}
+	if (options.display) {
+		if (options.display[0] == ':') {
+			char *tty;
+
+			/* xdm just sets PAM_TTY to the display string */
+			if ((tty = strdup(options.display))) {
+				pam_set_item(pamh, PAM_TTY, tty);
+				free(tty);
+			}
+		} else {
+			char *rhost;
+
+			if ((rhost = strdup(options.display))) {
+				if (strrchr(rhost, ':'))
+					*strrchr(rhost, ':') = '\0';
+				pam_set_item(pamh, PAM_RHOST, rhost);
+				free(rhost);
+			}
+		}
+	}
 	if (!resources.allowNullPasswd)
 		flags |= PAM_DISALLOW_NULL_AUTHTOK;
 	for (;;) {
@@ -7211,6 +7243,26 @@ set_default_display(void)
 }
 
 void
+set_default_x11(void)
+{
+	const char *env;
+
+	if ((env = getenv("XDG_VTNR"))) {
+		free(options.vtnr);
+		options.vtnr = strdup(env);
+	}
+	if ((env = getenv("XDG_SEAT"))) {
+		free(options.seat);
+		options.seat = strdup(env);
+	}
+	if (options.vtnr) {
+		free(options.tty);
+		if ((options.tty = calloc(16, sizeof(*options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+}
+
+void
 set_default_authfile(void)
 {
 	const char *env = XauFileName();
@@ -7587,6 +7639,7 @@ set_defaults(int argc, char *argv[])
 {
 	set_default_debug();
 	set_default_display();
+	set_default_x11();
 	set_default_authfile();
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
@@ -7608,6 +7661,60 @@ get_default_display(void)
 {
 	if (options.display)
 		setenv("DISPLAY", options.display, 1);
+}
+
+void
+get_default_x11(void)
+{
+	Display *dpy;
+	Window root;
+	Atom property, actual;
+	int format;
+	unsigned long nitems, after;
+	long *data = NULL;
+
+	if (!(dpy = XOpenDisplay(0))) {
+		EPRINTF("cannot open display %s\n", options.display);
+		exit(EXIT_FAILURE);
+	}
+	root = RootWindow(dpy, 0);
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "XFree86_VT", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 1, False, XA_INTEGER, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 32 && nitems && data) {
+		free(options.vtnr);
+		if ((options.vtnr = calloc(16, sizeof(*options.vtnr))))
+			snprintf(options.vtnr, 16, "%lu", *(unsigned long *) data);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "Xorg_Seat", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 16, False, XA_STRING, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 8 && nitems && data) {
+		free(options.seat);
+		if ((options.seat = calloc(nitems + 1, sizeof(*options.seat))))
+			strncpy(options.seat, (char *) data, nitems);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	if (options.vtnr) {
+		if (!options.seat)
+			options.seat = strdup("seat0");
+		if ((options.tty = calloc(16, sizeof(options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+	if (!options.tty)
+		options.tty = strdup(options.display);
+	XCloseDisplay(dpy);
 }
 
 void
@@ -8015,6 +8122,7 @@ void
 get_defaults(int argc, char *argv[])
 {
 	get_default_display();
+	get_default_x11();
 	get_default_authfile();
 	get_default_vendor();
 	get_default_banner();
