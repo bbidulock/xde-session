@@ -255,6 +255,8 @@ typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	char *display;
+	char *authfile;
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
@@ -311,6 +313,8 @@ Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.display = NULL,
+	.authfile = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
@@ -367,6 +371,8 @@ Options defaults = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.display = NULL,
+	.authfile = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
@@ -7185,6 +7191,37 @@ get_resources(int argc, char *argv[])
 }
 
 void
+set_default_debug(void)
+{
+	const char *env = getenv("XDE_DEBUG");
+
+	if (env)
+		options.debug = atoi(env);
+}
+
+void
+set_default_display(void)
+{
+	const char *env = getenv("DISPLAY");
+
+	if (env) {
+		free(options.display);
+		options.display = strdup(env);
+	}
+}
+
+void
+set_default_authfile(void)
+{
+	const char *env = XauFileName();
+
+	if (env) {
+		free(options.authfile);
+		options.authfile = strdup(env);
+	}
+}
+
+void
 set_default_vendor(void)
 {
 	char *p, *vendor, *prefix;
@@ -7548,11 +7585,9 @@ set_default_choice(void)
 void
 set_defaults(int argc, char *argv[])
 {
-	char *p;
-
-	if ((p = getenv("XDE_DEBUG")))
-		options.debug = atoi(p);
-
+	set_default_debug();
+	set_default_display();
+	set_default_authfile();
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
