@@ -255,6 +255,12 @@ typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	char *display;
+	char *seat;
+	char *service;
+	char *vtnr;
+	char *tty;
+	char *authfile;
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
@@ -302,12 +308,21 @@ typedef struct {
 	Bool filename;
 	unsigned guard;
 	Bool tray;
+	Bool autologin;
+	Bool permitlogin;
+	Bool remotelogin;
 } Options;
 
 Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
+	.authfile = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
@@ -355,12 +370,21 @@ Options options = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
+	.autologin = False,
+	.permitlogin = True,
+	.remotelogin = True,
 };
 
 Options defaults = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
+	.authfile = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
@@ -408,6 +432,9 @@ Options defaults = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
+	.autologin = False,
+	.permitlogin = True,
+	.remotelogin = True,
 };
 
 typedef struct {
@@ -5997,44 +6024,106 @@ authenticate(void)
 {
 	pam_handle_t *pamh = NULL;
 	const char *uname = NULL;
-	int status = 0;
+	int err, status, flags = 0;
 
 	DPRINTF("starting PAM\n");
-	pam_start("system-login", NULL, &xde_pam_conv, &pamh);
+	if ((err = pam_start("system-login", NULL, &xde_pam_conv, &pamh)) != PAM_SUCCESS) {
+		EPRINTF("pam_start: %s\n", pam_strerror(pamh, err));
+		exit(EXIT_FAILURE);
+	}
 	if (options.username) {
-		pam_set_item(pamh, PAM_USER, options.username);
+		if ((err = pam_set_item(pamh, PAM_USER, options.username)) != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", options.username, pam_strerror(pamh, err));
 		state = LoginStateUsername;
 		if (getuid() != 0)
 			uname = strdup(options.username);
 	}
+	if (options.display) {
+		/* pam_set_item(3) says this item is Linux-specific */
+		if ((err = pam_set_item(pamh, PAM_XDISPLAY, options.display)) != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_XDISPLAY, \"%s\"): %s\n", options.display,
+				pam_strerror(pamh, err));
+		if (options.display[0] == ':') {
+			char *tty = NULL;
+
+#if 0
+			if (options.tty) {
+				tty = strdup(options.tty);
+			} else if (options.vtnr) {
+				tty = calloc(16, sizeof(*tty));
+				snprintf(tty, 16, "tty%s", options.vtnr);
+			} else
+#endif
+			if (options.display) {
+				/* xdm just sets PAM_TTY to the display string: also in
+				   pam_set_item(3) */
+				tty = strdup(options.display);
+			}
+			if (tty) {
+				if ((err = pam_set_item(pamh, PAM_TTY, tty)) != PAM_SUCCESS)
+					EPRINTF("pam_set_item(PAM_TTY, \"%s\"): %s\n", tty,
+						pam_strerror(pamh, err));
+				free(tty);
+			}
+		} else {
+			char *rhost;
+
+			if ((rhost = strdup(options.display))) {
+				if (strrchr(rhost, ':'))
+					*strrchr(rhost, ':') = '\0';
+				if ((err = pam_set_item(pamh, PAM_RHOST, rhost)) != PAM_SUCCESS)
+					EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost,
+						pam_strerror(pamh, err));
+				free(rhost);
+			}
+		}
+	}
+	if (!resources.allowNullPasswd)
+		flags |= PAM_DISALLOW_NULL_AUTHTOK;
 	for (;;) {
-		status = pam_authenticate(pamh, 0);
+		if ((status = pam_authenticate(pamh, flags)) != PAM_SUCCESS)
+			EPRINTF("pam_authenticate: %s\n", pam_strerror(pamh, status));
 		if (login_result == LoginResultLogout)
 			break;
 		switch (status) {
 		case PAM_ABORT:
+			/* The application should exit immediately after calling
+			   pam_end(3) first. */
 			EPRINTF("PAM_ABORT\n");
 			goto done;
 		case PAM_AUTH_ERR:
+			/* The use was not authenticated. */
 			EPRINTF("PAM_AUTH_ERR\n");
-			pam_set_item(pamh, PAM_USER, uname);
+			if ((err = pam_set_item(pamh, PAM_USER, uname)) != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", uname, pam_strerror(pamh, err));
 			continue;
 		case PAM_CRED_INSUFFICIENT:
+			/* For some reason the application does not have sufficient
+			   credentials to authenticate the user. */
 			EPRINTF("PAM_CRED_INSUFFICIENT\n");
 			goto done;
 		case PAM_AUTHINFO_UNAVAIL:
+			/* The modules were not able to access the authentication
+			   information.  This might be due to a network or hardware
+			   failure, etc. */
 			EPRINTF("PAM_AUTHINFO_UNAVAIL\n");
-			pam_set_item(pamh, PAM_USER, uname);
+			if ((err = pam_set_item(pamh, PAM_USER, uname)) != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", uname, pam_strerror(pamh, err));
 			continue;
 		case PAM_MAXTRIES:
+			/* One or more of the authentication modules has reached its
+			   limit of tries authenticating the user.  Do not try again. */
 			EPRINTF("PAM_MAXTRIES\n");
 			goto done;
 		case PAM_SUCCESS:
+			/* The user was successfully authenticated. */
 			DPRINTF("PAM_SUCCESS\n");
 			goto done;
 		case PAM_USER_UNKNOWN:
+			/* User unknown to authentication service. */
 			EPRINTF("PAM_USER_UNKNOWN\n");
-			pam_set_item(pamh, PAM_USER, uname);
+			if ((err = pam_set_item(pamh, PAM_USER, uname)) != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", uname, pam_strerror(pamh, err));
 			continue;
 		default:
 			EPRINTF("Unexpected pam error\n");
@@ -6052,7 +6141,8 @@ authenticate(void)
 	}
       done:
 	DPRINTF("closing PAM\n");
-	pam_end(pamh, status);
+	if ((err = pam_end(pamh, status)) != PAM_SUCCESS)
+		EPRINTF("pam_end: %s\n", pam_strerror(pamh, err));
 	return (status);
 }
 
@@ -7139,7 +7229,7 @@ get_resources(int argc, char *argv[])
 			getXrmString(val, &options.username);
 		}
 		if ((val = get_resource(rdb, "autologin", NULL))) {
-			// getXrmBool(val, &options.autologin);
+			getXrmBool(val, &options.autologin);
 		}
 	}
 	if ((val = get_resource(rdb, "vendor", NULL))) {
@@ -7149,16 +7239,16 @@ get_resources(int argc, char *argv[])
 		getXrmString(val, &options.prefix);
 	}
 	if ((val = get_resource(rdb, "login.permit", NULL))) {
-		// getXrmBool(val, &options.permitlogin);
+		getXrmBool(val, &options.permitlogin);
 	}
 	if ((val = get_resource(rdb, "login.remote", NULL))) {
-		// getXrmBool(val, &options.remotelogin);
+		getXrmBool(val, &options.remotelogin);
 	}
 	if ((val = get_resource(rdb, "xsession.chooser", NULL))) {
 		getXrmBool(val, &options.xsession);
 	}
 	if ((val = get_resource(rdb, "xsession.execute", NULL))) {
-		// getXrmBool(val, &options.execute);
+		getXrmBool(val, &options.execute);
 	}
 	if ((val = get_resource(rdb, "xsession.default", NULL))) {
 		getXrmString(val, &options.choice);
@@ -7171,6 +7261,57 @@ get_resources(int argc, char *argv[])
 	}
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);
+}
+
+void
+set_default_debug(void)
+{
+	const char *env = getenv("XDE_DEBUG");
+
+	if (env)
+		options.debug = atoi(env);
+}
+
+void
+set_default_display(void)
+{
+	const char *env = getenv("DISPLAY");
+
+	if (env) {
+		free(options.display);
+		options.display = strdup(env);
+	}
+}
+
+void
+set_default_x11(void)
+{
+	const char *env;
+
+	if ((env = getenv("XDG_VTNR"))) {
+		free(options.vtnr);
+		options.vtnr = strdup(env);
+	}
+	if ((env = getenv("XDG_SEAT"))) {
+		free(options.seat);
+		options.seat = strdup(env);
+	}
+	if (options.vtnr) {
+		free(options.tty);
+		if ((options.tty = calloc(16, sizeof(*options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+}
+
+void
+set_default_authfile(void)
+{
+	const char *env = XauFileName();
+
+	if (env) {
+		free(options.authfile);
+		options.authfile = strdup(env);
+	}
 }
 
 void
@@ -7537,11 +7678,10 @@ set_default_choice(void)
 void
 set_defaults(int argc, char *argv[])
 {
-	char *p;
-
-	if ((p = getenv("XDE_DEBUG")))
-		options.debug = atoi(p);
-
+	set_default_debug();
+	set_default_display();
+	set_default_x11();
+	set_default_authfile();
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
@@ -7555,6 +7695,74 @@ set_defaults(int argc, char *argv[])
 	set_default_session();
 #endif
 	set_default_choice();
+}
+
+void
+get_default_display(void)
+{
+	if (options.display)
+		setenv("DISPLAY", options.display, 1);
+}
+
+void
+get_default_x11(void)
+{
+	Display *dpy;
+	Window root;
+	Atom property, actual;
+	int format;
+	unsigned long nitems, after;
+	long *data = NULL;
+
+	if (!(dpy = XOpenDisplay(0))) {
+		EPRINTF("cannot open display %s\n", options.display);
+		exit(EXIT_FAILURE);
+	}
+	root = RootWindow(dpy, 0);
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "XFree86_VT", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 1, False, XA_INTEGER, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 32 && nitems && data) {
+		free(options.vtnr);
+		if ((options.vtnr = calloc(16, sizeof(*options.vtnr))))
+			snprintf(options.vtnr, 16, "%lu", *(unsigned long *) data);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "Xorg_Seat", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 16, False, XA_STRING, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 8 && nitems && data) {
+		free(options.seat);
+		if ((options.seat = calloc(nitems + 1, sizeof(*options.seat))))
+			strncpy(options.seat, (char *) data, nitems);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	if (options.vtnr) {
+		if (!options.seat)
+			options.seat = strdup("seat0");
+		if ((options.tty = calloc(16, sizeof(options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+	if (!options.tty)
+		options.tty = strdup(options.display);
+	XCloseDisplay(dpy);
+}
+
+void
+get_default_authfile(void)
+{
+	if (options.authfile)
+		setenv("XAUTHORITY", options.authfile, 1);
 }
 
 void
@@ -7954,6 +8162,9 @@ get_default_username(void)
 void
 get_defaults(int argc, char *argv[])
 {
+	get_default_display();
+	get_default_x11();
+	get_default_authfile();
 	get_default_vendor();
 	get_default_banner();
 	get_default_splash();
@@ -8018,6 +8229,8 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+			{"display",	    required_argument,	NULL, 'd'},
+			{"authfile",	    required_argument,	NULL, 'f'},
 #ifdef DO_XLOCKING
 			{"locker",	    no_argument,	NULL, 'L'},
 			{"replace",	    no_argument,	NULL, 'r'},
@@ -8068,10 +8281,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "d:f:rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
+		c = getopt(argc, argv, "d:f:rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -8081,6 +8294,14 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
+		case 'd':	/* -d, --display */
+			free(options.display);
+			options.display = strndup(optarg, 256);
+			break;
+		case 'f':	/* -f, --authfile */
+			free(options.authfile);
+			options.authfile = strndup(optarg, PATH_MAX);
+			break;
 #ifdef DO_XLOCKING
 		case 'L':	/* -L, --locker */
 			if (options.command != CommandDefault)
