@@ -7604,6 +7604,20 @@ set_defaults(int argc, char *argv[])
 }
 
 void
+get_default_display(void)
+{
+	if (options.display)
+		setenv("DISPLAY", options.display, 1);
+}
+
+void
+get_default_authfile(void)
+{
+	if (options.authfile)
+		setenv("XAUTHORITY", options.authfile, 1);
+}
+
+void
 get_default_vendor(void)
 {
 	if (!options.vendor) {
@@ -8000,6 +8014,8 @@ get_default_username(void)
 void
 get_defaults(int argc, char *argv[])
 {
+	get_default_display();
+	get_default_authfile();
 	get_default_vendor();
 	get_default_banner();
 	get_default_splash();
@@ -8064,6 +8080,8 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+			{"display",	    required_argument,	NULL, 'd'},
+			{"authfile",	    required_argument,	NULL, 'f'},
 #ifdef DO_XLOCKING
 			{"locker",	    no_argument,	NULL, 'L'},
 			{"replace",	    no_argument,	NULL, 'r'},
@@ -8114,10 +8132,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "d:f:rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
+		c = getopt(argc, argv, "d:f:rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -8127,6 +8145,14 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
+		case 'd':	/* -d, --display */
+			free(options.display);
+			options.display = strndup(optarg, 256);
+			break;
+		case 'f':	/* -f, --authfile */
+			free(options.authfile);
+			options.authfile = strndup(optarg, PATH_MAX);
+			break;
 #ifdef DO_XLOCKING
 		case 'L':	/* -L, --locker */
 			if (options.command != CommandDefault)
