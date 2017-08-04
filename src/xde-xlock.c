@@ -5556,6 +5556,7 @@ ShowScreen(XdeScreen *xscr)
 {
 	if (xscr->wind) {
 		gtk_widget_show_now(GTK_WIDGET(xscr->wind));
+#ifndef DO_CHOOSER
 #ifndef DO_LOGOUT
 		if (options.username) {
 			gtk_widget_set_sensitive(user, FALSE);
@@ -5584,6 +5585,7 @@ ShowScreen(XdeScreen *xscr)
 		gtk_widget_grab_default(controls[LOGOUT_ACTION_LOGOUT]);
 		gtk_widget_grab_focus(controls[LOGOUT_ACTION_LOGOUT]);
 #endif
+#endif				/* !defined DO_CHOOSER */
 		grabbed_window(GTK_WIDGET(xscr->wind), NULL);
 	}
 }
@@ -8351,7 +8353,7 @@ main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"display",	    required_argument,	NULL, 'd'},
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
-			{"authfile",	    required_argument,	NULL, 'f'},
+			{"authfile",	    required_argument,	NULL, 'a'},
 #endif
 #ifdef DO_XLOCKING
 			{"locker",	    no_argument,	NULL, 'L'},
@@ -8421,7 +8423,7 @@ main(int argc, char *argv[])
 			options.display = strndup(optarg, 256);
 			break;
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
-		case 'f':	/* -f, --authfile */
+		case 'a':	/* -a, --authfile */
 			free(options.authfile);
 			options.authfile = strndup(optarg, PATH_MAX);
 			break;
