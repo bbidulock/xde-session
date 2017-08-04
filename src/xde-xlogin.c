@@ -6024,23 +6024,45 @@ authenticate(void)
 {
 	pam_handle_t *pamh = NULL;
 	const char *uname = NULL;
-	int status = 0, flags = 0;
+	int err, status, flags = 0;
 
 	DPRINTF("starting PAM\n");
-	pam_start("system-login", NULL, &xde_pam_conv, &pamh);
+	if ((err = pam_start("system-login", NULL, &xde_pam_conv, &pamh)) != PAM_SUCCESS) {
+		EPRINTF("pam_start: %s\n", pam_strerror(pamh, err));
+		exit(EXIT_FAILURE);
+	}
 	if (options.username) {
-		pam_set_item(pamh, PAM_USER, options.username);
+		if ((err = pam_set_item(pamh, PAM_USER, options.username)) != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", options.username, pam_strerror(pamh, err));
 		state = LoginStateUsername;
 		if (getuid() != 0)
 			uname = strdup(options.username);
 	}
 	if (options.display) {
+		/* pam_set_item(3) says this item is Linux-specific */
+		if ((err = pam_set_item(pamh, PAM_XDISPLAY, options.display)) != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_XDISPLAY, \"%s\"): %s\n", options.display,
+				pam_strerror(pamh, err));
 		if (options.display[0] == ':') {
-			char *tty;
+			char *tty = NULL;
 
-			/* xdm just sets PAM_TTY to the display string */
-			if ((tty = strdup(options.display))) {
-				pam_set_item(pamh, PAM_TTY, tty);
+#if 0
+			if (options.tty) {
+				tty = strdup(options.tty);
+			} else if (options.vtnr) {
+				tty = calloc(16, sizeof(*tty));
+				snprintf(tty, 16, "tty%s", options.vtnr);
+			} else
+#endif
+			if (options.display) {
+				/* xdm just sets PAM_TTY to the display string: also in
+				   pam_set_item(3) */
+				tty = strdup(options.display);
+			}
+			if (tty) {
+				if ((err = pam_set_item(pamh, PAM_TTY, tty)) != PAM_SUCCESS)
+					EPRINTF("pam_set_item(PAM_TTY, \"%s\"): %s\n", tty,
+						pam_strerror(pamh, err));
 				free(tty);
 			}
 		} else {
@@ -6049,7 +6071,9 @@ authenticate(void)
 			if ((rhost = strdup(options.display))) {
 				if (strrchr(rhost, ':'))
 					*strrchr(rhost, ':') = '\0';
-				pam_set_item(pamh, PAM_RHOST, rhost);
+				if ((err = pam_set_item(pamh, PAM_RHOST, rhost)) != PAM_SUCCESS)
+					EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost,
+						pam_strerror(pamh, err));
 				free(rhost);
 			}
 		}
@@ -6057,33 +6081,49 @@ authenticate(void)
 	if (!resources.allowNullPasswd)
 		flags |= PAM_DISALLOW_NULL_AUTHTOK;
 	for (;;) {
-		status = pam_authenticate(pamh, flags);
+		if ((status = pam_authenticate(pamh, flags)) != PAM_SUCCESS)
+			EPRINTF("pam_authenticate: %s\n", pam_strerror(pamh, status));
 		if (login_result == LoginResultLogout)
 			break;
 		switch (status) {
 		case PAM_ABORT:
+			/* The application should exit immediately after calling
+			   pam_end(3) first. */
 			EPRINTF("PAM_ABORT\n");
 			goto done;
 		case PAM_AUTH_ERR:
+			/* The use was not authenticated. */
 			EPRINTF("PAM_AUTH_ERR\n");
-			pam_set_item(pamh, PAM_USER, uname);
+			if ((err = pam_set_item(pamh, PAM_USER, uname)) != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", uname, pam_strerror(pamh, err));
 			continue;
 		case PAM_CRED_INSUFFICIENT:
+			/* For some reason the application does not have sufficient
+			   credentials to authenticate the user. */
 			EPRINTF("PAM_CRED_INSUFFICIENT\n");
 			goto done;
 		case PAM_AUTHINFO_UNAVAIL:
+			/* The modules were not able to access the authentication
+			   information.  This might be due to a network or hardware
+			   failure, etc. */
 			EPRINTF("PAM_AUTHINFO_UNAVAIL\n");
-			pam_set_item(pamh, PAM_USER, uname);
+			if ((err = pam_set_item(pamh, PAM_USER, uname)) != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", uname, pam_strerror(pamh, err));
 			continue;
 		case PAM_MAXTRIES:
+			/* One or more of the authentication modules has reached its
+			   limit of tries authenticating the user.  Do not try again. */
 			EPRINTF("PAM_MAXTRIES\n");
 			goto done;
 		case PAM_SUCCESS:
+			/* The user was successfully authenticated. */
 			DPRINTF("PAM_SUCCESS\n");
 			goto done;
 		case PAM_USER_UNKNOWN:
+			/* User unknown to authentication service. */
 			EPRINTF("PAM_USER_UNKNOWN\n");
-			pam_set_item(pamh, PAM_USER, uname);
+			if ((err = pam_set_item(pamh, PAM_USER, uname)) != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_USER,\"%s\"): %s\n", uname, pam_strerror(pamh, err));
 			continue;
 		default:
 			EPRINTF("Unexpected pam error\n");
@@ -6101,7 +6141,8 @@ authenticate(void)
 	}
       done:
 	DPRINTF("closing PAM\n");
-	pam_end(pamh, status);
+	if ((err = pam_end(pamh, status)) != PAM_SUCCESS)
+		EPRINTF("pam_end: %s\n", pam_strerror(pamh, err));
 	return (status);
 }
 
