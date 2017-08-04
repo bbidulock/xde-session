@@ -181,7 +181,7 @@ Options options = {
 
 #ifdef PAM_XAUTHDATA
 void
-add_xauth_data(pam_handle_t * pamh)
+add_xauth_data(pam_handle_t *pamh)
 {
 	char *file, *nam, *num;
 	Xauth *xau;
@@ -275,6 +275,12 @@ run_login(int argc, char * const *argv)
 			exit(EXIT_SUCCESS);
 		exit(EXIT_FAILURE);
 	}
+	DPRINTF("starting PAM\n");
+	result = pam_start(options.service, options.user, &conv, &pamh);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_start: %s\n", pam_strerror(pamh, result));
+		exit(EXIT_FAILURE);
+	}
 	DPRINTF("adjusting environment variables\n");
 	unsetenv("XDG_SESSION_ID");
 	pam_putenv(pamh, "XDG_SESSION_ID");
@@ -334,12 +340,6 @@ run_login(int argc, char * const *argv)
 		pam_putenv(pamh, "XDG_SESSION_DESKTOP");
 	}
 
-	DPRINTF("starting PAM\n");
-	result = pam_start(options.service, options.user, &conv, &pamh);
-	if (result != PAM_SUCCESS) {
-		EPRINTF("pam_start: %s\n", pam_strerror(pamh, result));
-		exit(EXIT_FAILURE);
-	}
 	DPRINTF("setting PAM items\n");
 	if (options.user)
 		pam_set_item(pamh, PAM_RUSER, options.user);
