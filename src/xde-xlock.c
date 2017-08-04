@@ -757,7 +757,7 @@ GDBusProxy *sd_session = NULL;
 GDBusProxy *sd_display = NULL;
 
 #ifdef DO_XLOCKING
-static void LockScreen(void);
+static void LockScreen(gboolean hard);
 static void UnlockScreen(void);
 static void AbortLockScreen(void);
 static void AutoLockScreen(void);
@@ -784,8 +784,10 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 		g_variant_get_type_string(parameters));
 #ifdef DO_XLOCKING
 	if (!strcmp(signal_name, "Lock")) {
+		DPRINTF("locking screen due to systemd request\n");
 		SystemLockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
+		DPRINTF("unlocking screen due to systemd request\n");
 		UnlockScreen();
 	}
 #endif
@@ -839,6 +841,7 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 			if (!g_variant_get_boolean(boxed)) {
 #ifdef DO_XLOCKING
 				DPRINTF("went inactive, locking screen\n");
+				DPRINTF("locking screen due to systemd active\n");
 				SystemLockScreen();
 #endif
 			}
@@ -960,10 +963,12 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		AbortLockScreen();
 		break;
 	case ScreenSaverOn:
+		DPRINTF("auto locking screen to due to screen-saver on\n");
 		setidlehint(TRUE);
 		AutoLockScreen();
 		break;
 	case ScreenSaverCycle:
+		DPRINTF("auto locking screen to due to screen-saver cycle\n");
 		AutoLockScreen();
 		break;
 	}
@@ -1159,9 +1164,11 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
 		switch (xev->xclient.data.l[0]) {
 		case LockCommandLock:
-			LockScreen();
+			DPRINTF("locking screen due to xclient message\n");
+			LockScreen(TRUE);
 			return GDK_FILTER_REMOVE;
 		case LockCommandUnlock:
+			DPRINTF("unlocking screen due to xclient message\n");
 			UnlockScreen();
 			return GDK_FILTER_REMOVE;
 		case LockCommandQuit:
@@ -6177,7 +6184,7 @@ authenticate(void)
 
 #ifdef DO_XLOCKING
 static void
-LockScreen(void)
+LockScreen(gboolean hard)
 {
 	DPRINT();
 
@@ -6187,7 +6194,10 @@ LockScreen(void)
 	}
 	ShowWindow();
 	lock_state = LockStateLocked;
-	gettimeofday(&lock_time, NULL);
+	if (hard)
+		lock_time.tv_sec = 0;
+	else
+		gettimeofday(&lock_time, NULL);
 	gtk_main_quit();
 }
 
@@ -6201,7 +6211,7 @@ RelockScreen(void)
 
 	XForceScreenSaver(dpy, ScreenSaverActive);
 	lock_state = LockStateLocked;
-	gettimeofday(&lock_time, NULL);
+	lock_time.tv_sec = 0;
 	DPRINTF("running main loop...\n");
 	gtk_main();
 	DPRINTF("...running main loop\n");
@@ -6234,11 +6244,13 @@ AbortLockScreen(void)
 	} else {
 		struct timeval tv = { 0, 0 };
 
-		gettimeofday(&tv, NULL);
-		if (tv.tv_sec < lock_time.tv_sec + options.guard) {
-			DPRINTF("Screen saver interrupted: unlocking screen\n");
-			lock_state = LockStateAborted;
-			gtk_main_quit();
+		if (lock_time.tv_sec) {
+			gettimeofday(&tv, NULL);
+			if (tv.tv_sec < lock_time.tv_sec + options.guard) {
+				DPRINTF("Screen saver interrupted: unlocking screen\n");
+				lock_state = LockStateAborted;
+				gtk_main_quit();
+			}
 		}
 	}
 }
@@ -6249,10 +6261,10 @@ AutoLockScreen(void)
 	DPRINT();
 
 	if (!resources.autoLock) {
-		DPRINTF("not autolocking\n");
+		DPRINTF("not auto locking (deselected)\n");
 		return;
 	}
-	LockScreen();
+	LockScreen(FALSE);
 }
 
 static void
@@ -6261,10 +6273,10 @@ SystemLockScreen(void)
 	DPRINT();
 
 	if (!resources.systemLock) {
-		DPRINTF("not system locking\n");
+		DPRINTF("not system locking: (deselected)\n");
 		return;
 	}
-	LockScreen();
+	LockScreen(TRUE);
 }
 
 static gboolean
@@ -6275,14 +6287,16 @@ on_button_press(GtkStatusIcon *icon, GdkEvent *event, gpointer user_data)
 	ev = (typeof(ev)) event;
 	if (ev->button != 1)
 		return GTK_EVENT_PROPAGATE;
-	LockScreen();
+	DPRINTF("locking screen due to manual button press\n");
+	LockScreen(TRUE);
 	return GTK_EVENT_STOP;
 }
 
 static void
 on_refresh_selected(GtkMenuItem *item, gpointer user_data)
 {
-	LockScreen();
+	DPRINTF("locking screen due to refresh selected\n");
+	LockScreen(TRUE);
 }
 
 static void
@@ -6340,6 +6354,13 @@ on_quit_selected(GtkMenuItem *item, gpointer user_data)
 }
 
 static void
+on_item_toggled(GtkCheckMenuItem *item, gpointer user_data)
+{
+	Bool *value = user_data;
+	*value = !*value;
+}
+
+static void
 on_popup_menu(GtkStatusIcon *icon, guint button, guint time, gpointer user_data)
 {
 	GtkWidget *menu, *item;
@@ -6357,6 +6378,22 @@ on_popup_menu(GtkStatusIcon *icon, guint button, guint time, gpointer user_data)
 
 	item = gtk_image_menu_item_new_from_stock("gtk-about", NULL);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_about_selected), NULL);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_separator_menu_item_new();
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_check_menu_item_new_with_label("Auto Lock");
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), resources.autoLock);
+	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(on_item_toggled), &resources.autoLock);
+	gtk_widget_show(item);
+	gtk_menu_append(menu, item);
+
+	item = gtk_check_menu_item_new_with_label("System Lock");
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), resources.systemLock);
+	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(on_item_toggled), &resources.systemLock);
 	gtk_widget_show(item);
 	gtk_menu_append(menu, item);
 
@@ -6422,8 +6459,10 @@ do_run(int argc, char *argv[])
 	InitXDMCP(argv, argc);
 #endif
 #ifdef DO_XLOCKING
-	if (options.command != CommandLock)
+	if (options.command != CommandLock) {
+		DPRINTF("unlocking screen due to program request\n");
 		UnlockScreen();
+	}
 #endif
 	for (;;) {
 #ifdef DO_XLOCKING
@@ -6435,6 +6474,7 @@ do_run(int argc, char *argv[])
 #ifdef DO_XLOCKING
 		DPRINT();
 		if (lock_state == LockStateAborted) {
+			DPRINTF("unlocking screen due to lock state abort\n");
 			UnlockScreen();
 			continue;
 		}
@@ -6442,6 +6482,7 @@ do_run(int argc, char *argv[])
 		DPRINT();
 		if (login_result == LoginResultLogout) {
 #ifdef DO_XLOCKING
+			DPRINTF("relocking screen due to logout button\n");
 			RelockScreen();
 #else
 			exit(EXIT_FAILURE);
@@ -6456,6 +6497,7 @@ do_run(int argc, char *argv[])
 		default:
 			DPRINT();
 #ifdef DO_XLOCKING
+			DPRINTF("relocking screen due to pam error\n");
 			RelockScreen();
 #else
 			exit(EXIT_FAILURE);
@@ -6464,6 +6506,7 @@ do_run(int argc, char *argv[])
 		case PAM_SUCCESS:
 			DPRINT();
 #ifdef DO_XLOCKING
+			DPRINTF("unlocking screen due to successful login\n");
 			UnlockScreen();
 #else
 #if defined(DO_XLOGIN) | defined(DO_XCHOOSER)
@@ -8316,15 +8359,15 @@ main(int argc, char *argv[])
 			{"lock",	    no_argument,	NULL, 'l'},
 			{"unlock",	    no_argument,	NULL, 'U'},
 			{"quit",	    no_argument,	NULL, 'q'},
-#endif				/* DO_XLOCKING */
+#endif					/* DO_XLOCKING */
 #ifdef DO_XCHOOSER
 			{"xdmaddress",	    required_argument,	NULL, 'x'},
 			{"clientaddress",   required_argument,	NULL, 'c'},
 			{"connectionType",  required_argument,	NULL, 't'},
 			{"welcome",	    required_argument,	NULL, 'w'},
-#else				/* DO_XCHOOSER */
+#else					/* DO_XCHOOSER */
 			{"prompt",	    required_argument,	NULL, 'p'},
-#endif				/* DO_XCHOOSER */
+#endif					/* DO_XCHOOSER */
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'S'},
 			{"side",	    required_argument,	NULL, 's'},
