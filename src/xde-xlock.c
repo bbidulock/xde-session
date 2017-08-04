@@ -3402,38 +3402,6 @@ append_session_tasks(GtkMenu *menu)
 #endif				/* DO_LOGOUT */
 
 #ifdef DO_LOGOUT
-char **
-get_config_dirs(int *np)
-{
-	char *home, *xhome, *xconf, *dirs, *pos, *end, **xdg_dirs;
-	int len, n;
-
-	home = getenv("HOME") ? : ".";
-	xhome = getenv("XDG_CONFIG_HOME");
-	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
-
-	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
-	dirs = calloc(len, sizeof(*dirs));
-	if (xhome)
-		strcpy(dirs, xhome);
-	else {
-		strcpy(dirs, home);
-		strcat(dirs, "/.config");
-	}
-	strcat(dirs, ":");
-	strcat(dirs, xconf);
-	end = dirs + strlen(dirs);
-	for (n = 0, pos = dirs; pos < end;
-	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
-	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
-	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
-		xdg_dirs[n] = strdup(pos);
-	free(dirs);
-	if (np)
-		*np = n;
-	return (xdg_dirs);
-}
-
 /*
  * Determine whether we have been invoked under a session running lxsession(1).
  * When that is the case, we simply execute lxsession-logout(1) with the

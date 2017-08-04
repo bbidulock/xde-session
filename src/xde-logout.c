@@ -255,6 +255,11 @@ typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	char *display;
+	char *seat;
+	char *service;
+	char *vtnr;
+	char *tty;
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
@@ -302,12 +307,23 @@ typedef struct {
 	Bool filename;
 	unsigned guard;
 	Bool tray;
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	char *authfile;
+	Bool autologin;
+	Bool permitlogin;
+	Bool remotelogin;
+#endif
 } Options;
 
 Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
@@ -355,12 +371,23 @@ Options options = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	.authfile = NULL,
+	.autologin = False,
+	.permitlogin = True,
+	.remotelogin = True,
+#endif
 };
 
 Options defaults = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
@@ -408,6 +435,12 @@ Options defaults = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	.authfile = NULL,
+	.autologin = False,
+	.permitlogin = True,
+	.remotelogin = True,
+#endif
 };
 
 typedef struct {
@@ -442,6 +475,8 @@ typedef struct {
 	Bool echoPasswd;
 	char *echoPasswdChar;
 	unsigned int borderWidth;
+	Bool autoLock;
+	Bool systemLock;
 } Resources;
 
 Resources resources  = {
@@ -476,6 +511,8 @@ Resources resources  = {
 	.echoPasswd = False,
 	.echoPasswdChar = NULL,
 	.borderWidth = 0,
+	.autoLock = True,
+	.systemLock = True,
 };
 
 typedef enum {
@@ -720,9 +757,11 @@ GDBusProxy *sd_session = NULL;
 GDBusProxy *sd_display = NULL;
 
 #ifdef DO_XLOCKING
-static void LockScreen(void);
+static void LockScreen(gboolean hard);
 static void UnlockScreen(void);
 static void AbortLockScreen(void);
+static void AutoLockScreen(void);
+static void SystemLockScreen(void);
 #endif
 
 void
@@ -745,8 +784,10 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 		g_variant_get_type_string(parameters));
 #ifdef DO_XLOCKING
 	if (!strcmp(signal_name, "Lock")) {
-		LockScreen();
+		DPRINTF("locking screen due to systemd request\n");
+		SystemLockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
+		DPRINTF("unlocking screen due to systemd request\n");
 		UnlockScreen();
 	}
 #endif
@@ -800,7 +841,8 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 			if (!g_variant_get_boolean(boxed)) {
 #ifdef DO_XLOCKING
 				DPRINTF("went inactive, locking screen\n");
-				LockScreen();
+				DPRINTF("locking screen due to systemd active\n");
+				SystemLockScreen();
 #endif
 			}
 			g_variant_unref(key);
@@ -921,11 +963,13 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		AbortLockScreen();
 		break;
 	case ScreenSaverOn:
+		DPRINTF("auto locking screen to due to screen-saver on\n");
 		setidlehint(TRUE);
-		LockScreen();
+		AutoLockScreen();
 		break;
 	case ScreenSaverCycle:
-		LockScreen();
+		DPRINTF("auto locking screen to due to screen-saver cycle\n");
+		AutoLockScreen();
 		break;
 	}
 	return G_SOURCE_CONTINUE;
@@ -1120,9 +1164,11 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
 		switch (xev->xclient.data.l[0]) {
 		case LockCommandLock:
-			LockScreen();
+			DPRINTF("locking screen due to xclient message\n");
+			LockScreen(TRUE);
 			return GDK_FILTER_REMOVE;
 		case LockCommandUnlock:
+			DPRINTF("unlocking screen due to xclient message\n");
 			UnlockScreen();
 			return GDK_FILTER_REMOVE;
 		case LockCommandQuit:
@@ -3082,6 +3128,12 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 						   echoing */
 		{
 			DPRINTF("PAM_PROMPT_ECHO_OFF: %s\n", (*m)->msg);
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+			if (!options.permitlogin) {
+				DPRINTF("login not permitted\n");
+				return (PAM_CONV_ERR);
+			}
+#endif
 			gtk_label_set_text(GTK_LABEL(l_pword), (*m)->msg);
 			gtk_entry_set_text(GTK_ENTRY(pass), "");
 			gtk_label_set_text(GTK_LABEL(l_lstat), "");
@@ -5317,6 +5369,7 @@ ShowScreen(XdeScreen *xscr)
 {
 	if (xscr->wind) {
 		gtk_widget_show_now(GTK_WIDGET(xscr->wind));
+#ifndef DO_CHOOSER
 #ifndef DO_LOGOUT
 		if (options.username) {
 			gtk_widget_set_sensitive(user, FALSE);
@@ -5345,6 +5398,7 @@ ShowScreen(XdeScreen *xscr)
 		gtk_widget_grab_default(controls[LOGOUT_ACTION_LOGOUT]);
 		gtk_widget_grab_focus(controls[LOGOUT_ACTION_LOGOUT]);
 #endif
+#endif				/* !defined DO_CHOOSER */
 		grabbed_window(GTK_WIDGET(xscr->wind), NULL);
 	}
 }
@@ -5393,6 +5447,8 @@ HideWindow(void)
 
 	HideScreens();
 }
+
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
 
 static void
 xdeSetProperties(SmcConn smcConn, SmPointer data)
@@ -5800,6 +5856,8 @@ init_smclient(void)
 	chan = g_io_channel_unix_new(ifd);
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
 }
+
+#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) */
 
 static void
 do_run(int argc, char *argv[])
@@ -6743,11 +6801,11 @@ get_resources(int argc, char *argv[])
 		getXrmColor(val, &resources.greetColor);
 	}
 	// xlogin.namePrompt:		Username:
-	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username: "))) {
+	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username:  "))) {
 		getXrmString(val, &resources.namePrompt);
 	}
 	// xlogin.passwdPrompt:		Password:
-	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password: "))) {
+	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password:  "))) {
 		getXrmString(val, &resources.passwdPrompt);
 	}
 	// xlogin.promptFace:		Sans-12:bold
@@ -6841,6 +6899,12 @@ get_resources(int argc, char *argv[])
 	if ((val = get_xlogin_resource(rdb, "borderWidth", "3"))) {
 		getXrmUint(val, &resources.borderWidth);
 	}
+	if ((val = get_xlogin_resource(rdb, "autoLock", "true"))) {
+		getXrmBool(val, &resources.autoLock);
+	}
+	if ((val = get_xlogin_resource(rdb, "systemLock", "true"))) {
+		getXrmBool(val, &resources.systemLock);
+	}
 
 	// xlogin.login.translations
 
@@ -6903,9 +6967,11 @@ get_resources(int argc, char *argv[])
 		if ((val = get_resource(rdb, "user.default", NULL))) {
 			getXrmString(val, &options.username);
 		}
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 		if ((val = get_resource(rdb, "autologin", NULL))) {
-			// getXrmBool(val, &options.autologin);
+			getXrmBool(val, &options.autologin);
 		}
+#endif
 	}
 	if ((val = get_resource(rdb, "vendor", NULL))) {
 		getXrmString(val, &options.vendor);
@@ -6913,17 +6979,19 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "prefix", NULL))) {
 		getXrmString(val, &options.prefix);
 	}
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 	if ((val = get_resource(rdb, "login.permit", NULL))) {
-		// getXrmBool(val, &options.permitlogin);
+		getXrmBool(val, &options.permitlogin);
 	}
 	if ((val = get_resource(rdb, "login.remote", NULL))) {
-		// getXrmBool(val, &options.remotelogin);
+		getXrmBool(val, &options.remotelogin);
 	}
+#endif
 	if ((val = get_resource(rdb, "xsession.chooser", NULL))) {
 		getXrmBool(val, &options.xsession);
 	}
 	if ((val = get_resource(rdb, "xsession.execute", NULL))) {
-		// getXrmBool(val, &options.execute);
+		getXrmBool(val, &options.execute);
 	}
 	if ((val = get_resource(rdb, "xsession.default", NULL))) {
 		getXrmString(val, &options.choice);
@@ -6937,6 +7005,59 @@ get_resources(int argc, char *argv[])
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);
 }
+
+void
+set_default_debug(void)
+{
+	const char *env = getenv("XDE_DEBUG");
+
+	if (env)
+		options.debug = atoi(env);
+}
+
+void
+set_default_display(void)
+{
+	const char *env = getenv("DISPLAY");
+
+	if (env) {
+		free(options.display);
+		options.display = strdup(env);
+	}
+}
+
+void
+set_default_x11(void)
+{
+	const char *env;
+
+	if ((env = getenv("XDG_VTNR"))) {
+		free(options.vtnr);
+		options.vtnr = strdup(env);
+	}
+	if ((env = getenv("XDG_SEAT"))) {
+		free(options.seat);
+		options.seat = strdup(env);
+	}
+	if (options.vtnr) {
+		free(options.tty);
+		if ((options.tty = calloc(16, sizeof(*options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+}
+
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+void
+set_default_authfile(void)
+{
+	const char *env = XauFileName();
+
+	if (env) {
+		free(options.authfile);
+		options.authfile = strdup(env);
+	}
+}
+#endif
 
 void
 set_default_vendor(void)
@@ -7302,11 +7423,12 @@ set_default_choice(void)
 void
 set_defaults(int argc, char *argv[])
 {
-	char *p;
-
-	if ((p = getenv("XDE_DEBUG")))
-		options.debug = atoi(p);
-
+	set_default_debug();
+	set_default_display();
+	set_default_x11();
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	set_default_authfile();
+#endif
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
@@ -7321,6 +7443,76 @@ set_defaults(int argc, char *argv[])
 #endif
 	set_default_choice();
 }
+
+void
+get_default_display(void)
+{
+	if (options.display)
+		setenv("DISPLAY", options.display, 1);
+}
+
+void
+get_default_x11(void)
+{
+	Display *dpy;
+	Window root;
+	Atom property, actual;
+	int format;
+	unsigned long nitems, after;
+	long *data = NULL;
+
+	if (!(dpy = XOpenDisplay(0))) {
+		EPRINTF("cannot open display %s\n", options.display);
+		exit(EXIT_FAILURE);
+	}
+	root = RootWindow(dpy, 0);
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "XFree86_VT", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 1, False, XA_INTEGER, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 32 && nitems && data) {
+		free(options.vtnr);
+		if ((options.vtnr = calloc(16, sizeof(*options.vtnr))))
+			snprintf(options.vtnr, 16, "%lu", *(unsigned long *) data);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "Xorg_Seat", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 16, False, XA_STRING, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 8 && nitems && data) {
+		free(options.seat);
+		if ((options.seat = calloc(nitems + 1, sizeof(*options.seat))))
+			strncpy(options.seat, (char *) data, nitems);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	if (options.vtnr) {
+		if (!options.seat)
+			options.seat = strdup("seat0");
+		if ((options.tty = calloc(16, sizeof(options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+	if (!options.tty)
+		options.tty = strdup(options.display);
+	XCloseDisplay(dpy);
+}
+
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+void
+get_default_authfile(void)
+{
+	if (options.authfile)
+		setenv("XAUTHORITY", options.authfile, 1);
+}
+#endif
 
 void
 get_default_vendor(void)
@@ -7719,6 +7911,11 @@ get_default_username(void)
 void
 get_defaults(int argc, char *argv[])
 {
+	get_default_display();
+	get_default_x11();
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+	get_default_authfile();
+#endif
 	get_default_vendor();
 	get_default_banner();
 	get_default_splash();
@@ -7783,6 +7980,10 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+			{"display",	    required_argument,	NULL, 'd'},
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+			{"authfile",	    required_argument,	NULL, 'a'},
+#endif
 #ifdef DO_XLOCKING
 			{"locker",	    no_argument,	NULL, 'L'},
 			{"replace",	    no_argument,	NULL, 'r'},
@@ -7833,10 +8034,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "p:b:S:s:ni:t:xT:ND::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "d:p:b:S:s:ni:t:xT:ND::v::hVCH?", long_options,
 				     &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "p:b:S:s:ni:t:xT:NDvhVC?");
+		c = getopt(argc, argv, "d:p:b:S:s:ni:t:xT:NDvhVC?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -7846,6 +8047,16 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
+		case 'd':	/* -d, --display */
+			free(options.display);
+			options.display = strndup(optarg, 256);
+			break;
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+		case 'a':	/* -a, --authfile */
+			free(options.authfile);
+			options.authfile = strndup(optarg, PATH_MAX);
+			break;
+#endif
 #ifdef DO_XLOCKING
 		case 'L':	/* -L, --locker */
 			if (options.command != CommandDefault)
