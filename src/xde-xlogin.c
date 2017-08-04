@@ -302,6 +302,9 @@ typedef struct {
 	Bool filename;
 	unsigned guard;
 	Bool tray;
+	Bool autologin;
+	Bool permitlogin;
+	Bool remotelogin;
 } Options;
 
 Options options = {
@@ -355,6 +358,9 @@ Options options = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
+	.autologin = False,
+	.permitlogin = True,
+	.remotelogin = True,
 };
 
 Options defaults = {
@@ -408,6 +414,9 @@ Options defaults = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
+	.autologin = False,
+	.permitlogin = True,
+	.remotelogin = True,
 };
 
 typedef struct {
@@ -5997,7 +6006,7 @@ authenticate(void)
 {
 	pam_handle_t *pamh = NULL;
 	const char *uname = NULL;
-	int status = 0;
+	int status = 0, flags = 0;
 
 	DPRINTF("starting PAM\n");
 	pam_start("system-login", NULL, &xde_pam_conv, &pamh);
@@ -6007,8 +6016,10 @@ authenticate(void)
 		if (getuid() != 0)
 			uname = strdup(options.username);
 	}
+	if (!resources.allowNullPasswd)
+		flags |= PAM_DISALLOW_NULL_AUTHTOK;
 	for (;;) {
-		status = pam_authenticate(pamh, 0);
+		status = pam_authenticate(pamh, flags);
 		if (login_result == LoginResultLogout)
 			break;
 		switch (status) {
@@ -7139,7 +7150,7 @@ get_resources(int argc, char *argv[])
 			getXrmString(val, &options.username);
 		}
 		if ((val = get_resource(rdb, "autologin", NULL))) {
-			// getXrmBool(val, &options.autologin);
+			getXrmBool(val, &options.autologin);
 		}
 	}
 	if ((val = get_resource(rdb, "vendor", NULL))) {
@@ -7149,16 +7160,16 @@ get_resources(int argc, char *argv[])
 		getXrmString(val, &options.prefix);
 	}
 	if ((val = get_resource(rdb, "login.permit", NULL))) {
-		// getXrmBool(val, &options.permitlogin);
+		getXrmBool(val, &options.permitlogin);
 	}
 	if ((val = get_resource(rdb, "login.remote", NULL))) {
-		// getXrmBool(val, &options.remotelogin);
+		getXrmBool(val, &options.remotelogin);
 	}
 	if ((val = get_resource(rdb, "xsession.chooser", NULL))) {
 		getXrmBool(val, &options.xsession);
 	}
 	if ((val = get_resource(rdb, "xsession.execute", NULL))) {
-		// getXrmBool(val, &options.execute);
+		getXrmBool(val, &options.execute);
 	}
 	if ((val = get_resource(rdb, "xsession.default", NULL))) {
 		getXrmString(val, &options.choice);

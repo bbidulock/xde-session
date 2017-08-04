@@ -358,3 +358,4 @@
 -TXSession
 -TXWMIconGeometry
 -TXWMState
+-Tpam_handle_t
