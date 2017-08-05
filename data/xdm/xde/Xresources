@@ -336,3 +336,4 @@ XDE-XLogin.inputBgColor:		#ffffff
 XDE-XLogin.failFace:			Liberation Sans:size=16
 XDE-XLogin.failColor:			red
 
+# include xdm-config
