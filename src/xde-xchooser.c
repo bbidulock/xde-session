@@ -169,6 +169,7 @@ static char **saveArgv;
 
 #define DO_XCHOOSER 1
 #undef DO_XLOGIN
+#undef DO_GREETER
 #undef DO_XLOCKING
 #undef DO_ONIDLE
 #undef DO_CHOOSER
@@ -194,6 +195,10 @@ static char **saveArgv;
 #elif defined(DO_XLOGIN)
 #   define RESNAME "xde-xlogin"
 #   define RESCLAS "XDE-XLogin"
+#   define RESTITL "XDMCP Greeter"
+#elif defined(DO_GREETER)
+#   define RESNAME "xde-greeter"
+#   define RESCLAS "XDE-Greeter"
 #   define RESTITL "XDMCP Greeter"
 #else
 #   error Undefined program type.
@@ -307,7 +312,7 @@ typedef struct {
 	Bool filename;
 	unsigned guard;
 	Bool tray;
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	char *authfile;
 	Bool autologin;
 	Bool permitlogin;
@@ -371,7 +376,7 @@ Options options = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	.authfile = NULL,
 	.autologin = False,
 	.permitlogin = True,
@@ -435,7 +440,7 @@ Options defaults = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	.authfile = NULL,
 	.autologin = False,
 	.permitlogin = True,
@@ -479,6 +484,11 @@ typedef struct {
 	Bool systemLock;
 	char *authDir;
 	char **exportList;
+	Bool grabServer;
+	int grabTimeout;
+	Bool authorize;
+	Bool authComplain;
+	char **authName;
 	char *authFile;
 	char *setup;
 	char *startup;
@@ -530,6 +540,11 @@ Resources resources  = {
 	.authDir = NULL,
 	.exportList = NULL,
 	.authFile = NULL,
+	.grabServer = False,
+	.grabTimeout = 5,
+	.authorize = True,
+	.authComplain = True,
+	.authName = NULL,
 	.setup = NULL,
 	.startup = NULL,
 	.reset = NULL,
@@ -599,7 +614,7 @@ LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
 static SmcConn smcConn;
 #endif
 
@@ -3156,7 +3171,7 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 						   echoing */
 		{
 			DPRINTF("PAM_PROMPT_ECHO_OFF: %s\n", (*m)->msg);
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			if (!options.permitlogin) {
 				DPRINTF("login not permitted\n");
 				return (PAM_CONV_ERR);
@@ -5632,7 +5647,7 @@ HideWindow(void)
 	HideScreens();
 }
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
 
 static void
 xdeSetProperties(SmcConn smcConn, SmPointer data)
@@ -6042,7 +6057,7 @@ init_smclient(void)
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
 }
 
-#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) */
+#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 static void
 setup_pam(pam_handle_t *pamh)
@@ -6096,13 +6111,13 @@ authenticate(void)
 	pam_handle_t *pamh = NULL;
 	const char *uname = NULL;
 	int err, status = PAM_ABORT, flags = 0;
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	const char *service = options.autologin ? "xde-autologin" : "xde";
 #else
 	const char *service = "system-login";
 #endif
 
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	if (!options.display || (options.display[0] != ':' && !options.remotelogin)) {
 		EPRINTF("remote login not permitted\n");
 		return (status);
@@ -6189,7 +6204,7 @@ authenticate(void)
 	return (status);
 }
 
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 
 #ifdef PAM_XAUTHDATA
 void
@@ -6244,14 +6259,7 @@ xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **r
 	return PAM_SUCCESS;	/* we don't do auth here */
 }
 
-void
-run_greeter(int argc, char *argv[])
-{
-	/* systemd has the problem that it does not allow the role of a process
-	 * to be changed; therefore, when acting as a greeter, we fork a process
-	 * and have the child open a PAM session as the greeter. */
-}
-
+#ifdef DO_XLOGIN
 void
 run_login(int argc, char *argv[])
 {
@@ -6259,7 +6267,25 @@ run_login(int argc, char *argv[])
 #endif
 
 }
-#endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) */
+#endif				/* DO_XLOGIN */
+
+#ifdef DO_XCHOOSER
+void
+run_chooser(int argc, char *argv[])
+{
+}
+#endif				/* DO_XCHOOSER */
+
+#ifdef DO_GREETER
+void
+run_greeter(int argc, char *argv[])
+{
+	/* systemd has the problem that it does not allow the role of a process
+	 * to be changed; therefore, when acting as a greeter, we fork a process
+	 * and have the child open a PAM session as the greeter. */
+}
+#endif				/* DO_GREETER */
+#endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 #ifdef DO_XLOCKING
 static void
@@ -6519,7 +6545,7 @@ do_run(int argc, char *argv[])
 {
 	int status;
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
 	/* initialize session managerment functions */
 	init_smclient();
 #endif
@@ -6590,8 +6616,12 @@ do_run(int argc, char *argv[])
 			DPRINTF("unlocking screen due to successful login\n");
 			UnlockScreen();
 #else
-#if defined(DO_XLOGIN) | defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN)
 			run_login(argc, argv);
+#elif defined(DO_GREETER)
+			run_greeter(argc, argv);
+#elif defined(DO_CHOOSER)
+			run_chooser(argc, argv);
 #else
 			exit(EXIT_SUCCESS);
 #endif
@@ -7409,7 +7439,7 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "splash", NULL))) {
 		getXrmString(val, &options.splash);
 	}
-#if defined DO_XCHOOSER || defined DO_XLOGIN
+#if defined DO_XCHOOSER || defined DO_XLOGIN || defined(DO_GREETER)
 	if ((val = get_resource(rdb, "welcome", NULL))) {
 		getXrmString(val, &options.welcome);
 	}
@@ -7448,7 +7478,7 @@ get_resources(int argc, char *argv[])
 		if ((val = get_resource(rdb, "user.default", NULL))) {
 			getXrmString(val, &options.username);
 		}
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 		if ((val = get_resource(rdb, "autologin", NULL))) {
 			getXrmBool(val, &options.autologin);
 		}
@@ -7460,7 +7490,7 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "prefix", NULL))) {
 		getXrmString(val, &options.prefix);
 	}
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	if ((val = get_resource(rdb, "login.permit", NULL))) {
 		getXrmBool(val, &options.permitlogin);
 	}
@@ -7521,13 +7551,28 @@ get_resources(int argc, char *argv[])
 	// DisplayManager.*.pingTimeout:	5
 	// DisplayManager.*.terminateServer:	false
 	// DisplayManager.*.grabServer:		false
+	if ((val = get_dm_dpy_resource(rdb, "grabServer", "false"))) {
+		getXrmBool(val, &resources.grabServer);
+	}
 	// DisplayManager.*.grabTimeout:	3
+	if ((val = get_dm_dpy_resource(rdb, "grabTimeout", "3"))) {
+		getXrmInt(val, &resources.grabTimeout);
+	}
 	// DisplayManager.*.resetSignal:	1
 	// DisplayManager.*.termSignal:		15
 	// DisplayManager.*.resetForAuth:	false
 	// DisplayManager.*.authorize:		true
+	if ((val = get_dm_dpy_resource(rdb, "authorize", "true"))) {
+		getXrmBool(val, &resources.authorize);
+	}
 	// DisplayManager.*.authComplain:	true
+	if ((val = get_dm_dpy_resource(rdb, "authComplain", "true"))) {
+		getXrmBool(val, &resources.authComplain);
+	}
 	// DisplayManager.*.authName:		XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1
+	if ((val = get_dm_dpy_resource(rdb, "authName", "XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1"))) {
+		getXrmStringList(val, &resources.authName);
+	}
 	// DisplayManager.*.authFile:		
 	if ((val = get_dm_dpy_resource(rdb, "authFile", NULL))) {
 		getXrmString(val, &resources.authFile);
@@ -7623,7 +7668,7 @@ set_default_x11(void)
 	}
 }
 
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 void
 set_default_authfile(void)
 {
@@ -8003,7 +8048,7 @@ set_defaults(int argc, char *argv[])
 	set_default_debug();
 	set_default_display();
 	set_default_x11();
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	set_default_authfile();
 #endif
 	set_default_vendor();
@@ -8082,7 +8127,7 @@ get_default_x11(void)
 	XCloseDisplay(dpy);
 }
 
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 void
 get_default_authfile(void)
 {
@@ -8491,7 +8536,7 @@ get_defaults(int argc, char *argv[])
 {
 	get_default_display();
 	get_default_x11();
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	get_default_authfile();
 #endif
 	get_default_vendor();
@@ -8559,7 +8604,7 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"display",	    required_argument,	NULL, 'd'},
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			{"authfile",	    required_argument,	NULL, 'a'},
 #endif
 #ifdef DO_XLOCKING
@@ -8629,7 +8674,7 @@ main(int argc, char *argv[])
 			free(options.display);
 			options.display = strndup(optarg, 256);
 			break;
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 		case 'a':	/* -a, --authfile */
 			free(options.authfile);
 			options.authfile = strndup(optarg, PATH_MAX);
