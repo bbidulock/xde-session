@@ -277,6 +277,6 @@ Monitors for changes.
 
 =back
 
-
+=cut
 
 # vim: set sw=4 tw=72 nocin spell spelllang=en_ca:
