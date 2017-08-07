@@ -240,10 +240,10 @@ L<XOpenDisplay(1x)> failed, retry.
 Most values that affect the look and feel of B<xde-greeter> may also be
 specified as X resources in the B<RESOURCE_MANAGER> database associated
 with the X server.  All of these resources can have the specific
-resource name and class (C<xde-greeter>, C<XDE-Greeter>).  When no
-resource is found with the specific name and class, L<xdm(8)> resources
-with name and class (C<xlogin.Login>, C<Xlogin.Login>) will also be
-examined for specified resources.
+resource name and class (C<xde-greeter>, C<XDE-Greeter>).  When no resource
+is found with the specific name and class, L<xdm(8)> resources with name
+and class (C<xlogin.Login>, C<Xlogin.Login>) will also be examined for
+specified resources.
 
 Note that L<xdm(8)> usually adds the resources contained in the
 F</etc/X11/xdm/Xresources> file that is loaded by L<xdm(8)> on startup
@@ -312,7 +312,7 @@ command line option.
 Provides the language in the same fashion as the B<--language> command
 line option.
 
-=item B<xde-greetegreeterheme.icon>: I<NAME>
+=item B<xde-greeter>.B<theme.icon>: I<NAME>
 
 Provides the XDG icon theme name.
 Specifies the value of the B<--icons> option.
@@ -471,6 +471,7 @@ When specific B<xde-greeter> resources are not specified,
 B<xde-greeter> falls back the using the resources specified for its
 default greeter by L<xdm(8)>, as follows:
 
+
 =over 4
 
 =item B<xlogin>.B<Login.width>: I<INTEGER>
@@ -515,7 +516,7 @@ The default is C<Sans:size=12:bold>.
 
 The font used to display the input typed by the user when not built with
 Xft support.
-This resource not used by B<xde-greeter>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.greeting>: I<STRING>
 
@@ -540,7 +541,7 @@ The default is C<Sans:size=12:bold>.
 =item B<xlogin>.B<Login.greetFont>: I<XFONT>
 
 The font used to display the greeting when not built with Xft support.
-This resource not used by B<xde-greeter>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.greetColor>: I<XCOLOR>
 
@@ -571,7 +572,7 @@ The default is C<Sans:size=12:bold>.
 =item B<xlogin>.B<Login.promptFont>: I<XFONT>
 
 The font used to display prompts when not built with Xft support.
-This resource not used by B<xde-greeter>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.promptColor>: I<XCOLOR>
 
@@ -586,7 +587,7 @@ The default is C<Sans:size=12:bold>.
 =item B<xlogin>.B<Login.inputFont>: I<XFONT>
 
 The font used to display user input when not built with Xft support.
-This resource not used by B<xde-greeter>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.inputColor>: I<XCOLOR>
 
@@ -616,7 +617,7 @@ The default is C<Sans:size=12:bold>.
 
 The font used to display the failure message when not built with Xft
 support.
-This resource not used by B<xde-greeter>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.failColor>: I<XCOLOR>
 
@@ -733,7 +734,7 @@ The default is C<3>.
 
 =item B<xlogin>.B<Login.translations>: I<STRING>
 
-This resource not used by B<xde-greeter>.
+This resource is not used by B<xde-greeter>.
 
 =back
 
@@ -790,28 +791,69 @@ name of the display.
 =item B<DisplayManager>.I<DISPLAY>.B<setup>: I<STRING>
 
 Specifies a program that is run (as root) before offering the login
-window.  This may be use to change the appearance of the screen around
+window.  This may be used to change the appearance of the screen around
 the login window or to put up other windows (e.g., you may want to run
 F<xconsole> here).  By default, no program is run.  The conventional
 name for a file used here is F<Xsetup>.  See L<xdm(8)/Setup Program>.
+
+Note that when the B<DisplayManager>.I<DISPLAY>.B<greeter> program is
+specified, this program is not run, even when defined: its purpose is to
+provide additional tools for the built-in greeter library.
 
 =item B<DisplayManager>.I<DISPLAY>.B<startup>: I<STRING>
 
 This specifies a program that is run (as root) after the authentication
 process succeeds.  By default, no program is run.  The conventional name
-for a file user here is F<Xstartup>.  See L<xdm(8)/Startup Program>.
+for a file user here is F<Xstartup>.  This program typically cleans up
+after F<Xsetup> and registers the user session in F<utmp>/F<wtmp> with
+the L<sessreg(1)> program.  Historically, it also released the console
+(controlling terminal) to the user by changing ownership of the console
+device, using a program named F<GiveConsole>.  See L<xdm(8)/Startup
+Program>.
+
+When the B<xlogin> program is responsible for completing the login and
+launching the session, it may execute this file before creating the user
+session.  However, the B<greeter> program is only responsible for
+authenticating the user and, as a result, L<xdm(8)> will launch this
+program before establishing the user session.
+So, the B<greeter> can ignore this resource.
 
 =item B<DisplayManager>.I<DISPLAY>.B<session>: I<STRING>
 
 This specifies the session to be executed (not running as root).  By
 default, F</usr/bin/xterm> is run.  The conventional name is
-F<Xsession>.  See L<xdm(8)/Session Program>.
+F<Xsession>.  This program is executed with a single argument,
+C<failsafe>, when fail-safe operation is specified as part of the login
+process.  The typical program recognizes this argument and simply
+launches an L<xterm(1)> when it is detected.  Otherwise, this program
+typically executes the user's F<$HOME/.xsession> file if it exists, and
+otherwise the user's F<$HOME/.xinitrc> file if it exists; otherwise, it
+typically executes the system F</etc/X11/xinit/xinitrc> file.  See
+L<xdm(8)/Session Program>.
+
+When the B<xlogin> program is responsible for completing the login and
+launching the session, it may execute this file after creating the user
+session.  However, the B<greeter> program is only responsible for
+authenticating the user and, as a result, L<xdm(8)> will launch this
+program after establishing the user session.
+So, the B<greeter> can ignore this resource.
 
 =item B<DisplayManager>.I<DISPLAY>.B<reset>: I<STRING>
 
 This specifies a program that is run (as root) after the session
 terminates.  By default, no program is run.  The conventional name is
-F<Xreset>.  See L<xdm(8)>/Reset Program>.
+F<Xreset>.  This program typically removes the user session from
+F<utmp>/F<wtmp> with the L<sessreg(1)> program.  Historically, it also
+removed the console (controlling terminal) from the user by restoring
+ownership of the console device, using a program called F<TakeConsole>.
+See L<xdm(8)>/Reset Program>.
+
+When the B<xlogin> program is responsible for completing the login and
+launching the session, it may execute this file after the user session
+ends.  However, the B<greeter> program is only responsible for
+authenticating the user and, as a result, L<xdm(8)> will launch this
+program after the user session ends.
+So, the B<greeter> can ignore this resource.
 
 =item B<DisplayManager>.I<DISPLAY>.B<userPath>: I<STRING>
 
@@ -820,13 +862,24 @@ value.  It should be a colon separated list of directories: see L<sh(1)>
 for a full description.  The default value is
 F</bin:/usr/bin:/usr/sbin:/usr/ucb>.
 
+Note that a more modern entry is F</sbin:/bin:/usr/sbin:/usr/bin>.  An
+B<xlogin> program should observe this resource by setting the C<PATH>
+environment variable to its value when opening the user session and when
+running the F<Xsession> script.  The B<greeter> can ignore this resource.
+
 =item B<DisplayManager>.I<DISPLAY>.B<systemPath>: I<STRING>
 
 L<xdm(8)> sets the C<PATH> environment variable for the startup and
-reset scripts to the value of this resource.  The default for this
-resource is F</etc:/bin:/usr/bin:/usr/sbin:/usr/ucb>.  Note the absence
-of C<.> from this entry.  This is a good practice to follow for root; it
-avoids many common Trojan Horse system penetration schemes.
+reset scripts (run as root) to the value of this resource.  The default
+for this resource is F</etc:/bin:/usr/bin:/usr/sbin:/usr/ucb>.  Note the
+absence of C<.> from this entry.  This is a good practice to follow for
+root; it avoids many common Trojan Horse system penetration schemes.
+
+Note that a more modern entry is F</sbin:/bin:/usr/sbin:/usr/bin>.  An
+B<xlogin> program should observe this resource by setting the C<PATH>
+environment variable to its value when running the
+F<Xstartup> and F<Xreset> scripts.
+The B<greeter> can ignore this resource.
 
 =item B<DisplayManager>.I<DISPLAY>.B<systemShell>: I<STRING>
 
@@ -834,12 +887,22 @@ L<xdm(8)> sets the C<SHELL> environment variable for the startup and
 reset scripts to the value of this resource.  It is F</bin/sh> by
 default.
 
+An B<xlogin> program should observe this resource by using its setting
+when launching the F<Xstartup> and F<Xreset> programs.
+The B<greeter> can ignore this resource.
+
 =item B<DisplayManager>.I<DISPLAY>.B<failsafeClient>: I<STRING>
 
 If the default session fails to execute, L<xdm(8)> will fall back to
 this program.  This program is executed with no arguments, but executes
 using the same environment variables as the session would have had (see
 L<xdm(8)/Session Program>).  By default, F</usr/bin/xterm> is used.
+Note that L<twm(1)> or L<failsafewm(1)> are good choices over the
+traditional L<xterm(1)>.
+
+An B<xlogin> program can choose and execute it's own fail-safe
+mechanism.  The B<greeter> can ignore this resource as it will be the
+responsibility of L<xdm(8)> to invoke fail-safe operation.
 
 =item B<DisplayManager>.I<DISPLAY>.B<grabServer>: I<BOOLEAN>
 
@@ -859,13 +922,15 @@ a user can be spoofed by a look-alike window on the display.  If the
 grab fails, L<xdm(8)> kills and restarts the server (if possible) and
 the session.
 
+Both an B<xlogin> and B<greeter> program should observe these resources
+by providing the same behaviour.
 
 =item B<DisplayManager>.I<DISPLAY>.B<authorize>: I<BOOLEAN>
 
 =item B<DisplayManager>.I<DISPLAY>.B<authName>: I<STRINGLIST>
 
 B<authorize> is a boolean resource that controls whether L<xdm(8)>
-generats and uses authorization for local server connections.  If
+generates and uses authorization for local server connections.  If
 authorization is used, B<authName> is a list of authorization mechanisms
 to use, separated by white space.  XDMCP connections dynamically specify
 which authorization mechanisms are supported, so B<authName> is ignored
@@ -875,38 +940,19 @@ display in the login widget.  By default, B<authorize> is C<true>,
 B<authName> is C<MIT-MAGIC-COOKIE-1> or if C<XDM-AUTHORIZATION-1> is
 available, C<XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1>.
 
+This resource can be ignored by B<xlogin> and B<greeter> programs, as
+there are other mechanisms to determine whether authorization has be
+applied to the display server.
+
 =item B<DisplayManager>.I<DISPLAY>.B<authComplain>: I<BOOLEAN>
 
 If set to C<false>, disables the use of the B<unsecureGreeting> in the
 login window.  See L<xdm(8)/Authentication Widget>.  The default is
 C<true>.
 
-=item B<DisplayManager>.I<DISPLAY>.B<userAuthDir>: I<STRING>
-
-When L<xdm(8)> is unable to write the usual user authorization file
-(C<$HOME/.Xauthority>), it creates a unique file name in this directory
-and points the environment variable C<XAUTHORITY> at the created file.
-It uses F</tmp> by default.
-
-=item B<DisplayManager>.I<DISPLAY>.B<chooser>: I<STRING>
-
-Specifies the program run to offer the host menu for Indirect queries
-redirected to the special host name C<CHOOSER>.
-F</usr/lib/X11/xdm/chooser> is the default.
-See L<xdm(8)/XDMCP Access Control> and L<xdm(8)/Chooser>.
-
-=item B<DisplayManager>.I<DISPLAY>.B<greeter>: I<STRING>
-
-Specifies the program run to offer a graphical login prompt.  When this
-resource is specified, the value of B<DisplayManager>.B<greeterLib> is
-ignored for the specified I<DISPLAY>.
-
-=item B<DisplayManager>.I<DISPLAY>.B<xlogin>: I<STRING>
-
-Specifies the program run to offer a graphical login prompt and launch
-user sessions for local displays.  When this resource is specified, the
-value of B<DisplayManager>.B<greeterLib> is ignored for the specified
-I<DISPLAY>.
+An B<xlogin> and B<greeter> program should observe this resource by
+complaining about lack of authorization when detected and presenting the
+B<xlogin>.B<Login>.B<unsecureGreeting> string when lacking.
 
 =back
 
@@ -958,7 +1004,7 @@ The default location of the banner graphic.
 
 =item F<$XDG_DATA_DIRS/images/${XDG_MENU_PREFIX}splash.png>
 
-The default location of the background splash to display on the login
+The default location of the background splash to display on the
 screen when no other background is available.
 
 =item F</etc/X11/xdm/Xresources>
