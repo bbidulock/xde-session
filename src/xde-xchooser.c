@@ -6280,9 +6280,10 @@ run_chooser(int argc, char *argv[])
 void
 run_greeter(int argc, char *argv[])
 {
-	/* systemd has the problem that it does not allow the role of a process
-	 * to be changed; therefore, when acting as a greeter, we fork a process
-	 * and have the child open a PAM session as the greeter. */
+	/* When the greeter is successful, it writes the authenticated user name to
+	   standard output and exits. */
+	fprintf(stdout, "%s%c", options.username, '\0');
+	return;
 }
 #endif				/* DO_GREETER */
 #endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER) */
@@ -6622,9 +6623,8 @@ do_run(int argc, char *argv[])
 			run_greeter(argc, argv);
 #elif defined(DO_CHOOSER)
 			run_chooser(argc, argv);
-#else
-			exit(EXIT_SUCCESS);
 #endif
+			exit(EXIT_SUCCESS);
 #endif
 			continue;
 		}
