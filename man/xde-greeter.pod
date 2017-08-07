@@ -862,17 +862,51 @@ the session.
 
 =item B<DisplayManager>.I<DISPLAY>.B<authorize>: I<BOOLEAN>
 
+=item B<DisplayManager>.I<DISPLAY>.B<authName>: I<STRINGLIST>
+
+B<authorize> is a boolean resource that controls whether L<xdm(8)>
+generats and uses authorization for local server connections.  If
+authorization is used, B<authName> is a list of authorization mechanisms
+to use, separated by white space.  XDMCP connections dynamically specify
+which authorization mechanisms are supported, so B<authName> is ignored
+in this case.  When B<authorize> is set for a display and authorization
+is not available, the user is informed by having a different message
+display in the login widget.  By default, B<authorize> is C<true>,
+B<authName> is C<MIT-MAGIC-COOKIE-1> or if C<XDM-AUTHORIZATION-1> is
+available, C<XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1>.
+
 =item B<DisplayManager>.I<DISPLAY>.B<authComplain>: I<BOOLEAN>
 
-=item B<DisplayManager>.I<DISPLAY>.B<authName>: I<STRINGLIST>
+If set to C<false>, disables the use of the B<unsecureGreeting> in the
+login window.  See L<xdm(8)/Authentication Widget>.  The default is
+C<true>.
 
 =item B<DisplayManager>.I<DISPLAY>.B<userAuthDir>: I<STRING>
 
+When L<xdm(8)> is unable to write the usual user authorization file
+(C<$HOME/.Xauthority>), it creates a unique file name in this directory
+and points the environment variable C<XAUTHORITY> at the created file.
+It uses F</tmp> by default.
+
 =item B<DisplayManager>.I<DISPLAY>.B<chooser>: I<STRING>
+
+Specifies the program run to offer the host menu for Indirect queries
+redirected to the special host name C<CHOOSER>.
+F</usr/lib/X11/xdm/chooser> is the default.
+See L<xdm(8)/XDMCP Access Control> and L<xdm(8)/Chooser>.
 
 =item B<DisplayManager>.I<DISPLAY>.B<greeter>: I<STRING>
 
+Specifies the program run to offer a graphical login prompt.  When this
+resource is specified, the value of B<DisplayManager>.B<greeterLib> is
+ignored for the specified I<DISPLAY>.
+
 =item B<DisplayManager>.I<DISPLAY>.B<xlogin>: I<STRING>
+
+Specifies the program run to offer a graphical login prompt and launch
+user sessions for local displays.  When this resource is specified, the
+value of B<DisplayManager>.B<greeterLib> is ignored for the specified
+I<DISPLAY>.
 
 =back
 
@@ -887,13 +921,22 @@ configuration file F</usr/lib/X11/xdm/xdm-config>:
 
 This option, described in L<xdm(8)>, is used to tell L<xdm(8)> which
 program to run as a chooser.  This should be set to
-F</usr/lib/X11/xdm/xde-greeter>.  See L<xdm(8)/CHOOSER>.
+F</usr/lib/X11/xdm/xde-xchooser>.  See L<xde-xchooser(1)> and
+L<xdm(8)/CHOOSER>.
 
 =item B<DisplayManager>.I<DISPLAY>.B<greeter>
 
 This option, described in L<xdm(8)>, is used to tell L<xdm(8)> which
 program to run as a greeter.  This should be set to
-F</usr/lib/X11/xdm/xde-greeter>.  See L<xdm(8)/AUTHENTICATION WIDGET>.
+F</usr/lib/X11/xdm/xde-greeter>.  See L<xde-greeter(1)> and
+L<xdm(8)/AUTHENTICATION WIDGET>.
+
+=item B<DisplayManager>.I<DISPLAY>.B<xlogin>
+
+This option, described in L<xdm(8)>, is used to tell L<xdm(8)> which
+program to run for login.  This should be set to
+F</usr/lib/X11/xdm/xde-xlogin>.  See L<xde-xlogin(1)> and
+L<xdm(8)/AUTHENTICATION WIDGET>.
 
 =back
 
