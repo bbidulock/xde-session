@@ -353,7 +353,7 @@ L<https://github.com/bbidulock/xde-session/issues>.
 
 I wrote B<xde-chooser> to provide a mechanism for selecting available
 window managers in an XDG compliant way for the I<unexicon> desktop.
-With L<gdm(1)> going to GTK3, the I<unexicon> desktop uses L<xdm(1)>,
+With L<gdm(1)> going to GTK3, the I<unexicon> desktop uses L<xdm(8)>,
 L<slim(1)>, L<xde-chooser(1)> and L<xde-session(1)> instead.
 
 B<xde-chooser> was originally written as a gtk-perl program;

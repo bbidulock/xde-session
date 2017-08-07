@@ -17,13 +17,13 @@ performs VT switching.
 
 =head1 OPTIONS
 
-No options are necessary.  When launched by L<xdm(1)>, it will provide
+No options are necessary.  When launched by L<xdm(8)>, it will provide
 the appropriate arguments.  B<xde-xswitch> can be launched directly on
 the command line of an x-terminal to test its appearance and operation.
 In this mode, arguments are still required but no options.  Absence of
 the B<-xdmAddress>, B<-clientAddress> and B<-connectionType> options
-indicates to B<xde-xswitch> that it was not launched by L<xdm(1)> or an
-L<xdm(1)> work-alike as a chooser.  See L</USAGE> for more information.
+indicates to B<xde-xswitch> that it was not launched by L<xdm(8)> or an
+L<xdm(8)> work-alike as a chooser.  See L</USAGE> for more information.
 
 =head2 COMMAND OPTIONS
 
@@ -74,10 +74,10 @@ permissions and exits.
 =head2 GENERAL OPTIONS
 
 B<xde-xswitch> provides a set of general options that are not supported
-by the L<xdm(1)> greeter or chooser.  To supply these options requires
-an intermediate script that specifies them and echoes the L<xdm(1)>
+by the L<xdm(8)> greeter or chooser.  To supply these options requires
+an intermediate script that specifies them and echoes the L<xdm(8)>
 chooser options.  So that an intermediate script is not necessary,
-L<xdm(1)> provides an F<Xresources> files containing X resources that
+L<xdm(8)> provides an F<Xresources> files containing X resources that
 are used instead of command line options to tailor the look and feel of
 the greeter and chooser.  As a result, the use of the following command
 line options are not necessary and are really only used for testing.
@@ -94,7 +94,7 @@ When unspecified, the default welcome text is C<Welcome to %s!>, where C<%s>
 is the fully qualified domain name of the local host.
 
 As with the B<-banner> option, this option can easily be supplied by a
-shell script between L<xdm(1)> and B<xde-xswitch> that adds the
+shell script between L<xdm(8)> and B<xde-xswitch> that adds the
 options:
 
  #!/bin/sh
@@ -104,8 +104,8 @@ options:
 =item B<-b>, B<--banner> I<BANNER>
 
 Specifies the banner graphic to display in the left pane of the panel.
-L<xdm(1)> does not provide this option, but it can easily be
-invoked by a shell script invoked by L<xdm(1)> that adds the options.
+L<xdm(8)> does not provide this option, but it can easily be
+invoked by a shell script invoked by L<xdm(8)> that adds the options.
 For example:
 
  #!/bin/sh
@@ -126,8 +126,8 @@ F<${XDG_MENU_PREFIX}splash.{xpm,png,jpg,svg}> in the F<images>
 subdirectory of standard XDG data directories, F<$XDG_DATA_DIRS>.  See
 L</ENVIRONMENT>.
 
-L<xdm(1)> does not provide this option, but it can easily be
-invoked by a shell script by L<xdm(1)> that adds the options.  For
+L<xdm(8)> does not provide this option, but it can easily be
+invoked by a shell script by L<xdm(8)> that adds the options.  For
 example:
 
  #!/bin/sh

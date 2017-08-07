@@ -19,7 +19,7 @@ session.  It has the following features:
 
 =item 1.
 
-Integrated session management including X session L<xinit(1)>/L<xdm(1)>
+Integrated session management including X session L<xinit(1)>/L<xdm(8)>
 and window manager configuration setup for a wide range of known window
 managers.
 
