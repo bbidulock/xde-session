@@ -38,6 +38,7 @@ stamp-h*
 xde-session-*.tar.xz
 src/test-login
 src/test-root
+src/test-pipe
 src/xde-autostart
 src/xde-chooser
 src/xde-dockmgr

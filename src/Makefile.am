@@ -7,6 +7,7 @@ EXTRA_PROGRAMS =
 bin_PROGRAMS = \
 	test-login \
 	test-root \
+	test-pipe \
 	xde-autostart \
 	xde-chooser \
 	xde-dockmgr \
@@ -118,4 +119,9 @@ test_root_CPPFLAGS = -DNAME=\"test-root\"
 test_root_CFLAGS = $(AM_CFLAGS) $(SYSTEMD_CFLAGS)
 test_root_LDFLAGS = $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 test_root_SOURCES = test-root.c
+
+test_pipe_CPPFLAGS = -DNAME=\"test-pipe\"
+test_pipe_CFLAGS = $(AM_CFLAGS) $(SYSTEMD_CFLAGS)
+test_pipe_LDFLAGS = $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+test_pipe_SOURCES = test-pipe.c
 
