@@ -7249,7 +7249,7 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
-        /* *INDENT-OFF* */
+/* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [options] ADDRESS [...]\n\
@@ -7311,15 +7311,15 @@ General options:\n\
 	,show_side(options.side)
 	,options.charset
 	,options.language
-	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
 	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
+	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
 	,show_bool(options.usexde)
 	,options.vendor
 	,show_bool(options.dryrun)
 	,options.debug
 	,options.output
 	);
-        /* *INDENT-ON* */
+/* *INDENT-ON* */
 }
 
 const char *
@@ -9338,10 +9338,18 @@ main(int argc, char *argv[])
 		}
 	}
 #ifndef DO_XCHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
 	if (optind < argc) {
-		EPRINTF("%s: excess non-option arguments\n", argv[0]);
-		goto bad_nonopt;
+		free(options.choice);
+		options.choice = strdup(argv[optind++]);
+#endif
+		if (optind < argc) {
+			EPRINTF("%s: excess non-option arguments\n", argv[0]);
+			goto bad_nonopt;
+		}
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
 	}
+#endif
 #endif
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
@@ -9355,13 +9363,13 @@ main(int argc, char *argv[])
 			goto bad_nonopt;
 		}
 #endif
-#ifdef DO_CHOOSER
-		DPRINTF("%s: running chooser\n", argv[0]);
-		do_chooser(argc, argv);
-#else				/* DO_CHOOSER */
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+		DPRINTF("%s: running program\n", argv[0]);
+		run_program(argc, argv);
+#else
 		DPRINTF("%s: running default\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
-#endif				/* DO_CHOOSER */
+#endif
 		break;
 #ifdef DO_XLOCKING
 	case CommandReplace:

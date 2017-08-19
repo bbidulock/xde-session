@@ -184,6 +184,8 @@ static char **saveArgv;
 #undef DO_ONIDLE
 #define DO_CHOOSER 1
 #undef DO_LOGOUT
+#undef DO_AUTOSTART
+#undef DO_SESSION
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -210,6 +212,14 @@ static char **saveArgv;
 #   define RESNAME "xde-greeter"
 #   define RESCLAS "XDE-Greeter"
 #   define RESTITL "XDMCP Greeter"
+#elif defined(DO_AUTOSTART)
+#   define RESNAME "xde-autostart"
+#   define RESCLAS "XDE-AutoStart"
+#   define RESTITL "XDE XDG Auto Start"
+#elif defined(DO_SESSION)
+#   define RESNAME "xde-session"
+#   define RESCLAS "XDE-Session"
+#   define RESTITL "XDE XDG Session"
 #else
 #   error Undefined program type.
 #endif
@@ -250,6 +260,8 @@ typedef enum {
 	CommandLock,			/* ask running instance to lock */
 	CommandQuit,			/* ask running instance to quit */
 	CommandUnlock,			/* ask running instance to unlock */
+	CommandAutostart,
+	CommandSession,
 } CommandType;
 
 enum {
@@ -4166,7 +4178,7 @@ choose(int argc, char *argv[])
 }
 
 static void
-do_chooser(int argc, char *argv[])
+run_program(int argc, char *argv[])
 {
 	const char *file;
 
@@ -4477,11 +4489,11 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
-        /* *INDENT-OFF* */
+/* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [OPTIONS] [--] [SESSION]\n\
-    %1$s {-h|--help}\n\
+    %1$s [options] [--] [SESSION]\n\
+    %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Arguments:\n\
@@ -4560,7 +4572,7 @@ General options:\n\
 	,options.output
 	,show_bool(options.filename)
 	);
-        /* *INDENT-ON* */
+/* *INDENT-ON* */
 }
 
 const char *
@@ -5252,6 +5264,15 @@ set_default_authfile(void)
 #endif
 
 void
+set_default_desktop(void)
+{
+	const char *env = getenv("XDG_CURRENT_DESKTOP");
+
+	free(options.desktop);
+	options.desktop = env ? strdup(env) : strdup("XDE");
+}
+
+void
 set_default_vendor(void)
 {
 	char *p, *vendor, *prefix;
@@ -5621,6 +5642,7 @@ set_defaults(int argc, char *argv[])
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	set_default_authfile();
 #endif
+	set_default_desktop();
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
@@ -6102,6 +6124,76 @@ get_default_username(void)
 }
 
 void
+get_default_file(void)
+{
+	char **xdg_dirs, **dirs, *file, *files;
+	int i, size, n = 0, next;
+
+	if (options.file)
+		return;
+	if (!options.session)
+		return;
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n)
+		return;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	files = NULL;
+	size = 0;
+	next = 0;
+
+	/* process in reverse order */
+	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+		strncpy(file, *dirs, PATH_MAX);
+		strncat(file, "/lxsession/", PATH_MAX);
+		strncat(file, options.session, PATH_MAX);
+		strncat(file, "/autostart", PATH_MAX);
+		if (access(file, R_OK)) {
+			DPRINTF("%s: %s\n", file, strerror(errno));
+			continue;
+		}
+		size += strlen(file) + 1;
+		files = realloc(files, size * sizeof(*files));
+		if (next)
+			strncat(files, ":", size);
+		else {
+			*files = '\0';
+			next = 1;
+		}
+		strncat(files, file, size);
+	}
+	options.file = files;
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+
+void
+get_default_desktops(void)
+{
+	char **desktops, *copy, *pos, *end;;
+	int n;
+
+	copy = strdup(options.desktop);
+
+	for (n = 0, pos = copy, end = pos + strlen(pos); pos < end;
+	     n++, *strchrnul(pos, ';') = '\0', pos += strlen(pos) + 1) ;
+
+	desktops = calloc(n + 1, sizeof(*desktops));
+
+	for (n = 0, pos = copy; pos < end; n++, pos += strlen(pos) + 1)
+		desktops[n] = strdup(pos);
+
+	free(copy);
+
+	free(options.desktops);
+	options.desktops = desktops;
+}
+
+void
 get_defaults(int argc, char *argv[])
 {
 	get_default_display();
@@ -6120,6 +6212,8 @@ get_defaults(int argc, char *argv[])
 	get_default_session();
 	get_default_choice();
 	get_default_username();
+	get_default_file();
+	get_default_desktops();
 }
 
 #ifdef DO_XCHOOSER
@@ -6173,7 +6267,7 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			{"authfile",	    required_argument,	NULL, 'a'},
 #endif
 #ifdef DO_XLOCKING
@@ -6205,6 +6299,7 @@ main(int argc, char *argv[])
 			{"timeout",	    required_argument,	NULL, 'T'},
 			{"filename",	    no_argument,	NULL, 'f'},
 			{"vendor",	    required_argument,	NULL, '5'},
+			{"xsessions",	    no_argument,	NULL, 'X'},
 			{"default",	    required_argument,	NULL, '6'},
 #ifndef DO_LOGOUT
 			{"username",	    required_argument,	NULL, '7'},
@@ -6472,14 +6567,20 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
+#ifndef DO_XCHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
 	if (optind < argc) {
 		free(options.choice);
 		options.choice = strdup(argv[optind++]);
+#endif
 		if (optind < argc) {
 			EPRINTF("%s: excess non-option arguments\n", argv[0]);
 			goto bad_nonopt;
 		}
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
 	}
+#endif
+#endif
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	get_defaults(argc, argv);
@@ -6492,13 +6593,13 @@ main(int argc, char *argv[])
 			goto bad_nonopt;
 		}
 #endif
-#ifdef DO_CHOOSER
-		DPRINTF("%s: running chooser\n", argv[0]);
-		do_chooser(argc, argv);
-#else				/* DO_CHOOSER */
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+		DPRINTF("%s: running program\n", argv[0]);
+		run_program(argc, argv);
+#else
 		DPRINTF("%s: running default\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
-#endif				/* DO_CHOOSER */
+#endif
 		break;
 #ifdef DO_XLOCKING
 	case CommandReplace:

@@ -178,6 +178,55 @@ timestamp(void)
 static int saveArgc;
 static char **saveArgv;
 
+#undef DO_XCHOOSER
+#undef DO_XLOGIN
+#undef DO_GREETER
+#undef DO_XLOCKING
+#undef DO_ONIDLE
+#undef DO_CHOOSER
+#undef DO_LOGOUT
+#undef DO_AUTOSTART
+#define DO_SESSION 1
+
+#if defined(DO_XCHOOSER)
+#   define RESNAME "xde-xchooser"
+#   define RESCLAS "XDE-XChooser"
+#   define RESTITL "XDMCP Chooser"
+#elif defined(DO_XLOCKING)
+#   define LOGO_NAME "gnome-lockscreen"
+#   define RESNAME "xde-xlock"
+#   define RESCLAS "XDE-XLock"
+#   define RESTITL "X11 Locker"
+#elif defined(DO_CHOOSER)
+#   define RESNAME "xde-chooser"
+#   define RESCLAS "XDE-Chooser"
+#   define RESTITL "XDE X11 Session Chooser"
+#elif defined(DO_LOGOUT)
+#   define RESNAME "xde-logout"
+#   define RESCLAS "XDE-Logout"
+#   define RESTITL "XDE X11 Session Logout"
+#elif defined(DO_XLOGIN)
+#   define RESNAME "xde-xlogin"
+#   define RESCLAS "XDE-XLogin"
+#   define RESTITL "XDMCP Greeter"
+#elif defined(DO_GREETER)
+#   define RESNAME "xde-greeter"
+#   define RESCLAS "XDE-Greeter"
+#   define RESTITL "XDMCP Greeter"
+#elif defined(DO_AUTOSTART)
+#   define RESNAME "xde-autostart"
+#   define RESCLAS "XDE-AutoStart"
+#   define RESTITL "XDE XDG Auto Start"
+#elif defined(DO_SESSION)
+#   define RESNAME "xde-session"
+#   define RESCLAS "XDE-Session"
+#   define RESTITL "XDE XDG Session"
+#else
+#   error Undefined program type.
+#endif
+
+#define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
+
 typedef enum _LogoSide {
 	LogoSideLeft,
 	LogoSideTop,
@@ -185,14 +234,42 @@ typedef enum _LogoSide {
 	LogoSideBottom,
 } LogoSide;
 
+enum {
+	OBEYSESS_DISPLAY,		/* obey multipleSessions resource */
+	REMANAGE_DISPLAY,		/* force remanage */
+	UNMANAGE_DISPLAY,		/* force deletion */
+	RESERVER_DISPLAY,		/* force server termination */
+	OPENFAILED_DISPLAY,		/* XOpenDisplay failed, retry */
+};
+
+#undef EXIT_SUCCESS
+#define EXIT_SUCCESS	OBEYSESS_DISPLAY
+#undef EXIT_FAILURE
+#define EXIT_FAILURE	REMANAGE_DISPLAY
+#undef EXIT_SYNTAXERR
+#define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
 
 typedef enum {
 	CommandDefault,
 	CommandHelp,			/* command argument help */
 	CommandVersion,			/* command version information */
 	CommandCopying,			/* command copying information */
+	CommandXlogin,
+	CommandXchoose,
+	CommandLocker,			/* run as a background locker */
+	CommandReplace,			/* replace any running instance */
+	CommandLock,			/* ask running instance to lock */
+	CommandQuit,			/* ask running instance to quit */
+	CommandUnlock,			/* ask running instance to unlock */
+	CommandAutostart,
 	CommandSession,
 } CommandType;
+
+enum {
+	BackgroundSourceSplash = (1 << 0),
+	BackgroundSourcePixmap = (1 << 1),
+	BackgroundSourceRoot = (1 << 2),
+};
 
 typedef struct {
 	int output;
@@ -230,6 +307,7 @@ typedef struct {
 	char *backdrop;
 	char **desktops;
 	char *file;
+	unsigned source;
 	Bool mkdirs;
 	char *wmname;
 	Bool splash;
@@ -278,6 +356,7 @@ Options options = {
 	.backdrop = NULL,
 	.desktops = NULL,
 	.file = NULL,
+	.source = BackgroundSourceSplash,
 	.setup = NULL,
 	.startwm = NULL,
 	.pause = 0,
@@ -319,6 +398,7 @@ Options defaults = {
 	.backdrop = NULL,
 	.desktops = NULL,
 	.file = NULL,
+	.source = BackgroundSourceSplash,
 };
 
 typedef struct {
@@ -1813,8 +1893,8 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [options]\n\
-    %1$s {-h|--help}\n\
+    %1$s [options] [--] [SESSION]\n\
+    %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 ", argv[0]);
@@ -1849,10 +1929,11 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
+/* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [options]\n\
-    %1$s {-h|--help}\n\
+    %1$s [options] [--] [SESSION]\n\
+    %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Command options:\n\
@@ -1869,6 +1950,7 @@ General options:\n\
         increment or set output verbosity LEVEL [default: 1]\n\
         this option may be repeated.\n\
 ", argv[0]);
+/* *INDENT-ON* */
 }
 
 void
@@ -2308,6 +2390,7 @@ set_defaults(int argc, char *argv[])
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
 	set_default_language();
+	set_default_choice();
 }
 
 void
@@ -2667,12 +2750,44 @@ get_defaults(int argc, char *argv[])
 	get_default_splash();
 	get_default_welcome();
 	get_default_language();
+#ifdef DO_XCHOOSER
+	get_default_address();
+#endif				/* DO_XCHOOSER */
 	get_default_session();
 	get_default_choice();
 	get_default_username();
 	get_default_file();
 	get_default_desktops();
 }
+
+#ifdef DO_XCHOOSER
+Bool
+HexToARRAY8(ARRAY8 *array, char *hex)
+{
+	short len;
+	CARD8 *o, b;
+	char *p, c;
+
+	len = strlen(hex);
+	if (len & 0x01)
+		return False;
+	len >>= 1;
+	XdmcpReallocARRAY8(array, len);
+	for (p = hex, o = array->data; *p; p += 2, o++) {
+		c = tolower(p[0]);
+		if (!isxdigit(c))
+			return False;
+		b = ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+		b <<= 4;
+		c = tolower(p[1]);
+		if (!isxdigit(c))
+			return False;
+		b += ('0' <= c && c <= '9') ? c - '0' : c - 'a' + 10;
+		*o = b;
+	}
+	return True;
+}
+#endif
 
 int
 main(int argc, char *argv[])
@@ -2755,8 +2870,6 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (command != CommandDefault)
-				goto bad_option;
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
@@ -2799,8 +2912,12 @@ main(int argc, char *argv[])
 		}
 	}
 	if (optind < argc) {
-		EPRINTF("%s: excess non-option arguments\n", argv[0]);
-		goto bad_nonopt;
+		free(options.choice);
+		options.choice = strdup(argv[optind++]);
+		if (optind < argc) {
+			EPRINTF("%s: excess non-option arguments\n", argv[0]);
+			goto bad_nonopt;
+		}
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
@@ -2808,10 +2925,38 @@ main(int argc, char *argv[])
 	switch (command) {
 	default:
 	case CommandDefault:
-	case CommandSession:
-		DPRINTF("%s: running session\n", argv[0]);
+#ifdef DO_XCHOOSER
+		if (optind >= argc) {
+			EPRINTF("%s: missing non-option argument\n", argv[0]);
+			goto bad_nonopt;
+		}
+#endif
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+		DPRINTF("%s: running program\n", argv[0]);
 		run_program(argc, argv);
+#else
+		DPRINTF("%s: running default\n", argv[0]);
+		do_run(argc - optind, &argv[optind]);
+#endif
 		break;
+#ifdef DO_XLOCKING
+	case CommandReplace:
+		DPRINTF("%s: running replace\n", argv[0]);
+		do_run(argc, argv);
+		break;
+	case CommandQuit:
+		DPRINTF("%s: running quit\n", argv[0]);
+		do_quit(argc, argv);
+		break;
+	case CommandLock:
+		DPRINTF("%s: running lock\n", argv[0]);
+		do_lock(argc, argv);
+		break;
+	case CommandUnlock:
+		DPRINTF("%s: running unlock\n", argv[0]);
+		do_unlock(argc, argv);
+		break;
+#endif				/* DO_XLOCKING */
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);
 		help(argc, argv);

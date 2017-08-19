@@ -7277,7 +7277,7 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
-        /* *INDENT-OFF* */
+/* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [options] ADDRESS [...]\n\
@@ -7339,15 +7339,15 @@ General options:\n\
 	,show_side(options.side)
 	,options.charset
 	,options.language
-	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
 	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
+	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
 	,show_bool(options.usexde)
 	,options.vendor
 	,show_bool(options.dryrun)
 	,options.debug
 	,options.output
 	);
-        /* *INDENT-ON* */
+/* *INDENT-ON* */
 }
 
 const char *
@@ -8039,6 +8039,15 @@ set_default_authfile(void)
 #endif
 
 void
+set_default_desktop(void)
+{
+	const char *env = getenv("XDG_CURRENT_DESKTOP");
+
+	free(options.desktop);
+	options.desktop = env ? strdup(env) : strdup("XDE");
+}
+
+void
 set_default_vendor(void)
 {
 	char *p, *vendor, *prefix;
@@ -8408,6 +8417,7 @@ set_defaults(int argc, char *argv[])
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	set_default_authfile();
 #endif
+	set_default_desktop();
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
@@ -8889,6 +8899,76 @@ get_default_username(void)
 }
 
 void
+get_default_file(void)
+{
+	char **xdg_dirs, **dirs, *file, *files;
+	int i, size, n = 0, next;
+
+	if (options.file)
+		return;
+	if (!options.session)
+		return;
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n)
+		return;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	files = NULL;
+	size = 0;
+	next = 0;
+
+	/* process in reverse order */
+	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+		strncpy(file, *dirs, PATH_MAX);
+		strncat(file, "/lxsession/", PATH_MAX);
+		strncat(file, options.session, PATH_MAX);
+		strncat(file, "/autostart", PATH_MAX);
+		if (access(file, R_OK)) {
+			DPRINTF("%s: %s\n", file, strerror(errno));
+			continue;
+		}
+		size += strlen(file) + 1;
+		files = realloc(files, size * sizeof(*files));
+		if (next)
+			strncat(files, ":", size);
+		else {
+			*files = '\0';
+			next = 1;
+		}
+		strncat(files, file, size);
+	}
+	options.file = files;
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+
+void
+get_default_desktops(void)
+{
+	char **desktops, *copy, *pos, *end;;
+	int n;
+
+	copy = strdup(options.desktop);
+
+	for (n = 0, pos = copy, end = pos + strlen(pos); pos < end;
+	     n++, *strchrnul(pos, ';') = '\0', pos += strlen(pos) + 1) ;
+
+	desktops = calloc(n + 1, sizeof(*desktops));
+
+	for (n = 0, pos = copy; pos < end; n++, pos += strlen(pos) + 1)
+		desktops[n] = strdup(pos);
+
+	free(copy);
+
+	free(options.desktops);
+	options.desktops = desktops;
+}
+
+void
 get_defaults(int argc, char *argv[])
 {
 	get_default_display();
@@ -8907,6 +8987,8 @@ get_defaults(int argc, char *argv[])
 	get_default_session();
 	get_default_choice();
 	get_default_username();
+	get_default_file();
+	get_default_desktops();
 }
 
 #ifdef DO_XCHOOSER
@@ -9284,10 +9366,18 @@ main(int argc, char *argv[])
 		}
 	}
 #ifndef DO_XCHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
 	if (optind < argc) {
-		EPRINTF("%s: excess non-option arguments\n", argv[0]);
-		goto bad_nonopt;
+		free(options.choice);
+		options.choice = strdup(argv[optind++]);
+#endif
+		if (optind < argc) {
+			EPRINTF("%s: excess non-option arguments\n", argv[0]);
+			goto bad_nonopt;
+		}
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
 	}
+#endif
 #endif
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
@@ -9301,13 +9391,13 @@ main(int argc, char *argv[])
 			goto bad_nonopt;
 		}
 #endif
-#ifdef DO_CHOOSER
-		DPRINTF("%s: running chooser\n", argv[0]);
-		do_chooser(argc, argv);
-#else				/* DO_CHOOSER */
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+		DPRINTF("%s: running program\n", argv[0]);
+		run_program(argc, argv);
+#else
 		DPRINTF("%s: running default\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
-#endif				/* DO_CHOOSER */
+#endif
 		break;
 #ifdef DO_XLOCKING
 	case CommandReplace:
