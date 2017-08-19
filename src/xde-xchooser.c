@@ -9247,7 +9247,7 @@ main(int argc, char *argv[])
 	}
 #ifndef DO_XCHOOSER
 	if (optind < argc) {
-		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
+		EPRINTF("%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
 	}
 #endif
@@ -9259,7 +9259,7 @@ main(int argc, char *argv[])
 	case CommandDefault:
 #ifdef DO_XCHOOSER
 		if (optind >= argc) {
-			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+			EPRINTF("%s: missing non-option argument\n", argv[0]);
 			goto bad_nonopt;
 		}
 #endif

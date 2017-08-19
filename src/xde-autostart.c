@@ -198,6 +198,10 @@ typedef struct {
 	Bool dryrun;
 	CommandType command;
 	char *display;
+	char *seat;
+	char *service;
+	char *vtnr;
+	char *tty;
 	char *desktop;
 	char *session;
 	char **execute;
@@ -227,6 +231,10 @@ Options options = {
 	.dryrun = False,
 	.command = CommandDefault,
 	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
 	.desktop = NULL,
 	.session = NULL,
 	.execute = NULL,
@@ -5084,6 +5092,11 @@ set_default_file(void)
 }
 
 void
+get_defaults(int argc, char *argv[])
+{
+}
+
+void
 split_desktops(void)
 {
 	char **desktops, *copy, *pos, *end;;
@@ -5380,11 +5393,12 @@ main(int argc, char *argv[])
 		}
 	}
 	if (optind < argc) {
-		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
+		EPRINTF("%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
+	get_defaults(argc, argv);
 	set_default_file();
 	split_desktops();
 	switch (command) {

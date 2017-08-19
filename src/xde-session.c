@@ -193,6 +193,10 @@ typedef struct {
 	Bool dryrun;
 	CommandType command;
 	char *display;
+	char *seat;
+	char *service;
+	char *vtnr;
+	char *tty;
 	char *vendor;
 	Bool mkdirs;
 	char *wmname;
@@ -211,6 +215,10 @@ Options options = {
 	.dryrun = False,
 	.command = CommandDefault,
 	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
 	.vendor = NULL,
 	.mkdirs = False,
 	.wmname = NULL,
@@ -1685,8 +1693,71 @@ set_defaults(int argc, char *argv[])
 }
 
 void
+get_default_display(void)
+{
+	if (options.display)
+		setenv("DISPLAY", options.display, 1);
+}
+
+void
+get_default_x11(void)
+{
+	Display *dpy;
+	Window root;
+	Atom property, actual;
+	int format;
+	unsigned long nitems, after;
+	long *data = NULL;
+
+	if (!(dpy = XOpenDisplay(0))) {
+		EPRINTF("cannot open display %s\n", options.display);
+		exit(EXIT_FAILURE);
+	}
+	root = RootWindow(dpy, 0);
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "XFree86_VT", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 1, False, XA_INTEGER, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 32 && nitems && data) {
+		free(options.vtnr);
+		if ((options.vtnr = calloc(16, sizeof(*options.vtnr))))
+			snprintf(options.vtnr, 16, "%lu", *(unsigned long *) data);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "Xorg_Seat", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 16, False, XA_STRING, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 8 && nitems && data) {
+		free(options.seat);
+		if ((options.seat = calloc(nitems + 1, sizeof(*options.seat))))
+			strncpy(options.seat, (char *) data, nitems);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	if (options.vtnr) {
+		if (!options.seat)
+			options.seat = strdup("seat0");
+		if ((options.tty = calloc(16, sizeof(options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+	if (!options.tty)
+		options.tty = strdup(options.display);
+	XCloseDisplay(dpy);
+}
+
+void
 get_defaults(int argc, char *argv[])
 {
+	get_default_display();
+	get_default_x11();
 }
 
 int
@@ -1814,11 +1885,12 @@ main(int argc, char *argv[])
 		}
 	}
 	if (optind < argc) {
-		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
+		EPRINTF("%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
+	get_defaults(argc, argv);
 	switch (command) {
 	default:
 	case CommandDefault:
