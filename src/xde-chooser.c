@@ -312,7 +312,7 @@ typedef struct {
 	Bool prompt;
 	Bool noask;
 	Bool setdflt;
-	Bool execute;
+	Bool launch;
 	char *current;
 	Bool managed;
 	char *session;
@@ -340,7 +340,7 @@ typedef struct {
 	double yposition;
 	Bool setstyle;
 	Bool filename;
-	unsigned guard;
+	unsigned protect;
 	Bool tray;
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	char *authfile;
@@ -379,7 +379,7 @@ Options options = {
 	.prompt = False,
 	.noask = False,
 	.setdflt = False,
-	.execute = False,
+	.launch = False,
 	.current = NULL,
 	.managed = True,
 	.session = NULL,
@@ -407,7 +407,7 @@ Options options = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.filename = False,
-	.guard = 5,
+	.protect = 5,
 	.tray = False,
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	.authfile = NULL,
@@ -445,7 +445,7 @@ Options defaults = {
 	.prompt = False,
 	.noask = False,
 	.setdflt = False,
-	.execute = False,
+	.launch = False,
 	.current = NULL,
 	.managed = True,
 	.session = NULL,
@@ -473,7 +473,7 @@ Options defaults = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.filename = False,
-	.guard = 5,
+	.protect = 5,
 	.tray = False,
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	.authfile = NULL,
@@ -4582,7 +4582,7 @@ General options:\n\
 	,options.charset
 	,options.language
 	,show_bool(options.setdflt)
-	,show_bool(options.execute)
+	,show_bool(options.launch)
 	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
 	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
 	,show_bool(options.usexde)
@@ -5105,7 +5105,7 @@ get_resources(int argc, char *argv[])
 		getXrmBool(val, &options.xsession);
 	}
 	if ((val = get_resource(rdb, "xsession.execute", NULL))) {
-		getXrmBool(val, &options.execute);
+		getXrmBool(val, &options.launch);
 	}
 	if ((val = get_resource(rdb, "xsession.default", NULL))) {
 		getXrmString(val, &options.choice);
@@ -6459,7 +6459,7 @@ main(int argc, char *argv[])
 			options.gtk2_theme = strdup(optarg);
 			break;
 		case 'e':	/* -e, --exec */
-			options.execute = True;
+			options.launch = True;
 			break;
 		case 'x':	/* -x, --xde-theme */
 			options.usexde = True;
@@ -6495,7 +6495,7 @@ main(int argc, char *argv[])
 				goto bad_option;
 			if (endptr && !*endptr)
 				goto bad_option;
-			options.guard = val;
+			options.protect = val;
 			break;
 #endif				/* !defined DO_LOGOUT */
 		case '3':	/* -clientId CLIENTID */

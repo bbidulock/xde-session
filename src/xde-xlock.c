@@ -186,6 +186,7 @@ static char **saveArgv;
 #undef DO_LOGOUT
 #undef DO_AUTOSTART
 #undef DO_SESSION
+#undef DO_STARTWM
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -220,6 +221,10 @@ static char **saveArgv;
 #   define RESNAME "xde-session"
 #   define RESCLAS "XDE-Session"
 #   define RESTITL "XDE XDG Session"
+#elif defined(DO_STARTWM)
+#   define RESNAME "xde-startwm"
+#   define RESCLAS "XDE-StartWM"
+#   define RESTITL "XDE Sindow Manager Startup"
 #else
 #   error Undefined program type.
 #endif
@@ -307,7 +312,7 @@ typedef struct {
 	Bool prompt;
 	Bool noask;
 	Bool setdflt;
-	Bool execute;
+	Bool launch;
 	char *current;
 	Bool managed;
 	char *session;
@@ -335,7 +340,7 @@ typedef struct {
 	double yposition;
 	Bool setstyle;
 	Bool filename;
-	unsigned guard;
+	unsigned protect;
 	Bool tray;
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	char *authfile;
@@ -374,7 +379,7 @@ Options options = {
 	.prompt = False,
 	.noask = False,
 	.setdflt = False,
-	.execute = False,
+	.launch = False,
 	.current = NULL,
 	.managed = True,
 	.session = NULL,
@@ -402,7 +407,7 @@ Options options = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.filename = False,
-	.guard = 5,
+	.protect = 5,
 	.tray = False,
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	.authfile = NULL,
@@ -440,7 +445,7 @@ Options defaults = {
 	.prompt = False,
 	.noask = False,
 	.setdflt = False,
-	.execute = False,
+	.launch = False,
 	.current = NULL,
 	.managed = True,
 	.session = NULL,
@@ -468,7 +473,7 @@ Options defaults = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.filename = False,
-	.guard = 5,
+	.protect = 5,
 	.tray = False,
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	.authfile = NULL,
@@ -6291,7 +6296,7 @@ AbortLockScreen(void)
 
 		if (lock_time.tv_sec) {
 			gettimeofday(&tv, NULL);
-			if (tv.tv_sec < lock_time.tv_sec + options.guard) {
+			if (tv.tv_sec < lock_time.tv_sec + options.protect) {
 				DPRINTF("Screen saver interrupted: unlocking screen\n");
 				lock_state = LockStateAborted;
 				gtk_main_quit();
@@ -7445,7 +7450,7 @@ get_resources(int argc, char *argv[])
 		getXrmBool(val, &options.xsession);
 	}
 	if ((val = get_resource(rdb, "xsession.execute", NULL))) {
-		getXrmBool(val, &options.execute);
+		getXrmBool(val, &options.launch);
 	}
 	if ((val = get_resource(rdb, "xsession.default", NULL))) {
 		getXrmString(val, &options.choice);
@@ -7894,7 +7899,7 @@ set_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
-#ifdef DO_CHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 void
 set_default_session(void)
 {
@@ -8013,7 +8018,7 @@ set_defaults(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	set_default_address();
 #endif				/* DO_XCHOOSER */
-#ifdef DO_CHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	set_default_session();
 #endif
 	set_default_choice();
@@ -8683,8 +8688,8 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "d:LrlUqp:b:S:s:ni:e:uT:Xg:yND::v::hVCH?", long_options,
-				     &option_index);
+		c = getopt_long_only(argc, argv, "d:LrlUqp:b:S:s:ni:e:uT:Xg:yND::v::hVCH?",
+				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "d:LrlUqp:b:S:s:ni:e:uT:Xg:yNDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
@@ -8858,7 +8863,7 @@ main(int argc, char *argv[])
 				goto bad_option;
 			if (endptr && !*endptr)
 				goto bad_option;
-			options.guard = val;
+			options.protect = val;
 			break;
 #endif				/* !defined DO_LOGOUT */
 		case '3':	/* -clientId CLIENTID */

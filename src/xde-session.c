@@ -295,6 +295,10 @@ typedef struct {
 	char *gtk2_theme;
 	char *curs_theme;
 	LogoSide side;
+	Bool prompt;
+	Bool noask;
+	Bool setdflt;
+	Bool launch;
 	char *current;
 	Bool managed;
 	char *session;
@@ -313,6 +317,17 @@ typedef struct {
 	char **desktops;
 	char *file;
 	unsigned source;
+	Bool xsession;
+	Bool setbg;
+	Bool transparent;
+	int width;
+	int height;
+	double xposition;
+	double yposition;
+	Bool setstyle;
+	Bool filename;
+	unsigned protect;
+	Bool tray;
 	Bool mkdirs;
 	char *wmname;
 	Bool splash;
@@ -341,6 +356,10 @@ Options options = {
 	.gtk2_theme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideTop,
+	.prompt = False,
+	.noask = False,
+	.setdflt = False,
+	.launch = False,
 	.vendor = NULL,
 	.mkdirs = False,
 	.wmname = NULL,
@@ -362,6 +381,17 @@ Options options = {
 	.desktops = NULL,
 	.file = NULL,
 	.source = BackgroundSourceSplash,
+	.xsession = True,
+	.setbg = False,
+	.transparent = False,
+	.width = -1,
+	.height = -1,
+	.xposition = 0.5,
+	.yposition = 0.5,
+	.setstyle = True,
+	.filename = False,
+	.protect = 5,
+	.tray = False,
 	.setup = NULL,
 	.startwm = NULL,
 	.pause = 0,
@@ -386,6 +416,10 @@ Options defaults = {
 	.gtk2_theme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
+	.prompt = False,
+	.noask = False,
+	.setdflt = False,
+	.launch = False,
 	.current = NULL,
 	.managed = True,
 	.session = NULL,
@@ -404,6 +438,127 @@ Options defaults = {
 	.desktops = NULL,
 	.file = NULL,
 	.source = BackgroundSourceSplash,
+	.xsession = True,
+	.setbg = False,
+	.transparent = False,
+	.width = -1,
+	.height = -1,
+	.xposition = 0.5,
+	.yposition = 0.5,
+	.setstyle = True,
+	.filename = False,
+	.protect = 5,
+	.tray = False,
+};
+
+typedef struct {
+	GdkColor *foreground;
+	GdkColor *background;
+	PangoFontDescription *face;
+	char *greeting;
+	char *unsecureGreeting;
+	PangoFontDescription *greetFace;
+	GdkColor *greetColor;
+	char *namePrompt;
+	char *passwdPrompt;
+	PangoFontDescription *promptFace;
+	GdkColor *promptColor;
+	PangoFontDescription *inputFace;
+	GdkColor *inputColor;
+	char *changePasswdMessage;
+	char *fail;
+	PangoFontDescription *failFace;
+	GdkColor *failColor;
+	unsigned int failTimeout;
+	char *logoFileName;
+	unsigned int logoPadding;
+	Bool useShape;
+	GdkColor *hiColor;
+	GdkColor *shdColor;
+	unsigned int frameWidth;
+	unsigned int innerFrameWidth;
+	unsigned int sepWidth;
+	Bool allowRootLogin;
+	Bool allowNullPasswd;
+	Bool echoPasswd;
+	char *echoPasswdChar;
+	unsigned int borderWidth;
+	Bool autoLock;
+	Bool systemLock;
+	char *authDir;
+	char **exportList;
+	Bool grabServer;
+	int grabTimeout;
+	Bool authorize;
+	Bool authComplain;
+	char **authName;
+	char *authFile;
+	char *setup;
+	char *startup;
+	char *reset;
+	char *session;
+	char *userPath;
+	char *systemPath;
+	char *systemShell;
+	char *failsafeClient;
+	char *userAuthDir;
+	char *chooser;
+	char *greeter;
+} Resources;
+
+Resources resources  = {
+	.foreground = NULL,
+	.background = NULL,
+	.face = NULL,
+	.greeting = NULL,
+	.unsecureGreeting = NULL,
+	.greetFace = NULL,
+	.greetColor = NULL,
+	.namePrompt = NULL,
+	.passwdPrompt = NULL,
+	.promptFace = NULL,
+	.promptColor = NULL,
+	.inputFace = NULL,
+	.inputColor = NULL,
+	.changePasswdMessage = NULL,
+	.fail = NULL,
+	.failFace = NULL,
+	.failColor = NULL,
+	.failTimeout = 0,
+	.logoFileName = NULL,
+	.logoPadding = 0,
+	.useShape = False,
+	.hiColor = NULL,
+	.shdColor = NULL,
+	.frameWidth = 0,
+	.innerFrameWidth = 0,
+	.sepWidth = 0,
+	.allowRootLogin = False,
+	.allowNullPasswd = False,
+	.echoPasswd = False,
+	.echoPasswdChar = NULL,
+	.borderWidth = 0,
+	.autoLock = True,
+	.systemLock = True,
+	.authDir = NULL,
+	.exportList = NULL,
+	.authFile = NULL,
+	.grabServer = False,
+	.grabTimeout = 5,
+	.authorize = True,
+	.authComplain = True,
+	.authName = NULL,
+	.setup = NULL,
+	.startup = NULL,
+	.reset = NULL,
+	.session = NULL,
+	.userPath = NULL,
+	.systemPath = NULL,
+	.systemShell = NULL,
+	.failsafeClient = NULL,
+	.userAuthDir = NULL,
+	.chooser = NULL,
+	.greeter = NULL,
 };
 
 typedef struct {
@@ -1974,6 +2129,641 @@ General options:\n\
 /* *INDENT-ON* */
 }
 
+const char *
+get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
+		const char *resource)
+{
+	char *type;
+	static char name[64];
+	static char clas[64];
+	XrmValue value = { 0, NULL };
+
+	snprintf(name, sizeof(name), "%s.%s", res_name, resource);
+	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
+	if (XrmGetResource(xrdb, name, clas, &type, &value)) {
+		if (value.addr && *(char *) value.addr) {
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			return (const char *) value.addr;
+		} else
+			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+	} else
+		DPRINTF("%s:\t\t%s\n", clas, "ERROR!");
+	return (NULL);
+}
+
+const char *
+get_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_nc_resource(xrdb, RESNAME, RESCLAS, resource)))
+		value = dflt;
+	return (value);
+}
+
+const char *
+get_dm_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_nc_resource(xrdb, "DisplayManager", "DisplayManager", resource)))
+		value = dflt;
+	return (value);
+}
+
+const char *
+get_dm_dpy_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+	static char nc[64], *p;
+
+	snprintf(nc, sizeof(nc), "DisplayManager.%s", options.display);
+	for (p = nc + 15; *p; p++)
+		if (*p == ':' || *p == '.')
+			*p = '_';
+	if (!(value = get_nc_resource(xrdb, nc, nc, resource)))
+		value = dflt;
+	return (value);
+}
+
+const char *
+get_xlogin_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_nc_resource(xrdb, "xlogin.Login", "Xlogin.Login", resource)))
+		value = dflt;
+	return (value);
+}
+
+const char *
+get_any_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_resource(xrdb, resource, NULL)))
+		if (!(value = get_xlogin_resource(xrdb, resource, NULL)))
+			value = dflt;
+	return (value);
+}
+
+const char *
+get_chooser_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_nc_resource(xrdb, "chooser", "Chooser", resource)))
+		value = dflt;
+	return (value);
+}
+
+gboolean
+getXrmColor(const char *val, GdkColor **color)
+{
+	GdkColor c, *p;
+
+	if (gdk_color_parse(val, &c) && (p = calloc(1, sizeof(*p)))) {
+		*p = c;
+		free(*color);
+		*color = p;
+		return TRUE;
+	}
+	EPRINTF("could not parse color '%s'\n", val);
+	return FALSE;
+}
+
+gboolean
+getXrmFont(const char *val, PangoFontDescription **face)
+{
+	FcPattern *pattern;
+	PangoFontDescription *font;
+
+	if ((pattern = FcNameParse((FcChar8 *)val))) {
+		if ((font = pango_fc_font_description_from_pattern(pattern, TRUE))) {
+			pango_font_description_free(*face);
+			*face = font;
+			DPRINTF("Font description is: %s\n",
+					pango_font_description_to_string(font));
+			return TRUE;
+		}
+		FcPatternDestroy(pattern);
+	}
+	EPRINTF("could not parse font descriptikon '%s'\n", val);
+	return FALSE;
+}
+
+gboolean
+getXrmInt(const char *val, int *integer)
+{
+	*integer = strtol(val, NULL, 0);
+	return TRUE;
+}
+
+gboolean
+getXrmUint(const char *val, unsigned int *integer)
+{
+	*integer = strtoul(val, NULL, 0);
+	return TRUE;
+}
+
+gboolean
+getXrmDouble(const char *val, double *floating)
+{
+	const struct lconv *lc = localeconv();
+	char radix, *copy = strdup(val);
+
+	if ((radix = lc->decimal_point[0]) != '.' && strchr(copy, '.'))
+		*strchr(copy, '.') = radix;
+
+	*floating = strtod(copy, NULL);
+	DPRINTF("Got decimal value %s, translates to %f\n", val, *floating);
+	free(copy);
+	return TRUE;
+}
+
+gboolean
+getXrmBool(const char *val, Bool *boolean)
+{
+	if (!strncasecmp(val, "true", strlen(val))) {
+		*boolean = True;
+		return TRUE;
+	}
+	if (!strncasecmp(val, "false", strlen(val))) {
+		*boolean = False;
+		return TRUE;
+	}
+	EPRINTF("could not parse boolean'%s'\n", val);
+	return FALSE;
+}
+
+gboolean
+getXrmString(const char *val, char **string)
+{
+	char *tmp;
+
+	if ((tmp = strdup(val))) {
+		free(*string);
+		*string = tmp;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+gboolean
+getXrmStringList(const char *val, char ***list)
+{
+	gchar **tmp;
+
+	if ((tmp = g_strsplit(val, " ", -1))) {
+		g_strfreev(*list);
+		*list = tmp;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+void
+get_resources(int argc, char *argv[])
+{
+	Display *dpy;
+	XrmDatabase rdb;
+	const char *val;
+	XTextProperty xtp;
+	Window root;
+	Atom atom;
+
+	DPRINT();
+	if (!(dpy = XOpenDisplay(NULL))) {
+		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
+		exit(EXIT_FAILURE);
+	}
+	root = DefaultRootWindow(dpy);
+	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
+		XCloseDisplay(dpy);
+		DPRINTF("no resource manager database allocated\n");
+		return;
+	}
+	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
+		XCloseDisplay(dpy);
+		EPRINTF("could not retrieve RESOURCE_MANAGER property\n");
+		return;
+	}
+	XrmInitialize();
+	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
+	rdb = XrmGetStringDatabase((char *) xtp.value);
+	XFree(xtp.value);
+	if (!rdb) {
+		DPRINTF("no resource manager database allocated\n");
+		XCloseDisplay(dpy);
+		return;
+	}
+	DPRINTF("combining database from %s\n", APPDFLT);
+	XrmCombineFileDatabase(APPDFLT, &rdb, False);
+	if ((val = get_resource(rdb, "debug", "0"))) {
+		getXrmInt(val, &options.debug);
+	}
+	if ((val = get_xlogin_resource(rdb, "width", NULL))) {
+		if (strchr(val, '%')) {
+			char *endptr = NULL;
+			double width = strtod(val, &endptr);
+
+			DPRINTF("Got decimal value %s, translates to %f\n", val, width);
+			if (endptr != val && *endptr == '%' && width > 0) {
+				options.width =
+				    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
+				if (options.width < 0.20 * DisplayWidth(dpy, 0))
+					options.width = -1;
+			}
+		} else {
+			options.width = strtoul(val, NULL, 0);
+			if (options.width <= 0)
+				options.width = -1;
+		}
+	}
+	if ((val = get_xlogin_resource(rdb, "height", NULL))) {
+		if (strchr(val, '%')) {
+			char *endptr = NULL;
+			double height = strtod(val, &endptr);
+
+			DPRINTF("Got decimal value %s, translates to %f\n", val, height);
+			if (endptr != val && *endptr == '%' && height > 0) {
+				options.height =
+				    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
+				if (options.height < 0.20 * DisplayHeight(dpy, 0))
+					options.height = -1;
+			}
+		} else {
+			options.height = strtoul(val, NULL, 0);
+			if (options.height <= 0)
+				options.height = -1;
+		}
+	}
+	if ((val = get_xlogin_resource(rdb, "x", NULL))) {
+		options.xposition =
+		    (double) strtoul(val, NULL, 0) / DisplayWidth(dpy, 0);
+		if (options.xposition < 0)
+			options.xposition = 0;
+		if (options.xposition > DisplayWidth(dpy, 0))
+			options.xposition = 1.0;
+	}
+	if ((val = get_xlogin_resource(rdb, "y", NULL))) {
+		options.yposition =
+		    (double) strtoul(val, NULL, 0) / DisplayWidth(dpy, 0);
+		if (options.yposition < 0)
+			options.yposition = 0;
+		if (options.yposition > DisplayWidth(dpy, 0))
+			options.yposition = 1.0;
+	}
+	// xlogin.foreground:		grey20
+	if ((val = get_xlogin_resource(rdb, "foreground", NULL))) {
+		getXrmColor(val, &resources.foreground);
+	}
+	// xlogin.background:		LightSteelBlue3
+	if ((val = get_xlogin_resource(rdb, "background", NULL))) {
+		getXrmColor(val, &resources.background);
+	}
+	// xlogin.face:			Sans-12:bold
+	// xlogin.font:
+	if ((val = get_any_resource(rdb, "face", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.face);
+	}
+#ifndef DO_LOGOUT
+	// xlogin.greeting:		Welcome to CLIENTHOST
+	if ((val = get_xlogin_resource(rdb, "greeting", NULL))) {
+		getXrmString(val, &resources.greeting);
+		getXrmString(val, &options.welcome);
+	}
+#endif
+	// xlogin.unsecureGreeting:	This is an unsecure session
+	if ((val = get_xlogin_resource(rdb, "unsecureGreeting", NULL))) {
+		getXrmString(val, &resources.unsecureGreeting);
+	}
+	// xlogin.greetFace:		Sans-12:bold
+	// xlogin.greetFont:
+	if ((val = get_any_resource(rdb, "greetFace", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.greetFace);
+	}
+	// xlogin.greetColor:		grey20
+	if ((val = get_any_resource(rdb, "greetColor", "grey20"))) {
+		getXrmColor(val, &resources.greetColor);
+	}
+	// xlogin.namePrompt:		Username:
+	if ((val = get_xlogin_resource(rdb, "namePrompt", "Username:  "))) {
+		getXrmString(val, &resources.namePrompt);
+	}
+	// xlogin.passwdPrompt:		Password:
+	if ((val = get_xlogin_resource(rdb, "passwdPrompt", "Password:  "))) {
+		getXrmString(val, &resources.passwdPrompt);
+	}
+	// xlogin.promptFace:		Sans-12:bold
+	// xlogin.promptFont:
+	if ((val = get_any_resource(rdb, "promptFace", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.promptFace);
+	}
+	// xlogin.promptColor:		grey20
+	if ((val = get_any_resource(rdb, "promptColor", "grey20"))) {
+		getXrmColor(val, &resources.promptColor);
+	}
+	// xlogin.inputFace:		Sans-12:bold
+	// xlogin.inputFont:
+	if ((val = get_any_resource(rdb, "inputFace", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.inputFace);
+	}
+	// xlogin.inputColor:		grey20
+	if ((val = get_any_resource(rdb, "inputColor", "grey20"))) {
+		getXrmColor(val, &resources.inputColor);
+	}
+	// xlogin.changePasswdMessage:	Password Change Required
+	if ((val = get_xlogin_resource(rdb, "changePasswdMessage", "Password Change Required"))) {
+		getXrmString(val, &resources.changePasswdMessage);
+	}
+	// xlogin.fail:			Login incorrect!
+	if ((val = get_xlogin_resource(rdb, "fail", "Login incorrect!"))) {
+		getXrmString(val, &resources.fail);
+	}
+	// xlogin.failFace:		Sans-12:bold
+	// xlogin.failFont:
+	if ((val = get_any_resource(rdb, "failFace", "Sans:size=12:bold"))) {
+		getXrmFont(val, &resources.failFace);
+	}
+	// xlogin.failColor:		red
+	if ((val = get_any_resource(rdb, "failColor", "red"))) {
+		getXrmColor(val, &resources.failColor);
+	}
+	// xlogin.failTimeout:		10
+	if ((val = get_xlogin_resource(rdb, "failTimeout", "10"))) {
+		getXrmUint(val, &resources.failTimeout);
+	}
+	// xlogin.logoFileName:		/etc/X11/xdm/xde/banner.png
+	if ((val = get_xlogin_resource(rdb, "logoFileName", "/etc/X11/xdm/xde/banner.png"))) {
+		getXrmString(val, &resources.logoFileName);
+	}
+	// xlogin.logoPadding:		8
+	if ((val = get_xlogin_resource(rdb, "logoPadding", "8"))) {
+		getXrmUint(val, &resources.logoPadding);
+	}
+	// xlogin.useShape:		true
+	if ((val = get_xlogin_resource(rdb, "useShape", "true"))) {
+		getXrmBool(val, &resources.useShape);
+	}
+	// xlogin.hiColor:		grey80
+	if ((val = get_xlogin_resource(rdb, "hiColor", "grey80"))) {
+		getXrmColor(val, &resources.hiColor);
+	}
+	// xlogin.shdColor:		grey20
+	if ((val = get_xlogin_resource(rdb, "shdColor", "grey20"))) {
+		getXrmColor(val, &resources.shdColor);
+	}
+	// xlogin.frameWidth:		2
+	if ((val = get_xlogin_resource(rdb, "frameWidth", "2"))) {
+		getXrmUint(val, &resources.frameWidth);
+	}
+	// xlogin.innerFrameWidth:	2
+	if ((val = get_xlogin_resource(rdb, "innerFrameWidth", "2"))) {
+		getXrmUint(val, &resources.innerFrameWidth);
+	}
+	// xlogin.sepWidth:		2
+	if ((val = get_xlogin_resource(rdb, "sepWidth", "2"))) {
+		getXrmUint(val, &resources.sepWidth);
+	}
+	// xlogin.allowRootLogin:	true
+	if ((val = get_xlogin_resource(rdb, "allowRootLogin", "true"))) {
+		getXrmBool(val, &resources.allowRootLogin);
+	}
+	// xlogin.allowNullPasswd:	false
+	if ((val = get_xlogin_resource(rdb, "allowNullPasswd", "false"))) {
+		getXrmBool(val, &resources.allowNullPasswd);
+	}
+	// xlogin.echoPasswd:		true
+	if ((val = get_xlogin_resource(rdb, "echoPasswd", "true"))) {
+		getXrmBool(val, &resources.echoPasswd);
+	}
+	// xlogin.echoPasswdChar:	*
+	if ((val = get_xlogin_resource(rdb, "echoPasswdChar", "*"))) {
+		getXrmString(val, &resources.echoPasswdChar);
+	}
+	// xlogin.borderWidth:		3
+	if ((val = get_xlogin_resource(rdb, "borderWidth", "3"))) {
+		getXrmUint(val, &resources.borderWidth);
+	}
+	if ((val = get_xlogin_resource(rdb, "autoLock", "true"))) {
+		getXrmBool(val, &resources.autoLock);
+	}
+	if ((val = get_xlogin_resource(rdb, "systemLock", "true"))) {
+		getXrmBool(val, &resources.systemLock);
+	}
+
+	// xlogin.login.translations
+
+	// Chooser.geometry:		700x500
+	// Chooser.allowShellResize:	false
+	// Chooser.viewport.forceBars:	true
+	// Chooser.label.font:		*-new-century-schoolbook-bold-i-normal-*-240-*
+	// Chooser.label.label:		XDMCP Host Menu from CLIENTHOST
+	// Chooser.list.font:		*-*-medium-r-normal-*-*-230-*-*-c-*-iso8859-1
+	// Chooser.command.font:	*-new-century-schoolbook-bold-r-normal-*-180-*
+
+	if ((val = get_resource(rdb, "Chooser.x", NULL))) {
+		getXrmDouble(val, &options.xposition);
+	}
+	if ((val = get_resource(rdb, "Chooser.y", NULL))) {
+		getXrmDouble(val, &options.yposition);
+	}
+	if ((val = get_resource(rdb, "banner", NULL))) {
+		getXrmString(val, &options.banner);
+	}
+	if ((val = get_resource(rdb, "splash", NULL))) {
+		getXrmString(val, &options.backdrop);
+	}
+#if defined DO_XCHOOSER || defined DO_XLOGIN || defined(DO_GREETER)
+	if ((val = get_resource(rdb, "welcome", NULL))) {
+		getXrmString(val, &options.welcome);
+	}
+#endif
+	if ((val = get_resource(rdb, "charset", NULL))) {
+		getXrmString(val, &options.charset);
+	}
+	if ((val = get_resource(rdb, "language", NULL))) {
+		getXrmString(val, &options.language);
+	}
+	if ((val = get_resource(rdb, "theme.icon", NULL))) {
+		getXrmString(val, &options.icon_theme);
+	}
+	if ((val = get_resource(rdb, "theme.name", NULL))) {
+		getXrmString(val, &options.gtk2_theme);
+	}
+	if ((val = get_resource(rdb, "theme.cursor", NULL))) {
+		getXrmString(val, &options.curs_theme);
+	}
+	if ((val = get_resource(rdb, "theme.xde", NULL))) {
+		getXrmBool(val, &options.usexde);
+	}
+	if ((val = get_resource(rdb, "side", NULL))) {
+		if (!strncasecmp(val, "left", strlen(val)))
+			options.side = LogoSideLeft;
+		else if (!strncasecmp(val, "top", strlen(val)))
+			options.side = LogoSideTop;
+		else if (!strncasecmp(val, "right", strlen(val)))
+			options.side = LogoSideRight;
+		else if (!strncasecmp(val, "bottom", strlen(val)))
+			options.side = LogoSideBottom;
+		else
+			EPRINTF("invalid value for XDE-XChooser*side: %s\n", val);
+	}
+	if (getuid() == 0) {
+		if ((val = get_resource(rdb, "user.default", NULL))) {
+			getXrmString(val, &options.username);
+		}
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+		if ((val = get_resource(rdb, "autologin", NULL))) {
+			getXrmBool(val, &options.autologin);
+		}
+#endif
+	}
+	if ((val = get_resource(rdb, "vendor", NULL))) {
+		getXrmString(val, &options.vendor);
+	}
+	if ((val = get_resource(rdb, "prefix", NULL))) {
+		getXrmString(val, &options.prefix);
+	}
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	if ((val = get_resource(rdb, "login.permit", NULL))) {
+		getXrmBool(val, &options.permitlogin);
+	}
+	if ((val = get_resource(rdb, "login.remote", NULL))) {
+		getXrmBool(val, &options.remotelogin);
+	}
+#endif
+	if ((val = get_resource(rdb, "xsession.chooser", NULL))) {
+		getXrmBool(val, &options.xsession);
+	}
+	if ((val = get_resource(rdb, "xsession.execute", NULL))) {
+		getXrmBool(val, &options.launch);
+	}
+	if ((val = get_resource(rdb, "xsession.default", NULL))) {
+		getXrmString(val, &options.choice);
+	}
+	if ((val = get_resource(rdb, "setbg", NULL))) {
+		getXrmBool(val, &options.setbg);
+	}
+	if ((val = get_resource(rdb, "transparent", NULL))) {
+		getXrmBool(val, &options.transparent);
+	}
+	// DisplayManager.servers:		:0 local /usr/bin/X11/X :0
+	// DisplayManager.requestPort:		177
+	// DisplayManager.debugLevel:		0
+	// DisplayManager.errorLogFile:		
+	// DisplayManager.daemonMode:		true
+	// DisplayManager.pidFile:		
+	// DisplayManager.lockPidFile:		true
+	// DisplayManager.authDir:		/usr/lib/X11/xdm
+	if ((val = get_dm_resource(rdb, "authDir", "/usr/lib/X11/xdm"))) {
+		getXrmString(val, &resources.authDir);
+	}
+	// DisplayManager.autoRescan:		true
+	// DisplayManager.removeDomainname:	true
+	// DisplayManager.keyFile:		
+	// DisplayManager.accessFile:		
+	// DisplayManager.exportList:		
+	if ((val = get_dm_resource(rdb, "exportList", ""))) {
+		getXrmStringList(val, &resources.exportList);
+	}
+	// DisplayManager.randomFile:		/dev/mem
+	// DisplayManager.prngSocket:		/tmp/entropy
+	// DisplayManager.prngPort:		0
+	// DisplayManager.randomDevice:		DEV_RANDOM
+	// DisplayManager.greeterLib:		/usr/lib/X11/xdm/libXdmGreet.so
+	// DisplayManager.choiceTimeout:	15
+	// DisplayManager.sourceAddress:	false
+	// DisplayManager.willing:		
+
+	// DisplayManager.*.serverAttempts:	1
+	// DisplayManager.*.openDelay:		15
+	// DisplayManager.*.openRepeat:		5
+	// DisplayManager.*.openTimeout:	120
+	// DisplayManager.*.startAttempts:	4
+	// DisplayManager.*.reservAttempts:	2
+	// DisplayManager.*.pingInterval:	5
+	// DisplayManager.*.pingTimeout:	5
+	// DisplayManager.*.terminateServer:	false
+	// DisplayManager.*.grabServer:		false
+	if ((val = get_dm_dpy_resource(rdb, "grabServer", "false"))) {
+		getXrmBool(val, &resources.grabServer);
+	}
+	// DisplayManager.*.grabTimeout:	3
+	if ((val = get_dm_dpy_resource(rdb, "grabTimeout", "3"))) {
+		getXrmInt(val, &resources.grabTimeout);
+	}
+	// DisplayManager.*.resetSignal:	1
+	// DisplayManager.*.termSignal:		15
+	// DisplayManager.*.resetForAuth:	false
+	// DisplayManager.*.authorize:		true
+	if ((val = get_dm_dpy_resource(rdb, "authorize", "true"))) {
+		getXrmBool(val, &resources.authorize);
+	}
+	// DisplayManager.*.authComplain:	true
+	if ((val = get_dm_dpy_resource(rdb, "authComplain", "true"))) {
+		getXrmBool(val, &resources.authComplain);
+	}
+	// DisplayManager.*.authName:		XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1
+	if ((val = get_dm_dpy_resource(rdb, "authName", "XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1"))) {
+		getXrmStringList(val, &resources.authName);
+	}
+	// DisplayManager.*.authFile:		
+	if ((val = get_dm_dpy_resource(rdb, "authFile", NULL))) {
+		getXrmString(val, &resources.authFile);
+	}
+	// DisplayManager.*.resources:		
+	// DisplayManager.*.xrdb:		/usr/bin/X11/xrdb
+	// DisplayManager.*.setup:		
+	if ((val = get_dm_dpy_resource(rdb, "setup", NULL))) {
+		getXrmString(val, &resources.setup);
+	}
+	// DisplayManager.*.startup:		
+	if ((val = get_dm_dpy_resource(rdb, "startup", NULL))) {
+		getXrmString(val, &resources.startup);
+	}
+	// DisplayManager.*.reset:		
+	if ((val = get_dm_dpy_resource(rdb, "reset", NULL))) {
+		getXrmString(val, &resources.reset);
+	}
+	// DisplayManager.*.session:		/usr/bin/X11/xterm -ls
+	if ((val = get_dm_dpy_resource(rdb, "session", NULL))) {
+		getXrmString(val, &resources.session);
+	}
+	// DisplayManager.*.userPath:		:/bin:/usr/bin:/usr/bin/X11:/usr/ucb
+	if ((val = get_dm_dpy_resource(rdb, "userPath", NULL))) {
+		getXrmString(val, &resources.userPath);
+	}
+	// DisplayManager.*.systemPath:		/etc:/bin:/usr/bin:/usr/bin/X11:/usr/ucb
+	if ((val = get_dm_dpy_resource(rdb, "systemPath", NULL))) {
+		getXrmString(val, &resources.systemPath);
+	}
+	// DisplayManager.*.systemShell:	/bin/sh
+	if ((val = get_dm_dpy_resource(rdb, "systemShell", NULL))) {
+		getXrmString(val, &resources.systemShell);
+	}
+	// DisplayManager.*.failsafeClient:	/usr/bin/X11/xterm
+	if ((val = get_dm_dpy_resource(rdb, "failsafeClient", NULL))) {
+		getXrmString(val, &resources.failsafeClient);
+	}
+	// DisplayManager.*.userAuthDir:	/tmp
+	if ((val = get_dm_dpy_resource(rdb, "userAuthDir", NULL))) {
+		getXrmString(val, &resources.userAuthDir);
+	}
+	// DisplayManager.*.chooser:		/usr/lib/X11/xdm/chooser
+	if ((val = get_dm_dpy_resource(rdb, "chooser", NULL))) {
+		getXrmString(val, &resources.chooser);
+	}
+	// DisplayManager.*.greeter:		
+	if ((val = get_dm_dpy_resource(rdb, "greeter", NULL))) {
+		getXrmString(val, &resources.greeter);
+	}
+
+	XrmDestroyDatabase(rdb);
+	XCloseDisplay(dpy);
+}
+
 void
 set_default_debug(void)
 {
@@ -3021,7 +3811,7 @@ main(int argc, char *argv[])
 
 	set_defaults(argc, argv);
 
-//	get_resources(argc, argv);
+	get_resources(argc, argv);
 
 	while (1) {
 		int c, val;
