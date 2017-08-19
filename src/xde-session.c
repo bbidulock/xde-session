@@ -178,6 +178,13 @@ timestamp(void)
 static int saveArgc;
 static char **saveArgv;
 
+typedef enum _LogoSide {
+	LogoSideLeft,
+	LogoSideTop,
+	LogoSideRight,
+	LogoSideBottom,
+} LogoSide;
+
 
 typedef enum {
 	CommandDefault,
@@ -197,12 +204,33 @@ typedef struct {
 	char *service;
 	char *vtnr;
 	char *tty;
+	char *banner;
+	char *welcome;
+	char *charset;
+	char *language;
+	char *desktop;
+	char *icon_theme;
+	char *gtk2_theme;
+	char *curs_theme;
+	LogoSide side;
+	char *current;
+	Bool managed;
+	char *session;
+	char *choice;
+	char *username;
+	char *password;
+	Bool usexde;
+	Bool replace;
+	unsigned int timeout;
+	char *clientId;
+	char *saveFile;
+	GKeyFile *dmrc;
 	char *vendor;
+	char *prefix;
+	char *backdrop;
 	Bool mkdirs;
 	char *wmname;
-	char *desktop;
-	char *session;
-	char *splash;
+	Bool splash;
 	char **setup;
 	char *startwm;
 	int pause;
@@ -219,16 +247,69 @@ Options options = {
 	.service = NULL,
 	.vtnr = NULL,
 	.tty = NULL,
+	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
+	.welcome = NULL,
+	.charset = NULL,
+	.language = NULL,
+	.desktop = NULL,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.curs_theme = NULL,
+	.side = LogoSideTop,
 	.vendor = NULL,
 	.mkdirs = False,
 	.wmname = NULL,
-	.desktop = NULL,
+	.current = NULL,
+	.managed = True,
 	.session = NULL,
-	.splash = NULL,
+	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
+	.usexde = False,
+	.replace = False,
+	.timeout = 15,
+	.clientId = NULL,
+	.saveFile = NULL,
+	.backdrop = NULL,
 	.setup = NULL,
 	.startwm = NULL,
 	.pause = 0,
 	.wait = False,
+};
+
+Options defaults = {
+	.output = 1,
+	.debug = 0,
+	.dryrun = False,
+	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
+	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
+	.welcome = NULL,
+	.command = CommandDefault,
+	.charset = NULL,
+	.language = NULL,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.curs_theme = NULL,
+	.side = LogoSideLeft,
+	.current = NULL,
+	.managed = True,
+	.session = NULL,
+	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
+	.usexde = False,
+	.replace = False,
+	.timeout = 15,
+	.clientId = NULL,
+	.saveFile = NULL,
+	.dmrc = NULL,
+	.vendor = NULL,
+	.prefix = NULL,
+	.backdrop = NULL,
 };
 
 typedef struct {
@@ -722,7 +803,7 @@ splashscreen()
 	GtkWidget *vbox = gtk_vbox_new(FALSE, 5);
 	gtk_box_pack_start(GTK_BOX(hbox), GTK_WIDGET(vbox), TRUE, TRUE, 0);
 
-	GtkWidget *img = gtk_image_new_from_file(options.splash);
+	GtkWidget *img = gtk_image_new_from_file(options.backdrop);
 	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(img), FALSE, FALSE, 0);
 
 	GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
@@ -1533,6 +1614,76 @@ waitwm()
 	roots = NULL;
 }
 
+/** @brief get system data directories
+  *
+  * Note that, unlike some other tools, there is no home directory at this point
+  * so just search the system XDG data directories for things, but treat the XDM
+  * home as /usr/lib/X11/xdm.
+  */
+char **
+get_data_dirs(int *np)
+{
+	char *home, *xhome, *xdata, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_DATA_HOME");
+	xdata = getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end;
+	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
+		xdg_dirs[n] = strdup(pos);
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
+char **
+get_config_dirs(int *np)
+{
+	char *home, *xhome, *xconf, *dirs, *pos, *end, **xdg_dirs;
+	int len, n;
+
+	home = getenv("HOME") ? : ".";
+	xhome = getenv("XDG_CONFIG_HOME");
+	xconf = getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg";
+
+	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
+	dirs = calloc(len, sizeof(*dirs));
+	if (xhome)
+		strcpy(dirs, xhome);
+	else {
+		strcpy(dirs, home);
+		strcat(dirs, "/.config");
+	}
+	strcat(dirs, ":");
+	strcat(dirs, xconf);
+	end = dirs + strlen(dirs);
+	for (n = 0, pos = dirs; pos < end;
+	     n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
+	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
+	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1)
+		xdg_dirs[n] = strdup(pos);
+	free(dirs);
+	if (np)
+		*np = n;
+	return (xdg_dirs);
+}
+
 static gboolean
 pause_done(gpointer user_data)
 {
@@ -1660,6 +1811,30 @@ Usage:\n\
 ", argv[0]);
 }
 
+const char *
+show_side(LogoSide side)
+{
+	switch (side) {
+	case LogoSideLeft:
+		return ("left");
+	case LogoSideTop:
+		return ("top");
+	case LogoSideRight:
+		return ("right");
+	case LogoSideBottom:
+		return ("bottom");
+	}
+	return ("unknown");
+}
+
+const char *
+show_bool(Bool val)
+{
+	if (val)
+		return ("true");
+	return ("false");
+}
+
 static void
 help(int argc, char *argv[])
 {
@@ -1753,11 +1928,235 @@ get_default_x11(void)
 	XCloseDisplay(dpy);
 }
 
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+void
+get_default_authfile(void)
+{
+	if (options.authfile)
+		setenv("XAUTHORITY", options.authfile, 1);
+}
+#endif
+
+void
+get_default_vendor(void)
+{
+	if (!options.vendor) {
+		options.vendor = defaults.vendor;
+		options.prefix = defaults.prefix;
+	} else if (*options.vendor) {
+		int len = strlen(options.vendor) + 1;
+
+		free(options.prefix);
+		options.prefix = calloc(len + 1, sizeof(*options.prefix));
+		strncpy(options.prefix, options.vendor, len);
+		strncat(options.prefix, "-", len);
+	} else {
+		free(options.prefix);
+		options.prefix = strdup("");
+	}
+	if (options.vendor && *options.vendor)
+		setenv("XDG_VENDOR_ID", options.vendor, 1);
+	else
+		unsetenv("XDG_VENDOR_ID");
+	if (options.prefix && *options.prefix)
+		setenv("XDG_MENU_PREFIX", options.prefix, 1);
+	else
+		unsetenv("XDG_MENU_PREFIX");
+}
+
+void
+get_default_banner(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	if (options.banner)
+		return;
+
+	free(options.banner);
+	options.banner = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		options.banner = defaults.banner;
+		return;
+	}
+
+	options.banner = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = options.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					options.banner = strdup(file);
+					break;
+				}
+			}
+			if (options.banner)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+
+	if (!options.banner)
+		options.banner = defaults.banner;
+}
+
+void
+get_default_splash(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	if (options.backdrop)
+		return;
+
+	free(options.backdrop);
+	options.backdrop = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		options.backdrop = defaults.backdrop;
+		return;
+	}
+
+	options.backdrop = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = options.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "splash", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					options.backdrop = strdup(file);
+					break;
+				}
+			}
+			if (options.backdrop)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+
+	if (!options.backdrop)
+		options.backdrop = defaults.backdrop;
+}
+
+void
+get_default_welcome(void)
+{
+	if (!options.welcome) {
+		free(options.welcome);
+		options.welcome = defaults.welcome;
+	}
+}
+
+void
+get_default_language(void)
+{
+	if (!options.charset) {
+		free(options.charset);
+		options.charset = defaults.charset;
+	}
+	if (!options.language) {
+		free(options.language);
+		options.language = defaults.language;
+	}
+	if (strcmp(options.charset, defaults.charset) ||
+	    strcmp(options.language, defaults.language)) {
+		/* FIXME: actually set the language and charset */
+	}
+}
+
+void
+get_default_session(void)
+{
+	if (options.dmrc)
+		g_key_file_unref(options.dmrc);
+	options.dmrc = defaults.dmrc;
+	if (!options.session) {
+		free(options.session);
+		if (!(options.session = defaults.session))
+			options.session = strdup("");
+	}
+	if (!options.current) {
+		free(options.current);
+		if (!(options.current = defaults.current))
+			options.current = strdup("");
+	}
+}
+
+void
+get_default_choice(void)
+{
+	if (!options.choice) {
+		free(options.choice);
+		if (!(options.choice = defaults.choice))
+			options.choice = strdup("default");
+	}
+}
+
+void
+get_default_username(void)
+{
+	struct passwd *pw;
+
+	if (options.username)
+		return;
+	if (getuid() == 0)
+		return;
+
+	if (!(pw = getpwuid(getuid()))) {
+		EPRINTF("cannot get users password entry\n");
+		exit(EXIT_FAILURE);
+	}
+	free(options.username);
+	options.username = strdup(pw->pw_name);
+	endpwent();
+}
+
 void
 get_defaults(int argc, char *argv[])
 {
 	get_default_display();
 	get_default_x11();
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	get_default_authfile();
+#endif
+	get_default_vendor();
+	get_default_banner();
+	get_default_splash();
+	get_default_welcome();
+	get_default_language();
+	get_default_session();
+	get_default_choice();
+	get_default_username();
 }
 
 int

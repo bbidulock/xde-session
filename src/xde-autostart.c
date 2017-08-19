@@ -202,24 +202,39 @@ typedef struct {
 	char *service;
 	char *vtnr;
 	char *tty;
+	char *banner;
+	char *welcome;
+	char *charset;
+	char *language;
 	char *desktop;
+	char *icon_theme;
+	char *gtk2_theme;
+	char *curs_theme;
+	LogoSide side;
+	char *current;
+	Bool managed;
 	char *session;
+	char *choice;
+	char *username;
+	char *password;
+	Bool usexde;
+	Bool replace;
+	unsigned int timeout;
+	char *clientId;
+	char *saveFile;
+	GKeyFile *dmrc;
+	char *vendor;
+	char *prefix;
+	char *backdrop;
 	char **execute;
 	int commands;
 	char *file;
 	Bool autostart;
 	Bool wait;
 	unsigned int pause;
-	char *banner;
 	Bool splash;
 	unsigned int guard;
 	unsigned int delay;
-	char *charset;
-	char *language;
-	LogoSide side;
-	char *icon_theme;
-	char *gtk2_theme;
-	Bool usexde;
 	Bool foreground;
 	char *client_id;
 	char **desktops;
@@ -235,27 +250,73 @@ Options options = {
 	.service = NULL,
 	.vtnr = NULL,
 	.tty = NULL,
+	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
+	.welcome = NULL,
+	.charset = NULL,
+	.language = NULL,
 	.desktop = NULL,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.curs_theme = NULL,
+	.side = LogoSideTop,
+	.current = NULL,
+	.managed = True,
 	.session = NULL,
+	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
+	.usexde = False,
+	.replace = False,
+	.timeout = 15,
+	.clientId = NULL,
+	.saveFile = NULL,
 	.execute = NULL,
 	.commands = 0,
 	.file = NULL,
 	.autostart = True,
 	.wait = True,
 	.pause = 2,
-	.banner = NULL,
 	.splash = True,
 	.guard = 200,
 	.delay = 0,
-	.charset = NULL,
-	.language = NULL,
-	.side = LogoSideTop,
-	.icon_theme = NULL,
-	.gtk2_theme = NULL,
-	.usexde = False,
 	.foreground = False,
 	.client_id = NULL,
 	.desktops = NULL,
+};
+
+Options defaults = {
+	.output = 1,
+	.debug = 0,
+	.dryrun = False,
+	.display = NULL,
+	.seat = NULL,
+	.service = NULL,
+	.vtnr = NULL,
+	.tty = NULL,
+	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
+	.welcome = NULL,
+	.command = CommandDefault,
+	.charset = NULL,
+	.language = NULL,
+	.icon_theme = NULL,
+	.gtk2_theme = NULL,
+	.curs_theme = NULL,
+	.side = LogoSideLeft,
+	.current = NULL,
+	.managed = True,
+	.session = NULL,
+	.choice = NULL,
+	.username = NULL,
+	.password = NULL,
+	.usexde = False,
+	.replace = False,
+	.timeout = 15,
+	.clientId = NULL,
+	.saveFile = NULL,
+	.dmrc = NULL,
+	.vendor = NULL,
+	.prefix = NULL,
+	.backdrop = NULL,
 };
 
 /*
@@ -4686,7 +4747,7 @@ init_autostarts(TableContext **cp)
 	if (!(count = g_hash_table_size(autostarts))) {
 		EPRINTF("cannot find any AutoStarts\n");
 	}
-	if (options.splash) {
+	if (options.backdrop) {
 
 		c = calloc(1, sizeof(*c));
 		c->cols = 7;	/* seems like a good number */
@@ -4742,7 +4803,7 @@ do_autostarts(XdeStartupPhase want, GHashTable *autostarts, TableContext *c)
 		task->entry = value;
 		task->runnable = !autostarts_filter(key, value, NULL);
 
-		if (options.splash)
+		if (options.backdrop)
 			add_task_to_splash(c, task);
 
 		if (!task->runnable) {
@@ -5092,8 +5153,295 @@ set_default_file(void)
 }
 
 void
+get_default_display(void)
+{
+	if (options.display)
+		setenv("DISPLAY", options.display, 1);
+}
+
+void
+get_default_x11(void)
+{
+	Display *dpy;
+	Window root;
+	Atom property, actual;
+	int format;
+	unsigned long nitems, after;
+	long *data = NULL;
+
+	if (!(dpy = XOpenDisplay(0))) {
+		EPRINTF("cannot open display %s\n", options.display);
+		exit(EXIT_FAILURE);
+	}
+	root = RootWindow(dpy, 0);
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "XFree86_VT", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 1, False, XA_INTEGER, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 32 && nitems && data) {
+		free(options.vtnr);
+		if ((options.vtnr = calloc(16, sizeof(*options.vtnr))))
+			snprintf(options.vtnr, 16, "%lu", *(unsigned long *) data);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	format = 0;
+	nitems = after = 0;
+	if ((property = XInternAtom(dpy, "Xorg_Seat", True)) &&
+	    XGetWindowProperty(dpy, root, property, 0, 16, False, XA_STRING, &actual,
+			       &format, &nitems, &after, (unsigned char **) &data)
+	    == Success && format == 8 && nitems && data) {
+		free(options.seat);
+		if ((options.seat = calloc(nitems + 1, sizeof(*options.seat))))
+			strncpy(options.seat, (char *) data, nitems);
+	}
+	if (data) {
+		XFree(data);
+		data = NULL;
+	}
+	if (options.vtnr) {
+		if (!options.seat)
+			options.seat = strdup("seat0");
+		if ((options.tty = calloc(16, sizeof(options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+	if (!options.tty)
+		options.tty = strdup(options.display);
+	XCloseDisplay(dpy);
+}
+
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+void
+get_default_authfile(void)
+{
+	if (options.authfile)
+		setenv("XAUTHORITY", options.authfile, 1);
+}
+#endif
+
+void
+get_default_vendor(void)
+{
+	if (!options.vendor) {
+		options.vendor = defaults.vendor;
+		options.prefix = defaults.prefix;
+	} else if (*options.vendor) {
+		int len = strlen(options.vendor) + 1;
+
+		free(options.prefix);
+		options.prefix = calloc(len + 1, sizeof(*options.prefix));
+		strncpy(options.prefix, options.vendor, len);
+		strncat(options.prefix, "-", len);
+	} else {
+		free(options.prefix);
+		options.prefix = strdup("");
+	}
+	if (options.vendor && *options.vendor)
+		setenv("XDG_VENDOR_ID", options.vendor, 1);
+	else
+		unsetenv("XDG_VENDOR_ID");
+	if (options.prefix && *options.prefix)
+		setenv("XDG_MENU_PREFIX", options.prefix, 1);
+	else
+		unsetenv("XDG_MENU_PREFIX");
+}
+
+void
+get_default_banner(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	if (options.banner)
+		return;
+
+	free(options.banner);
+	options.banner = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		options.banner = defaults.banner;
+		return;
+	}
+
+	options.banner = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = options.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					options.banner = strdup(file);
+					break;
+				}
+			}
+			if (options.banner)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+
+	if (!options.banner)
+		options.banner = defaults.banner;
+}
+
+void
+get_default_splash(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	if (options.backdrop)
+		return;
+
+	free(options.backdrop);
+	options.backdrop = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		options.backdrop = defaults.backdrop;
+		return;
+	}
+
+	options.backdrop = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = options.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "splash", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					options.backdrop = strdup(file);
+					break;
+				}
+			}
+			if (options.backdrop)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+
+	if (!options.backdrop)
+		options.backdrop = defaults.backdrop;
+}
+
+void
+get_default_welcome(void)
+{
+	if (!options.welcome) {
+		free(options.welcome);
+		options.welcome = defaults.welcome;
+	}
+}
+
+void
+get_default_language(void)
+{
+	if (!options.charset) {
+		free(options.charset);
+		options.charset = defaults.charset;
+	}
+	if (!options.language) {
+		free(options.language);
+		options.language = defaults.language;
+	}
+	if (strcmp(options.charset, defaults.charset) ||
+	    strcmp(options.language, defaults.language)) {
+		/* FIXME: actually set the language and charset */
+	}
+}
+
+void
+get_default_session(void)
+{
+	if (options.dmrc)
+		g_key_file_unref(options.dmrc);
+	options.dmrc = defaults.dmrc;
+	if (!options.session) {
+		free(options.session);
+		if (!(options.session = defaults.session))
+			options.session = strdup("");
+	}
+	if (!options.current) {
+		free(options.current);
+		if (!(options.current = defaults.current))
+			options.current = strdup("");
+	}
+}
+
+void
+get_default_choice(void)
+{
+	if (!options.choice) {
+		free(options.choice);
+		if (!(options.choice = defaults.choice))
+			options.choice = strdup("default");
+	}
+}
+
+void
+get_default_username(void)
+{
+	struct passwd *pw;
+
+	if (options.username)
+		return;
+	if (getuid() == 0)
+		return;
+
+	if (!(pw = getpwuid(getuid()))) {
+		EPRINTF("cannot get users password entry\n");
+		exit(EXIT_FAILURE);
+	}
+	free(options.username);
+	options.username = strdup(pw->pw_name);
+	endpwent();
+}
+
+void
 get_defaults(int argc, char *argv[])
 {
+	get_default_display();
+	get_default_x11();
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	get_default_authfile();
+#endif
+	get_default_vendor();
+	get_default_banner();
+	get_default_splash();
+	get_default_welcome();
+	get_default_language();
+	get_default_session();
+	get_default_choice();
+	get_default_username();
 }
 
 void
