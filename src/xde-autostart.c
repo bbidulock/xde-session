@@ -42,12 +42,12 @@
 
  *****************************************************************************/
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "autoconf.h"
+#endif
+
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
 #endif
 
 #include <stddef.h>
@@ -91,30 +91,47 @@
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#ifdef VNC_SUPPORTED
+#include <X11/extensions/Xvnc.h>
+#endif
+#include <X11/extensions/scrnsaver.h>
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
+#include <X11/Xdmcp.h>
+#include <X11/Xauth.h>
+#include <X11/SM/SMlib.h>
+#include <glib-unix.h>
+#include <glib/gfileutils.h>
+#include <glib/gkeyfile.h>
+#include <glib/gdataset.h>
+#include <gio/gio.h>
+#include <gdk/gdk.h>
+#include <gdk/gdkx.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
-#include <X11/SM/SMlib.h>
 
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stderr, "I: "); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
+
+#include <pwd.h>
+#include <systemd/sd-login.h>
+#include <security/pam_appl.h>
+#include <security/pam_misc.h>
+#include <fontconfig/fontconfig.h>
+#include <pango/pangofc-fontmap.h>
+
+#include <ctype.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -122,6 +139,36 @@
 
 #include <langinfo.h>
 #include <locale.h>
+
+const char *
+timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
+
+#define XPRINTF(args...) do { } while (0)
+#define OPRINTF(args...) do { if (options.output > 1) { \
+	fprintf(stderr, "I: "); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define DPRINTF(args...) do { if (options.debug) { \
+	fprintf(stderr, "D: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr); } } while (0)
+#define EPRINTF(args...) do { \
+	fprintf(stderr, "E: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, args); \
+	fflush(stderr);   } while (0)
+#define DPRINT() do { if (options.debug) { \
+	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
+	fflush(stderr); } } while (0)
 
 typedef enum _LogoSide {
 	LogoSideLeft,
@@ -256,6 +303,15 @@ typedef enum {
 } XdeRunState;
 
 XdeRunState runstate = RunStateStartup;
+
+typedef enum {
+	StartupPhasePreDisplayServer,
+	StartupPhaseInitialization,
+	StartupPhaseWindowManager,
+	StartupPhaseDesktop,
+	StartupPhasePanel,
+	StartupPhaseApplication,
+} XdeStartupPhase;
 
 typedef struct {
 	XdeRunState state;
@@ -4553,7 +4609,7 @@ blink_button(gpointer user_data)
 }
 
 void
-add_task_to_splash(TableContext * c, TaskContext * task)
+add_task_to_splash(TableContext *c, TaskContext *task)
 {
 	char *name;
 	GtkWidget *icon, *but;
@@ -4591,27 +4647,23 @@ add_task_to_splash(TableContext * c, TaskContext * task)
 		task->blink = g_timeout_add_seconds(1, blink_button, task);
 }
 
-void
-do_autostarts()
+GHashTable *
+init_autostarts(TableContext **cp)
 {
 	GHashTable *autostarts;
-	TaskContext *task;
-	GHashTableIter hiter;
-	gpointer key, value;
-	int count;
 	TableContext *c = NULL;
+	int count;
 
 	if (!(autostarts = get_autostarts())) {
 		EPRINTF("cannot build AutoStarts\n");
-		return;
+		return (autostarts);
 	}
 	if (!(count = g_hash_table_size(autostarts))) {
-		EPRINTF("cannot fine any AutoStarts\n");
-		return;
+		EPRINTF("cannot find any AutoStarts\n");
 	}
 	if (options.splash) {
-		c = calloc(1, sizeof(*c));
 
+		c = calloc(1, sizeof(*c));
 		c->cols = 7;	/* seems like a good number */
 		c->rows = (count + c->cols - 1) / c->cols;
 		c->col = 0;
@@ -4619,9 +4671,46 @@ do_autostarts()
 
 		create_splashscreen(c);
 	}
+	*cp = c;
+	return (autostarts);
+}
+
+void
+do_autostarts(XdeStartupPhase want, GHashTable *autostarts, TableContext *c)
+{
+	TaskContext *task;
+	GHashTableIter hiter;
+	gpointer key, value;
 
 	g_hash_table_iter_init(&hiter, autostarts);
 	while (g_hash_table_iter_next(&hiter, &key, &value)) {
+		gchar *phase;
+		XdeStartupPhase have = StartupPhaseApplication;
+
+		if (!(phase = g_key_file_get_string(value, G_KEY_FILE_DESKTOP_GROUP, "X-GNOME-Autostart-Phase", NULL)) &&
+		    !(phase = g_key_file_get_string(value, G_KEY_FILE_DESKTOP_GROUP, "AutostartPhase", NULL))) {
+			have = StartupPhaseApplication;
+		} else {
+			if (!strcmp(phase, "PreDisplayServer")) {
+				have = StartupPhasePreDisplayServer;
+			} else if (!strcmp(phase, "Initialization")) {
+				have = StartupPhaseInitialization;
+			} else if (!strcmp(phase, "WindowManager")) {
+				have = StartupPhaseWindowManager;
+			} else if (!strcmp(phase, "Desktop")) {
+				have = StartupPhaseDesktop;
+			} else if (!strcmp(phase, "Panel")) {
+				have = StartupPhasePanel;
+			} else if (!strcmp(phase, "Application") || !strcmp(phase, "Applications")) {
+				have = StartupPhaseApplication;
+			} else {
+				EPRINTF("unrecognized phase: %s\n", phase);
+				have = StartupPhaseApplication;
+			}
+			g_free(phase);
+		}
+		if (have != want)
+			continue;
 
 		task = calloc(1, sizeof(*task));
 		task->appid = key;
@@ -4635,7 +4724,6 @@ do_autostarts()
 			free(task);
 			continue;
 		}
-
 		/* FIXME: actually launch the task */
 
 	}
@@ -4651,12 +4739,26 @@ do_executes()
 void
 run_autostart(int argc, char *argv[])
 {
+	GHashTable *autostarts;
+	TableContext *c;
+
 	/* FIXME: write me */
 
 	setup_main_loop(argc, argv);
 	do_executes();
-	do_autostarts();
-
+	if ((autostarts = init_autostarts(&c))) {
+		do_autostarts(StartupPhasePreDisplayServer, autostarts, c);
+		/* Perform any autostarts that are marked for the initialization phase.  */
+		do_autostarts(StartupPhaseInitialization, autostarts, c);
+		/* Wait for a period of time after the initialization before launching the window 
+		   manager. */
+		do_autostarts(StartupPhaseWindowManager, autostarts, c);
+		do_autostarts(StartupPhaseDesktop, autostarts, c);
+		do_autostarts(StartupPhasePanel, autostarts, c);
+		/* Start dock apps here. */
+		/* start tray icons here. */
+		do_autostarts(StartupPhaseApplication, autostarts, c);
+	}
 	gtk_main();
 }
 

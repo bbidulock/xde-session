@@ -1,7 +1,7 @@
 /*****************************************************************************
 
  Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>
- Copyright (c) 2001-2009  OpenSS7 Corporation <http://www.openss7.com/>
+ Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
  All Rights Reserved.
@@ -102,7 +102,12 @@
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
 #include <X11/SM/SMlib.h>
+#include <glib-unix.h>
+#include <glib/gfileutils.h>
+#include <glib/gkeyfile.h>
+#include <glib/gdataset.h>
 #include <gio/gio.h>
+#include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
@@ -117,6 +122,16 @@
 #include <security/pam_misc.h>
 #include <fontconfig/fontconfig.h>
 #include <pango/pangofc-fontmap.h>
+
+#include <ctype.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -154,16 +169,6 @@ timestamp(void)
 #define DPRINT() do { if (options.debug) { \
 	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
-
-#include <ctype.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <ifaddrs.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
 
 static int saveArgc;
 static char **saveArgv;

@@ -359,3 +359,5 @@
 -TXWMIconGeometry
 -TXWMState
 -Tpam_handle_t
+-TTaskContext
+-TTableContext

@@ -42,12 +42,12 @@
 
  *****************************************************************************/
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "autoconf.h"
+#endif
+
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
 #endif
 
 #include <stddef.h>
@@ -91,12 +91,68 @@
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif
+#ifdef VNC_SUPPORTED
+#include <X11/extensions/Xvnc.h>
+#endif
+#include <X11/extensions/scrnsaver.h>
 #ifdef STARTUP_NOTIFICATION
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
+#include <X11/Xdmcp.h>
+#include <X11/Xauth.h>
+#include <X11/SM/SMlib.h>
+#include <unique/unique.h>
+#include <glib-unix.h>
+#include <glib/gfileutils.h>
+#include <glib/gkeyfile.h>
+#include <glib/gdataset.h>
+#include <gio/gio.h>
+#include <gdk/gdk.h>
+#include <gdk/gdkx.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
+
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
+
+#include <pwd.h>
+#include <systemd/sd-login.h>
+#include <security/pam_appl.h>
+#include <security/pam_misc.h>
+#include <fontconfig/fontconfig.h>
+#include <pango/pangofc-fontmap.h>
+
+#include <ctype.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
+
+#include <langinfo.h>
+#include <locale.h>
+
+const char *
+timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
 
 #define XPRINTF(args...) do { } while (0)
 #define OPRINTF(args...) do { if (options.output > 1) { \
@@ -104,31 +160,17 @@
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr); } } while (0)
 #define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "E: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
 	fprintf(stderr, args); \
 	fflush(stderr);   } while (0)
 #define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
+	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
-
-#include <sys/types.h>
-#include <pwd.h>
-#include <unique/unique.h>
-#include <glib-unix.h>
-#include <glib/gfileutils.h>
-#include <glib/gkeyfile.h>
-#include <glib/gdataset.h>
-#include <gdk/gdk.h>
-#include <gdk/gdkx.h>
-
-#ifdef _GNU_SOURCE
-#include <getopt.h>
-#endif
 
 typedef struct {
 	int output;
