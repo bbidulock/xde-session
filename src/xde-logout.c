@@ -1,7 +1,7 @@
 /*****************************************************************************
 
  Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>
- Copyright (c) 2001-2009  OpenSS7 Corporation <http://www.openss7.com/>
+ Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
  All Rights Reserved.
@@ -102,7 +102,12 @@
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
 #include <X11/SM/SMlib.h>
+#include <glib-unix.h>
+#include <glib/gfileutils.h>
+#include <glib/gkeyfile.h>
+#include <glib/gdataset.h>
 #include <gio/gio.h>
+#include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
@@ -114,8 +119,19 @@
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
+#include <security/pam_misc.h>
 #include <fontconfig/fontconfig.h>
 #include <pango/pangofc-fontmap.h>
+
+#include <ctype.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -154,25 +170,22 @@ timestamp(void)
 	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
-#include <ctype.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <ifaddrs.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
+#define EXIT_SUCCESS		0
+#define EXIT_FAILURE		1
+#define EXIT_SYNTAXERR		2
 
 static int saveArgc;
 static char **saveArgv;
 
 #undef DO_XCHOOSER
 #undef DO_XLOGIN
+#undef DO_GREETER
 #undef DO_XLOCKING
 #undef DO_ONIDLE
 #undef DO_CHOOSER
 #define DO_LOGOUT 1
+#undef DO_AUTOSTART
+#undef DO_SESSION
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -195,6 +208,18 @@ static char **saveArgv;
 #   define RESNAME "xde-xlogin"
 #   define RESCLAS "XDE-XLogin"
 #   define RESTITL "XDMCP Greeter"
+#elif defined(DO_GREETER)
+#   define RESNAME "xde-greeter"
+#   define RESCLAS "XDE-Greeter"
+#   define RESTITL "XDMCP Greeter"
+#elif defined(DO_AUTOSTART)
+#   define RESNAME "xde-autostart"
+#   define RESCLAS "XDE-AutoStart"
+#   define RESTITL "XDE XDG Auto Start"
+#elif defined(DO_SESSION)
+#   define RESNAME "xde-session"
+#   define RESCLAS "XDE-Session"
+#   define RESTITL "XDE XDG Session"
 #else
 #   error Undefined program type.
 #endif
@@ -235,6 +260,8 @@ typedef enum {
 	CommandLock,			/* ask running instance to lock */
 	CommandQuit,			/* ask running instance to quit */
 	CommandUnlock,			/* ask running instance to unlock */
+	CommandAutostart,
+	CommandSession,
 } CommandType;
 
 enum {
@@ -255,6 +282,7 @@ typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	CommandType command;
 	char *display;
 	char *seat;
 	char *service;
@@ -269,9 +297,9 @@ typedef struct {
 	char *lockscreen;
 	char *banner;
 	char *welcome;
-	CommandType command;
 	char *charset;
 	char *language;
+	char *desktop;
 	char *icon_theme;
 	char *gtk2_theme;
 	char *curs_theme;
@@ -294,7 +322,9 @@ typedef struct {
 	GKeyFile *dmrc;
 	char *vendor;
 	char *prefix;
-	char *splash;
+	char *backdrop;
+	char **desktops;
+	char *file;
 	unsigned source;
 	Bool xsession;
 	Bool setbg;
@@ -307,7 +337,7 @@ typedef struct {
 	Bool filename;
 	unsigned guard;
 	Bool tray;
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	char *authfile;
 	Bool autologin;
 	Bool permitlogin;
@@ -319,6 +349,7 @@ Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.command = CommandDefault,
 	.display = NULL,
 	.seat = NULL,
 	.service = NULL,
@@ -333,9 +364,9 @@ Options options = {
 	.lockscreen = NULL,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
-	.command = CommandDefault,
 	.charset = NULL,
 	.language = NULL,
+	.desktop = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
 	.curs_theme = NULL,
@@ -358,7 +389,9 @@ Options options = {
 	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
-	.splash = NULL,
+	.backdrop = NULL,
+	.desktops = NULL,
+	.file = NULL,
 	.source = BackgroundSourceRoot,
 	.xsession = False,
 	.setbg = False,
@@ -371,7 +404,7 @@ Options options = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	.authfile = NULL,
 	.autologin = False,
 	.permitlogin = True,
@@ -422,7 +455,9 @@ Options defaults = {
 	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
-	.splash = NULL,
+	.backdrop = NULL,
+	.desktops = NULL,
+	.file = NULL,
 	.source = BackgroundSourceRoot,
 	.xsession = False,
 	.setbg = False,
@@ -435,7 +470,7 @@ Options defaults = {
 	.filename = False,
 	.guard = 5,
 	.tray = False,
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	.authfile = NULL,
 	.autologin = False,
 	.permitlogin = True,
@@ -477,6 +512,25 @@ typedef struct {
 	unsigned int borderWidth;
 	Bool autoLock;
 	Bool systemLock;
+	char *authDir;
+	char **exportList;
+	Bool grabServer;
+	int grabTimeout;
+	Bool authorize;
+	Bool authComplain;
+	char **authName;
+	char *authFile;
+	char *setup;
+	char *startup;
+	char *reset;
+	char *session;
+	char *userPath;
+	char *systemPath;
+	char *systemShell;
+	char *failsafeClient;
+	char *userAuthDir;
+	char *chooser;
+	char *greeter;
 } Resources;
 
 Resources resources  = {
@@ -513,6 +567,25 @@ Resources resources  = {
 	.borderWidth = 0,
 	.autoLock = True,
 	.systemLock = True,
+	.authDir = NULL,
+	.exportList = NULL,
+	.authFile = NULL,
+	.grabServer = False,
+	.grabTimeout = 5,
+	.authorize = True,
+	.authComplain = True,
+	.authName = NULL,
+	.setup = NULL,
+	.startup = NULL,
+	.reset = NULL,
+	.session = NULL,
+	.userPath = NULL,
+	.systemPath = NULL,
+	.systemShell = NULL,
+	.failsafeClient = NULL,
+	.userAuthDir = NULL,
+	.chooser = NULL,
+	.greeter = NULL,
 };
 
 typedef enum {
@@ -571,7 +644,7 @@ LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
 static SmcConn smcConn;
 #endif
 
@@ -3128,7 +3201,7 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 						   echoing */
 		{
 			DPRINTF("PAM_PROMPT_ECHO_OFF: %s\n", (*m)->msg);
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			if (!options.permitlogin) {
 				DPRINTF("login not permitted\n");
 				return (PAM_CONV_ERR);
@@ -3666,6 +3739,7 @@ get_user_menu(void)
 					label = g_strdup_printf("%u: %s", vtnr, pw->pw_name);
 				else
 					label = g_strdup_printf("%u: %s", vtnr, "(unknown)");
+				endpwent();
 			} else if (!strcmp(klass, "greeter"))
 				label = g_strdup_printf("%u: login", vtnr);
 			else
@@ -4388,11 +4462,11 @@ get_source(XdeScreen *xscr)
 			return;
 	}
 	if (options.source & BackgroundSourceSplash) {
-		if (!xscr->pixbuf && options.splash) {
-			if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
+		if (!xscr->pixbuf && options.backdrop) {
+			if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.backdrop, NULL))) {
 				/* cannot use it again */
-				free(options.splash);
-				options.splash = NULL;
+				free(options.backdrop);
+				options.backdrop = NULL;
 			}
 		}
 		if (xscr->pixbuf) {
@@ -5448,7 +5522,7 @@ HideWindow(void)
 	HideScreens();
 }
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
 
 static void
 xdeSetProperties(SmcConn smcConn, SmPointer data)
@@ -5692,6 +5766,7 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 		EPRINTF("%s: %s\n", "getpwuid()", strerror(errno));
 		snprintf(userID, sizeof(userID), "%ld", (long) getuid());
 	}
+	endpwent();
 	propval[j].value = userID;
 	propval[j].length = strlen(userID);
 	j++;
@@ -5857,7 +5932,7 @@ init_smclient(void)
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
 }
 
-#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) */
+#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 static void
 do_run(int argc, char *argv[])
@@ -6477,7 +6552,7 @@ help(int argc, char *argv[])
 {
 	if (!options.output && !options.debug)
 		return;
-        /* *INDENT-OFF* */
+/* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
     %1$s [options]\n\
@@ -6516,8 +6591,20 @@ General options:\n\
     -v, --verbose [LEVEL]      (%12$d)\n\
         increment or set output verbosity LEVEL\n\
         this option may be repeated.\n\
-", argv[0], options.welcome, options.banner, show_side(options.side), show_bool(options.noask), options.usexde ? "xde" : (options.icon_theme ? : "auto"), options.usexde ? "xde" : (options.gtk2_theme ? : "auto"), show_bool(options.usexde), options.timeout, show_bool(options.dryrun), options.debug, options.output);
-        /* *INDENT-ON* */
+"	,argv[0]
+	,options.welcome
+	,options.banner
+	,show_side(options.side)
+	,show_bool(options.noask)
+	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
+	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
+	,show_bool(options.usexde)
+	,options.timeout
+	,show_bool(options.dryrun)
+	,options.debug
+	,options.output
+	);
+/* *INDENT-ON* */
 }
 
 const char *
@@ -6548,6 +6635,31 @@ get_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
 	const char *value;
 
 	if (!(value = get_nc_resource(xrdb, RESNAME, RESCLAS, resource)))
+		value = dflt;
+	return (value);
+}
+
+const char *
+get_dm_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+
+	if (!(value = get_nc_resource(xrdb, "DisplayManager", "DisplayManager", resource)))
+		value = dflt;
+	return (value);
+}
+
+const char *
+get_dm_dpy_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
+{
+	const char *value;
+	static char nc[64], *p;
+
+	snprintf(nc, sizeof(nc), "DisplayManager.%s", options.display);
+	for (p = nc + 15; *p; p++)
+		if (*p == ':' || *p == '.')
+			*p = '_';
+	if (!(value = get_nc_resource(xrdb, nc, nc, resource)))
 		value = dflt;
 	return (value);
 }
@@ -6670,6 +6782,19 @@ getXrmString(const char *val, char **string)
 	if ((tmp = strdup(val))) {
 		free(*string);
 		*string = tmp;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+gboolean
+getXrmStringList(const char *val, char ***list)
+{
+	gchar **tmp;
+
+	if ((tmp = g_strsplit(val, " ", -1))) {
+		g_strfreev(*list);
+		*list = tmp;
 		return TRUE;
 	}
 	return FALSE;
@@ -6926,9 +7051,9 @@ get_resources(int argc, char *argv[])
 		getXrmString(val, &options.banner);
 	}
 	if ((val = get_resource(rdb, "splash", NULL))) {
-		getXrmString(val, &options.splash);
+		getXrmString(val, &options.backdrop);
 	}
-#if defined DO_XCHOOSER || defined DO_XLOGIN
+#if defined DO_XCHOOSER || defined DO_XLOGIN || defined(DO_GREETER)
 	if ((val = get_resource(rdb, "welcome", NULL))) {
 		getXrmString(val, &options.welcome);
 	}
@@ -6967,7 +7092,7 @@ get_resources(int argc, char *argv[])
 		if ((val = get_resource(rdb, "user.default", NULL))) {
 			getXrmString(val, &options.username);
 		}
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 		if ((val = get_resource(rdb, "autologin", NULL))) {
 			getXrmBool(val, &options.autologin);
 		}
@@ -6979,7 +7104,7 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "prefix", NULL))) {
 		getXrmString(val, &options.prefix);
 	}
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	if ((val = get_resource(rdb, "login.permit", NULL))) {
 		getXrmBool(val, &options.permitlogin);
 	}
@@ -7002,6 +7127,117 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "transparent", NULL))) {
 		getXrmBool(val, &options.transparent);
 	}
+	// DisplayManager.servers:		:0 local /usr/bin/X11/X :0
+	// DisplayManager.requestPort:		177
+	// DisplayManager.debugLevel:		0
+	// DisplayManager.errorLogFile:		
+	// DisplayManager.daemonMode:		true
+	// DisplayManager.pidFile:		
+	// DisplayManager.lockPidFile:		true
+	// DisplayManager.authDir:		/usr/lib/X11/xdm
+	if ((val = get_dm_resource(rdb, "authDir", "/usr/lib/X11/xdm"))) {
+		getXrmString(val, &resources.authDir);
+	}
+	// DisplayManager.autoRescan:		true
+	// DisplayManager.removeDomainname:	true
+	// DisplayManager.keyFile:		
+	// DisplayManager.accessFile:		
+	// DisplayManager.exportList:		
+	if ((val = get_dm_resource(rdb, "exportList", ""))) {
+		getXrmStringList(val, &resources.exportList);
+	}
+	// DisplayManager.randomFile:		/dev/mem
+	// DisplayManager.prngSocket:		/tmp/entropy
+	// DisplayManager.prngPort:		0
+	// DisplayManager.randomDevice:		DEV_RANDOM
+	// DisplayManager.greeterLib:		/usr/lib/X11/xdm/libXdmGreet.so
+	// DisplayManager.choiceTimeout:	15
+	// DisplayManager.sourceAddress:	false
+	// DisplayManager.willing:		
+
+	// DisplayManager.*.serverAttempts:	1
+	// DisplayManager.*.openDelay:		15
+	// DisplayManager.*.openRepeat:		5
+	// DisplayManager.*.openTimeout:	120
+	// DisplayManager.*.startAttempts:	4
+	// DisplayManager.*.reservAttempts:	2
+	// DisplayManager.*.pingInterval:	5
+	// DisplayManager.*.pingTimeout:	5
+	// DisplayManager.*.terminateServer:	false
+	// DisplayManager.*.grabServer:		false
+	if ((val = get_dm_dpy_resource(rdb, "grabServer", "false"))) {
+		getXrmBool(val, &resources.grabServer);
+	}
+	// DisplayManager.*.grabTimeout:	3
+	if ((val = get_dm_dpy_resource(rdb, "grabTimeout", "3"))) {
+		getXrmInt(val, &resources.grabTimeout);
+	}
+	// DisplayManager.*.resetSignal:	1
+	// DisplayManager.*.termSignal:		15
+	// DisplayManager.*.resetForAuth:	false
+	// DisplayManager.*.authorize:		true
+	if ((val = get_dm_dpy_resource(rdb, "authorize", "true"))) {
+		getXrmBool(val, &resources.authorize);
+	}
+	// DisplayManager.*.authComplain:	true
+	if ((val = get_dm_dpy_resource(rdb, "authComplain", "true"))) {
+		getXrmBool(val, &resources.authComplain);
+	}
+	// DisplayManager.*.authName:		XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1
+	if ((val = get_dm_dpy_resource(rdb, "authName", "XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1"))) {
+		getXrmStringList(val, &resources.authName);
+	}
+	// DisplayManager.*.authFile:		
+	if ((val = get_dm_dpy_resource(rdb, "authFile", NULL))) {
+		getXrmString(val, &resources.authFile);
+	}
+	// DisplayManager.*.resources:		
+	// DisplayManager.*.xrdb:		/usr/bin/X11/xrdb
+	// DisplayManager.*.setup:		
+	if ((val = get_dm_dpy_resource(rdb, "setup", NULL))) {
+		getXrmString(val, &resources.setup);
+	}
+	// DisplayManager.*.startup:		
+	if ((val = get_dm_dpy_resource(rdb, "startup", NULL))) {
+		getXrmString(val, &resources.startup);
+	}
+	// DisplayManager.*.reset:		
+	if ((val = get_dm_dpy_resource(rdb, "reset", NULL))) {
+		getXrmString(val, &resources.reset);
+	}
+	// DisplayManager.*.session:		/usr/bin/X11/xterm -ls
+	if ((val = get_dm_dpy_resource(rdb, "session", NULL))) {
+		getXrmString(val, &resources.session);
+	}
+	// DisplayManager.*.userPath:		:/bin:/usr/bin:/usr/bin/X11:/usr/ucb
+	if ((val = get_dm_dpy_resource(rdb, "userPath", NULL))) {
+		getXrmString(val, &resources.userPath);
+	}
+	// DisplayManager.*.systemPath:		/etc:/bin:/usr/bin:/usr/bin/X11:/usr/ucb
+	if ((val = get_dm_dpy_resource(rdb, "systemPath", NULL))) {
+		getXrmString(val, &resources.systemPath);
+	}
+	// DisplayManager.*.systemShell:	/bin/sh
+	if ((val = get_dm_dpy_resource(rdb, "systemShell", NULL))) {
+		getXrmString(val, &resources.systemShell);
+	}
+	// DisplayManager.*.failsafeClient:	/usr/bin/X11/xterm
+	if ((val = get_dm_dpy_resource(rdb, "failsafeClient", NULL))) {
+		getXrmString(val, &resources.failsafeClient);
+	}
+	// DisplayManager.*.userAuthDir:	/tmp
+	if ((val = get_dm_dpy_resource(rdb, "userAuthDir", NULL))) {
+		getXrmString(val, &resources.userAuthDir);
+	}
+	// DisplayManager.*.chooser:		/usr/lib/X11/xdm/chooser
+	if ((val = get_dm_dpy_resource(rdb, "chooser", NULL))) {
+		getXrmString(val, &resources.chooser);
+	}
+	// DisplayManager.*.greeter:		
+	if ((val = get_dm_dpy_resource(rdb, "greeter", NULL))) {
+		getXrmString(val, &resources.greeter);
+	}
+
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);
 }
@@ -7046,7 +7282,7 @@ set_default_x11(void)
 	}
 }
 
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 void
 set_default_authfile(void)
 {
@@ -7058,6 +7294,15 @@ set_default_authfile(void)
 	}
 }
 #endif
+
+void
+set_default_desktop(void)
+{
+	const char *env = getenv("XDG_CURRENT_DESKTOP");
+
+	free(options.desktop);
+	options.desktop = env ? strdup(env) : strdup("XDE");
+}
 
 void
 set_default_vendor(void)
@@ -7208,11 +7453,11 @@ set_default_splash(void)
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
 	int i, j, n = 0;
 
-	free(defaults.splash);
-	defaults.splash = NULL;
+	free(defaults.backdrop);
+	defaults.backdrop = NULL;
 
 	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
-		defaults.splash = NULL;
+		defaults.backdrop = NULL;
 		return;
 	}
 
@@ -7229,11 +7474,11 @@ set_default_splash(void)
 			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
 				strcpy(suffix, exts[j]);
 				if (!access(file, R_OK)) {
-					defaults.splash = strdup(file);
+					defaults.backdrop = strdup(file);
 					break;
 				}
 			}
-			if (defaults.splash)
+			if (defaults.backdrop)
 				break;
 		}
 	}
@@ -7426,9 +7671,10 @@ set_defaults(int argc, char *argv[])
 	set_default_debug();
 	set_default_display();
 	set_default_x11();
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	set_default_authfile();
 #endif
+	set_default_desktop();
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
@@ -7505,7 +7751,7 @@ get_default_x11(void)
 	XCloseDisplay(dpy);
 }
 
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 void
 get_default_authfile(void)
 {
@@ -7600,18 +7846,18 @@ get_default_splash(void)
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
 	int i, j, n = 0;
 
-	if (options.splash)
+	if (options.backdrop)
 		return;
 
-	free(options.splash);
-	options.splash = NULL;
+	free(options.backdrop);
+	options.backdrop = NULL;
 
 	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
-		options.splash = defaults.splash;
+		options.backdrop = defaults.backdrop;
 		return;
 	}
 
-	options.splash = NULL;
+	options.backdrop = NULL;
 
 	file = calloc(PATH_MAX + 1, sizeof(*file));
 
@@ -7626,11 +7872,11 @@ get_default_splash(void)
 			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
 				strcpy(suffix, exts[j]);
 				if (!access(file, R_OK)) {
-					options.splash = strdup(file);
+					options.backdrop = strdup(file);
 					break;
 				}
 			}
-			if (options.splash)
+			if (options.backdrop)
 				break;
 		}
 	}
@@ -7641,8 +7887,8 @@ get_default_splash(void)
 		free(xdg_dirs[i]);
 	free(xdg_dirs);
 
-	if (!options.splash)
-		options.splash = defaults.splash;
+	if (!options.backdrop)
+		options.backdrop = defaults.backdrop;
 }
 
 void
@@ -7906,6 +8152,77 @@ get_default_username(void)
 	}
 	free(options.username);
 	options.username = strdup(pw->pw_name);
+	endpwent();
+}
+
+void
+get_default_file(void)
+{
+	char **xdg_dirs, **dirs, *file, *files;
+	int i, size, n = 0, next;
+
+	if (options.file)
+		return;
+	if (!options.session)
+		return;
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n)
+		return;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	files = NULL;
+	size = 0;
+	next = 0;
+
+	/* process in reverse order */
+	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+		strncpy(file, *dirs, PATH_MAX);
+		strncat(file, "/lxsession/", PATH_MAX);
+		strncat(file, options.session, PATH_MAX);
+		strncat(file, "/autostart", PATH_MAX);
+		if (access(file, R_OK)) {
+			DPRINTF("%s: %s\n", file, strerror(errno));
+			continue;
+		}
+		size += strlen(file) + 1;
+		files = realloc(files, size * sizeof(*files));
+		if (next)
+			strncat(files, ":", size);
+		else {
+			*files = '\0';
+			next = 1;
+		}
+		strncat(files, file, size);
+	}
+	options.file = files;
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+
+void
+get_default_desktops(void)
+{
+	char **desktops, *copy, *pos, *end;;
+	int n;
+
+	copy = strdup(options.desktop);
+
+	for (n = 0, pos = copy, end = pos + strlen(pos); pos < end;
+	     n++, *strchrnul(pos, ';') = '\0', pos += strlen(pos) + 1) ;
+
+	desktops = calloc(n + 1, sizeof(*desktops));
+
+	for (n = 0, pos = copy; pos < end; n++, pos += strlen(pos) + 1)
+		desktops[n] = strdup(pos);
+
+	free(copy);
+
+	free(options.desktops);
+	options.desktops = desktops;
 }
 
 void
@@ -7913,7 +8230,7 @@ get_defaults(int argc, char *argv[])
 {
 	get_default_display();
 	get_default_x11();
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	get_default_authfile();
 #endif
 	get_default_vendor();
@@ -7927,6 +8244,8 @@ get_defaults(int argc, char *argv[])
 	get_default_session();
 	get_default_choice();
 	get_default_username();
+	get_default_file();
+	get_default_desktops();
 }
 
 #ifdef DO_XCHOOSER
@@ -7981,7 +8300,7 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"display",	    required_argument,	NULL, 'd'},
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			{"authfile",	    required_argument,	NULL, 'a'},
 #endif
 #ifdef DO_XLOCKING
@@ -8009,6 +8328,7 @@ main(int argc, char *argv[])
 			{"theme",	    required_argument,	NULL, 'e'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
 			{"timeout",	    required_argument,	NULL, 'T'},
+			{"filename",	    no_argument,	NULL, 'f'},
 			{"vendor",	    required_argument,	NULL, '5'},
 			{"xsessions",	    no_argument,	NULL, 'X'},
 			{"default",	    required_argument,	NULL, '6'},
@@ -8047,11 +8367,11 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case 'd':	/* -d, --display */
+		case 'd':	/* -d, --display DISPLAY */
 			free(options.display);
 			options.display = strndup(optarg, 256);
 			break;
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 		case 'a':	/* -a, --authfile */
 			free(options.authfile);
 			options.authfile = strndup(optarg, PATH_MAX);
@@ -8135,8 +8455,8 @@ main(int argc, char *argv[])
 			options.banner = strdup(optarg);
 			break;
 		case 'S':	/* -S, --splash SPLASH */
-			free(options.splash);
-			options.splash = strdup(optarg);
+			free(options.backdrop);
+			options.backdrop = strdup(optarg);
 			break;
 		case 's':	/* -s, --side {top|bottom|left|right} */
 			if (!strncasecmp(optarg, "left", strlen(optarg))) {
@@ -8185,6 +8505,9 @@ main(int argc, char *argv[])
 				goto bad_option;
 			options.timeout = val;
 			break;
+		case 'f':	/* -f, --filename */
+			options.filename = True;
+			break;
 		case '5':	/* --vendor VENDOR */
 			free(options.vendor);
 			options.vendor = strdup(optarg);
@@ -8231,27 +8554,29 @@ main(int argc, char *argv[])
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
-			DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
+				DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
-			} else {
-				if ((val = strtol(optarg, &endptr, 0)) < 0)
-					goto bad_option;
-				if (endptr && !*endptr)
-					goto bad_option;
-				options.debug = val;
+				break;
 			}
+			if ((val = strtol(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && *endptr)
+				goto bad_option;
+			DPRINTF("%s: setting debug verbosity to %d\n", argv[0], val);
+			options.debug = val;
 			break;
 		case 'v':	/* -v, --verbose [level] */
-			DPRINTF("%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
+				DPRINTF("%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0)
 				goto bad_option;
-			if (endptr && !*endptr)
+			if (endptr && *endptr)
 				goto bad_option;
+			DPRINTF("%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -8297,31 +8622,39 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
-	DPRINTF("%s: option index = %d\n", argv[0], optind);
-	DPRINTF("%s: option count = %d\n", argv[0], argc);
 #ifndef DO_XCHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
 	if (optind < argc) {
-		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
-		goto bad_nonopt;
+		free(options.choice);
+		options.choice = strdup(argv[optind++]);
+#endif
+		if (optind < argc) {
+			EPRINTF("%s: excess non-option arguments\n", argv[0]);
+			goto bad_nonopt;
+		}
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
 	}
 #endif
+#endif
+	DPRINTF("%s: option index = %d\n", argv[0], optind);
+	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	get_defaults(argc, argv);
 	switch (command) {
 	default:
 	case CommandDefault:
 #ifdef DO_XCHOOSER
 		if (optind >= argc) {
-			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+			EPRINTF("%s: missing non-option argument\n", argv[0]);
 			goto bad_nonopt;
 		}
 #endif
-#ifdef DO_CHOOSER
-		DPRINTF("%s: running chooser\n", argv[0]);
-		do_chooser(argc, argv);
-#else				/* DO_CHOOSER */
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+		DPRINTF("%s: running program\n", argv[0]);
+		run_program(argc, argv);
+#else
 		DPRINTF("%s: running default\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
-#endif				/* DO_CHOOSER */
+#endif
 		break;
 #ifdef DO_XLOCKING
 	case CommandReplace:

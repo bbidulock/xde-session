@@ -184,6 +184,8 @@ static char **saveArgv;
 #undef DO_ONIDLE
 #undef DO_CHOOSER
 #undef DO_LOGOUT
+#undef DO_AUTOSTART
+#undef DO_SESSION
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -210,6 +212,14 @@ static char **saveArgv;
 #   define RESNAME "xde-greeter"
 #   define RESCLAS "XDE-Greeter"
 #   define RESTITL "XDMCP Greeter"
+#elif defined(DO_AUTOSTART)
+#   define RESNAME "xde-autostart"
+#   define RESCLAS "XDE-AutoStart"
+#   define RESTITL "XDE XDG Auto Start"
+#elif defined(DO_SESSION)
+#   define RESNAME "xde-session"
+#   define RESCLAS "XDE-Session"
+#   define RESTITL "XDE XDG Session"
 #else
 #   error Undefined program type.
 #endif
@@ -250,6 +260,8 @@ typedef enum {
 	CommandLock,			/* ask running instance to lock */
 	CommandQuit,			/* ask running instance to quit */
 	CommandUnlock,			/* ask running instance to unlock */
+	CommandAutostart,
+	CommandSession,
 } CommandType;
 
 enum {
@@ -7281,7 +7293,7 @@ General options:\n\
         banner graphic to display\n\
         (%3$s)\n\
     -S, --splash JPGFILE\n\
-        background impage to display\n\
+        background image to display\n\
         (%4$s)\n\
     -s, --side {top|left|bottom|right}\n\
         side on which to display branding (%5$s)\n\
@@ -9069,8 +9081,8 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?",
-				     long_options, &option_index);
+		c = getopt_long_only(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
+				     &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
 #endif				/* defined _GNU_SOURCE */

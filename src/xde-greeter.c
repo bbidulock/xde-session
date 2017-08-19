@@ -1,7 +1,7 @@
 /*****************************************************************************
 
  Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>
- Copyright (c) 2001-2009  OpenSS7 Corporation <http://www.openss7.com/>
+ Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
  All Rights Reserved.
@@ -184,6 +184,8 @@ static char **saveArgv;
 #undef DO_ONIDLE
 #undef DO_CHOOSER
 #undef DO_LOGOUT
+#undef DO_AUTOSTART
+#undef DO_SESSION
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -210,6 +212,14 @@ static char **saveArgv;
 #   define RESNAME "xde-greeter"
 #   define RESCLAS "XDE-Greeter"
 #   define RESTITL "XDMCP Greeter"
+#elif defined(DO_AUTOSTART)
+#   define RESNAME "xde-autostart"
+#   define RESCLAS "XDE-AutoStart"
+#   define RESTITL "XDE XDG Auto Start"
+#elif defined(DO_SESSION)
+#   define RESNAME "xde-session"
+#   define RESCLAS "XDE-Session"
+#   define RESTITL "XDE XDG Session"
 #else
 #   error Undefined program type.
 #endif
@@ -250,6 +260,8 @@ typedef enum {
 	CommandLock,			/* ask running instance to lock */
 	CommandQuit,			/* ask running instance to quit */
 	CommandUnlock,			/* ask running instance to unlock */
+	CommandAutostart,
+	CommandSession,
 } CommandType;
 
 enum {
@@ -7309,7 +7321,7 @@ General options:\n\
         banner graphic to display\n\
         (%3$s)\n\
     -S, --splash JPGFILE\n\
-        background impage to display\n\
+        background image to display\n\
         (%4$s)\n\
     -s, --side {top|left|bottom|right}\n\
         side on which to display branding (%5$s)\n\
