@@ -223,7 +223,7 @@ typedef struct {
 
 Options options = {
 	.output = 1,
-	.debug = 0,
+	.debug = 3,
 	.dryrun = False,
 	.command = CommandDefault,
 	.display = NULL,
@@ -5309,27 +5309,29 @@ main(int argc, char *argv[])
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
-			DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
+				DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
-			} else {
-				if ((val = strtol(optarg, &endptr, 0)) < 0)
-					goto bad_option;
-				if (endptr && !*endptr)
-					goto bad_option;
-				options.debug = val;
+				break;
 			}
+			if ((val = strtol(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && *endptr)
+				goto bad_option;
+			DPRINTF("%s: setting debug verbosity to %d\n", argv[0], val);
+			options.debug = val;
 			break;
 		case 'v':	/* -v, --verbose [level] */
-			DPRINTF("%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
+				DPRINTF("%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0)
 				goto bad_option;
-			if (endptr && !*endptr)
+			if (endptr && *endptr)
 				goto bad_option;
+			DPRINTF("%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -5377,20 +5379,19 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
-	DPRINTF("%s: option index = %d\n", argv[0], optind);
-	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	if (optind < argc) {
 		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
 	}
+	DPRINTF("%s: option index = %d\n", argv[0], optind);
+	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	set_default_file();
 	split_desktops();
 	switch (command) {
 	default:
 	case CommandDefault:
 	case CommandAutostart:
-		if (options.debug)
-			fprintf(stderr, "%s: running autostart\n", argv[0]);
+		DPRINTF("%s: running autostart\n", argv[0]);
 		run_program(argc, argv);
 		break;
 	case CommandHelp:
