@@ -186,6 +186,7 @@ static char **saveArgv;
 #undef DO_LOGOUT
 #define DO_AUTOSTART 1
 #undef DO_SESSION
+#undef DO_STARTWM
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -220,6 +221,10 @@ static char **saveArgv;
 #   define RESNAME "xde-session"
 #   define RESCLAS "XDE-Session"
 #   define RESTITL "XDE XDG Session"
+#elif defined(DO_STARTWM)
+#   define RESNAME "xde-startwm"
+#   define RESCLAS "XDE-StartWM"
+#   define RESTITL "XDE Sindow Manager Startup"
 #else
 #   error Undefined program type.
 #endif
@@ -4910,7 +4915,7 @@ do_executes()
 }
 
 void
-run_program(int argc, char *argv[])
+do_autostart(int argc, char *argv[])
 {
 	GHashTable *autostarts;
 	TableContext *c;
@@ -4933,6 +4938,22 @@ run_program(int argc, char *argv[])
 		do_autostarts(StartupPhaseApplication, autostarts, c);
 	}
 	gtk_main();
+}
+
+void
+run_program(int argc, char *argv[])
+{
+#if   defined DO_SESSION
+	do_session(argc, argv);
+#elif defined DO_CHOOSER
+	do_chooser(argc, argv);
+#elif defined DO_AUTOSTART
+	do_autostart(argc, argv);
+#elif defined DO_STARTWM
+	do_startwm(argc, argv);
+#else
+#   error Undefined program type.
+#endif
 }
 
 static void
@@ -5465,7 +5486,7 @@ set_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
-#ifdef DO_CHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 void
 set_default_session(void)
 {
@@ -5578,8 +5599,15 @@ set_defaults(int argc, char *argv[])
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
+	set_default_splash();
+	set_default_welcome();
 	set_default_language();
-
+#ifdef DO_XCHOOSER
+	set_default_address();
+#endif				/* DO_XCHOOSER */
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
+	set_default_session();
+#endif
 	set_default_choice();
 }
 
@@ -5809,6 +5837,197 @@ get_default_language(void)
 		/* FIXME: actually set the language and charset */
 	}
 }
+
+#ifdef DO_XCHOOSER
+SocketScope
+GetScope(ARRAY8Ptr clientAddress, CARD16 connectionType)
+{
+	switch (connectionType) {
+	case FamilyLocal:
+		break;
+	case FamilyInternet:
+	{
+		in_addr_t addr = ntohl(*(in_addr_t *) clientAddress->data);
+
+		if (IN_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN_ORGLOCAL(addr))
+			return SocketScopePrivate;
+		return SocketScopeGlobal;
+	}
+	case FamilyInternet6:
+	{
+		struct in6_addr *addr = (typeof(addr)) clientAddress->data;
+
+		if (IN6_IS_ADDR_LOOPBACK(addr))
+			return SocketScopeLoopback;
+		if (IN6_IS_ADDR_LINKLOCAL(addr))
+			return SocketScopeLinklocal;
+		if (IN6_IS_ADDR_SITELOCAL(addr))
+			return SocketScopeSitelocal;
+		if (IN6_IS_ADDR_V4MAPPED(addr) || IN6_IS_ADDR_V4COMPAT(addr)) {
+			in_addr_t ipv4 = ntohl(((uint32_t *) addr)[3]);
+
+			if (IN_LOOPBACK(ipv4))
+				return SocketScopeLoopback;
+			if (IN_LINKLOCAL(ipv4))
+				return SocketScopeLinklocal;
+			if (IN_ORGLOCAL(ipv4))
+				return SocketScopePrivate;
+			return SocketScopeGlobal;
+		}
+		return SocketScopeGlobal;
+	}
+	default:
+		break;
+	}
+	return SocketScopeLoopback;
+}
+
+Bool
+TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
+{
+	sa_family_t family;
+	struct ifaddrs *ifa, *ifas = NULL;
+
+	switch (connectionType) {
+	case FamilyLocal:
+		family = AF_UNIX;
+		return True;
+	case FamilyInternet:
+		if (ntohl((*(in_addr_t *) clientAddress->data)) == INADDR_LOOPBACK)
+			return True;
+		family = AF_INET;
+		break;
+	case FamilyInternet6:
+		if (IN6_IS_ADDR_LOOPBACK(clientAddress->data))
+			return True;
+		family = AF_INET6;
+		break;
+	default:
+		family = AF_UNSPEC;
+		return False;
+	}
+	if (getifaddrs(&ifas) == 0) {
+		for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
+			struct sockaddr *ifa_addr;
+
+			if (!(ifa_addr = ifa->ifa_addr)) {
+				EPRINTF("interface %s has no address\n", ifa->ifa_name);
+				continue;
+			}
+			if (ifa_addr->sa_family != family) {
+				DPRINTF("interface %s has wrong family\n", ifa->ifa_name);
+				continue;
+			}
+			switch (family) {
+			case AF_INET:
+			{
+				struct sockaddr_in *sin = (typeof(sin)) ifa_addr;
+
+				if (!memcmp(&sin->sin_addr, clientAddress->data, 4)) {
+					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					freeifaddrs(ifas);
+					return True;
+				}
+
+				break;
+			}
+			case AF_INET6:
+			{
+				struct sockaddr_in6 *sin6 = (typeof(sin6)) ifa_addr;
+
+				if (!memcmp(&sin6->sin6_addr, clientAddress->data, 16)) {
+					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					freeifaddrs(ifas);
+					return True;
+				}
+				break;
+			}
+			}
+		}
+		freeifaddrs(ifas);
+	}
+	return False;
+}
+
+void
+get_default_address(void)
+{
+	switch (options.clientAddress.length) {
+	case 0:
+		options.clientAddress = defaults.clientAddress;
+		options.connectionType = defaults.connectionType;
+		options.clientScope = defaults.clientScope;
+		options.clientIface = defaults.clientIface;
+		options.isLocal = defaults.isLocal;
+		break;
+	case 4:
+	case 8:
+		if (options.connectionType != FamilyInternet) {
+			EPRINTF("Mismatch in connectionType %d != %d\n",
+				FamilyInternet, options.connectionType);
+			exit(EXIT_SYNTAXERR);
+		}
+		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
+		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		switch (options.clientAddress.length) {
+		case 4:
+			options.clientIface = defaults.clientIface;
+			break;
+		case 8:
+			memmove(&options.clientIface, options.clientAddress.data + 4, 4);
+			break;
+		}
+		switch (options.clientScope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			if (!options.clientIface) {
+				EPRINTF("link or site local address with no interface\n");
+				exit(EXIT_SYNTAXERR);
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	case 16:
+	case 20:
+		if (options.connectionType != FamilyInternet6) {
+			EPRINTF("Mismatch in connectionType %d != %d\n",
+				FamilyInternet, options.connectionType);
+			exit(EXIT_SYNTAXERR);
+		}
+		options.clientScope = GetScope(&options.clientAddress, options.connectionType);
+		options.isLocal = TestLocal(&options.clientAddress, options.connectionType);
+		switch (options.clientAddress.length) {
+		case 16:
+			options.clientIface = defaults.clientIface;
+			break;
+		case 20:
+			memmove(&options.clientIface, options.clientAddress.data + 16, 4);
+			break;
+		}
+		switch (options.clientScope) {
+		case SocketScopeLinklocal:
+		case SocketScopeSitelocal:
+			if (!options.clientIface) {
+				EPRINTF("link or site local address with no interface\n");
+				exit(EXIT_SYNTAXERR);
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		EPRINTF("Invalid client address length %d\n", options.clientAddress.length);
+		exit(EXIT_SYNTAXERR);
+	}
+}
+#endif				/* DO_XCHOOSER */
 
 void
 get_default_session(void)
@@ -6230,14 +6449,20 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
+#ifndef DO_XCHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	if (optind < argc) {
 		free(options.choice);
 		options.choice = strdup(argv[optind++]);
+#endif
 		if (optind < argc) {
 			EPRINTF("%s: excess non-option arguments\n", argv[0]);
 			goto bad_nonopt;
 		}
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	}
+#endif
+#endif
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	get_defaults(argc, argv);
@@ -6250,7 +6475,7 @@ main(int argc, char *argv[])
 			goto bad_nonopt;
 		}
 #endif
-#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 		DPRINTF("%s: running program\n", argv[0]);
 		run_program(argc, argv);
 #else

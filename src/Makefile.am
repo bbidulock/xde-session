@@ -17,6 +17,7 @@ bin_PROGRAMS = \
 	xde-session \
 	xde-sm \
 	xde-smproxy \
+	xde-startwm \
 	xde-traymgr \
 	xde-wait \
 	xde-wmproxy \
@@ -70,6 +71,11 @@ xde_sm_CPPFLAGS = -DNAME=\"xde-sm\"
 xde_sm_SOURCES = xde-sm.c
 xde_sm_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
 xde_sm_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
+
+xde_startwm_CPPFLAGS = -DNAME=\"xde-startwm\"
+xde_startwm_SOURCES = xde-startwm.c
+xde_startwm_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(UNIQUE_CFLAGS)
+xde_startwm_LDFLAGS = $(UNIQUE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
 
 xde_traymgr_CPPFLAGS = -DNAME=\"xde-traymgr\"
 xde_traymgr_SOURCES = xde-traymgr.c

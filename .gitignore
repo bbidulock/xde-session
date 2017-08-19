@@ -48,6 +48,7 @@ src/xde-logout
 src/xde-session
 src/xde-sm
 src/xde-smproxy
+src/xde-startwm
 src/xde-traymgr
 src/xde-wait
 src/xde-wmproxy

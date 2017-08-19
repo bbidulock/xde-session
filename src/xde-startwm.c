@@ -186,8 +186,8 @@ static char **saveArgv;
 #undef DO_CHOOSER
 #undef DO_LOGOUT
 #undef DO_AUTOSTART
-#define DO_SESSION 1
-#undef DO_STARTWM
+#undef DO_SESSION
+#define DO_STARTWM 1
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -1821,7 +1821,7 @@ do_loop()
 }
 
 void
-do_session(int argc, char *argv[])
+do_startwm(int argc, char *argv[])
 {
 }
 

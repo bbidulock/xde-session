@@ -186,6 +186,7 @@ static char **saveArgv;
 #undef DO_LOGOUT
 #undef DO_AUTOSTART
 #undef DO_SESSION
+#undef DO_STARTWM
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -220,6 +221,10 @@ static char **saveArgv;
 #   define RESNAME "xde-session"
 #   define RESCLAS "XDE-Session"
 #   define RESTITL "XDE XDG Session"
+#elif defined(DO_STARTWM)
+#   define RESNAME "xde-startwm"
+#   define RESCLAS "XDE-StartWM"
+#   define RESTITL "XDE Sindow Manager Startup"
 #else
 #   error Undefined program type.
 #endif
@@ -4178,7 +4183,7 @@ choose(int argc, char *argv[])
 }
 
 static void
-run_program(int argc, char *argv[])
+do_chooser(int argc, char *argv[])
 {
 	const char *file;
 
@@ -4379,6 +4384,22 @@ do_unlock(int argc, char *argv[])
 	}
 }
 #endif				/* DO_XLOCKING */
+
+void
+run_program(int argc, char *argv[])
+{
+#if   defined DO_SESSION
+	do_session(argc, argv);
+#elif defined DO_CHOOSER
+	do_chooser(argc, argv);
+#elif defined DO_AUTOSTART
+	do_autostart(argc, argv);
+#elif defined DO_STARTWM
+	do_startwm(argc, argv);
+#else
+#   error Undefined program type.
+#endif
+}
 
 static void
 copying(int argc, char *argv[])
@@ -5533,7 +5554,7 @@ set_default_address(void)
 }
 #endif				/* DO_XCHOOSER */
 
-#ifdef DO_CHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 void
 set_default_session(void)
 {
@@ -5652,7 +5673,7 @@ set_defaults(int argc, char *argv[])
 #ifdef DO_XCHOOSER
 	set_default_address();
 #endif				/* DO_XCHOOSER */
-#ifdef DO_CHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	set_default_session();
 #endif
 	set_default_choice();
@@ -6323,8 +6344,8 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "pb:S:s:nc:l:di:t:exT:fND::v::hVCH?", long_options,
-				     &option_index);
+		c = getopt_long_only(argc, argv, "pb:S:s:nc:l:di:t:exT:fND::v::hVCH?",
+				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "pb:s:nc:l:di:t:exT:fNDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
@@ -6568,7 +6589,7 @@ main(int argc, char *argv[])
 		}
 	}
 #ifndef DO_XCHOOSER
-#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	if (optind < argc) {
 		free(options.choice);
 		options.choice = strdup(argv[optind++]);
@@ -6577,7 +6598,7 @@ main(int argc, char *argv[])
 			EPRINTF("%s: excess non-option arguments\n", argv[0]);
 			goto bad_nonopt;
 		}
-#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	}
 #endif
 #endif
@@ -6593,7 +6614,7 @@ main(int argc, char *argv[])
 			goto bad_nonopt;
 		}
 #endif
-#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 		DPRINTF("%s: running program\n", argv[0]);
 		run_program(argc, argv);
 #else
