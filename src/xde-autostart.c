@@ -170,6 +170,13 @@ timestamp(void)
 	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
+#define EXIT_SUCCESS		0
+#define EXIT_FAILURE		1
+#define EXIT_SYNTAXERR		2
+
+static int saveArgc;
+static char **saveArgv;
+
 typedef enum _LogoSide {
 	LogoSideLeft,
 	LogoSideTop,
@@ -177,10 +184,19 @@ typedef enum _LogoSide {
 	LogoSideBottom,
 } LogoSide;
 
+typedef enum {
+	CommandDefault,
+	CommandHelp,			/* command argument help */
+	CommandVersion,			/* command version information */
+	CommandCopying,			/* command copying information */
+	CommandAutostart,
+} CommandType;
+
 typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	CommandType command;
 	char *display;
 	char *desktop;
 	char *session;
@@ -209,6 +225,7 @@ Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.command = CommandDefault,
 	.display = NULL,
 	.desktop = NULL,
 	.session = NULL,
@@ -4737,7 +4754,7 @@ do_executes()
 }
 
 void
-run_autostart(int argc, char *argv[])
+run_program(int argc, char *argv[])
 {
 	GHashTable *autostarts;
 	TableContext *c;
@@ -5089,7 +5106,7 @@ split_desktops(void)
 }
 
 void
-set_defaults(void)
+set_defaults(int argc, char *argv[])
 {
 	char *p, *a;
 	const char *env;
@@ -5109,24 +5126,23 @@ set_defaults(void)
 		options.desktop = strdup("XDE");
 }
 
-typedef enum {
-	CommandAutostart,
-	CommandHelp,
-	CommandVersion,
-	CommandCopying,
-} CommandType;
-
 int
 main(int argc, char *argv[])
 {
-	CommandType command = CommandAutostart;
+	CommandType command = CommandDefault;
+
+	saveArgc = argc;
+	saveArgv = argv;
 
 	setlocale(LC_ALL, "");
 
-	set_defaults();
+	set_defaults(argc, argv);
+
+//	get_resources(argc, argv);
 
 	while (1) {
 		int c, val;
+		char *endptr = NULL;
 
 #ifdef _GNU_SOURCE
 		int option_index = 0;
@@ -5175,8 +5191,7 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "d:e:s:x:f:a1w2p:l:4W:c:L:b:S:i:t:XF3:nDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
-			if (options.debug)
-				fprintf(stderr, "%s: done options processing\n", argv[0]);
+			DPRINTF("%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
@@ -5185,7 +5200,7 @@ main(int argc, char *argv[])
 
 		case 'd':	/* -d, --display DISPLAY */
 			free(options.display);
-			options.display = strdup(optarg);
+			options.display = strndup(optarg, 256);
 			setenv("DISPLAY", optarg, 1);
 			break;
 		case 'e':	/* -e, --desktop DESKTOP */
@@ -5294,42 +5309,48 @@ main(int argc, char *argv[])
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
+			DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
-				if ((val = strtol(optarg, NULL, 0)) < 0)
+				if ((val = strtol(optarg, &endptr, 0)) < 0)
+					goto bad_option;
+				if (endptr && !*endptr)
 					goto bad_option;
 				options.debug = val;
 			}
 			break;
 		case 'v':	/* -v, --verbose [level] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
+			DPRINTF("%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.output++;
 				break;
 			}
-			if ((val = strtol(optarg, NULL, 0)) < 0)
+			if ((val = strtol(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && !*endptr)
 				goto bad_option;
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (command != CommandAutostart)
+			if (command != CommandDefault)
 				goto bad_option;
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (command != CommandAutostart)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			command = CommandVersion;
+			if (command == CommandDefault)
+				command = CommandVersion;
+			options.command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (command != CommandAutostart)
+			if (options.command != CommandDefault)
 				goto bad_option;
-			command = CommandCopying;
+			if (command == CommandDefault)
+				command = CommandCopying;
+			options.command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -5340,8 +5361,10 @@ main(int argc, char *argv[])
 			if (options.output || options.debug) {
 				if (optind < argc) {
 					fprintf(stderr, "%s: syntax error near '", argv[0]);
-					while (optind < argc)
-						fprintf(stderr, "%s ", argv[optind++]);
+					while (optind < argc) {
+						fprintf(stderr, "%s", argv[optind++]);
+						fprintf(stderr, "%s", (optind < argc) ? " " : "");
+					}
 					fprintf(stderr, "'\n");
 				} else {
 					fprintf(stderr, "%s: missing option or argument", argv[0]);
@@ -5351,42 +5374,39 @@ main(int argc, char *argv[])
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(2);
+			exit(EXIT_SYNTAXERR);
 		}
 	}
+	DPRINTF("%s: option index = %d\n", argv[0], optind);
+	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	if (optind < argc) {
-		fprintf(stderr, "%s: too many arguments\n", argv[0]);
+		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
-	}
-	if (options.debug) {
-		fprintf(stderr, "%s: option index = %d\n", argv[0], optind);
-		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
 	}
 	set_default_file();
 	split_desktops();
 	switch (command) {
+	default:
+	case CommandDefault:
 	case CommandAutostart:
 		if (options.debug)
 			fprintf(stderr, "%s: running autostart\n", argv[0]);
-		run_autostart(argc, argv);
+		run_program(argc, argv);
 		break;
 	case CommandHelp:
-		if (options.debug)
-			fprintf(stderr, "%s: printing help message\n", argv[0]);
+		DPRINTF("%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
-		if (options.debug)
-			fprintf(stderr, "%s: printing version message\n", argv[0]);
+		DPRINTF("%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
-		if (options.debug)
-			fprintf(stderr, "%s: printing copying message\n", argv[0]);
+		DPRINTF("%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 // vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:

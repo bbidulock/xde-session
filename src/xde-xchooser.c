@@ -170,6 +170,10 @@ timestamp(void)
 	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
+#define EXIT_SUCCESS		0
+#define EXIT_FAILURE		1
+#define EXIT_SYNTAXERR		2
+
 static int saveArgc;
 static char **saveArgv;
 
@@ -266,6 +270,7 @@ typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	CommandType command;
 	char *display;
 	char *seat;
 	char *service;
@@ -280,7 +285,6 @@ typedef struct {
 	char *lockscreen;
 	char *banner;
 	char *welcome;
-	CommandType command;
 	char *charset;
 	char *language;
 	char *icon_theme;
@@ -330,6 +334,7 @@ Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.command = CommandDefault,
 	.display = NULL,
 	.seat = NULL,
 	.service = NULL,
@@ -344,7 +349,6 @@ Options options = {
 	.lockscreen = NULL,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
-	.command = CommandDefault,
 	.charset = NULL,
 	.language = NULL,
 	.icon_theme = NULL,
@@ -8974,8 +8978,8 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?", long_options,
-				     &option_index);
+		c = getopt_long_only(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?",
+				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
 		c = getopt(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
@@ -8987,7 +8991,7 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case 'd':	/* -d, --display */
+		case 'd':	/* -d, --display DISPLAY */
 			free(options.display);
 			options.display = strndup(optarg, 256);
 			break;
@@ -9196,6 +9200,8 @@ main(int argc, char *argv[])
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
+			if (command != CommandDefault)
+				goto bad_option;
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */

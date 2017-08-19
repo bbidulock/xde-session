@@ -171,11 +171,28 @@ timestamp(void)
 	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
+#define EXIT_SUCCESS		0
+#define EXIT_FAILURE		1
+#define EXIT_SYNTAXERR		2
+
+static int saveArgc;
+static char **saveArgv;
+
+
+typedef enum {
+	CommandDefault,
+	CommandHelp,			/* command argument help */
+	CommandVersion,			/* command version information */
+	CommandCopying,			/* command copying information */
+	CommandSession,
+} CommandType;
 
 typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	CommandType command;
+	char *display;
 	char *vendor;
 	Bool mkdirs;
 	char *wmname;
@@ -192,6 +209,8 @@ Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.command = CommandDefault,
+	.display = NULL,
 	.vendor = NULL,
 	.mkdirs = False,
 	.wmname = NULL,
@@ -1548,6 +1567,11 @@ do_loop()
 	exit(EXIT_SUCCESS);
 }
 
+void
+run_program(int argc, char *argv[])
+{
+}
+
 static void
 copying(int argc, char *argv[])
 {
@@ -1655,13 +1679,34 @@ General options:\n\
 ", argv[0]);
 }
 
+void
+set_defaults(int argc, char *argv[])
+{
+}
+
+void
+get_defaults(int argc, char *argv[])
+{
+}
+
 int
 main(int argc, char *argv[])
 {
+	CommandType command = CommandDefault;
+
+	saveArgc = argc;
+	saveArgv = argv;
+
 	setlocale(LC_ALL, "");
 
-	while(1) {
+	set_defaults(argc, argv);
+
+//	get_resources(argc, argv);
+
+	while (1) {
 		int c, val;
+		char *endptr = NULL;
+
 #ifdef _GNU_SOURCE
 		int option_index = 0;
 		/* *INDENT-OFF* */
@@ -1683,59 +1728,64 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "nDvhVC?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
-			if (options.debug)
-				fprintf(stderr, "%s: done options processing\n", argv[0]);
+			DPRINTF("%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
 		case 0:
 			goto bad_usage;
 
+		case 'd':	/* -d, --display DISPLAY */
+			free(options.display);
+			options.display = strndup(optarg, 256);
+			break;
 		case 'n':	/* -n, --dry-run */
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n",
-					argv[0]);
+			DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.debug++;
 			} else {
-				if ((val = strtol(optarg, NULL, 0)) < 0)
+				if ((val = strtol(optarg, &endptr, 0)) < 0)
+					goto bad_option;
+				if (endptr && !*endptr)
 					goto bad_option;
 				options.debug = val;
 			}
 			break;
 		case 'v':	/* -v, --verbose [level] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n",
-					argv[0]);
+			DPRINTF("%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
 				options.output++;
 				break;
 			}
-			if ((val = strtol(optarg, NULL, 0)) < 0)
+			if ((val = strtol(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && !*endptr)
 				goto bad_option;
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
 		case 'H':	/* -H, --? */
-			if (options.debug)
-				fprintf(stderr, "%s: printing help message\n", argv[0]);
-			help(argc, argv);
-			exit(0);
+			if (command != CommandDefault)
+				goto bad_option;
+			command = CommandHelp;
+			break;
 		case 'V':	/* -V, --version */
-			if (options.debug)
-				fprintf(stderr, "%s: printing version message\n",
-					argv[0]);
-			version(argc, argv);
-			exit(0);
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandVersion;
+			options.command = CommandVersion;
+			break;
 		case 'C':	/* -C, --copying */
-			if (options.debug)
-				fprintf(stderr, "%s: printing copying message\n",
-					argv[0]);
-			copying(argc, argv);
-			exit(0);
+			if (options.command != CommandDefault)
+				goto bad_option;
+			if (command == CommandDefault)
+				command = CommandCopying;
+			options.command = CommandCopying;
+			break;
 		case '?':
 		default:
 		      bad_option:
@@ -1744,31 +1794,50 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '",
-						argv[0]);
-					while (optind < argc)
-						fprintf(stderr, "%s ", argv[optind++]);
+					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					while (optind < argc) {
+						fprintf(stderr, "%s", argv[optind++]);
+						fprintf(stderr, "%s", (optind < argc) ? " " : "");
+					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument",
-						argv[0]);
+					fprintf(stderr, "%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(2);
+			exit(EXIT_SYNTAXERR);
 		}
 	}
-	if (options.debug) {
-		fprintf(stderr, "%s: option index = %d\n", argv[0], optind);
-		fprintf(stderr, "%s: option count = %d\n", argv[0], argc);
-	}
+	DPRINTF("%s: option index = %d\n", argv[0], optind);
+	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	if (optind < argc) {
+		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
 	}
-	exit(0);
+	switch (command) {
+	default:
+	case CommandDefault:
+	case CommandSession:
+		DPRINTF("%s: running session\n", argv[0]);
+		run_program(argc, argv);
+		break;
+	case CommandHelp:
+		DPRINTF("%s: printing help message\n", argv[0]);
+		help(argc, argv);
+		break;
+	case CommandVersion:
+		DPRINTF("%s: printing version message\n", argv[0]);
+		version(argc, argv);
+		break;
+	case CommandCopying:
+		DPRINTF("%s: printing copying message\n", argv[0]);
+		copying(argc, argv);
+		break;
+	}
+	exit(EXIT_SUCCESS);
 }
 
 // vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
