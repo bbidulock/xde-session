@@ -4747,7 +4747,7 @@ init_autostarts(TableContext **cp)
 	if (!(count = g_hash_table_size(autostarts))) {
 		EPRINTF("cannot find any AutoStarts\n");
 	}
-	if (options.backdrop) {
+	if (options.splash) {
 
 		c = calloc(1, sizeof(*c));
 		c->cols = 7;	/* seems like a good number */
@@ -4803,7 +4803,7 @@ do_autostarts(XdeStartupPhase want, GHashTable *autostarts, TableContext *c)
 		task->entry = value;
 		task->runnable = !autostarts_filter(key, value, NULL);
 
-		if (options.backdrop)
+		if (options.splash)
 			add_task_to_splash(c, task);
 
 		if (!task->runnable) {
