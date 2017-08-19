@@ -223,7 +223,7 @@ typedef struct {
 
 Options options = {
 	.output = 1,
-	.debug = 3,
+	.debug = 0,
 	.dryrun = False,
 	.command = CommandDefault,
 	.display = NULL,
