@@ -228,6 +228,8 @@ typedef struct {
 	char *vendor;
 	char *prefix;
 	char *backdrop;
+	char **desktops;
+	char *file;
 	Bool mkdirs;
 	char *wmname;
 	Bool splash;
@@ -270,7 +272,12 @@ Options options = {
 	.timeout = 15,
 	.clientId = NULL,
 	.saveFile = NULL,
+	.dmrc = NULL,
+	.vendor = NULL,
+	.prefix = NULL,
 	.backdrop = NULL,
+	.desktops = NULL,
+	.file = NULL,
 	.setup = NULL,
 	.startwm = NULL,
 	.pause = 0,
@@ -310,6 +317,8 @@ Options defaults = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.backdrop = NULL,
+	.desktops = NULL,
+	.file = NULL,
 };
 
 typedef struct {
@@ -1863,8 +1872,442 @@ General options:\n\
 }
 
 void
+set_default_debug(void)
+{
+	const char *env = getenv("XDE_DEBUG");
+
+	if (env)
+		options.debug = atoi(env);
+}
+
+void
+set_default_display(void)
+{
+	const char *env = getenv("DISPLAY");
+
+	if (env) {
+		free(options.display);
+		options.display = strdup(env);
+	}
+}
+
+void
+set_default_x11(void)
+{
+	const char *env;
+
+	if ((env = getenv("XDG_VTNR"))) {
+		free(options.vtnr);
+		options.vtnr = strdup(env);
+	}
+	if ((env = getenv("XDG_SEAT"))) {
+		free(options.seat);
+		options.seat = strdup(env);
+	}
+	if (options.vtnr) {
+		free(options.tty);
+		if ((options.tty = calloc(16, sizeof(*options.tty))))
+			snprintf(options.tty, 16, "tty%s", options.vtnr);
+	}
+}
+
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+void
+set_default_authfile(void)
+{
+	const char *env = XauFileName();
+
+	if (env) {
+		free(options.authfile);
+		options.authfile = strdup(env);
+	}
+}
+#endif
+
+void
+set_default_desktop(void)
+{
+	const char *env = getenv("XDG_CURRENT_DESKTOP");
+
+	free(options.desktop);
+	options.desktop = env ? strdup(env) : strdup("XDE");
+}
+
+void
+set_default_vendor(void)
+{
+	char *p, *vendor, *prefix;
+	int len;
+
+	if ((vendor = getenv("XDG_VENDOR_ID"))) {
+		free(defaults.vendor);
+		defaults.vendor = strdup(vendor);
+	}
+	if ((prefix = getenv("XDG_MENU_PREFIX"))) {
+		free(defaults.prefix);
+		defaults.prefix = strdup(prefix);
+		if (!vendor) {
+			free(defaults.vendor);
+			vendor = defaults.vendor = strdup(prefix);
+			if ((p = strrchr(vendor, '-')) && !*(p + 1))
+				*p = '\0';
+		}
+	} else if (vendor && *vendor) {
+		free(defaults.prefix);
+		len = strlen(vendor) + 1;
+		prefix = defaults.prefix = calloc(len + 1, sizeof(*prefix));
+		strncpy(prefix, vendor, len);
+		strncat(prefix, "-", len);
+	}
+	if (!defaults.vendor)
+		defaults.vendor = strdup("");
+	if (!defaults.prefix)
+		defaults.prefix = strdup("");
+}
+
+void
+set_default_xdgdirs(int argc, char *argv[])
+{
+	static const char *confdir = "/etc/xdg/xde:/etc/xdg";
+	static const char *datadir = "/usr/share/xde:/usr/local/share:/usr/share";
+	char *here, *p, *q;
+	char *conf, *data;
+	int len;
+
+	here = strdup(argv[0]);
+	if (here[0] != '/') {
+		char *cwd = calloc(PATH_MAX + 1, sizeof(*cwd));
+
+		if (!getcwd(cwd, PATH_MAX)) {
+			EPRINTF("%s: %s\n", "getcwd", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		strncat(cwd, "/", PATH_MAX);
+		strncat(cwd, here, PATH_MAX);
+		free(here);
+		here = strdup(cwd);
+		free(cwd);
+	}
+	while ((p = strstr(here, "/./")))
+		memmove(p, p + 2, strlen(p + 2) + 1);
+	while ((p = strstr(here, "/../"))) {
+		for (q = p - 1; q > here && *q != '/'; q--) ;
+		if (q > here || *q != '/')
+			break;
+		memmove(q, p + 3, strlen(p + 3) + 1);
+	}
+	if ((p = strrchr(here, '/')))
+		*p = '\0';
+	if ((p = strstr(here, "/src")) && !*(p + 4))
+		*p = '\0';
+	/* executed in place */
+	if (strchr(here, '/') && strcmp(here, "/usr/bin")) {
+		len = strlen(here) + strlen("/data/xdg/xde:")
+		    + strlen(here) + strlen("/data/xdg:") + strlen(confdir);
+		conf = calloc(len + 1, sizeof(*conf));
+		strncpy(conf, here, len);
+		strncat(conf, "/data/xdg/xde:", len);
+		strncat(conf, here, len);
+		strncat(conf, "/data/xdg:", len);
+		strncat(conf, confdir, len);
+
+		len = strlen(here) + strlen("/data/share/xde:")
+		    + strlen(here) + strlen("/data/share:") + strlen(datadir);
+		data = calloc(len + 1, sizeof(*data));
+		strncpy(data, here, len);
+		strncat(data, "/data/share/xde:", len);
+		strncat(data, here, len);
+		strncat(data, "/data/share:", len);
+		strncat(data, datadir, len);
+	} else {
+		conf = strdup(confdir);
+		data = strdup(datadir);
+	}
+	setenv("XDG_CONFIG_DIRS", conf, 1);
+	setenv("XDG_DATA_DIRS", data, 1);
+	DPRINTF("setting XDG_CONFIG_DIRS to '%s'\n", conf);
+	DPRINTF("setting XDG_DATA_DIRS   to '%s'\n", data);
+	free(conf);
+	free(data);
+}
+
+void
+set_default_banner(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	free(defaults.banner);
+	defaults.banner = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		defaults.banner = NULL;
+		return;
+	}
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = defaults.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "banner", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					defaults.banner = strdup(file);
+					break;
+				}
+			}
+			if (defaults.banner)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+
+void
+set_default_splash(void)
+{
+	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
+	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
+	int i, j, n = 0;
+
+	free(defaults.backdrop);
+	defaults.backdrop = NULL;
+
+	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
+		defaults.backdrop = NULL;
+		return;
+	}
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+
+	if ((pfx = defaults.prefix)) {
+		for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, "/images/", PATH_MAX);
+			strncat(file, pfx, PATH_MAX);
+			strncat(file, "splash", PATH_MAX);
+			suffix = file + strnlen(file, PATH_MAX);
+
+			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
+				strcpy(suffix, exts[j]);
+				if (!access(file, R_OK)) {
+					defaults.backdrop = strdup(file);
+					break;
+				}
+			}
+			if (defaults.backdrop)
+				break;
+		}
+	}
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+
+#ifdef DO_LOGOUT
+void
+set_default_welcome(void)
+{
+	char *session = NULL, *welcome, *p;
+	const char *s;
+	int i, len;
+
+	welcome = calloc(PATH_MAX, sizeof(*welcome));
+
+	if ((s = getenv("XDG_CURRENT_DESKTOP")) && *s) {
+		session = strdup(s);
+		while ((p = strchr(session, ';')))
+			*p = ':';
+	} else if ((s = defaults.vendor) && *s) {
+		session = strdup(s);
+	} else if ((s = defaults.prefix) && *s) {
+		session = strdup(s);
+		p = session + strlen(session) - 1;
+		if (*p == '-')
+			*p = '\0';
+	} else {
+		session = strdup("XDE");
+	}
+	len = strlen(session);
+	for (i = 0, p = session; i < len; i++, p++)
+		*p = toupper(*p);
+	snprintf(welcome, PATH_MAX - 1, "Logout of <b>%s</b> session?", session);
+	defaults.welcome = strdup(welcome);
+	free(session);
+	free(welcome);
+}
+#else				/* DO_LOGOUT */
+void
+set_default_welcome(void)
+{
+	char hostname[64] = { 0, };
+	char *buf;
+	int len;
+	static char *format = "Welcome to %s!";
+
+	free(defaults.welcome);
+	gethostname(hostname, sizeof(hostname));
+	len = strlen(format) + strnlen(hostname, sizeof(hostname)) + 1;
+	buf = defaults.welcome = calloc(len, sizeof(*buf));
+	snprintf(buf, len, format, hostname);
+}
+#endif				/* DO_LOGOUT */
+
+void
+set_default_language(void)
+{
+	char *p, *a;
+
+	if ((defaults.language = setlocale(LC_ALL, ""))) {
+		defaults.language = strdup(defaults.language);
+		a = strchrnul(defaults.language, '@');
+		if ((p = strchr(defaults.language, '.')))
+			strcpy(p, a);
+	}
+	defaults.charset = strdup(nl_langinfo(CODESET));
+}
+
+#ifdef DO_XCHOOSER
+void
+set_default_address(void)
+{
+	XdmcpReallocARRAY8(&defaults.clientAddress, sizeof(struct in6_addr));
+	*(struct in6_addr *) defaults.clientAddress.data = (struct in6_addr) IN6ADDR_LOOPBACK_INIT;
+	defaults.connectionType = FamilyInternet6;
+	defaults.clientScope = SocketScopeLoopback;
+	defaults.isLocal = True;
+}
+#endif				/* DO_XCHOOSER */
+
+#ifdef DO_CHOOSER
+void
+set_default_session(void)
+{
+	char **xdg_dirs, **dirs, *file, *line, *p;
+	int i, n = 0;
+	static const char *session = "/xde/default";
+	static const char *current = "/xde/current";
+	static const char *dmrc = "/.dmrc";
+	const char *home = getenv("HOME") ? : ".";
+
+	free(defaults.session);
+	defaults.session = NULL;
+	free(defaults.current);
+	defaults.current = NULL;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	strncpy(file, home, PATH_MAX);
+	strncat(file, dmrc, PATH_MAX);
+
+	if (!defaults.dmrc)
+		defaults.dmrc = g_key_file_new();
+	if (defaults.dmrc) {
+		if (g_key_file_load_from_file(defaults.dmrc, file,
+					      G_KEY_FILE_KEEP_COMMENTS |
+					      G_KEY_FILE_KEEP_TRANSLATIONS, NULL)) {
+			gchar *sess;
+
+			if ((sess = g_key_file_get_string(defaults.dmrc,
+							  "Desktop", "Session", NULL))) {
+				free(defaults.session);
+				defaults.session = strdup(sess);
+				free(defaults.current);
+				defaults.current = strdup(sess);
+				g_free(sess);
+				free(file);
+				return;
+			}
+		}
+	}
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n) {
+		free(file);
+		return;
+	}
+
+	line = calloc(BUFSIZ + 1, sizeof(*line));
+
+	/* go through them forward */
+	for (i = 0, dirs = &xdg_dirs[i]; i < n; i++, dirs++) {
+		FILE *f;
+
+		if (!defaults.session) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, session, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						defaults.session = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+
+		}
+		if (!defaults.current) {
+			strncpy(file, *dirs, PATH_MAX);
+			strncat(file, current, PATH_MAX);
+
+			if (!access(file, R_OK)) {
+				if ((f = fopen(file, "r"))) {
+					if (fgets(line, BUFSIZ, f)) {
+						if ((p = strchr(line, '\n')))
+							*p = '\0';
+						defaults.current = strdup(line);
+					}
+					fclose(f);
+				}
+			}
+		}
+	}
+	free(line);
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+#endif
+
+void
+set_default_choice(void)
+{
+	free(defaults.choice);
+	defaults.choice = strdup("default");
+}
+
+void
 set_defaults(int argc, char *argv[])
 {
+	set_default_debug();
+	set_default_display();
+	set_default_x11();
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	set_default_authfile();
+#endif
+	set_default_desktop();
+	set_default_vendor();
+	set_default_xdgdirs(argc, argv);
+	set_default_banner();
+	set_default_language();
 }
 
 void
@@ -2142,6 +2585,76 @@ get_default_username(void)
 }
 
 void
+get_default_file(void)
+{
+	char **xdg_dirs, **dirs, *file, *files;
+	int i, size, n = 0, next;
+
+	if (options.file)
+		return;
+	if (!options.session)
+		return;
+
+	if (!(xdg_dirs = get_config_dirs(&n)) || !n)
+		return;
+
+	file = calloc(PATH_MAX + 1, sizeof(*file));
+	files = NULL;
+	size = 0;
+	next = 0;
+
+	/* process in reverse order */
+	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
+		strncpy(file, *dirs, PATH_MAX);
+		strncat(file, "/lxsession/", PATH_MAX);
+		strncat(file, options.session, PATH_MAX);
+		strncat(file, "/autostart", PATH_MAX);
+		if (access(file, R_OK)) {
+			DPRINTF("%s: %s\n", file, strerror(errno));
+			continue;
+		}
+		size += strlen(file) + 1;
+		files = realloc(files, size * sizeof(*files));
+		if (next)
+			strncat(files, ":", size);
+		else {
+			*files = '\0';
+			next = 1;
+		}
+		strncat(files, file, size);
+	}
+	options.file = files;
+
+	free(file);
+
+	for (i = 0; i < n; i++)
+		free(xdg_dirs[i]);
+	free(xdg_dirs);
+}
+
+void
+get_default_desktops(void)
+{
+	char **desktops, *copy, *pos, *end;;
+	int n;
+
+	copy = strdup(options.desktop);
+
+	for (n = 0, pos = copy, end = pos + strlen(pos); pos < end;
+	     n++, *strchrnul(pos, ';') = '\0', pos += strlen(pos) + 1) ;
+
+	desktops = calloc(n + 1, sizeof(*desktops));
+
+	for (n = 0, pos = copy; pos < end; n++, pos += strlen(pos) + 1)
+		desktops[n] = strdup(pos);
+
+	free(copy);
+
+	free(options.desktops);
+	options.desktops = desktops;
+}
+
+void
 get_defaults(int argc, char *argv[])
 {
 	get_default_display();
@@ -2157,6 +2670,8 @@ get_defaults(int argc, char *argv[])
 	get_default_session();
 	get_default_choice();
 	get_default_username();
+	get_default_file();
+	get_default_desktops();
 }
 
 int

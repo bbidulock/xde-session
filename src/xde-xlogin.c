@@ -102,7 +102,12 @@
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
 #include <X11/SM/SMlib.h>
+#include <glib-unix.h>
+#include <glib/gfileutils.h>
+#include <glib/gkeyfile.h>
+#include <glib/gdataset.h>
 #include <gio/gio.h>
+#include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
@@ -117,6 +122,16 @@
 #include <security/pam_misc.h>
 #include <fontconfig/fontconfig.h>
 #include <pango/pangofc-fontmap.h>
+
+#include <ctype.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
@@ -155,15 +170,9 @@ timestamp(void)
 	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
-#include <ctype.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <ifaddrs.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
+#define EXIT_SUCCESS		0
+#define EXIT_FAILURE		1
+#define EXIT_SYNTAXERR		2
 
 static int saveArgc;
 static char **saveArgv;
@@ -261,6 +270,7 @@ typedef struct {
 	int output;
 	int debug;
 	Bool dryrun;
+	CommandType command;
 	char *display;
 	char *seat;
 	char *service;
@@ -275,9 +285,9 @@ typedef struct {
 	char *lockscreen;
 	char *banner;
 	char *welcome;
-	CommandType command;
 	char *charset;
 	char *language;
+	char *desktop;
 	char *icon_theme;
 	char *gtk2_theme;
 	char *curs_theme;
@@ -300,7 +310,9 @@ typedef struct {
 	GKeyFile *dmrc;
 	char *vendor;
 	char *prefix;
-	char *splash;
+	char *backdrop;
+	char **desktops;
+	char *file;
 	unsigned source;
 	Bool xsession;
 	Bool setbg;
@@ -325,6 +337,7 @@ Options options = {
 	.output = 1,
 	.debug = 0,
 	.dryrun = False,
+	.command = CommandDefault,
 	.display = NULL,
 	.seat = NULL,
 	.service = NULL,
@@ -339,9 +352,9 @@ Options options = {
 	.lockscreen = NULL,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
-	.command = CommandDefault,
 	.charset = NULL,
 	.language = NULL,
+	.desktop = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
 	.curs_theme = NULL,
@@ -364,7 +377,9 @@ Options options = {
 	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
-	.splash = NULL,
+	.backdrop = NULL,
+	.desktops = NULL,
+	.file = NULL,
 	.source = BackgroundSourceSplash,
 	.xsession = False,
 	.setbg = True,
@@ -428,7 +443,9 @@ Options defaults = {
 	.dmrc = NULL,
 	.vendor = NULL,
 	.prefix = NULL,
-	.splash = NULL,
+	.backdrop = NULL,
+	.desktops = NULL,
+	.file = NULL,
 	.source = BackgroundSourceSplash,
 	.xsession = False,
 	.setbg = True,
@@ -4365,11 +4382,11 @@ get_source(XdeScreen *xscr)
 			return;
 	}
 	if (options.source & BackgroundSourceSplash) {
-		if (!xscr->pixbuf && options.splash) {
-			if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.splash, NULL))) {
+		if (!xscr->pixbuf && options.backdrop) {
+			if (!(xscr->pixbuf = gdk_pixbuf_new_from_file(options.backdrop, NULL))) {
 				/* cannot use it again */
-				free(options.splash);
-				options.splash = NULL;
+				free(options.backdrop);
+				options.backdrop = NULL;
 			}
 		}
 		if (xscr->pixbuf) {
@@ -7569,7 +7586,7 @@ General options:\n\
 "	,argv[0]
 	,options.welcome
 	,options.banner
-	,options.splash
+	,options.backdrop
 	,show_side(options.side)
 	,options.charset
 	,options.language
@@ -8028,7 +8045,7 @@ get_resources(int argc, char *argv[])
 		getXrmString(val, &options.banner);
 	}
 	if ((val = get_resource(rdb, "splash", NULL))) {
-		getXrmString(val, &options.splash);
+		getXrmString(val, &options.backdrop);
 	}
 #if defined DO_XCHOOSER || defined DO_XLOGIN || defined(DO_GREETER)
 	if ((val = get_resource(rdb, "welcome", NULL))) {
@@ -8421,11 +8438,11 @@ set_default_splash(void)
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
 	int i, j, n = 0;
 
-	free(defaults.splash);
-	defaults.splash = NULL;
+	free(defaults.backdrop);
+	defaults.backdrop = NULL;
 
 	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
-		defaults.splash = NULL;
+		defaults.backdrop = NULL;
 		return;
 	}
 
@@ -8442,11 +8459,11 @@ set_default_splash(void)
 			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
 				strcpy(suffix, exts[j]);
 				if (!access(file, R_OK)) {
-					defaults.splash = strdup(file);
+					defaults.backdrop = strdup(file);
 					break;
 				}
 			}
-			if (defaults.splash)
+			if (defaults.backdrop)
 				break;
 		}
 	}
@@ -8813,18 +8830,18 @@ get_default_splash(void)
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
 	int i, j, n = 0;
 
-	if (options.splash)
+	if (options.backdrop)
 		return;
 
-	free(options.splash);
-	options.splash = NULL;
+	free(options.backdrop);
+	options.backdrop = NULL;
 
 	if (!(xdg_dirs = get_data_dirs(&n)) || !n) {
-		options.splash = defaults.splash;
+		options.backdrop = defaults.backdrop;
 		return;
 	}
 
-	options.splash = NULL;
+	options.backdrop = NULL;
 
 	file = calloc(PATH_MAX + 1, sizeof(*file));
 
@@ -8839,11 +8856,11 @@ get_default_splash(void)
 			for (j = 0; j < sizeof(exts) / sizeof(exts[0]); j++) {
 				strcpy(suffix, exts[j]);
 				if (!access(file, R_OK)) {
-					options.splash = strdup(file);
+					options.backdrop = strdup(file);
 					break;
 				}
 			}
-			if (options.splash)
+			if (options.backdrop)
 				break;
 		}
 	}
@@ -8854,8 +8871,8 @@ get_default_splash(void)
 		free(xdg_dirs[i]);
 	free(xdg_dirs);
 
-	if (!options.splash)
-		options.splash = defaults.splash;
+	if (!options.backdrop)
+		options.backdrop = defaults.backdrop;
 }
 
 void
@@ -9223,6 +9240,7 @@ main(int argc, char *argv[])
 			{"theme",	    required_argument,	NULL, 'e'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
 			{"timeout",	    required_argument,	NULL, 'T'},
+			{"filename",	    no_argument,	NULL, 'f'},
 			{"vendor",	    required_argument,	NULL, '5'},
 			{"xsessions",	    no_argument,	NULL, 'X'},
 			{"default",	    required_argument,	NULL, '6'},
@@ -9261,7 +9279,7 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case 'd':	/* -d, --display */
+		case 'd':	/* -d, --display DISPLAY */
 			free(options.display);
 			options.display = strndup(optarg, 256);
 			break;
@@ -9349,8 +9367,8 @@ main(int argc, char *argv[])
 			options.banner = strdup(optarg);
 			break;
 		case 'S':	/* -S, --splash SPLASH */
-			free(options.splash);
-			options.splash = strdup(optarg);
+			free(options.backdrop);
+			options.backdrop = strdup(optarg);
 			break;
 		case 's':	/* -s, --side {top|bottom|left|right} */
 			if (!strncasecmp(optarg, "left", strlen(optarg))) {
@@ -9399,6 +9417,9 @@ main(int argc, char *argv[])
 				goto bad_option;
 			options.timeout = val;
 			break;
+		case 'f':	/* -f, --filename */
+			options.filename = True;
+			break;
 		case '5':	/* --vendor VENDOR */
 			free(options.vendor);
 			options.vendor = strdup(optarg);
@@ -9445,27 +9466,29 @@ main(int argc, char *argv[])
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
-			DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
+				DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
-			} else {
-				if ((val = strtol(optarg, &endptr, 0)) < 0)
-					goto bad_option;
-				if (endptr && !*endptr)
-					goto bad_option;
-				options.debug = val;
+				break;
 			}
+			if ((val = strtol(optarg, &endptr, 0)) < 0)
+				goto bad_option;
+			if (endptr && *endptr)
+				goto bad_option;
+			DPRINTF("%s: setting debug verbosity to %d\n", argv[0], val);
+			options.debug = val;
 			break;
 		case 'v':	/* -v, --verbose [level] */
-			DPRINTF("%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
+				DPRINTF("%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0)
 				goto bad_option;
-			if (endptr && !*endptr)
+			if (endptr && *endptr)
 				goto bad_option;
+			DPRINTF("%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -9511,21 +9534,21 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
-	DPRINTF("%s: option index = %d\n", argv[0], optind);
-	DPRINTF("%s: option count = %d\n", argv[0], argc);
 #ifndef DO_XCHOOSER
 	if (optind < argc) {
-		fprintf(stderr, "%s: excess non-option arguments\n", argv[0]);
+		EPRINTF("%s: excess non-option arguments\n", argv[0]);
 		goto bad_nonopt;
 	}
 #endif
+	DPRINTF("%s: option index = %d\n", argv[0], optind);
+	DPRINTF("%s: option count = %d\n", argv[0], argc);
 	get_defaults(argc, argv);
 	switch (command) {
 	default:
 	case CommandDefault:
 #ifdef DO_XCHOOSER
 		if (optind >= argc) {
-			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+			EPRINTF("%s: missing non-option argument\n", argv[0]);
 			goto bad_nonopt;
 		}
 #endif
