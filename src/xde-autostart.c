@@ -275,6 +275,16 @@ enum {
 	BackgroundSourceRoot = (1 << 2),
 };
 
+#ifdef DO_XCHOOSER
+typedef enum {
+	SocketScopeLoopback,
+	SocketScopeLinklocal,
+	SocketScopeSitelocal,
+	SocketScopePrivate,
+	SocketScopeGlobal,
+} SocketScope;
+#endif
+
 typedef struct {
 	int output;
 	int debug;
@@ -285,6 +295,15 @@ typedef struct {
 	char *service;
 	char *vtnr;
 	char *tty;
+#ifdef DO_XCHOOSER
+	ARRAY8 xdmAddress;
+	ARRAY8 clientAddress;
+	CARD16 connectionType;
+	SocketScope clientScope;
+	uint32_t clientIface;
+	Bool isLocal;
+#endif
+	char *lockscreen;
 	char *banner;
 	char *welcome;
 	char *charset;
@@ -327,12 +346,23 @@ typedef struct {
 	Bool filename;
 	unsigned protect;
 	Bool tray;
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	char *authfile;
+	Bool autologin;
+	Bool permitlogin;
+	Bool remotelogin;
+#endif
+	Bool mkdirs;
+	char *wmname;
+	Bool splash;
+	char **setup;
+	char *startwm;
+//	int pause;
+	Bool wait;
 	char **execute;
 	int commands;
 	Bool autostart;
-	Bool wait;
 	unsigned int pause;
-	Bool splash;
 	unsigned int guard;
 	unsigned int delay;
 	Bool foreground;
@@ -349,6 +379,15 @@ Options options = {
 	.service = NULL,
 	.vtnr = NULL,
 	.tty = NULL,
+#ifdef DO_XCHOOSER
+	.xdmAddress = {0, NULL},
+	.clientAddress = {0, NULL},
+	.connectionType = FamilyInternet6,
+	.clientScope = SocketScopeLoopback,
+	.clientIface = 0,
+	.isLocal = False,
+#endif
+	.lockscreen = NULL,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
 	.charset = NULL,
@@ -391,6 +430,18 @@ Options options = {
 	.filename = False,
 	.protect = 5,
 	.tray = False,
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	.authfile = NULL,
+	.autologin = False,
+	.permitlogin = True,
+	.remotelogin = True,
+#endif
+	.mkdirs = False,
+	.wmname = NULL,
+	.setup = NULL,
+	.startwm = NULL,
+//	.pause = 0,
+	.wait = False,
 	.execute = NULL,
 	.commands = 0,
 	.autostart = True,
@@ -412,6 +463,15 @@ Options defaults = {
 	.service = NULL,
 	.vtnr = NULL,
 	.tty = NULL,
+#ifdef DO_XCHOOSER
+	.xdmAddress = {0, NULL},
+	.clientAddress = {0, NULL},
+	.connectionType = FamilyInternet6,
+	.clientScope = SocketScopeLoopback,
+	.clientIface = 0,
+	.isLocal = False,
+#endif
+	.lockscreen = NULL,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
 	.command = CommandDefault,
@@ -454,6 +514,18 @@ Options defaults = {
 	.filename = False,
 	.protect = 5,
 	.tray = False,
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	.authfile = NULL,
+	.autologin = False,
+	.permitlogin = True,
+	.remotelogin = True,
+#endif
+	.mkdirs = False,
+	.wmname = NULL,
+	.setup = NULL,
+	.startwm = NULL,
+	.pause = 0,
+	.wait = False,
 };
 
 typedef struct {
