@@ -275,6 +275,7 @@ enum {
 	BackgroundSourceRoot = (1 << 2),
 };
 
+#ifdef DO_XCHOOSER
 typedef enum {
 	SocketScopeLoopback,
 	SocketScopeLinklocal,
@@ -282,6 +283,7 @@ typedef enum {
 	SocketScopePrivate,
 	SocketScopeGlobal,
 } SocketScope;
+#endif
 
 typedef struct {
 	int output;
@@ -293,12 +295,14 @@ typedef struct {
 	char *service;
 	char *vtnr;
 	char *tty;
+#ifdef DO_XCHOOSER
 	ARRAY8 xdmAddress;
 	ARRAY8 clientAddress;
 	CARD16 connectionType;
 	SocketScope clientScope;
 	uint32_t clientIface;
 	Bool isLocal;
+#endif
 	char *lockscreen;
 	char *banner;
 	char *welcome;
@@ -348,6 +352,13 @@ typedef struct {
 	Bool permitlogin;
 	Bool remotelogin;
 #endif
+	Bool mkdirs;
+	char *wmname;
+	Bool splash;
+	char **setup;
+	char *startwm;
+	int pause;
+	Bool wait;
 } Options;
 
 Options options = {
@@ -360,12 +371,14 @@ Options options = {
 	.service = NULL,
 	.vtnr = NULL,
 	.tty = NULL,
+#ifdef DO_XCHOOSER
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
 	.clientScope = SocketScopeLoopback,
 	.clientIface = 0,
 	.isLocal = False,
+#endif
 	.lockscreen = NULL,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
@@ -415,6 +428,12 @@ Options options = {
 	.permitlogin = True,
 	.remotelogin = True,
 #endif
+	.mkdirs = False,
+	.wmname = NULL,
+	.setup = NULL,
+	.startwm = NULL,
+	.pause = 0,
+	.wait = False,
 };
 
 Options defaults = {
@@ -426,12 +445,14 @@ Options defaults = {
 	.service = NULL,
 	.vtnr = NULL,
 	.tty = NULL,
+#ifdef DO_XCHOOSER
 	.xdmAddress = {0, NULL},
 	.clientAddress = {0, NULL},
 	.connectionType = FamilyInternet6,
 	.clientScope = SocketScopeLoopback,
 	.clientIface = 0,
 	.isLocal = False,
+#endif
 	.lockscreen = NULL,
 	.banner = NULL,		/* /usr/lib/X11/xde/banner.png */
 	.welcome = NULL,
@@ -481,6 +502,12 @@ Options defaults = {
 	.permitlogin = True,
 	.remotelogin = True,
 #endif
+	.mkdirs = False,
+	.wmname = NULL,
+	.setup = NULL,
+	.startwm = NULL,
+	.pause = 0,
+	.wait = False,
 };
 
 typedef struct {
