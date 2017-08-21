@@ -358,8 +358,14 @@ typedef struct {
 	Bool splash;
 	char **setup;
 	char *startwm;
-	int pause;
 	Bool wait;
+	char **execute;
+	int commands;
+	Bool autostart;
+	unsigned int pause;
+	unsigned int guard;
+	unsigned int delay;
+	Bool foreground;
 } Options;
 
 Options options = {
@@ -433,8 +439,16 @@ Options options = {
 	.wmname = NULL,
 	.setup = NULL,
 	.startwm = NULL,
-	.pause = 0,
 	.wait = False,
+	.execute = NULL,
+	.commands = 0,
+	.autostart = True,
+	.wait = True,
+	.pause = 2,
+	.splash = True,
+	.guard = 200,
+	.delay = 0,
+	.foreground = False,
 };
 
 Options defaults = {
@@ -507,7 +521,6 @@ Options defaults = {
 	.wmname = NULL,
 	.setup = NULL,
 	.startwm = NULL,
-	.pause = 0,
 	.wait = False,
 };
 
@@ -3881,6 +3894,9 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
+			{"display",	required_argument,	NULL, 'd'},
+			{"desktop",	required_argument,	NULL, 'e'},
+			{"session",	required_argument,	NULL, 's'},
 			{"dry-run",	no_argument,		NULL, 'n'},
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},

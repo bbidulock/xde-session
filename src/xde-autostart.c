@@ -357,7 +357,6 @@ typedef struct {
 	Bool splash;
 	char **setup;
 	char *startwm;
-//	int pause;
 	Bool wait;
 	char **execute;
 	int commands;
@@ -366,7 +365,6 @@ typedef struct {
 	unsigned int guard;
 	unsigned int delay;
 	Bool foreground;
-	char *client_id;
 } Options;
 
 Options options = {
@@ -440,7 +438,6 @@ Options options = {
 	.wmname = NULL,
 	.setup = NULL,
 	.startwm = NULL,
-//	.pause = 0,
 	.wait = False,
 	.execute = NULL,
 	.commands = 0,
@@ -451,7 +448,6 @@ Options options = {
 	.guard = 200,
 	.delay = 0,
 	.foreground = False,
-	.client_id = NULL,
 };
 
 Options defaults = {
@@ -524,7 +520,6 @@ Options defaults = {
 	.wmname = NULL,
 	.setup = NULL,
 	.startwm = NULL,
-	.pause = 0,
 	.wait = False,
 };
 
@@ -4395,13 +4390,13 @@ init_proxy(void)
 		return;
 	}
 	if (!(env = getenv("SESSION_MANAGER"))) {
-		if (options.client_id)
-			EPRINTF("clientId provided by no SESSION_MANAGER\n");
+		if (options.clientId)
+			EPRINTF("clientId provided but no SESSION_MANAGER\n");
 		return;
 	}
 
 	smcConn = SmcOpenConnection(env, NULL, SmProtoMajor, SmProtoMinor,
-				    autoCBMask, &autoCBs, options.client_id, &options.client_id, sizeof(err), err);
+				    autoCBMask, &autoCBs, options.clientId, &options.clientId, sizeof(err), err);
 
 	if (!smcConn) {
 		EPRINTF("SmcOpenConnection: %s\n", err);
@@ -5382,7 +5377,7 @@ General options:\n\
 	,options.gtk2_theme ? : "auto"
 	,show_bool(options.usexde)
 	,show_bool(options.foreground)
-	,options.client_id ? : ""
+	,options.clientId ? : ""
 	,show_bool(options.dryrun)
 	,options.debug
 	,options.output
@@ -7108,7 +7103,7 @@ main(int argc, char *argv[])
 			{"foreground",	no_argument,		NULL, 'F'},
 			{"client-id",	required_argument,	NULL, '3'},
 
-			{"dryrun",	no_argument,		NULL, 'n'},
+			{"dry-run",	no_argument,		NULL, 'n'},
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},
 			{"help",	no_argument,		NULL, 'h'},
@@ -7235,8 +7230,8 @@ main(int argc, char *argv[])
 			options.foreground = True;
 			break;
 		case '3':	/* --client-id CLIENTID */
-			free(options.client_id);
-			options.client_id = strdup(optarg);
+			free(options.clientId);
+			options.clientId = strdup(optarg);
 			break;
 
 		case 'n':	/* -n, --dry-run */
