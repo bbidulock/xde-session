@@ -29,13 +29,13 @@ bin_PROGRAMS = \
 
 xde_autostart_CPPFLAGS = -DNAME=\"xde-autostart\"
 xde_autostart_SOURCES = xde-autostart.c
-xde_autostart_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
-xde_autostart_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
+xde_autostart_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(UNIQUE_CFLAGS)
+xde_autostart_LDFLAGS = $(UNIQUE_LIBS) $(SMLIB_LIBS) $(ICE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
 
 xde_chooser_CPPFLAGS = -DNAME=\"xde-chooser\"
 xde_chooser_SOURCES = xde-chooser.c
-xde_chooser_CFLAGS = $(AM_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS)
-xde_chooser_LDFLAGS = $(AM_LDFLAGS) $(SMLIB_LIBS) $(ICE_LIBS)
+xde_chooser_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(UNIQUE_CFLAGS)
+xde_chooser_LDFLAGS = $(UNIQUE_LIBS) $(SMLIB_LIBS) $(ICE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
 
 xde_dockmgr_CPPFLAGS = -DNAME=\"xde-dockmgr\"
 xde_dockmgr_SOURCES = xde-dockmgr.c
@@ -59,8 +59,8 @@ xde_logout_LDFLAGS = $(SMLIB_LIBS) $(XVNC_LIBS) $(ICE_LIBS) $(SYSTEMD_LIBS) $(AM
 
 xde_session_CPPFLAGS = -DNAME=\"xde-session\"
 xde_session_SOURCES = xde-session.c
-xde_session_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(UNIQUE_CFLAGS)
-xde_session_LDFLAGS = $(UNIQUE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
+xde_session_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(UNIQUE_CFLAGS)
+xde_session_LDFLAGS = $(UNIQUE_LIBS) $(SMLIB_LIBS) $(ICE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
 
 xde_smproxy_CPPFLAGS = -DNAME=\"xde-smproxy\"
 xde_smproxy_SOURCES = xde-smproxy.c
@@ -74,8 +74,8 @@ xde_sm_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(AM_LDFLAGS)
 
 xde_startwm_CPPFLAGS = -DNAME=\"xde-startwm\"
 xde_startwm_SOURCES = xde-startwm.c
-xde_startwm_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(UNIQUE_CFLAGS)
-xde_startwm_LDFLAGS = $(UNIQUE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
+xde_startwm_CFLAGS = $(AM_CFLAGS) $(GLIB_CFLAGS) $(GOBJ_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(UNIQUE_CFLAGS)
+xde_startwm_LDFLAGS = $(UNIQUE_LIBS) $(SMLIB_LIBS) $(ICE_LIBS) $(GOBJ_LIBS) $(GLIB_LIBS) $(AM_LDFLAGS)
 
 xde_traymgr_CPPFLAGS = -DNAME=\"xde-traymgr\"
 xde_traymgr_SOURCES = xde-traymgr.c

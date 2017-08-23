@@ -192,39 +192,48 @@ static char **saveArgv;
 #   define RESNAME "xde-xchooser"
 #   define RESCLAS "XDE-XChooser"
 #   define RESTITL "XDMCP Chooser"
+#   define SELECTION_ATOM "_XDE_XCHOOSER_S%d"
 #elif defined(DO_XLOCKING)
 #   define LOGO_NAME "gnome-lockscreen"
 #   define RESNAME "xde-xlock"
 #   define RESCLAS "XDE-XLock"
 #   define RESTITL "X11 Locker"
+#   define SELECTION_ATOM "_XDE_XLOCK_S%d"
 #elif defined(DO_CHOOSER)
 #   define RESNAME "xde-chooser"
 #   define RESCLAS "XDE-Chooser"
 #   define RESTITL "XDE X11 Session Chooser"
+#   define SELECTION_ATOM "_XDE_CHOOSER_S%d"
 #elif defined(DO_LOGOUT)
 #   define RESNAME "xde-logout"
 #   define RESCLAS "XDE-Logout"
 #   define RESTITL "XDE X11 Session Logout"
+#   define SELECTION_ATOM "_XDE_LOGOUT_S%d"
 #elif defined(DO_XLOGIN)
 #   define RESNAME "xde-xlogin"
 #   define RESCLAS "XDE-XLogin"
 #   define RESTITL "XDMCP Greeter"
+#   define SELECTION_ATOM "_XDE_XLOGIN_S%d"
 #elif defined(DO_GREETER)
 #   define RESNAME "xde-greeter"
 #   define RESCLAS "XDE-Greeter"
 #   define RESTITL "XDMCP Greeter"
+#   define SELECTION_ATOM "_XDE_GREETER_S%d"
 #elif defined(DO_AUTOSTART)
 #   define RESNAME "xde-autostart"
 #   define RESCLAS "XDE-AutoStart"
 #   define RESTITL "XDE XDG Auto Start"
+#   define SELECTION_ATOM "_XDE_AUTOSTART_S%d"
 #elif defined(DO_SESSION)
 #   define RESNAME "xde-session"
 #   define RESCLAS "XDE-Session"
 #   define RESTITL "XDE XDG Session"
+#   define SELECTION_ATOM "_XDE_SESSION_S%d"
 #elif defined(DO_STARTWM)
 #   define RESNAME "xde-startwm"
 #   define RESCLAS "XDE-StartWM"
 #   define RESTITL "XDE Sindow Manager Startup"
+#   define SELECTION_ATOM "_XDE_STARTWM_S%d"
 #else
 #   error Undefined program type.
 #endif
@@ -357,8 +366,14 @@ typedef struct {
 	Bool splash;
 	char **setup;
 	char *startwm;
-	int pause;
 	Bool wait;
+	char **execute;
+	int commands;
+	Bool autostart;
+	unsigned int pause;
+	unsigned int guard;
+	unsigned int delay;
+	Bool foreground;
 } Options;
 
 Options options = {
@@ -432,8 +447,16 @@ Options options = {
 	.wmname = NULL,
 	.setup = NULL,
 	.startwm = NULL,
-	.pause = 0,
 	.wait = False,
+	.execute = NULL,
+	.commands = 0,
+	.autostart = True,
+	.wait = True,
+	.pause = 2,
+	.splash = True,
+	.guard = 200,
+	.delay = 0,
+	.foreground = False,
 };
 
 Options defaults = {
@@ -506,7 +529,6 @@ Options defaults = {
 	.wmname = NULL,
 	.setup = NULL,
 	.startwm = NULL,
-	.pause = 0,
 	.wait = False,
 };
 
@@ -5572,8 +5594,8 @@ on_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 }
 #endif				/* DO_XLOCKING */
 
-static void
-startup(int argc, char *argv[])
+void
+startup_x11(int argc, char *argv[])
 {
 	if (options.usexde) {
 		static const char *suffix = "/.gtkrc-2.0.xde";
@@ -6098,7 +6120,7 @@ init_smclient(void)
 	char *env;
 	IceConn iceConn;
 
-	if (!(env = getenv("SESSSION_MANAGER"))) {
+	if (!(env = getenv("SESSION_MANAGER"))) {
 		if (options.clientId)
 			EPRINTF("clientId provided but no SESSION_MANAGER\n");
 		return;
@@ -7203,7 +7225,7 @@ do_run(int argc, char *argv[])
 	xde_open_session(&pamh, "xde", "greeter", "x11");
 #endif				/* defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
-	startup(argc, argv);
+	startup_x11(argc, argv);
 	setup_systemd();
 #ifdef DO_XLOCKING
 	top = GetWindow(True);
@@ -7295,7 +7317,7 @@ do_quit(int argc, char *argv[])
 	int s, nscr;
 	char selection[32];
 
-	startup(argc, argv);
+	startup_x11(argc, argv);
 	disp = gdk_display_get_default();
 	nscr = gdk_display_get_n_screens(disp);
 	for (s = 0; s < nscr; s++)
@@ -9537,9 +9559,7 @@ main(int argc, char *argv[])
 			options.usexde = True;
 			break;
 		case 'T':	/* -T, --timeout TIMEOUT */
-			if ((val = strtoul(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && !*endptr)
+			if ((val = strtoul(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			options.timeout = val;
 			break;
@@ -9563,9 +9583,7 @@ main(int argc, char *argv[])
 			options.username = strdup(optarg);
 			break;
 		case 'g':	/* -g, --guard SECONDS */
-			if ((val = strtol(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && !*endptr)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			options.protect = val;
 			break;
@@ -9597,9 +9615,7 @@ main(int argc, char *argv[])
 				options.debug++;
 				break;
 			}
-			if ((val = strtol(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && *endptr)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			DPRINTF("%s: setting debug verbosity to %d\n", argv[0], val);
 			options.debug = val;
@@ -9610,9 +9626,7 @@ main(int argc, char *argv[])
 				options.output++;
 				break;
 			}
-			if ((val = strtol(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && *endptr)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			DPRINTF("%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
@@ -9661,7 +9675,7 @@ main(int argc, char *argv[])
 		}
 	}
 #ifndef DO_XCHOOSER
-#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	if (optind < argc) {
 		free(options.choice);
 		options.choice = strdup(argv[optind++]);
@@ -9670,7 +9684,7 @@ main(int argc, char *argv[])
 			EPRINTF("%s: excess non-option arguments\n", argv[0]);
 			goto bad_nonopt;
 		}
-#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	}
 #endif
 #endif
@@ -9686,7 +9700,7 @@ main(int argc, char *argv[])
 			goto bad_nonopt;
 		}
 #endif
-#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 		DPRINTF("%s: running program\n", argv[0]);
 		run_program(argc, argv);
 #else

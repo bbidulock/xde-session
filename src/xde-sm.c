@@ -2445,9 +2445,9 @@ main(int argc, char *argv[])
 			options.display = strdup(optarg);
 			break;
 		case 's':	/* -s, --screen SCREEN */
-			options.screen = strtoul(optarg, &endptr, 0);
-			if (endptr && *endptr)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			options.screen = val;
 			break;
 		case 'S':	/* -S, --session SESSION */
 			free(options.session);
@@ -2493,9 +2493,7 @@ main(int argc, char *argv[])
 				options.debug++;
 				break;
 			}
-			if ((val = strtol(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && *endptr)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			options.debug = val;
 			break;
@@ -2506,9 +2504,7 @@ main(int argc, char *argv[])
 				options.output++;
 				break;
 			}
-			if ((val = strtol(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && *endptr)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			options.output = val;
 			break;
