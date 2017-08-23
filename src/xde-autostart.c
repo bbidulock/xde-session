@@ -369,7 +369,6 @@ typedef struct {
 	char *startwm;
 	Bool wait;
 	char **execute;
-	int commands;
 	Bool autostart;
 	unsigned int pause;
 	unsigned int guard;
@@ -450,7 +449,6 @@ Options options = {
 	.startwm = NULL,
 	.wait = False,
 	.execute = NULL,
-	.commands = 0,
 	.autostart = True,
 	.wait = True,
 	.pause = 2,
@@ -12510,7 +12508,7 @@ main(int argc, char *argv[])
 
 	while (1) {
 		int c, val;
-		char *endptr = NULL;
+		char *endptr = NULL, **p;
 
 #ifdef _GNU_SOURCE
 		int option_index = 0;
@@ -12519,6 +12517,7 @@ main(int argc, char *argv[])
 			{"display",	    required_argument,	NULL, 'd'},
 			{"desktop",	    required_argument,	NULL, 'e'},
 			{"session",	    required_argument,	NULL, 's'},
+			{"startwm",	    required_argument,	NULL, 'm'},
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			{"authfile",	    required_argument,	NULL, 'a'},
 #endif
@@ -12540,8 +12539,9 @@ main(int argc, char *argv[])
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    optional_argument,	NULL, 'l'},
 			{"side",	    required_argument,	NULL, 'S'},
+			{"setup",	    required_argument,	NULL,  9 },
 			{"exec",	    required_argument,	NULL, 'x'},
-			{"noask",	    no_argument,	NULL, 'n'},
+			{"noask",	    no_argument,	NULL, 'N'},
 			{"file",	    required_argument,	NULL, 'f'},
 			{"noautostart",	    no_argument,	NULL, 'a'},
 			{"autostart",	    no_argument,	NULL, '1'},
@@ -12578,7 +12578,7 @@ main(int argc, char *argv[])
 			{"clientId",	    required_argument,	NULL, '3'},
 			{"restore",	    required_argument,	NULL, '4'},
 
-			{"dry-run",	    no_argument,		NULL, 'n'},
+			{"dry-run",	    no_argument,	NULL, 'n'},
 			{"debug",	    optional_argument,	NULL, 'D'},
 			{"verbose",	    optional_argument,	NULL, 'v'},
 			{"help",	    no_argument,	NULL, 'h'},
@@ -12614,6 +12614,10 @@ main(int argc, char *argv[])
 		case 's':	/* -s, --session SESSION */
 			free(options.session);
 			options.session = strdup(optarg);
+			break;
+		case 'm':	/* -m, --startwm EXECUTE */
+			free(options.startwm);
+			options.startwm = strdup(optarg);
 			break;
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 		case 'a':	/* -a, --authfile */
@@ -12697,12 +12701,21 @@ main(int argc, char *argv[])
 				break;
 			}
 			goto bad_option;
-		case 'x':	/* -x, --exec COMMAND */
-			options.execute = realloc(options.execute, (options.commands + 1) *
-						  sizeof(*options.execute));
-			options.execute[options.commands++] = strdup(optarg);
+		case 9:		/* --setup COMMAND */
+			for (p = options.setup, val=0; p && *p; p++, val++) ;
+			if ((options.setup = realloc(options.setup, (val + 1) * sizeof(*options.setup)))) {
+				options.setup[val] = strdup(optarg);
+				options.setup[val + 1] = NULL;
+			}
 			break;
-		case 'n':	/* -n, --noask */
+		case 'x':	/* -x, --exec COMMAND */
+			for (p = options.execute, val=1; p && *p; p++, val++) ;
+			if ((options.execute = realloc(options.execute, (val + 1) * sizeof(*options.execute)))) {
+				options.execute[val] = strdup(optarg);
+				options.execute[val + 1] = NULL;
+			}
+			break;
+		case 'N':	/* -N, --noask */
 			options.noask = True;
 			break;
 		case 'f':	/* -f, --file FILE */

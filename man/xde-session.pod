@@ -136,7 +136,7 @@ F<autostart> file in the F<SESSION> subdirectory under
 F<$XDG_CONFIG_HOME/lxsession>, where F<SESSION> is specified with the
 B<-s> option.
 
-=item B<--setup>, I<COMMAND>
+=item B<--setup> I<COMMAND>
 
 Execute the command string, I<COMMAND>, to setup the window manager
 before it is invoked.  This option defaults to executing the shell setup
@@ -147,6 +147,8 @@ the other, before the window manager or any other task is started.  The
 session will die if any of these commands exit with a non-zero exit status
 or terminate on a signal.
 
+This option can be repeated and the commands will be executed in order.
+
 =item B<--exec>, B<-x> I<COMMAND>
 
 Execute the command string, I<COMMAND>, to start applications after the
@@ -155,6 +157,8 @@ defaults to none.  The option may be repeated to execute a number of
 commands the order specified.  It is possible to prefix the I<COMMAND>
 string with a single C<@> that will indicate that the task should be
 restarted when it exits abnormally.
+
+This option can be repeated and the commands will be executed in order.
 
 =item B<--autostart>, B<--noautostart>, B<-a>
 
