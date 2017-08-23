@@ -367,9 +367,9 @@ typedef struct {
 	Bool splash;
 	char **setup;
 	char *startwm;
-	Bool wait;
 	char **execute;
 	Bool autostart;
+	Bool wait;
 	unsigned int pause;
 	unsigned int guard;
 	unsigned int delay;
@@ -447,11 +447,10 @@ Options options = {
 	.wmname = NULL,
 	.setup = NULL,
 	.startwm = NULL,
-	.wait = False,
 	.execute = NULL,
 	.autostart = True,
-	.wait = True,
-	.pause = 2,
+	.wait = False,
+	.pause = 0,
 	.splash = True,
 	.guard = 200,
 	.delay = 0,
@@ -529,6 +528,7 @@ Options defaults = {
 	.setup = NULL,
 	.startwm = NULL,
 	.wait = False,
+	.pause = 2,
 };
 
 typedef struct {
@@ -11047,13 +11047,11 @@ get_resources(int argc, char *argv[])
 	if ((val = get_any_resource(rdb, "face", "Sans:size=12:bold"))) {
 		getXrmFont(val, &resources.face);
 	}
-#ifndef DO_LOGOUT
 	// xlogin.greeting:		Welcome to CLIENTHOST
 	if ((val = get_xlogin_resource(rdb, "greeting", NULL))) {
 		getXrmString(val, &resources.greeting);
 		getXrmString(val, &options.welcome);
 	}
-#endif
 	// xlogin.unsecureGreeting:	This is an unsecure session
 	if ((val = get_xlogin_resource(rdb, "unsecureGreeting", NULL))) {
 		getXrmString(val, &resources.unsecureGreeting);
@@ -11195,11 +11193,9 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "splash", NULL))) {
 		getXrmString(val, &options.backdrop);
 	}
-#if defined DO_XCHOOSER || defined DO_XLOGIN || defined(DO_GREETER)
 	if ((val = get_resource(rdb, "welcome", NULL))) {
 		getXrmString(val, &options.welcome);
 	}
-#endif
 	if ((val = get_resource(rdb, "charset", NULL))) {
 		getXrmString(val, &options.charset);
 	}
@@ -12459,7 +12455,7 @@ main(int argc, char *argv[])
 			{"xdmaddress",	    required_argument,	NULL, 'x'},
 			{"clientaddress",   required_argument,	NULL, 'c'},
 			{"connectionType",  required_argument,	NULL, 't'},
-			{"welcome",	    required_argument,	NULL, 'w'},
+			{"welcome",	    required_argument,	NULL, 'B'},
 #else					/* DO_XCHOOSER */
 			{"prompt",	    no_argument,	NULL, 'p'},
 #endif					/* DO_XCHOOSER */
@@ -12599,7 +12595,7 @@ main(int argc, char *argv[])
 			free(options.banner);
 			options.banner = strdup(optarg);
 			break;
-		case 'w':	/* -w, --welcome WELCOME */
+		case 'B':	/* -B, --welcome WELCOME */
 			free(options.welcome);
 			options.welcome = strndup(optarg, 256);
 			break;
@@ -12652,14 +12648,22 @@ main(int argc, char *argv[])
 		case 'a':	/* -a, --noautostart */
 			options.autostart = False;
 			break;
-		case '2':	/* --autostart */
+		case '1':	/* --autostart */
 			options.autostart = True;
+			break;
+		case 'w':	/* -w, --wait */
+			options.wait = True;
+			break;
+		case '2':	/* --nowait */
+			options.wait = False;
 			break;
 		case 1:	/* -p, --pause [PAUSE] */
 			if (optarg) {
 				if ((val = strtoul(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 					goto bad_option;
 				options.pause = val;
+			} else {
+				options.pause = defaults.pause;
 			}
 			break;
 		case '4':	/* --nosplash */
