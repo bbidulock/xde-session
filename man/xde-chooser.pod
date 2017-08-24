@@ -111,7 +111,13 @@ options listed above:
 
 =over
 
-=item B<--filename>, B<-f>
+=item B<--display> I<DISPLAY>
+
+Specifies the display to use.  This is not normally necessary as the
+display is obtained from the B<DISPLAY> environment variable when this
+option is not specified.
+
+=item B<--filename>
 
 When a user session is selected, output the full path filename to the
 xsessions desktop file instead of just the appid corresponding to the

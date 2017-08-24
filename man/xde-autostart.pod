@@ -114,7 +114,7 @@ options listed above:
 
 =over
 
-=item B<--display>, B<-d> I<DISPLAY>
+=item B<--display> I<DISPLAY>
 
 Specifies the display to use.  This is not normally necessary as the
 display is obtained from the B<DISPLAY> environment variable when this
@@ -123,7 +123,7 @@ option is not specified.
 =item B<--desktop>, B<-e> I<DESKTOP>
 
 Specify the desktop environment (DE) to use, I<DESKTOP>, e.g.
-C<FLUXBOX>, C<BLACKBOX>, C<ICEWM>, C<XDE>.  The default value when not
+C<ADWM>, C<BLACKBOX>, C<ICEWM>, C<FLUXBOX>.  The default value when not
 specified is C<XDE>.  The desktop environment must be specified when
 B<--autostart> is specified.
 
@@ -244,7 +244,7 @@ B<--xde-theme> option as well.
 =item B<--theme>, B<-t> I<THEME>
 
 Specifes the GTK+ theme to use.  Otherwise, the user's default GTK+
-theme will be used (i.e. form F<$HOME/.gtkrc-2.0>); but note the
+theme will be used (i.e. from F<$HOME/.gtkrc-2.0>); but note the
 B<--xde-theme> option as well.
 
 =item B<--xde-theme>, B<-X>

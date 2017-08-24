@@ -529,6 +529,7 @@ Options defaults = {
 	.startwm = NULL,
 	.wait = False,
 	.pause = 2,
+	.splash = True,
 };
 
 typedef struct {
@@ -1365,7 +1366,7 @@ XContext ClientContext;			/* window to client context */
 XContext MessageContext;		/* window to message context */
 
 void
-setup_environment()
+setup_environment(void)
 {
 	char *env, buf[PATH_MAX] = { 0, };
 	struct stat st;
@@ -1773,7 +1774,7 @@ session_startup(int argc, char *argv[])
 }
 
 void
-relax()
+relax(void)
 {
 	while (gtk_events_pending())
 		gtk_main_iteration();
@@ -1783,7 +1784,7 @@ GtkWidget *table;
 int cols = 7;
 
 void
-splashscreen()
+splashscreen(void)
 {
 	GtkWidget *splscr = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_wmclass(GTK_WINDOW(splscr), "xde-session", "XDE-Session");
@@ -1834,7 +1835,7 @@ key_file_unref(gpointer data)
 int n_autostarts = 0;
 
 void
-get_autostart()
+get_autostart(void)
 {
 	int dlen = strlen(envir.XDG_CONFIG_DIRS);
 	int hlen = strlen(envir.XDG_CONFIG_HOME);
@@ -2009,7 +2010,7 @@ foreach_autostart(GQuark key_id, gpointer data, gpointer user_data)
 }
 
 void
-show_splashscreen()
+show_splashscreen(void)
 {
 	TableContext c = { cols, 0, 0, 0 };
 	
@@ -2021,7 +2022,7 @@ show_splashscreen()
 }
 
 void
-daemonize()
+daemonize(void)
 {
 	pid_t pid, sid;
 	char buf[64] = { 0, };
@@ -2158,7 +2159,7 @@ execorfail(char *cmd)
 }
 
 void
-setup()
+setup(void)
 {
 	static const char *script = "/setup.sh";
 	char **prog;
@@ -2210,7 +2211,7 @@ setup()
 }
 
 void
-startwm()
+startwm(void)
 {
 	static const char *script = "/start.sh";
 	char *cmd;
@@ -2268,7 +2269,7 @@ startwm()
 }
 
 static void
-intern_atoms()
+intern_atoms(void)
 {
 	int i, j, n;
 	char **atom_names;
@@ -2614,7 +2615,7 @@ check_supported(Atom protocols, Atom supported)
   * echinus(1)).
   */
 static Window
-check_netwm_supported()
+check_netwm_supported(void)
 {
 	if (check_supported(_XA_NET_SUPPORTED, _XA_NET_SUPPORTING_WM_CHECK))
 		return scr->root;
@@ -2624,7 +2625,7 @@ check_netwm_supported()
 /** @brief Check for an EWMH/NetWM compliant (sorta) window manager.
   */
 static Window
-check_netwm()
+check_netwm(void)
 {
 	int i = 0;
 
@@ -2650,7 +2651,7 @@ check_netwm()
   * _WIN_SUPPORTING_WM_CHECK in its list of atoms.
   */
 static Window
-check_winwm_supported()
+check_winwm_supported(void)
 {
 	if (check_supported(_XA_WIN_PROTOCOLS, _XA_WIN_SUPPORTING_WM_CHECK))
 		return scr->root;
@@ -2660,7 +2661,7 @@ check_winwm_supported()
 /** @brief Check for a GNOME1/WMH/WinWM compliant window manager.
   */
 static Window
-check_winwm()
+check_winwm(void)
 {
 	int i = 0;
 
@@ -2680,7 +2681,7 @@ check_winwm()
 /** @brief Check for a WindowMaker compliant window manager.
   */
 static Window
-check_maker()
+check_maker(void)
 {
 	int i = 0;
 
@@ -2698,7 +2699,7 @@ check_maker()
 /** @brief Check for an OSF/Motif compliant window manager.
   */
 static Window
-check_motif()
+check_motif(void)
 {
 	int i = 0;
 	long *data, n = 0;
@@ -2719,7 +2720,7 @@ check_motif()
 /** @brief Check for an ICCCM 2.0 compliant window manager.
   */
 static Window
-check_icccm()
+check_icccm(void)
 {
 	scr->icccm_check = XGetSelectionOwner(dpy, scr->icccm_atom);
 
@@ -2736,7 +2737,7 @@ check_icccm()
   * SubstructureRedirectMask on the root window.
   */
 static Window
-check_redir()
+check_redir(void)
 {
 	XWindowAttributes wa;
 
@@ -2752,7 +2753,7 @@ check_redir()
 /** @brief Find window manager and compliance for the current screen.
   */
 static Bool
-check_window_manager()
+check_window_manager(void)
 {
 	Bool have_wm = False;
 
@@ -2807,7 +2808,7 @@ check_window_manager()
 }
 
 static void
-handle_wmchange()
+handle_wmchange(void)
 {
 	if (!check_window_manager())
 		check_window_manager();
@@ -5699,7 +5700,7 @@ recheck_wm(gpointer user_data)
 }
 
 void
-waitwm()
+waitwm(void)
 {
 	char buf[16] = { 0, };
 	int s;
@@ -5848,7 +5849,7 @@ init_proxy(void)
 /** @brief Check for a system tray.
   */
 static Window
-check_stray()
+check_stray(void)
 {
 	Window win;
 
@@ -6114,7 +6115,7 @@ pause_done(gpointer user_data)
 
 
 void
-pause_after_wm()
+pause_after_wm(void)
 {
 	if (!options.pause)
 		return;
@@ -6124,12 +6125,12 @@ pause_after_wm()
 }
 
 void
-run_exec_options()
+run_exec_options(void)
 {
 }
 
 void
-run_autostart()
+run_autostart(void)
 {
 }
 
@@ -6140,7 +6141,7 @@ hidesplash(gpointer user_data)
 }
 
 void
-do_loop()
+do_loop(void)
 {
 	g_timeout_add_seconds(150, hidesplash, NULL);
 	gtk_main();
@@ -10570,7 +10571,7 @@ do_autostarts(XdeStartupPhase want, int need, GHashTable *autostarts, TableConte
 /** @brief perform pre-autostart executions.
   */
 void
-do_executes()
+do_executes(void)
 {
 }
 

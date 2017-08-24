@@ -366,10 +366,9 @@ typedef struct {
 	Bool splash;
 	char **setup;
 	char *startwm;
-	Bool wait;
 	char **execute;
-	int commands;
 	Bool autostart;
+	Bool wait;
 	unsigned int pause;
 	unsigned int guard;
 	unsigned int delay;
@@ -447,12 +446,10 @@ Options options = {
 	.wmname = NULL,
 	.setup = NULL,
 	.startwm = NULL,
-	.wait = False,
 	.execute = NULL,
-	.commands = 0,
 	.autostart = True,
 	.wait = True,
-	.pause = 2,
+	.pause = 0,
 	.splash = True,
 	.guard = 200,
 	.delay = 0,
@@ -530,6 +527,8 @@ Options defaults = {
 	.setup = NULL,
 	.startwm = NULL,
 	.wait = False,
+	.pause = 2,
+	.splash = True,
 };
 
 typedef struct {
