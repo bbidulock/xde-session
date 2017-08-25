@@ -303,10 +303,37 @@ managers.
 
 =over
 
+=item B<DISPLAY>
+
+Used to determine X Display.  When the B<--display> option is specified,
+this environment variable will be set to the specified value.
+
 =item B<HOME>
 
-Specifies the location of the user's home directory.  When unspecified,
-defaults to the current working directory.
+Will be used to determine the user's home directory for the purpose of
+calculating the default value for C<XDG_CONFIG_HOME> and
+C<XDG_DATA_HOME> when required.  When unspecified, the home directory
+for the current local user is determined from the password file.
+Failing that, the current directory is used.
+
+=item B<HOSTNAME>
+
+Will be used to determine the local host name.  When unspecified, the
+name will be determined from the L<gethostname(3)> call.  This value is
+used to determine the host for which to save session files.  Also, will
+be used to determine the default directory for some configuration and
+commands.
+
+=item B<LANG>
+
+Used to set the current locale.
+
+=item B<USER>
+
+Will be used to determine the name of the local user.  When unspecified,
+the user name for the current pid will be determined from the password
+file and this environment variable will be set.  Failing that it will
+not be set.
 
 =item B<XDG_DATA_HOME>
 
