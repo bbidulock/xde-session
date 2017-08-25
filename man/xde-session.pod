@@ -633,6 +633,10 @@ B<xde-session> program is executed, it sets it to the specified or
 default B<--vendor> option followed by a dash (C<->).  This variable
 determines which files are used to construct XDG menus.
 
+When the B<--wmname> option is specified and the B<--desktop> option is
+not specified, C<$XDG_CURRENT_DESKTOP> is set to the window manager name
+folded to all uppercase.
+
 =item B<FBXDG_DE>
 
 To emulate L<fbautostart>, the C<FBXDG_DE> environment variable is
