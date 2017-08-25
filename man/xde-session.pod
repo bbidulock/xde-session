@@ -153,7 +153,30 @@ from the L<lxsession(1)> F<desktop.conf> file in the F<SESSION>
 subdirectory under F<$XDG_CONFIG_HOME/lxsession>, where F<SESSION> is
 specified with the B<-s> option.
 
-=item B<--wmname> I<WMBANE>
+=item B<--wmname> I<WNAME>
+
+Specifies the name of the window manager executable.
+
+When setting up the session, unless the B<--setup> option is specified,
+this name is used to look in config directories for an executable file
+named
+F<$XDG_CONFIG_HOME:$XDG_CONFIG_DIRS/$WMNAME/setup.sh>.  If one exists
+and is executable, it is run as the setup script.
+
+When starting the window manager, unless the B<--startwm> option is
+specified, this name is used to look in config directories for an
+executable file named
+F<$XDG_CONFIG_HOME:$XDG_CONFIG_DIRS/$WMNAME/start.sh>.  If one exists
+and is executable, it is run instead of the window manager.  If the
+start shell script does not exist or is not executable, $WMNAME, is
+simply executed with no arguments.  If you wish to pass arguments to the
+program, use the B<--startwm> option.
+
+If the B<--wmname> option is specified and no B<--desktop> or
+B<-ssession> option is provided, the desktop and session default to the
+I<WMNAME> folded to all uppercase.  When no B<--wmname> option is
+specified, it defaults to the desktop or session folded to all
+lowercase.
 
 =item B<--file>, B<-f> I<FILE>
 
@@ -227,12 +250,28 @@ optional branding.
 
 =item B<--vendor>, B<-v> I<VENDOR>
 
+Specifies the vendor name for branding and custom configuration.  The
+default when unspecified is C<unexicon>.  Use a null string to defeat
+branding.  Specifying or defaulting I<VENDOR> causes F</etc/xdg/$VENDOR>
+to be prefixed to C<$XDG_CONFIG_DIRS> and F</usr/share/$VENDOR> to be
+prefixed to C<$XDG_DATA_DIRS>.
+
+Also, if the C<$XDG_MENU_PREFIX> environment variable is not set up, it
+will be set to I<VENDOR> with a C<-> appended.
+
+(Note that, regardless of vendor setting, F</etc/xdg/xde> is always
+prefixed to C<$XDG_CONFIG_DIRS> and F</usr/share/xde> is always prefixed
+to C<$XDG_DATA_DIRS>.)
+
 =item B<--mkdirs>, B<--nomkdirs>
 
 Make (or not) missing user directories.  User directories that will be
 created are F<$HOME/Desktop>, F<$HOME/Downloads>, F<$HOME/Templates>,
 F<$HOME/Public>, F<$HOME/Documents>, F<$HOME/Documents/Music>,
 F<$HOME/Documents/Pictures>, F<$HOME/Documents/Videos>.
+
+(Note that, on Arch Linux, user directories are normally updated by the
+F<xdg-user-dirs-update> L<systemd(8)> service.)
 
 =item B<--toolwait>, B<W> [I<GUARD>][:I<DELAY>]
 
@@ -564,7 +603,10 @@ C<*.desktop> files.  The variable defaults to C<$HOME/.config>.
 
 When set, C<DIRECTORY/autostart> will be examined for each C<DIRECTORY>
 in the colon separated list of directories contained in
-C<XDG_CONFIG_DIRS>.  The variable defaults to C</etc/xdg>.
+C<XDG_CONFIG_DIRS>.  The variable defaults to F</etc/xdg>.  When the
+B<--vendor> option is specified, or defaults, F</etc/xdg/$VENDOR> is
+prefixed to the normal default.  F</etc/xdg/xde> will always be prefixed
+to the result.
 
 =item B<XDG_CURRENT_DESKTOP>
 
@@ -572,6 +614,24 @@ When the C<--desktop> option is not specified, C<XDG_CURRENT_DESKTOP> is
 examined to determine the current desktop.  C<XDG_CURRENT DESKTOP> is
 set to the value that resulted from option and environment variable
 processing for children of the session.
+
+=item B<XDG_DATA_HOME>
+
+The variable defaults to F<$HOME/.local/share>.
+
+=item B<XDG_DATA_DIRS>
+
+The variable defaults to F</usr/local/share:/usr/share>.  When the
+B<--vendor> option is specified, or defaults, F</usr/share/$VENDOR> is
+prefixed to the normal default.  F</usr/share/xde> will always be
+prefixed to the result.
+
+=item B<XDG_MENU_PREFIX>
+
+This variable has no default.  If the variable is not set when the
+B<xde-session> program is executed, it sets it to the specified or
+default B<--vendor> option followed by a dash (C<->).  This variable
+determines which files are used to construct XDG menus.
 
 =item B<FBXDG_DE>
 
