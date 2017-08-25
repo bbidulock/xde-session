@@ -301,12 +301,29 @@ managers.
 
 =head1 ENVIRONMENT
 
+The following environment variables (in alphabetical order) are examined
+or set by B<xde-chooser>:
+
 =over
+
+=item B<DESKTOP_STARTUP_ID>
+
+B<xde-chooser> is a GTK program and has been configured to automatically
+perform startup notification completion on startup (not that anyone is
+listening at this point).
 
 =item B<DISPLAY>
 
 Used to determine X Display.  When the B<--display> option is specified,
 this environment variable will be set to the specified value.
+
+=item B<FBXDG_DE>
+
+To emulate L<fbautostart>, the C<FBXDG_DE> environment variable is
+examined when the C<--desktop> option is not specified and the
+C<XDG_CURRENT_DESKTOP> environment variable is not set.  C<FBXDG_DE> is
+set to the value that resulted from option and environment variable
+processing for children of the session.
 
 =item B<HOME>
 
