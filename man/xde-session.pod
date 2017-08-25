@@ -590,6 +590,12 @@ or set by B<xde-session>:
 
 =over
 
+=item B<DESKTOP_SESSION>
+
+To emulate L<lxsession(1)>, the C<DESKTOP_SESSION> environment variable
+is set to the value that resulted from option and environment variable
+processing for children of the session.
+
 =item B<DESKTOP_STARTUP_ID>
 
 B<xde-session> is a GTK program and has been configured to automatically
@@ -629,17 +635,19 @@ commands.
 
 Used to set the current locale.
 
+=item B<_LXSESSION_PID>
+
+To emulate L<lxsession(1)>, the C<_LXSESSION_PID> environment variable
+is set to the PID of B<xde-session>, the process group leader responsible
+for launching all tasks under the X session manager.  The X session can
+be terminated by killing this process.
+
 =item B<USER>
 
 Will be used to determine the name of the local user.  When unspecified,
 the user name for the current pid will be determined from the password
 file and this environment variable will be set.  Failing that it will
 not be set.
-
-=item B<XDG_CONFIG_HOME>
-
-When set, C<$XDG_CONFIG_HOME/autostart> will be examined for
-C<*.desktop> files.  The variable defaults to C<$HOME/.config>.
 
 =item B<XDG_CONFIG_DIRS>
 
@@ -650,6 +658,11 @@ B<--vendor> option is specified, or defaults, F</etc/xdg/$VENDOR> is
 prefixed to the normal default.  F</etc/xdg/xde> will always be prefixed
 to the result.
 
+=item B<XDG_CONFIG_HOME>
+
+When set, C<$XDG_CONFIG_HOME/autostart> will be examined for
+C<*.desktop> files.  The variable defaults to C<$HOME/.config>.
+
 =item B<XDG_CURRENT_DESKTOP>
 
 When the C<--desktop> option is not specified, C<XDG_CURRENT_DESKTOP> is
@@ -657,16 +670,16 @@ examined to determine the current desktop.  C<XDG_CURRENT DESKTOP> is
 set to the value that resulted from option and environment variable
 processing for children of the session.
 
-=item B<XDG_DATA_HOME>
-
-The variable defaults to F<$HOME/.local/share>.
-
 =item B<XDG_DATA_DIRS>
 
 The variable defaults to F</usr/local/share:/usr/share>.  When the
 B<--vendor> option is specified, or defaults, F</usr/share/$VENDOR> is
 prefixed to the normal default.  F</usr/share/xde> will always be
 prefixed to the result.
+
+=item B<XDG_DATA_HOME>
+
+The variable defaults to F<$HOME/.local/share>.
 
 =item B<XDG_MENU_PREFIX>
 
@@ -679,24 +692,22 @@ When the B<--wmname> option is specified and the B<--desktop> option is
 not specified, C<$XDG_CURRENT_DESKTOP> is set to the window manager name
 folded to all uppercase.
 
-=item B<DESKTOP_SESSION>
-
-To emulate L<lxsession(1)>, the C<DESKTOP_SESSION> environment variable
-is set to the value that resulted from option and environment variable
-processing for children of the session.
-
 =item B<XDG_SESSION_PID>
 
 C<XDG_SESSION_PID> is set to the PID of B<xde-session>, the process group
 leader responsible for launching all tasks under the X session manager.
-The X session can be terminated by killing this process.
+The X session can be terminated by killing this process.  See also
+L</SIGNALS>, below.
 
-=item B<_LXSESSION_PID>
+=item B<XDG_VENDOR_ID>
 
-To emulate L<lxsession(1)>, the C<_LXSESSION_PID> environment variable
-is set to the PID of B<xde-session>, the process group leader responsible
-for launching all tasks under the X session manager.  The X session can
-be terminated by killing this process.
+This environment variable is examined to determine the default for the
+B<--vendor> option.  When the B<--vendor> option is specified or
+defaults, this environment variable is set to the value that results
+from option and environment variable processing.  This is a convenience
+for when the B<--vendor> option cannot be derived from the
+C<XDG_MENU_PREFIX> environment variable.  It is not an XDG standard
+environment variable.
 
 =back
 

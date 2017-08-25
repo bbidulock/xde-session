@@ -306,6 +306,12 @@ or set by B<xde-chooser>:
 
 =over
 
+=item B<DESKTOP_SESSION>
+
+To emulate L<lxsession(1)>, the C<DESKTOP_SESSION> environment variable
+is set to the value that resulted from option and environment variable
+processing for children of the session.
+
 =item B<DESKTOP_STARTUP_ID>
 
 B<xde-chooser> is a GTK program and has been configured to automatically
@@ -345,6 +351,13 @@ commands.
 
 Used to set the current locale.
 
+=item B<_LXSESSION_PID>
+
+To emulate L<lxsession(1)>, the C<_LXSESSION_PID> environment variable
+is set to the PID of B<xde-session>, the process group leader responsible
+for launching all tasks under the X session manager.  The X session can
+be terminated by killing this process.
+
 =item B<USER>
 
 Will be used to determine the name of the local user.  When unspecified,
@@ -352,12 +365,23 @@ the user name for the current pid will be determined from the password
 file and this environment variable will be set.  Failing that it will
 not be set.
 
-=item B<XDG_DATA_HOME>
+=item B<XDG_CONFIG_DIRS>
 
-Specifies the user XDG data directory.  When unspecified, defaults to
-F<$HOME/.local/share> in accordance with XDG specifications.
-B<xde-chooser> uses this directory to determine the list of default data
-directories to search.
+Specifies the system XDG configuration directory.  When unspecified,
+defaults to F</etc/xdg> in accordance with XDG specifications.
+The directory F</etc/xdg/xde> will be prefixed to the path unless the
+directory is already a component of the path.
+B<xde-chooser> uses these directories to determine the list of default
+configuration directories to search.
+
+=item B<XDG_CONFIG_HOME>
+
+Specifies the user XDG configuration directory.  When unspecified,
+defaults to F<~/.config> in accordance wtih XDG specifications.
+B<xde-chooser> uses this directory to find its configuration files that
+are located under F<$XDG_CONFIG_HOME/xde>.
+
+=item B<XDG_CURRENT_DESKTOP>
 
 =item B<XDG_DATA_DIRS>
 
@@ -368,21 +392,31 @@ directory is already a component of the path.
 B<xde-chooser> uses these directories to determine the list of default
 data directories to search.
 
-=item B<XDG_CONFIG_HOME>
+=item B<XDG_DATA_HOME>
 
-Specifies the user XDG configuration directory.  When unspecified,
-defaults to F<~/.config> in accordance wtih XDG specifications.
-B<xde-chooser> uses this directory to find its configuration files that
-are located under F<$XDG_CONFIG_HOME/xde>.
+Specifies the user XDG data directory.  When unspecified, defaults to
+F<$HOME/.local/share> in accordance with XDG specifications.
+B<xde-chooser> uses this directory to determine the list of default data
+directories to search.
 
-=item B<XDG_CONFIG_DIRS>
+=item B<XDG_MENU_PREFIX>
 
-Specifies the system XDG configuration directory.  When unspecified,
-defaults to F</etc/xdg> in accordance with XDG specifications.
-The directory F</etc/xdg/xde> will be prefixed to the path unless the
-directory is already a component of the path.
-B<xde-chooser> uses these directories to determine the list of default
-configuration directories to search.
+=item B<XDG_SESSION_PID>
+
+C<XDG_SESSION_PID> is set to the PID of B<xde-session>, the process group
+leader responsible for launching all tasks under the X session manager.
+The X session can be terminated by killing this process.  See also
+L</SIGNALS>, below.
+
+=item B<XDG_VENDOR_ID>
+
+This environment variable is examined to determine the default for the
+B<--vendor> option.  When the B<--vendor> option is specified or
+defaults, this environment variable is set to the value that results
+from option and environment variable processing.  This is a convenience
+for when the B<--vendor> option cannot be derived from the
+C<XDG_MENU_PREFIX> environment variable.  It is not an XDG standard
+environment variable.
 
 =back
 
