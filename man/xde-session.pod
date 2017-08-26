@@ -651,17 +651,20 @@ not be set.
 
 =item B<XDG_CONFIG_DIRS>
 
-When set, C<DIRECTORY/autostart> will be examined for each C<DIRECTORY>
-in the colon separated list of directories contained in
-C<XDG_CONFIG_DIRS>.  The variable defaults to F</etc/xdg>.  When the
+When set, the subdirectories F<$DIRECTORY/autostart> will be examined for
+each F<$DIRECTORY> in the colon separated list of directories contained
+in C<XDG_CONFIG_DIRS>.  The variable defaults to F</etc/xdg>.  When the
 B<--vendor> option is specified, or defaults, F</etc/xdg/$VENDOR> is
 prefixed to the normal default.  F</etc/xdg/xde> will always be prefixed
 to the result.
 
 =item B<XDG_CONFIG_HOME>
 
-When set, C<$XDG_CONFIG_HOME/autostart> will be examined for
-C<*.desktop> files.  The variable defaults to C<$HOME/.config>.
+Specifies the user XDG configuration directory.  When unspecified,
+defaults to F<$HOME/.config> in accordance with XDG specifications.
+B<xde-session> uses this directory to determine the list of default
+configuration directories to search.  The subdirectory
+F<$XDG_CONFIG_HOME/autostart> will be examined for F<*.desktop> files.
 
 =item B<XDG_CURRENT_DESKTOP>
 
@@ -679,7 +682,11 @@ prefixed to the result.
 
 =item B<XDG_DATA_HOME>
 
-The variable defaults to F<$HOME/.local/share>.
+Specifies the user XDG data directory.  When unspecified, defaults to
+F<$HOME/.local/share> in accordance with XDG specifications.
+B<xde-session> uses this directory to determine the list of default data
+directories to search.  The subdirectory F<$XDG_DATA_HOME/xsessions>
+will be examined for F<*.desktop> files.
 
 =item B<XDG_MENU_PREFIX>
 

@@ -377,11 +377,17 @@ configuration directories to search.
 =item B<XDG_CONFIG_HOME>
 
 Specifies the user XDG configuration directory.  When unspecified,
-defaults to F<~/.config> in accordance wtih XDG specifications.
-B<xde-chooser> uses this directory to find its configuration files that
-are located under F<$XDG_CONFIG_HOME/xde>.
+defaults to F<$HOME/.config> in accordance with XDG specifications.
+B<xde-chooser> uses this directory to determine the list of default
+configuration directories to search.  The subdirectory
+F<$XDG_CONFIG_HOME/autostart> will be examined for F<*.desktop> files.
 
 =item B<XDG_CURRENT_DESKTOP>
+
+When the C<--desktop> option is not specified, C<XDG_CURRENT_DESKTOP> is
+examined to determine the current desktop.  C<XDG_CURRENT DESKTOP> is
+set to the value that resulted from option and environment variable
+processing for children of the session.
 
 =item B<XDG_DATA_DIRS>
 
@@ -397,7 +403,8 @@ data directories to search.
 Specifies the user XDG data directory.  When unspecified, defaults to
 F<$HOME/.local/share> in accordance with XDG specifications.
 B<xde-chooser> uses this directory to determine the list of default data
-directories to search.
+directories to search.  The subdirectory F<$XDG_DATA_HOME/xsessions>
+will be examined for F<*.desktop> files.
 
 =item B<XDG_MENU_PREFIX>
 
