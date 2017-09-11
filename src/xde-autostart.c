@@ -877,6 +877,15 @@ typedef enum {
 	StartupPhaseApplication,
 } XdeStartupPhase;
 
+struct {
+	GQueue *PreDisplayServer;
+	GQueue *Initialization;
+	GQueue *WindowManager;
+	GQueue *Desktop;
+	GQueue *Panel;
+	GQueue *Application;
+} queues;
+
 #define WaitForNothing		(0)
 #define WaitForHelper		(1<<0)
 #define WaitForAudio		(1<<1)
@@ -10467,6 +10476,13 @@ init_autostarts(TableContext **cp)
 	TableContext *c = NULL;
 	int count;
 
+	queues.PreDisplayServer = g_queue_new();
+	queues.Initialization = g_queue_new();
+	queues.WindowManager = g_queue_new();
+	queues.Desktop = g_queue_new();
+	queues.Panel = g_queue_new();
+	queues.Application = g_queue_new();
+
 	if (!(autostarts = get_autostarts())) {
 		EPRINTF("cannot build AutoStarts\n");
 		return (autostarts);
@@ -10494,6 +10510,7 @@ do_autostarts(XdeStartupPhase want, int need, GHashTable *autostarts, TableConte
 	TaskContext *task;
 	GHashTableIter hiter;
 	gpointer key, value;
+	GQueue *where = NULL;
 
 	g_hash_table_iter_init(&hiter, autostarts);
 	while (g_hash_table_iter_next(&hiter, &key, &value)) {
@@ -10506,31 +10523,39 @@ do_autostarts(XdeStartupPhase want, int need, GHashTable *autostarts, TableConte
 			if (!strcmp(phase, "PreDisplayServer")) {
 				have = StartupPhasePreDisplayServer;
 				wait &= ~WaitForAll;
+				where = queues.PreDisplayServer;
 			} else if (!strcmp(phase, "Initialization")) {
 				have = StartupPhaseInitialization;
 				wait &= ~WaitForAll;
+				where = queues.Initialization;
 			} else if (!strcmp(phase, "WindowManager")) {
 				have = StartupPhaseWindowManager;
 				wait &= ~(WaitForManager|WaitForComposite|WaitForTray|WaitForPager);
+				where = queues.WindowManager;
 			} else if (!strcmp(phase, "Panel")) {
 				have = StartupPhasePanel;
 				wait &= ~(WaitForTray|WaitForPager);
 				wait |= WaitForManager;
+				where = queues.Panel;
 			} else if (!strcmp(phase, "Desktop")) {
 				have = StartupPhaseDesktop;
 				wait |= WaitForManager;
+				where = queues.Desktop;
 			} else if (!strcmp(phase, "Application") || !strcmp(phase, "Applications")) {
 				have = StartupPhaseApplication;
 				wait |= WaitForManager;
+				where = queues.Application;
 			} else {
 				EPRINTF("unrecognized phase: %s\n", phase);
 				have = StartupPhaseApplication;
 				wait |= WaitForManager;
+				where = queues.Application;
 			}
 			g_free(phase);
 		} else {
 			have = StartupPhaseApplication;
 			wait |= WaitForManager;
+			where = queues.Application;
 		}
 		if (have != want)
 			continue;
@@ -10555,6 +10580,9 @@ do_autostarts(XdeStartupPhase want, int need, GHashTable *autostarts, TableConte
 		task->entry = value;
 		task->waitfor = wait;
 		task->runnable = !autostarts_filter(key, value, NULL);
+
+		if (where)
+			g_queue_push_tail(where, task);
 
 		if (options.splash)
 			add_task_to_splash(c, task);
