@@ -26,6 +26,10 @@ bin_PROGRAMS = \
 	xde-xlogin \
 	xde-xsession
 
+AM_STD_OPTIONS_EXEMPT = \
+	test-login \
+	test-root \
+	test-pipe
 
 xde_autostart_CPPFLAGS = -DNAME=\"xde-autostart\"
 xde_autostart_SOURCES = xde-autostart.c
