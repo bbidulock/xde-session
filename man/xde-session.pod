@@ -23,6 +23,24 @@ auto-start applications as specified by the I<XDG Desktop Specification>.
 
 See the L</USAGE> section for usage examples.
 
+=head2 BEHAVIOUR
+
+When B<xde-session> starts, it becomes a session leader, establishes the
+necessary directories and environment variables in accordance with
+options processing.  It then executes any L<lxsession(1)> compatible
+initialization functions are part of the session and performs setup
+functions associated with the specified desktop session and starts the
+window manager.  After the window manager appears, it pauses for a
+configurable interval for the window manager to stabilize and then
+begins launching autostart entries.  After launching autostart entries
+it watches for child exit and restarts any necessary processes.
+When the window manager exits, it asks what the user would like to do
+(logout, restart, etc.).  If it receives a HUP signal, it tears down the
+session.
+
+A characteristic of this approach is that processes started by
+B<xde-session> are immediate children of B<xde-session>.
+
 =head1 COMMANDS
 
 Command options that control the major behaviour of B<xde-session> are as
