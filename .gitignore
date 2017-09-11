@@ -26,6 +26,7 @@ Makefile
 Makefile.in
 *.man
 .nfs*
+NOTES.html
 *.o
 README
 README.html
