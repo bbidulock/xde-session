@@ -26,6 +26,7 @@ Makefile
 Makefile.in
 *.man
 .nfs*
+NOTES.html
 *.o
 README
 README.html
@@ -38,14 +39,17 @@ stamp-h*
 xde-session-*.tar.xz
 src/test-login
 src/test-root
+src/test-pipe
 src/xde-autostart
 src/xde-chooser
 src/xde-dockmgr
+src/xde-greeter
 src/xde-login
 src/xde-logout
 src/xde-session
 src/xde-sm
 src/xde-smproxy
+src/xde-startwm
 src/xde-traymgr
 src/xde-wait
 src/xde-wmproxy

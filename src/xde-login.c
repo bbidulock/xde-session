@@ -1,7 +1,7 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>
- Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
+ Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
  All Rights Reserved.
@@ -149,6 +149,9 @@ typedef struct {
 	char *type;
 	char *desktop;
 	char *authfile;
+	char *shell;
+	char *maildir;
+	char *homedir;
 	int cmd_argc;
 	char **cmd_argv;
 	Command command;
@@ -168,6 +171,9 @@ Options options = {
 	.type = NULL,
 	.desktop = NULL,
 	.authfile = NULL,
+	.shell = NULL,
+	.maildir = NULL,
+	.homedir = NULL,
 	.cmd_argc = 0,
 	.cmd_argv = NULL,
 	.command = CommandDefault,
@@ -175,7 +181,7 @@ Options options = {
 
 #ifdef PAM_XAUTHDATA
 void
-add_xauth_data(pam_handle_t * pamh)
+add_xauth_data(pam_handle_t *pamh)
 {
 	char *file, *nam, *num;
 	Xauth *xau;
@@ -231,7 +237,7 @@ pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp,
 }
 
 void
-run_login(int argc, char **argv)
+run_login(int argc, char * const *argv)
 {
 	pam_handle_t *pamh = NULL;
 	const char *env;
@@ -241,13 +247,15 @@ run_login(int argc, char **argv)
 	struct pam_conv conv = { pam_conv_cb, NULL };
 	FILE *dummy;
 	const char **var, *vars[] =
-	    { "PATH", "LANG", "USER", "LOGNAME", "HOME", "SHELL", "XDG_SEAT", "XDG_VNTR", NULL };
+	    { "PATH", "LANG", "USER", "LOGNAME", "HOME", "SHELL", "XDG_SEAT", "XDG_VNTR", "MAIL", "TERM", "HOME", "PWD", NULL };
 
 	uid = getuid();
+#if 0
 	if (setresuid(0, 0, 0)) {
 		EPRINTF("setresuid: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
+#endif
 	switch ((pid = fork())) {
 	case 0: /* the child */
 		dummy = freopen("/dev/null", "r", stdin);
@@ -267,41 +275,71 @@ run_login(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		exit(EXIT_FAILURE);
 	}
-	DPRINTF("adjusting environment variables\n");
-	unsetenv("XDG_SESSION_ID");
-
-	if (options.display)
-		setenv("DISPLAY", options.display, 1);
-	if (options.authfile)
-		setenv("XAUTHORITY", options.authfile, 1);
-	if (options.class)
-		setenv("XDG_SESSION_CLASS", options.class, 1);
-	else
-		unsetenv("XDG_SESSION_CLASS");
-
-	if (options.type)
-		setenv("XDG_SESSION_TYPE", options.type, 1);
-	else
-		unsetenv("XDG_SESSION_TYPE");
-	if (options.seat)
-		setenv("XDG_SEAT", options.seat, 1);
-	else
-		unsetenv("XDG_SEAT");
-	if (options.vtnr)
-		setenv("XDG_VTNR", options.vtnr, 1);
-	else
-		unsetenv("XDG_VTNR");
-	if (options.desktop)
-		setenv("XDG_SESSION_DESKTOP", options.desktop, 1);
-	else
-		unsetenv("XDG_SESSION_DESKTOP");
-
 	DPRINTF("starting PAM\n");
 	result = pam_start(options.service, options.user, &conv, &pamh);
 	if (result != PAM_SUCCESS) {
 		EPRINTF("pam_start: %s\n", pam_strerror(pamh, result));
 		exit(EXIT_FAILURE);
 	}
+	DPRINTF("adjusting environment variables\n");
+	unsetenv("XDG_SESSION_ID");
+	pam_putenv(pamh, "XDG_SESSION_ID");
+
+	if (options.display) {
+		DPRINTF("setting DISPLAY=%s\n", options.display);
+		setenv("DISPLAY", options.display, 1);
+		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+	}
+	if (options.authfile) {
+		DPRINTF("setting XAUTHORITY=%s\n", options.authfile);
+		setenv("XAUTHORITY", options.authfile, 1);
+		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+	}
+	if (options.class) {
+		DPRINTF("setting XDG_SESSION_CLASS=%s\n", options.class);
+		setenv("XDG_SESSION_CLASS", options.class, 1);
+		pam_misc_setenv(pamh, "XDG_SESSION_CLASS", options.class, 1);
+	} else {
+		DPRINTF("unsetting XDG_SESSION_CLASS\n");
+		unsetenv("XDG_SESSION_CLASS");
+		pam_putenv(pamh, "XDG_SESSION_CLASS");
+	}
+	if (options.type) {
+		DPRINTF("setting XDG_SESSION_TYPE=%s\n", options.type);
+		setenv("XDG_SESSION_TYPE", options.type, 1);
+		pam_misc_setenv(pamh, "XDG_SESSION_TYPE", options.type, 1);
+	} else {
+		DPRINTF("unsetting XDG_SESSION_TYPE\n");
+		unsetenv("XDG_SESSION_TYPE");
+		pam_putenv(pamh, "XDG_SESSION_TYPE");
+	}
+	if (options.seat) {
+		DPRINTF("setting XDG_SEAT=%s\n", options.seat);
+		setenv("XDG_SEAT", options.seat, 1);
+		pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
+	} else {
+		DPRINTF("unsetting XDG_SEAT\n");
+		unsetenv("XDG_SEAT");
+		pam_putenv(pamh, "XDG_SEAT");
+	}
+	if (options.vtnr) {
+		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
+		setenv("XDG_VTNR", options.vtnr, 1);
+		pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
+	} else {
+		DPRINTF("unsetting XDG_VTNR\n");
+		unsetenv("XDG_VTNR");
+		pam_putenv(pamh, "XDG_VTNR");
+	}
+	if (options.desktop) {
+		DPRINTF("setting XDG_SESSION_DESKTOP=%s\n", options.desktop);
+		setenv("XDG_SESSION_DESKTOP", options.desktop, 1);
+		pam_misc_setenv(pamh, "XDG_SESSION_DESKTOP", options.desktop, 1);
+	} else {
+		unsetenv("XDG_SESSION_DESKTOP");
+		pam_putenv(pamh, "XDG_SESSION_DESKTOP");
+	}
+
 	DPRINTF("setting PAM items\n");
 	if (options.user)
 		pam_set_item(pamh, PAM_RUSER, options.user);
@@ -327,6 +365,12 @@ run_login(int argc, char **argv)
 		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
 	if (options.authfile)
 		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+	if (options.maildir)
+		pam_misc_setenv(pamh, "MAIL", options.maildir, 1);
+	if (options.homedir) {
+		pam_misc_setenv(pamh, "HOME", options.homedir, 1);
+		pam_misc_setenv(pamh, "PWD", options.homedir, 1);
+	}
 	if (options.vtnr)
 		pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 1);
 
@@ -396,7 +440,7 @@ run_login(int argc, char **argv)
 	caught_signal = 0;
 
 	for (;;) {
-		DPRINTF("waiting or child\n");
+		DPRINTF("waiting for child\n");
 		if (waitpid(pid, &status, WUNTRACED | WCONTINUED) == -1) {
 			if (errno != EINTR) {
 				EPRINTF("waitpid: %s\n", strerror(errno));
@@ -461,8 +505,8 @@ copying(int argc, char *argv[])
 --------------------------------------------------------------------------------\n\
 %1$s\n\
 --------------------------------------------------------------------------------\n\
-Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>\n\
-Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
+Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>\n\
 Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
 \n\
 All Rights Reserved.\n\
@@ -505,8 +549,8 @@ version(int argc, char *argv[])
 %1$s (OpenSS7 %2$s) %3$s\n\
 Written by Brian Bidulock.\n\
 \n\
-Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016  Monavacon Limited.\n\
-Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
+Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017  Monavacon Limited.\n\
+Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009  OpenSS7 Corporation.\n\
 Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
@@ -525,11 +569,28 @@ usage(int argc, char *argv[])
 		return;
 	(void) fprintf(stderr, "\
 Usage:\n\
-    %1$s [options] {-e|--} COMMAND ARG ...\n\
+    %1$s [options] {-e|--} [COMMAND ARG ...]\n\
     %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 ", argv[0]);
+}
+
+const char *
+show_cmd(int argc, char **argv)
+{
+	static char cmd[PATH_MAX+1] = { 0, };
+	char **arg;
+	int len;
+
+	cmd[0] = '\0';
+	for (arg = argv; arg && *arg; arg++) {
+		strcat(cmd, *arg);
+		strcat(cmd, " ");
+	}
+	if ((len = strlen(cmd)))
+		cmd[len-1] = '\0';
+	return cmd;
 }
 
 static void
@@ -540,12 +601,12 @@ help(int argc, char *argv[])
 	/* *INDENT-OFF* */
 	(void) fprintf(stdout, "\
 Usage:\n\
-    %1$s [options] {-e|--} COMMAND ARG ...\n\
+    %1$s [options] {-e|--} [COMMAND ARG ...]\n\
     %1$s [options] {-h|--help}\n\
     %1$s {-V|--version}\n\
     %1$s {-C|--copying}\n\
 Arguments:\n\
-    COMMAND ARG ...\n\
+    COMMAND ARG ...            (%18$s)\n\
         command and args to exec within session\n\
 Command options:\n\
     -h, --help, -?, --?\n\
@@ -573,6 +634,12 @@ General options:\n\
         the XDG_SESSION_TYPE, TYPE\n\
     -A, --authfile FILE        (%13$s)\n\
         the X authority file\n\
+    -l,  --shell SHELL         (%15$s)\n\
+        the user shell\n\
+    -m, --maildir MAILDIR      (%16$s)\n\
+        the user mail directory\n\
+    -M, --homedir HOMEDIR      (%17$s)\n\
+        the user home directory\n\
     -E, --desktop DESKTOP      (%14$s)\n\
         target XDG desktop environment\n\
     -n, --dry-run              (%8$s)\n\
@@ -598,6 +665,10 @@ General options:\n\
 		, options.user
 		, options.authfile
 		, options.desktop
+		, options.shell
+		, options.maildir
+		, options.homedir
+		, show_cmd(options.cmd_argc, options.cmd_argv)
 	);
 	/* *INDENT-ON* */
 }
@@ -623,8 +694,23 @@ set_defaults(void)
 	options.debug = 0;
 	options.output = 1;
 	me = getuid();
-	if ((pw = getpwuid(me)))
+	if ((pw = getpwuid(me))) {
+		int len;
+
 		options.user = strdup(pw->pw_name);
+		options.shell = pw->pw_shell ? strdup(pw->pw_shell) : NULL;
+		if (options.shell[0] == '\0') {
+			free(options.shell);
+			setusershell();
+			options.shell = strdup(getusershell());
+			endusershell();
+		}
+		len = strlen("/var/mail/") + strlen(pw->pw_name);
+		options.maildir = calloc(len + 1, sizeof(*options.maildir));
+		strcpy(options.maildir, "/var/mail/");
+		strcat(options.maildir, pw->pw_name);
+		options.homedir = strdup(pw->pw_dir);
+	}
 	if (gethostname(buf, HOST_NAME_MAX) == -1)
 		EPRINTF("gethostname: %s\n", strerror(errno));
 	else
@@ -712,6 +798,7 @@ main(int argc, char *argv[])
 {
 	Command command = CommandDefault;
 	struct passwd *pw;
+	char *args[5] = { NULL, };
 
 	setlocale(LC_ALL, "");
 
@@ -727,6 +814,9 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"authfile",	required_argument,  NULL,   'A'},
+			{"shell",	required_argument,  NULL,   'l'},
+			{"maildir",	required_argument,  NULL,   'm'},
+			{"homedir",	required_argument,  NULL,   'M'},
 			{"desktop",	required_argument,  NULL,   'E'},
 //			{"user",	required_argument,  NULL,   'u'},
 			{"seat",	required_argument,  NULL,   's'},
@@ -748,10 +838,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "A:E:u:s:S:T:y:c:t:enD::v::hVCH?", long_options,
+		c = getopt_long_only(argc, argv, "A:l:m:M:E:u:s:S:T:y:c:t:enD::v::hVCH?", long_options,
 				     &option_index);
 #else				/* _GNU_SOURCE */
-		c = getopt(argc, argv, "A:E:u:s:S:T:y:c:t:enDvhVC?");
+		c = getopt(argc, argv, "A:l:m:M:E:u:s:S:T:y:c:t:enDvhVC?");
 #endif				/* _GNU_SOURCE */
 		if (c == -1 || c == 'e') {	/* -e, --exec COMMAND ARG ... */
 			if (options.debug)
@@ -765,6 +855,18 @@ main(int argc, char *argv[])
 		case 'A':	/* -A, --authfile FILE */
 			free(options.authfile);
 			options.authfile = strdup(optarg);
+			break;
+		case 'l':	/* -l, --shell SHELL */
+			free(options.shell);
+			options.shell = strdup(optarg);
+			break;
+		case 'm':	/* -m, --maildir MAILDIR */
+			free(options.maildir);
+			options.maildir = strdup(optarg);
+			break;
+		case 'M':	/* -M, --homedir HOMEDIR */
+			free(options.homedir);
+			options.homedir = strdup(optarg);
 			break;
 		case 'E':	/* -E, --desktop DESKTOP */
 			free(options.desktop);
@@ -875,19 +977,44 @@ main(int argc, char *argv[])
 	}
 	DPRINTF("%s: option index = %d\n", argv[0], optind);
 	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	options.cmd_argc = argc - optind;
-	options.cmd_argv = argv + optind;
+	if (optind >= argc) {
+		char *init = calloc(PATH_MAX + 1, sizeof(*init));
+
+		strcpy(init, options.homedir);
+		strcat(init, "/.xinitrc");
+		if (access(init, R_OK) == 0) {
+			args[0] = "/bin/sh";
+			args[1] = "-ls";
+			args[2] = "-C";
+			args[3] = init;
+			args[4] = NULL;
+			options.cmd_argc = 4;
+			options.cmd_argv = args;
+		} else {
+			strcpy(init, "/etc/X11/xinit/xinitrc");
+			if (access(init, R_OK) == 0) {
+				args[0] = "/bin/sh";
+				args[1] = "-l";
+				args[2] = init;
+				args[3] = NULL;
+				options.cmd_argc = 3;
+				options.cmd_argv = args;
+			} else {
+				fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
+				goto bad_nonopt;
+			}
+		}
+	} else {
+		options.cmd_argc = argc - optind;
+		options.cmd_argv = argv + optind;
+	}
 	get_defaults();
 	switch (command) {
 	default:
 	case CommandDefault:
 	case CommandLogin:
-		if (optind >= argc) {
-			fprintf(stderr, "%s: missing non-option argument\n", argv[0]);
-			goto bad_nonopt;
-		}
 		DPRINTF("%s: running login\n", argv[0]);
-		run_login(argc - optind, argv + optind);
+		run_login(options.cmd_argc, options.cmd_argv);
 		break;
 	case CommandHelp:
 		DPRINTF("%s: printing help message\n", argv[0]);

@@ -23,12 +23,30 @@ auto-start applications as specified by the I<XDG Desktop Specification>.
 
 See the L</USAGE> section for usage examples.
 
+=head2 BEHAVIOUR
+
+When B<xde-session> starts, it becomes a session leader, establishes the
+necessary directories and environment variables in accordance with
+options processing.  It then executes any L<lxsession(1)> compatible
+initialization functions are part of the session and performs setup
+functions associated with the specified desktop session and starts the
+window manager.  After the window manager appears, it pauses for a
+configurable interval for the window manager to stabilize and then
+begins launching autostart entries.  After launching autostart entries
+it watches for child exit and restarts any necessary processes.
+When the window manager exits, it asks what the user would like to do
+(logout, restart, etc.).  If it receives a HUP signal, it tears down the
+session.
+
+A characteristic of this approach is that processes started by
+B<xde-session> are immediate children of B<xde-session>.
+
 =head1 COMMANDS
 
 Command options that control the major behaviour of B<xde-session> are as
 follows:
 
-=over 4
+=over
 
 =item B<--help>, B<help>
 
@@ -77,9 +95,42 @@ environment variables.
 
 =head1 OPTIONS
 
-=over 4
+The program uses L<getopt_long_only(3)> to parse options, so abbreviated
+or single-dash long options are recognized when not ambiguous.  The
+program accepts the following options:
 
-=item B<--display>, B<-d> I<DISPLAY>
+=head2 COMMAND OPTIONS
+
+The following command options are mutually exclusive: the first option
+in this group sets the mode of the program.  When no command option is
+specified, the program assumes normal operation.  In normal operation,
+session selection and startup begins.
+
+=over
+
+=item B<--help>, B<-h>
+
+Print usage information to standard error containing current option
+settings and exit.
+
+=item B<--version>, B<-V>
+
+Print the program version to standard output and exit.
+
+=item B<--copying>, B<-C>
+
+Print copying permissions to standard output and exit.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+The following general options can be used with most of the command
+options listed above:
+
+=over
+
+=item B<--display> I<DISPLAY>
 
 Specifies the display to use.  This is not normally necessary as the
 display is obtained from the B<DISPLAY> environment variable when this
@@ -87,9 +138,9 @@ option is not specified.
 
 =item B<--desktop>, B<-e> I<DESKTOP>
 
-Specify the desktop environment (DE) to use, I<DESKTOP>, e.g.
-C<FLUXBOX>, C<BLACKBOX>, C<ICEWM>, C<LXDE>.  The default value when not
-specified is C<FLUXBOX>.  The desktop environment must be specified when
+Specify the desktop environment (DE) to use, I<DESKTOP>, e.g.  C<ADWM>,
+C<BLACKBOX>, C<ICEWM>, C<FLUXBOX>.  The default value when not specified
+is C<XDE>.  The desktop environment must be specified when
 B<--autostart> is specified.
 
 In L<lxsession(1)> compatibility mode, this is equivalent to the B<-e>
@@ -120,6 +171,31 @@ from the L<lxsession(1)> F<desktop.conf> file in the F<SESSION>
 subdirectory under F<$XDG_CONFIG_HOME/lxsession>, where F<SESSION> is
 specified with the B<-s> option.
 
+=item B<--wmname> I<WNAME>
+
+Specifies the name of the window manager executable.
+
+When setting up the session, unless the B<--setup> option is specified,
+this name is used to look in config directories for an executable file
+named
+F<$XDG_CONFIG_HOME:$XDG_CONFIG_DIRS/$WMNAME/setup.sh>.  If one exists
+and is executable, it is run as the setup script.
+
+When starting the window manager, unless the B<--startwm> option is
+specified, this name is used to look in config directories for an
+executable file named
+F<$XDG_CONFIG_HOME:$XDG_CONFIG_DIRS/$WMNAME/start.sh>.  If one exists
+and is executable, it is run instead of the window manager.  If the
+start shell script does not exist or is not executable, $WMNAME, is
+simply executed with no arguments.  If you wish to pass arguments to the
+program, use the B<--startwm> option.
+
+If the B<--wmname> option is specified and no B<--desktop> or
+B<-ssession> option is provided, the desktop and session default to the
+I<WMNAME> folded to all uppercase.  When no B<--wmname> option is
+specified, it defaults to the desktop or session folded to all
+lowercase.
+
 =item B<--file>, B<-f> I<FILE>
 
 Execute the commands contained in the file, I<FILE>, after executing the
@@ -136,7 +212,7 @@ F<autostart> file in the F<SESSION> subdirectory under
 F<$XDG_CONFIG_HOME/lxsession>, where F<SESSION> is specified with the
 B<-s> option.
 
-=item B<--setup>, I<COMMAND>
+=item B<--setup> I<COMMAND>
 
 Execute the command string, I<COMMAND>, to setup the window manager
 before it is invoked.  This option defaults to executing the shell setup
@@ -147,6 +223,8 @@ the other, before the window manager or any other task is started.  The
 session will die if any of these commands exit with a non-zero exit status
 or terminate on a signal.
 
+This option can be repeated and the commands will be executed in order.
+
 =item B<--exec>, B<-x> I<COMMAND>
 
 Execute the command string, I<COMMAND>, to start applications after the
@@ -156,6 +234,8 @@ commands the order specified.  It is possible to prefix the I<COMMAND>
 string with a single C<@> that will indicate that the task should be
 restarted when it exits abnormally.
 
+This option can be repeated and the commands will be executed in order.
+
 =item B<--autostart>, B<--noautostart>, B<-a>
 
 Specifies whether (or not) to autostart XDG applications in accordance
@@ -164,10 +244,10 @@ sense of the B<-a> flag is for compatibility with L<lxsession(1)>.
 
 =item B<--wait>, B<-w>, B<--nowait>
 
-Specifies whether (or not) to wait for a EWMH/NetWM compatible window
-manager to take control of the root window of the default screen of the
-display before starting further applications.  This option takes effect
-regardless of whether the B<--startwm> option has been specified.
+Specifies whether (or not) to wait for a window manager to take control
+of the root window of the default screen of the display before starting
+further applications.  This option takes effect regardless of whether
+the B<--startwm> option has been specified.
 
 =item B<--pause>, B<-p> [I<PAUSE>]
 
@@ -186,18 +266,167 @@ PNG format).  The splash window will display the icons of the XDG
 compliant F<*.desktop> files as they are started.  The I<IMAGE> is for
 optional branding.
 
+=item B<--vendor>, B<-v> I<VENDOR>
+
+Specifies the vendor name for branding and custom configuration.  The
+default when unspecified is C<unexicon>.  Use a null string to defeat
+branding.  Specifying or defaulting I<VENDOR> causes F</etc/xdg/$VENDOR>
+to be prefixed to C<$XDG_CONFIG_DIRS> and F</usr/share/$VENDOR> to be
+prefixed to C<$XDG_DATA_DIRS>.
+
+Also, if the C<$XDG_MENU_PREFIX> environment variable is not set up, it
+will be set to I<VENDOR> with a C<-> appended.
+
+(Note that, regardless of vendor setting, F</etc/xdg/xde> is always
+prefixed to C<$XDG_CONFIG_DIRS> and F</usr/share/xde> is always prefixed
+to C<$XDG_DATA_DIRS>.)
+
+=item B<--mkdirs>, B<--nomkdirs>
+
+Make (or not) missing user directories.  User directories that will be
+created are F<$HOME/Desktop>, F<$HOME/Downloads>, F<$HOME/Templates>,
+F<$HOME/Public>, F<$HOME/Documents>, F<$HOME/Documents/Music>,
+F<$HOME/Documents/Pictures>, F<$HOME/Documents/Videos>.
+
+(Note that, on Arch Linux, user directories are normally updated by the
+F<xdg-user-dirs-update> L<systemd(8)> service.)
+
+=item B<--toolwait>, B<W> [I<GUARD>][:I<DELAY>]
+
+When auto-starting tasks for which startup notification completion can be
+determined, serialize the startup in a similar fashion to
+L<xtoolwait(1)>, where the next autostart task is not launched until the
+previous task is complete, or the guard timeout period, I<GUARD>, in
+milliseconds, expires.  Where startup notification completion cannot be
+determined (such as for command executed from the B<--file> or B<--exec>
+options), the program will wait I<DELAY> milliseconds before starting the
+next task.  I<GUARD> defaults to 200 milliseconds.  I<DELAY> defaults to
+zero (0) milliseconds.  The default is to perform tool wait.  To disable
+tool wait, specify C<--toolwait 0:0>.
+
+=item B<--charset>, B<-c> I<CHARSET>
+
+Specify the character set with which to output the XDG desktop file
+derived information.  Defaults to the character set (LC_CHARSET) in use
+by the current locale.  Because the program is intended on running after
+login, use of this option is seldom necessary.
+
+=item B<--language>, B<-L> I<LANGUAGE>
+
+Specify the output language for XDG desktop file derived information.
+Defaults to the language (LC_MESSAGES) of the current locale.  Because
+the program is intended on running after login, use of this option is
+seldom necessary.
+
+=item B<--banner>, B<-b> I<BANNER>
+
+Specifies a custom splash login logo.  When unspecified, the program
+will use a branded logo that depends on environment variables.  This
+option is compatible with other tools and is an alternate way of
+specifying the I<IMAGE> argument to the B<--splash> option.
+
+=item B<--message>, B<-g> I<MESSAGE>
+
+=item B<--side>, B<-s> {B<left>|B<top>|B<right>|B<bottom>}
+
+Specifies the side of the window on which the logo will be placed.  This
+option is recognized for compatibility with L<lxsession-logout(1)>.
+B<xde-logout> always places the logo on the left and this option is
+ignored.
+
+=item B<--icons>, B<-i> I<THEME>
+
+Specifies the icon theme to use.  Otherwise, the user's default GTK+
+icon theme will be used (i.e. from F<$HOME/.gtkrc-2.0>; but note the
+B<--xde-theme> option as well.
+
+=item B<--theme>, B<-t> I<THEME>
+
+Specifes the GTK+ theme to use.  Otherwise, the user's default GTK+
+theme will be used (i.e. from F<$HOME/.gtkrc-2.0>); but note the
+B<--xde-theme> option as well.
+
+=item B<--xde-theme>, B<-X>
+
+Use the current XDE desktop theme for the splash window instead of the
+specified or default GTK+ theme.
+
+=item B<--foreground>, B<-F>
+
+The default is for the program to daemonize itself and continue
+monitoring auto-started tasks in the background.  This option causes the
+program to run in the foreground and prints debugging information to
+standard error.  Implies a debug level of 2.
+
+=item B<--foreground>, B<-F>
+
+The default is for the program to daemonize itself and continue
+monitoring auto-started tasks in the background.  This option causes the
+program to run in the foreground and prints debugging information to
+standard error.  Implies a debug level of 2.
+
+=item B<--dry-run>, B<-n>
+
+Do not do anything (do not execute or write out files), just print to
+standard error what would be done.  Implies a debug level of 2.  Useful
+with B<--foreground>.
+
+=item B<--debug>, B<-d> [I<LEVEL>]
+
+Increment or set the debug level to I<LEVEL>.  The default debugging
+level is 0 (meaning no debugging).  When set, the program will print
+debugging information to standard error during operation.
+
+(Note that because this option takes an optional argument, C<--> must be
+specified before any non-option argument.)
+
+=item B<--verbose>, B<-v> [I<LEVEL>]
+
+Increment or set the output verbosity level to I<LEVEL>.  THe default
+output verbosity level is 1.
+
+(Note that because this option takes an optional argument, C<--> must be
+specified before any non-option argument.)
+
 =back
 
 =head1 USAGE
 
-B<xde-session> is intended on being launched by the L<xdg_session(8)>
-shell script.  See the L<xdg_session(8)> manual page for details on its
-operation.
-
 When used directly, B<xde-session> will launch the following window
-managers (and likely others as a variation on a theme) successfully:
+managers and include a setup program that will establish the correct
+environment for the window manager, and provide default window manager
+configuration files located in the
+F<$XDG_RUNTIME_DIR/$XDG_CURRENT_DESKTOP> subdirectory:
 
-=over 4
+=over
+
+=item B<ADWM>
+
+Where you would invoke L<adwm(1)>, invoke one of the following:
+
+ XDG_CURRENT_DESKTOP=ADWM xde-session
+ xde-session -desktop ADWM
+
+=item B<BLACKBOX>
+
+Where you would invoke L<blackbox(1)>, invoke one of the following:
+
+ XDG_CURRENT_DESKTOP=BLACKBOX xde-session
+ xde-session -desktop BLACKBOX
+
+=item B<CTWM>
+
+Where you would invoke L<ctwm(1)>, invoke one of the following:
+
+ XDG_CURRENT_DESKTOP=CTWM xde-session
+ xde-session -desktop CTWM
+
+=item B<ETWM>
+
+Where you would invoke L<etwm(1)>, invoke one of the following:
+
+ XDG_CURRENT_DESKTOP=ETWM xde-session
+ xde-session -desktop ETWM
 
 =item B<FLUXBOX>
 
@@ -211,13 +440,9 @@ to auto-start the programs that you would otherwise start from your
 F<startup> script.  Therefore the above command bypasses the normal
 F<startup> script, which is likely unaware of B<xde-session>.
 
-=item B<BLACKBOX>
+=item B<FVWM>
 
-Where you would invoke L<blackbox(1)>, invoke the following:
-
- xde-session --desktop BLACKBOX --startwm "blackbox -rc ~/.blackboxrc"
-
-where F<~/.blackboxrc> is just the default.
+L<fvwm(1)> does not yet have a setup program.
 
 =item B<ICEWM>
 
@@ -227,12 +452,47 @@ auto-starting of applications (it forks L<icewwmtray(1)> and
 L<icewmbg(1)> as well as L<icewm(1)> itself), but does not support XDG
 Autostart, XSETTINGS and Startup Notification.
 
+To use L<icewm-session(1)> execute:
+
+ xde-session -desktop ICEWM -startwm icewm-session
+
+To use L<icewm(1)> on its own, execute:
+
+ xde-session -desktop ICEWM -startwm icewm
+
+=item B<JWM>
+
+=item B<LXDE>
+
+L<lxde(1)> does not yet have a setup program.
+
+=item B<METACITY>
+
+L<metacity(1)> does not yet have a setup program.
+
 =item B<OPENBOX>
 
 L<openbox(1)> is typically started either using L<openbox-session(1)>
 directly, or under LXDE using L<lxdestart(1)>.
 
+=item B<PEKWM>
+
+=item B<TWM>
+
+=item B<UWM>
+
+L<uwm(1)> does not yet have a setup program; however, configuration
+files exist for this window manager.
+
+ xde-session -desktop UWM -startwm uwm
+
+=item B<VTWM>
+
+=item B<WAIMEA>
+
 =item B<WMAKER>
+
+L<wmaker(1)> does not yet have a setup program.
 
 L<wmaker(1)> has its own non-XDG compliant session management.  This
 means that if B<xde-session> is used to launch WindowMaker, it should be
@@ -242,6 +502,85 @@ option, such as:
  xde-session --noautostart --desktop WMAKER --startwm wmaker
 
 =back
+
+When used directly, B<xde-session> will launch the following window
+managers (and likely others as a variation on a theme) successfully:
+
+=over
+
+=item B<AFTERSTEP>
+
+ xde-session -desktop AFTERSTEP -startwm afterstep
+
+=item B<MUTTER>
+
+ xde-session -desktop MUTTER -startwm afterstep
+
+L<mutter(1)> has no menus or hot keys so you should start an L<xterm(1)>
+in the background before executing B<xde-session>.
+
+=item B<VELOX>
+
+ xde-session -desktop VELOX -startwm velox
+
+L<velox(1)> has no menus or hot keys so you should start an L<xterm(1)>
+in the background before executing B<xde-session>.
+
+=item B<I3>
+
+ xde-session -desktop I3 -startwm i3
+
+L<i3(1)> has no menus or hot keys so you should start an L<xterm(1)>
+in the background before executing B<xde-session>.
+
+=item B<MWM>
+
+=item B<AWESOME>
+
+=item B<FVWM>
+
+=item B<METACITY>
+
+=item B<CWM>
+
+=item B<BSPWM>
+
+=item B<2BWM>
+
+=item B<ECHINUS>
+
+=item B<AEWM>
+
+=item B<YEAHWM>
+
+=item B<HERBSTLUFTWM>
+
+=item B<MATWM2>
+
+=item B<FLWM>
+
+=item B<WMX>
+
+=item B<VTWM>
+
+=item B<LARSWM>
+
+=back
+
+B<xde-session> provides F<.desktop> files for, and can successfully
+launch, the following X sessions:
+L<2bwm(1)>, L<adwm(1)>, L<aewm(1)>, L<afterstep(1)>, L<arch-meego(1)>,
+L<awesome(1)>, L<blackbox(1)>, L<bspwm(1)>, L<compiz(1)>, L<ctwm(1)>,
+L<cwm(1)>, L<dwm(1)>, L<echinus(1)>, L<ede(1)>, L<enlightenment(1)>,
+L<evilwm(1)>, L<failsafewm(1)>, L<fluxbox(1)>, L<flwm(1)>, L<fvwm(1)>,
+L<gnome(1)>, L<goomwwm(1)>, L<herbstluftwm(1)>, L<i3(1)>, L<icewm(1)>,
+L<jwm(1)>, L<larswm(1)>, L<logram(1)>, L<lxde(1)>, L<mantis(1)>,
+L<mate(1)>, L<matwm2(1)>, L<mcwm(1)>, L<metacity(1)>, L<mutter(1)>,
+L<mvwm(1)>, L<mwm(1)>, L<openbox(1)>, L<pawm(1)>, L<pekwm(1)>,
+L<rio(1)>, L<spectrwm(1)>, L<trinity(1)>, L<twm(1)>, L<twobm(1)>,
+L<uwm(1)>, L<velox(1)>, L<vtwm(1)>, L<waimea(1)>, L<wind(1)>,
+L<wmaker(1)>, L<wm2(1)>, L<wmii(1)>, L<wmx(1)>, L<xdwm(1)>, L<xfce(1)>,
+L<xmonad(1)>, L<YEAHWM(1)>.
 
 =head1 EXAMPLES
 
@@ -264,32 +603,27 @@ directory will be used.
 
 =head1 ENVIRONMENT
 
-The following environment variables are examined or set by B<xde-session>:
+The following environment variables (in alphabetical order) are examined
+or set by B<xde-session>:
 
-=over 4
+=over
 
-=item B<HOME>
+=item B<DESKTOP_SESSION>
 
-Will be used to determine the user's home directory for the purpose of
-calculating the default value for C<XDG_CONFIG_HOME> when required.
-
-=item B<XDG_CONFIG_HOME>
-
-When set, C<$XDG_CONFIG_HOME/autostart> will be examined for
-C<*.desktop> files.  The variable defaults to C<$HOME/.config>.
-
-=item B<XDG_CONFIG_DIRS>
-
-When set, C<DIRECTORY/autostart> will be examined for each C<DIRECTORY>
-in the colon separated list of directories contained in
-C<XDG_CONFIG_DIRS>.  The variable defaults to C</etc/xdg>.
-
-=item B<XDG_CURRENT_DESKTOP>
-
-When the C<--desktop> option is not specified, C<XDG_CURRENT_DESKTOP> is
-examined to determine the current desktop.  C<XDG_CURRENT DESKTOP> is
-set to the value that resulted from option and environment variable
+To emulate L<lxsession(1)>, the C<DESKTOP_SESSION> environment variable
+is set to the value that resulted from option and environment variable
 processing for children of the session.
+
+=item B<DESKTOP_STARTUP_ID>
+
+B<xde-session> is a GTK program and has been configured to automatically
+perform startup notification completion on startup (not that anyone is
+listening at this point).
+
+=item B<DISPLAY>
+
+Used to determine X Display.  When the B<--display> option is specified,
+this environment variable will be set to the specified value.
 
 =item B<FBXDG_DE>
 
@@ -299,17 +633,25 @@ C<XDG_CURRENT_DESKTOP> environment variable is not set.  C<FBXDG_DE> is
 set to the value that resulted from option and environment variable
 processing for children of the session.
 
-=item B<DESKTOP_SESSION>
+=item B<HOME>
 
-To emulate L<lxsession(1)>, the C<DESKTOP_SESSION> environment variable
-is set to the value that resulted from potion and enviroment variable
-processing for children of the session.
+Will be used to determine the user's home directory for the purpose of
+calculating the default value for C<XDG_CONFIG_HOME> and
+C<XDG_DATA_HOME> when required.  When unspecified, the home directory
+for the current local user is determined from the password file.
+Failing that, the current directory is used.
 
-=item B<XDG_SESSION_PID>
+=item B<HOSTNAME>
 
-C<XDG_SESSION_PID> is set to the PID of B<xde-session>, the process group
-leader responsible for launching all tasks under the X session manager.
-The X session can be terminated by killing this process.
+Will be used to determine the local host name.  When unspecified, the
+name will be determined from the L<gethostname(3)> call.  This value is
+used to determine the host for which to save session files.  Also, will
+be used to determine the default directory for some configuration and
+commands.
+
+=item B<LANG>
+
+Used to set the current locale.
 
 =item B<_LXSESSION_PID>
 
@@ -317,6 +659,80 @@ To emulate L<lxsession(1)>, the C<_LXSESSION_PID> environment variable
 is set to the PID of B<xde-session>, the process group leader responsible
 for launching all tasks under the X session manager.  The X session can
 be terminated by killing this process.
+
+=item B<USER>
+
+Will be used to determine the name of the local user.  When unspecified,
+the user name for the current pid will be determined from the password
+file and this environment variable will be set.  Failing that it will
+not be set.
+
+=item B<XDG_CONFIG_DIRS>
+
+When set, the subdirectories F<$DIRECTORY/autostart> will be examined for
+each F<$DIRECTORY> in the colon separated list of directories contained
+in C<XDG_CONFIG_DIRS>.  The variable defaults to F</etc/xdg>.  When the
+B<--vendor> option is specified, or defaults, F</etc/xdg/$VENDOR> is
+prefixed to the normal default.  F</etc/xdg/xde> will always be prefixed
+to the result.
+
+=item B<XDG_CONFIG_HOME>
+
+Specifies the user XDG configuration directory.  When unspecified,
+defaults to F<$HOME/.config> in accordance with XDG specifications.
+B<xde-session> uses this directory to determine the list of default
+configuration directories to search.  The subdirectory
+F<$XDG_CONFIG_HOME/autostart> will be examined for F<*.desktop> files.
+
+=item B<XDG_CURRENT_DESKTOP>
+
+When the C<--desktop> option is not specified, C<XDG_CURRENT_DESKTOP> is
+examined to determine the current desktop.  C<XDG_CURRENT DESKTOP> is
+set to the value that resulted from option and environment variable
+processing for children of the session.
+
+=item B<XDG_DATA_DIRS>
+
+The variable defaults to F</usr/local/share:/usr/share>.  When the
+B<--vendor> option is specified, or defaults, F</usr/share/$VENDOR> is
+prefixed to the normal default.  F</usr/share/xde> will always be
+prefixed to the result.
+
+=item B<XDG_DATA_HOME>
+
+Specifies the user XDG data directory.  When unspecified, defaults to
+F<$HOME/.local/share> in accordance with XDG specifications.
+B<xde-session> uses this directory to determine the list of default data
+directories to search.  The subdirectory F<$XDG_DATA_HOME/xsessions>
+will be examined for F<*.desktop> files.
+
+=item B<XDG_MENU_PREFIX>
+
+This variable has no default.  If the variable is not set when the
+B<xde-session> program is executed, it sets it to the specified or
+default B<--vendor> option followed by a dash (C<->).  This variable
+determines which files are used to construct XDG menus.
+
+When the B<--wmname> option is specified and the B<--desktop> option is
+not specified, C<$XDG_CURRENT_DESKTOP> is set to the window manager name
+folded to all uppercase.
+
+=item B<XDG_SESSION_PID>
+
+C<XDG_SESSION_PID> is set to the PID of B<xde-session>, the process group
+leader responsible for launching all tasks under the X session manager.
+The X session can be terminated by killing this process.  See also
+L</SIGNALS>, below.
+
+=item B<XDG_VENDOR_ID>
+
+This environment variable is examined to determine the default for the
+B<--vendor> option.  When the B<--vendor> option is specified or
+defaults, this environment variable is set to the value that results
+from option and environment variable processing.  This is a convenience
+for when the B<--vendor> option cannot be derived from the
+C<XDG_MENU_PREFIX> environment variable.  It is not an XDG standard
+environment variable.
 
 =back
 

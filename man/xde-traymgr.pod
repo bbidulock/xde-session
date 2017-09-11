@@ -153,6 +153,12 @@ concerning the window manager (or window manager name).  This
 information is used to locate the configuration file associated
 with the restored or default session for a given profile.
 
+When no default session is provided, I<autostart> directory F<.desktop>
+entries that have C<TrayIcon> in the B<Categories> key field will be
+considered for startup.  Note that when B<xde-traymgr> is running,
+I<autostart> procedures should skip entries with the C<TrayIcon>
+category.
+
 =head1 ENVIRONMENT
 
 The following environment variables are examined by B<xde-traymgr>:

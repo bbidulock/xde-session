@@ -1,7 +1,7 @@
 /*****************************************************************************
 
- Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>
- Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>
+ Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>
+ Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>
  Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>
 
  All Rights Reserved.
@@ -1310,8 +1310,8 @@ copying(int argc, char *argv[])
 --------------------------------------------------------------------------------\n\
 %1$s\n\
 --------------------------------------------------------------------------------\n\
-Copyright (c) 2008-2016  Monavacon Limited <http://www.monavacon.com/>\n\
-Copyright (c) 2001-2008  OpenSS7 Corporation <http://www.openss7.com/>\n\
+Copyright (c) 2010-2017  Monavacon Limited <http://www.monavacon.com/>\n\
+Copyright (c) 2002-2009  OpenSS7 Corporation <http://www.openss7.com/>\n\
 Copyright (c) 1997-2001  Brian F. G. Bidulock <bidulock@openss7.org>\n\
 \n\
 All Rights Reserved.\n\
@@ -1355,8 +1355,8 @@ version(int argc, char *argv[])
 %1$s (OpenSS7 %2$s) %3$s\n\
 Written by Brian Bidulock.\n\
 \n\
-Copyright (c) 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016  Monavacon Limited.\n\
-Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008  OpenSS7 Corporation.\n\
+Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017  Monavacon Limited.\n\
+Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009  OpenSS7 Corporation.\n\
 Copyright (c) 1997, 1998, 1999, 2000, 2001  Brian F. G. Bidulock.\n\
 This is free software; see the source for copying conditions.  There is NO\n\
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\
@@ -1559,9 +1559,9 @@ main(int argc, char *argv[])
 			options.display = strdup(optarg);
 			break;
 		case 's':	/* -s, --screen SCREEN */
-			options.screen = strtoul(optarg, &endptr, 0);
-			if (endptr && *endptr)
+			if ((val = strtoul(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			options.screen = val;
 			break;
 
 		case 'w':	/* -w, --wait */
@@ -1614,9 +1614,7 @@ main(int argc, char *argv[])
 			options.audio = True;
 			break;
 		case 't':	/* -t, --delay MILLISECONDS */
-			if ((val = strtoul(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && *endptr)
+			if ((val = strtoul(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			options.delay = val;
 			break;
@@ -1628,9 +1626,7 @@ main(int argc, char *argv[])
 				options.debug++;
 				break;
 			}
-			if ((val = strtol(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && *endptr)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			options.debug = val;
 			break;
@@ -1641,9 +1637,7 @@ main(int argc, char *argv[])
 				options.output++;
 				break;
 			}
-			if ((val = strtol(optarg, &endptr, 0)) < 0)
-				goto bad_option;
-			if (endptr && *endptr)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
 			options.output = val;
 			break;

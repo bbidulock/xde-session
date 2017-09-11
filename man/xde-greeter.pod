@@ -2,57 +2,38 @@
 
 =head1 NAME
 
-xde-xlock - screen locker for X Desktop Environment (XDE)
+xde-greeter - log into an X session
 
 =head1 SYNOPSIS
 
-B<xde-xlock> [I<OPTIONS>]
+B</usr/lib/X11/xdm/xde-greeter> [I<OPTIONS>]
 
 =head1 DESCRIPTION
 
-B<xde-xlock> is a screen locker replacement that provides tight
-integration with the L<systemd(8)> multi-session environment.  It acts as
-a screen-saver locker, detects L<logind(8)> C<Lock> signals, and
-performs locking on VT switches.
+B<xde-greeter> is an L<xdm(8)> greeter replacement that provides a much
+nicer appearing login screen for L<xdm(8)>.  It is designed to let
+L<xdm(8)> do the heavy lifting of coordinating the majority of the XDMCP
+protocol while providing a more aesthetic appearance.
 
 =head1 OPTIONS
 
 No options are necessary.  When launched by L<xdm(8)>, it will provide
-the appropriate arguments.  B<xde-xlock> can be launched directly on
+the appropriate arguments.  B<xde-greeter> can be launched directly on
 the command line of an x-terminal to test its appearance and operation.
-In this mode, arguments are still required but no options.  Absence of
-the B<-xdmAddress>, B<-clientAddress> and B<-connectionType> options
-indicates to B<xde-xlock> that it was not launched by L<xdm(8)> or an
-L<xdm(8)> work-alike as a chooser.  See L</USAGE> for more information.
+In this mode no options are required.  See L</USAGE> for more
+information.
 
 =head2 COMMAND OPTIONS
 
 Command options affect the major operating mode of the program.  Only
 one command option may be specified (with the exception that B<--help>
 can be specified in conjunction with any other command option).
-When no command option is specified, B<--locker> is assumed.
+When no command option is specified, B<xde-greeter> executes the program.
+The following command options, when specified, print information instead
+of running the program.
 The command options recognized by the program are as follows:
 
 =over 4
-
-=item [B<-L>, B<--locker>]
-
-Run continuously as a screen locker instance.  This process will monitor
-for screen locking requests, screen saver activation and virtual
-terminal changes and will invoke screen locking as appropriate.
-
-=item B<-r>, B<--replace>
-
-Replace a currently running screen locker instance with the current
-process.
-
-=item B<-l>, B<--lock>
-
-Ask a running instance to lock the screen now.
-
-=item B<-q>, B<--quit>
-
-Ask a running instance to exit.
 
 =item B<-H>, B<-help>
 
@@ -73,14 +54,14 @@ permissions and exits.
 
 =head2 GENERAL OPTIONS
 
-B<xde-xlock> provides a set of general options that are not supported
+B<xde-greeter> provides a set of general options that are not supported
 by the L<xdm(8)> greeter or chooser.  To supply these options requires
 an intermediate script that specifies them and echoes the L<xdm(8)>
-chooser options.  So that an intermediate script is not necessary,
-L<xdm(8)> provides an F<Xresources> files containing X resources that
-are used instead of command line options to tailor the look and feel of
-the greeter and chooser.  As a result, the use of the following command
-line options are not necessary and are really only used for testing.
+greeter options.  So that an intermediate script is not necessary,
+L<xdm(8)> provides an F<Xresources> file containing X resources that are
+used instead of command line options to tailor the look and feel of the
+greeter.  As a result, the use of the following command line options are
+not necessary and are really only used for testing.
 
 The following are the more general options:
 
@@ -94,12 +75,12 @@ When unspecified, the default welcome text is C<Welcome to %s!>, where C<%s>
 is the fully qualified domain name of the local host.
 
 As with the B<-banner> option, this option can easily be supplied by a
-shell script between L<xdm(8)> and B<xde-xlock> that adds the
+shell script between L<xdm(8)> and B<xde-greeter> that adds the
 options:
 
  #!/bin/sh
- /usr/bin/xde-xlock -prompt "Welcome to X!" \
-         -banner /usr/lib/X11/xdm/banner.png $@
+ /usr/lib/X11/xdm/xde-greeter -prompt "Welcome to X!" \
+	 -banner /usr/lib/X11/xdm/banner.png $@
 
 =item B<-b>, B<--banner> I<BANNER>
 
@@ -109,7 +90,7 @@ invoked by a shell script invoked by L<xdm(8)> that adds the options.
 For example:
 
  #!/bin/sh
- /usr/bin/xde-xlock -banner /usr/lib/X11/xdm/xde/banner.png $@
+ /usr/lib/X11/xdm/xde-greeter -banner /usr/lib/X11/xdm/xde/banner.png $@
 
 The default is obtained by looking for the file
 F<${XDG_MENU_PREFIX}banner.{xpm,png,jpg,svg}> in the F<images>
@@ -131,15 +112,13 @@ invoked by a shell script by L<xdm(8)> that adds the options.  For
 example:
 
  #!/bin/sh
- /usr/bin/xde-xlock -splash /usr/lib/X11/xdm/xde/splash.jpg $@
+ /usr/lib/X11/xdm/xde-greeter -splash /usr/lib/X11/xdm/xde/splash.jpg $@
 
 =item B<-s>, B<--side> {B<left>|B<top>|B<right>|B<bottom>}
 
 Specifies the side on which to display branding (the banner graphic).
 Can be one of I<top>, I<left>, I<bottom> or I<right>.  When unspecified,
 the default is I<left>.
-
-=item B<-n>, B<--noask>
 
 =item B<--charset> I<CHARSET>
 
@@ -167,8 +146,6 @@ Specifies that the GTK+ icon theme and theme name to be used are those
 of the X Desktop Environment (XDE) rather than the system default theme.
 The default is to specify this flag.
 
-=item B<-T>, B<--timeout> I<TIMEOUT>
-
 =item B<--vendor> I<VENDOR>
 
 Specifies the vendor identifier for branding.  The default, when
@@ -192,11 +169,6 @@ an argument to F<~/.xinitrc>.
 
 Specifies the default user name for login.
 
-=item B<-g>, B<--guard> I<SECONDS>
-
-Specifies the number of seconds within which user input will abort
-screen locking.  The default is 5 seconds.
-
 =item B<--nosetbg>
 
 Specifies that the background image should not be set by the program.
@@ -208,11 +180,6 @@ B<-banner> option.
 Specifies that the login panel should be transparent and that the
 widgets should be embedded in the background image.  The default is to
 paint the login panel.
-
-=item B<-y>, B<--tray>
-
-Specifies that a status icon for the locker should be placed in the
-system tray.
 
 =item B<-n>, B<--dry-run>
 
@@ -235,171 +202,86 @@ standard output.
 
 =back
 
+=head1 EXIT STATUS
+
+When run as a I<greeter> program, instead of communicating using a
+socket, the I<greeter> program can provide further instructions to
+L<xdm(8)> based on the exit status of the I<greeter> program.
+Therefore, the program provides the exit status values as follows:
+
+=over 4
+
+=item 0 - B<OBEYSESS_DISPLAY>
+
+Obey the multiple sessions resource.
+
+=item 1 - B<REMANAGE_DISPLAY>
+
+Force re-management of the display.
+
+=item 2 - B<UNMANAGE_DISPLAY>
+
+Force deletion of the display.
+
+=item 3 - B<RESERVER_DISPLAY>
+
+Force server termination.
+
+=item 4 - B<OPENFAILED_DISPLAY>
+
+L<XOpenDisplay(1x)> failed, retry.
+
+=back
+
 =head1 USAGE
-
-The B<--locker> command option (the default), or the B<--replace>
-option, can be used to run the program as a background screen locker.
-In this mode the program installs itself as follows:
-
-=over 4
-
-=item 1.
-
-If possible, takes ownership of the B<_XDE_XLOCK_S>C<%d> manager
-selections for each screen on the display.  If one of these manager
-selections is already owned, the program exits with a diagnostic unless
-B<--replace> was specified as a command option.
-
-=item 2.
-
-Installs itself as a screen saver using the C<MIT-SCREEN-SAVER>
-extension on the X server (if present).
-
-=item 3.
-
-Installs itself as a monitoring program on the controlling terminal for
-virtual terminal switches (when the X server is running on a local
-virtual terminal).
-
-=item 4.
-
-Listens for a C<Lock> signal from the L<systemd(8)> L<logind(8)>
-D-BUS service.
-
-=item 5.
-
-Installs itself in the system tray when the B<--tray> option is
-specified.
-
-=item 6.
-
-Monitors for changes.
-
-=back
-
-When monitoring for changes, the screen locker responds as follows:
-
-=over 4
-
-=item 1.
-
-When it receives a lock request from another instance of the program, it
-locks the screen immediately.
-
-=item 2.
-
-When the screen saver is activated, it waits for a number of seconds
-after the activation and locks the screen.
-
-=item 3.
-
-When a C<Lock> signal is received from L<logind(8)>, over the D-BUS, it
-locks the screen.
-
-When an C<Unlock> signal is received from L<logind(8)>, over the D-BUS,
-it unlocks the screen.
-
-=item 4.
-
-When a virtual terminal change is made to the VT on which the X server
-is running, it locks the screen before permitting the switch.
-
-=back
-
-The B<--quit> option can be used to ask a running instance of the screen
-locker to quit (remove itself and exit).
-
-The B<--lock> option can be used to ask a running instance of the screen
-locker to lock the screen.
-
-=head2 SYSTEM TRAY
-
-When installed in the system tray using the B<--tray> option, the
-program provides system tray access to a lock menu, configuration menu,
-and a X session switcher.  The lock menu provides the ability to lock
-the screen from the system tray by left-clicking the lock icon or
-right-clicking the icon and selecting the lock from the menu.  The X
-session switch provides an X session switcher that can perform VT
-switches on the local host.  This menu is also available from the lock
-screen.  A configuration menu is also available to manage the options
-associated with the program and contained in the user's resource file.
-
-=head2 LOCKING
-
-To permit a flexible locking policy, locking under the following
-conditions can be activated or deactivated:
-
-=over 4
-
-=item B<VT switches>
-
-Switches between virtual terminals (any users).
-
-=item B<VT switches between users>
-
-Switches between virtual terminals where the users of the switched-from
-and switched-to virtual terminals are different.
-
-=item B<Screen saver timeouts>
-
-When the screen saver is activated.
-
-=item B<systemd lock signals>
-
-When a C<Lock> signal is received from L<systemd(1)>.
-
-=item B<Inactivity timeout>
-
-When user input has been inactive for a given period of time.
-
-=back
-
 
 =head1 X RESOURCES
 
-Most values that affect the look and feel of B<xde-xlock> may also be
+Most values that affect the look and feel of B<xde-greeter> may also be
 specified as X resources in the B<RESOURCE_MANAGER> database associated
 with the X server.  All of these resources can have the specific
-resource name and class (C<xde-xlock>, B<XDE-XLock>).  When no resource
+resource name and class (C<xde-greeter>, C<XDE-Greeter>).  When no resource
 is found with the specific name and class, L<xdm(8)> resources with name
-and class (C<xlogin.login>, C<Xlogin.login>) will also be examined for
+and class (C<xlogin.Login>, C<Xlogin.Login>) will also be examined for
 specified resources.
 
 Note that L<xdm(8)> usually adds the resources contained in the
 F</etc/X11/xdm/Xresources> file that is loaded by L<xdm(8)> on startup
 to the resource database on the X server.  Chooser resource defaults
 (see also L<xdm(8)> and L<xde-xchooser(1)>) are contained in the
-F</usr/share/X11/app-defaults/Chooser> file.  Likewise, B<xde-xlock>
+F</usr/share/X11/app-defaults/Chooser> file.  Likewise, B<xde-greeter>
 specific resource defaults are contained in the
-F</usr/share/X11/app-defaults/XDE-XLock> file, in accordance with the
+F</usr/share/X11/app-defaults/XDE-Greeter> file, in accordance with the
 convention of naming applications default files after their resource
-class.  See also L</FILES>.
+class. See also L</FILES>.
 
-B<xde-xlock> observes the following X11 Resource Manager resources when
+=head2 XDE GREETER RESOURCES
+
+B<xde-greeter> observes the following X11 Resource Manager resources when
 loaded by L<xdm(8)> prior to execution:
 
 =over 4
 
-=item B<xde-xlock>.B<x>: I<DOUBLE>
+=item B<xde-greeter>.B<x>: I<DOUBLE>
 
 Specifies the X position on the monitor as a floating point number
 between C<0.0> and C<1.0>, where C<0.0> represents the left edge of the
 monitor and C<1.0>, the right edge.  The dialog will be positioned on this
 point depending on its gravity (currently static or centered).
 
-=item B<xde-xlock>.B<y>: I<DOUBLE>
+=item B<xde-greeter>.B<y>: I<DOUBLE>
 
 Specifies the Y position on the monitor as a floating point number
 between C<0.0> and C<1.0>, where C<0.0> represents the top edge of the
 monitor and C<1.0>, the bottom edge.  The dialog will be positioned on
 this point depending on its gravity (currently static or centered).
 
-=item B<xde-xlock>.B<debug>: I<INTEGER>
+=item B<xde-greeter>.B<debug>: I<INTEGER>
 
 Provides the debugging level in the same fashion as the B<-debug>
 command line option.
 
-=item B<xde-xlock>.B<banner>: I<PATH>
+=item B<xde-greeter>.B<banner>: I<PATH>
 
 Provides the banner to use for the branding logo in the same fashion as
 the B<-banner> command line option.  Specifies the I<PATH> to the banner
@@ -408,82 +290,82 @@ the program searches for an image file name
 F<${XDG_VENDOR_ID--}banner.{xpm,png,jpg,svg}> in the subdirectory
 F<images> in XDG data directories.
 
-=item B<xde-xlock>.B<splash>: I<PATH>
+=item B<xde-greeter>.B<splash>: I<PATH>
 
 Provides the background to use for the root window in the same fashion
 as the B<-splash> command line option.
 
-=item B<xde-xlock>.B<welcome>: I<MARKUP>
+=item B<xde-greeter>.B<welcome>: I<MARKUP>
 
 Provides the welcome message to use for the root window in the same
 fashion as the B<--prompt> command line option.  Specifies the F<pango>
 markup text, I<MARKUP>, that is to be display in the title area of the
 host menu.
 
-=item B<xde-xlock>.B<charset>: I<CHARSET>
+=item B<xde-greeter>.B<charset>: I<CHARSET>
 
 Provides the character set in the same fashion as the B<--charset>
 command line option.
 
-=item B<xde-xlock>.B<language>: I<LANG>
+=item B<xde-greeter>.B<language>: I<LANG>
 
 Provides the language in the same fashion as the B<--language> command
 line option.
 
-=item B<xde-xlock>.B<theme.icon>: I<NAME>
+=item B<xde-greeter>.B<theme.icon>: I<NAME>
 
 Provides the XDG icon theme name.
 Specifies the value of the B<--icons> option.
 
-=item B<xde-xlock>.B<theme.name>: I<NAME>
+=item B<xde-greeter>.B<theme.name>: I<NAME>
 
 Provides the XDG theme name (for GTK+).
 Specifies the value of the B<--theme> option.
 
-=item B<xde-xlock>.B<theme.cursor>: I<NAME>
+=item B<xde-greeter>.B<theme.cursor>: I<NAME>
 
 Provides the XDG cursor theme name.
 
-=item B<xde-xlock>.B<theme.xde>: {B<true>|B<false>}
+=item B<xde-greeter>.B<theme.xde>: {B<true>|B<false>}
 
 When I<true>, specifies that the system XDE desktop theme should be used
 instead of the system GTK+ theme.
 Specifies the value of the B<--xde-theme> option.
 
-=item B<xde-xlock>.B<side>: {B<left>|B<right>|B<top>|B<bottom>}
+=item B<xde-greeter>.B<side>: {B<left>|B<right>|B<top>|B<bottom>}
 
 Specifies the side on which the logo (banner) should appear.  Currently
 only I<left> is supported.
 Specifies the value of the B<-side> option.
 
-=item B<xde-xlock>.B<user.default>: I<USERNAME>
+=item B<xde-greeter>.B<user.default>: I<USERNAME>
 
 Specifies a default use name to use for the login (when a login is
 provided).  Note that a default user name will not be presented when it
 can be detected that the display is remote from the current host.
 Specifies the value of the B<--username> option.
 
-=item B<xde-xlock>.B<autologin>: {B<true>|B<false>}
+=item B<xde-greeter>.B<autologin>: {B<true>|B<false>}
 
 When I<true>, specifies that the user defined in
-B<xde-xlock>.B<user.default> should be automatically logged into a
+B<xde-greeter>.B<user.default> should be automatically logged into a
 session without requiring a password.  It may be necessary for such a
 user to be a member of the C<autologin> group.  Auto login will be
 suppressed when it can be detected that the display is remote from the
 current host.
 
-=item B<xde-xlock>.B<vendor>: I<VENDOR-ID>
+=item B<xde-greeter>.B<vendor>: I<VENDOR-ID>
 
 Provides a vendor identifier for use in lookup up banners and
 backgrounds automatically, as with the B<--vendor> command line option.
 
-=item B<xde-xlock>.B<prefix>: I<MENU-PREFIX>
+=item B<xde-greeter>.B<prefix>: I<MENU-PREFIX>
 
 Provides a vendor identifier as a menu prefix (C<XDG_MENU_PREFIX>)
 instead of as a plain identifier.  The prefix normally has a dash (C<->)
 appended.
 
-=item B<xde-xlock>.B<login>.B<permit>: {B<true>|B<false>}
+=item B<xde-greeter>.B<login>.B<permit>: {B<true>|B<false>}
 
 The XDMCP Chooser has control of an X Display in the same manner as the
 XDMCP Greeter program and may provide an immediate login option in
@@ -491,7 +373,7 @@ addition to a list of XDMCP hosts.  When I<true>, this option specifies
 that this login is to be presented as an option to users of the XDMCP
 Chooser.
 
-=item B<xde-xlock>.B<login>.B<remote>: {B<true>|B<false>}
+=item B<xde-greeter>.B<login>.B<remote>: {B<true>|B<false>}
 
 The XDMCP Chooser may provide a direct login option to the user of the
 chooser.  When I<true>, this option specifies that remote displays will
@@ -499,25 +381,25 @@ be given the same opportunity to log in directly.  When I<false>,
 displays that are detected as remote from the host will no be offered a
 direct login.
 
-=item B<xde-xlock>.B<xsession.chooser>: {B<true>|B<false>}
+=item B<xde-greeter>.B<xsession.chooser>: {B<true>|B<false>}
 
 Specifies the value of the B<--xsessions> option.
 
-=item B<xde-xlock>.B<xsession.execute>: {B<true>|B<false>}
+=item B<xde-greeter>.B<xsession.execute>: {B<true>|B<false>}
 
-=item B<xde-xlock>.B<xsession.default>: I<APPID>
+=item B<xde-greeter>.B<xsession.default>: I<APPID>
 
 Specifies the value of the B<--default> option.
 
-=item B<xde-xlock>.B<setbg>: {B<true>|B<false>}
+=item B<xde-greeter>.B<setbg>: {B<true>|B<false>}
 
 Specifies the value of the B<--nosetbg> option.
 
-=item B<xde-xlock>.B<transparent>: {B<true>|B<false>}
+=item B<xde-greeter>.B<transparent>: {B<true>|B<false>}
 
 Specifies the value of the B<-transparent> option.
 
-=item B<xde-xlock>.B<face>: I<XFTFONT>
+=item B<xde-greeter>.B<face>: I<XFTFONT>
 
 The typeface used to display the input typed by the user.
 The default is C<Sans:size=12:bold>.
@@ -525,56 +407,56 @@ If this resource is not specified, the
 B<xlogin>.B<Login.face>
 resource is used instead.
 
-=item B<xde-xlock>.B<greetFace>
+=item B<xde-greeter>.B<greetFace>
 
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
 B<xlogin>.B<Login.greetFace>
 resource is used instead.
 
-=item B<xde-xlock>.B<greetColor>
+=item B<xde-greeter>.B<greetColor>
 
 The default is C<grey20>.
 If this resource is not specified, the
 B<xlogin>.B<Login.greetColor>
 resource is used instead.
 
-=item B<xde-xlock>.B<promptFace>
+=item B<xde-greeter>.B<promptFace>
 
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
 B<xlogin>.B<Login.promptFace>
 resource is used instead.
 
-=item B<xde-xlock>.B<promptColor>
+=item B<xde-greeter>.B<promptColor>
 
 The default is C<grey20>.
 If this resource is not specified, the
 B<xlogin>.B<Login.promptColor>
 resource is used instead.
 
-=item B<xde-xlock>.B<inputFace>
+=item B<xde-greeter>.B<inputFace>
 
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
 B<xlogin>.B<Login.inputFace>
 resource is used instead.
 
-=item B<xde-xlock>.B<inputColor>
+=item B<xde-greeter>.B<inputColor>
 
 The default is C<grey20>.
 If this resource is not specified, the
 B<xlogin>.B<Login.inputColor>
 resource is used instead.
 
-=item B<xde-xlock>.B<failFace>
+=item B<xde-greeter>.B<failFace>
 
 The default is C<Sans:size=12:bold>.
 If this resource is not specified, the
 B<xlogin>.B<Login.failFace>
 resource is used instead.
 
-=item B<xde-xlock>.B<failColor>
+=item B<xde-greeter>.B<failColor>
 
 The default is C<red>.
 If this resource is not specified, the
@@ -583,9 +465,12 @@ resource is used instead.
 
 =back
 
-When specific B<xde-xlock> resources are not specified,
-B<xde-xlock> falls back the using the resources specified for its
+=head2 XDM GREETER RESOURCES
+
+When specific B<xde-greeter> resources are not specified,
+B<xde-greeter> falls back the using the resources specified for its
 default greeter by L<xdm(8)>, as follows:
+
 
 =over 4
 
@@ -631,7 +516,7 @@ The default is C<Sans:size=12:bold>.
 
 The font used to display the input typed by the user when not built with
 Xft support.
-This resource not used by B<xde-xlock>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.greeting>: I<STRING>
 
@@ -656,7 +541,7 @@ The default is C<Sans:size=12:bold>.
 =item B<xlogin>.B<Login.greetFont>: I<XFONT>
 
 The font used to display the greeting when not built with Xft support.
-This resource not used by B<xde-xlock>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.greetColor>: I<XCOLOR>
 
@@ -687,7 +572,7 @@ The default is C<Sans:size=12:bold>.
 =item B<xlogin>.B<Login.promptFont>: I<XFONT>
 
 The font used to display prompts when not built with Xft support.
-This resource not used by B<xde-xlock>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.promptColor>: I<XCOLOR>
 
@@ -702,7 +587,7 @@ The default is C<Sans:size=12:bold>.
 =item B<xlogin>.B<Login.inputFont>: I<XFONT>
 
 The font used to display user input when not built with Xft support.
-This resource not used by B<xde-xlock>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.inputColor>: I<XCOLOR>
 
@@ -732,7 +617,7 @@ The default is C<Sans:size=12:bold>.
 
 The font used to display the failure message when not built with Xft
 support.
-This resource not used by B<xde-xlock>.
+This resource is not used by B<xde-greeter>.
 
 =item B<xlogin>.B<Login.failColor>: I<XCOLOR>
 
@@ -849,7 +734,225 @@ The default is C<3>.
 
 =item B<xlogin>.B<Login.translations>: I<STRING>
 
-This resource not used by B<xde-xlock>.
+This resource is not used by B<xde-greeter>.
+
+=back
+
+=head2 XDM DISPLAY MANAGER RESOURCES
+
+There are also a number of L<xdm(8)> configuration resources that are
+specific to L<xdm(8)> and documented in the L<xdm(8)> manual page.
+B<xde-greeter> uses some of these resources to determine a number of
+behaviors as follows:
+
+=over 4
+
+=item B<DisplayManager>.B<authDir>: I<STRING>
+
+This names a directory under which L<xdm(8)> stores authorization files
+while initializing the session.  The default value is
+F</usr/lib/X11/xdm> (but should be F</var/lib/xdm>).
+
+=item B<DisplayManager>.B<exportList>: I<STRING LIST>
+
+A list of additional environment variables, separated by white space, to
+pass on to the F<Xsetup>, F<Xstartup>, F<Xsession>, and F<Xreset>
+programs.  This is in addition to the following environment variables:
+C<DISPLAY>, C<HOME>, C<LOGNAME>, C<USER>, C<PATH>, C<SHELL>,
+C<XAUTHORITY>, C<WINDOWPATH>, which are always exported to these
+programs.
+
+
+
+=back
+
+=head2 XDM SERVER RESOURCES
+
+L<xdm(8)> server resources can be specified on a per-display basis.
+None of the resources is significant to the greeter or chooser.
+
+=head2 XDM SESSION RESOURCES
+
+L<xdm(8)> session resources can also be specified on a per-display
+basis, if required.  Some of the resources are significant to the
+greeter program as follows:
+
+=over 4
+
+=item B<DisplayManager>.I<DISPLAY>.B<authFile>: I<STRING>
+
+This file is used to communicate the authorization data from L<xdm(8)>
+to the server, using the B<-auth> server command line option.  It should
+be kept in a directory which is not world-writable as it could easily be
+removed, disabling the authorization mechanism in the server.  If not
+specified, a name is generated from B<DisplayManager>.B<authDir> and the
+name of the display.
+
+=item B<DisplayManager>.I<DISPLAY>.B<setup>: I<STRING>
+
+Specifies a program that is run (as root) before offering the login
+window.  This may be used to change the appearance of the screen around
+the login window or to put up other windows (e.g., you may want to run
+F<xconsole> here).  By default, no program is run.  The conventional
+name for a file used here is F<Xsetup>.  See L<xdm(8)/Setup Program>.
+
+Note that when the B<DisplayManager>.I<DISPLAY>.B<greeter> program is
+specified, this program is not run, even when defined: its purpose is to
+provide additional tools for the built-in greeter library.
+
+=item B<DisplayManager>.I<DISPLAY>.B<startup>: I<STRING>
+
+This specifies a program that is run (as root) after the authentication
+process succeeds.  By default, no program is run.  The conventional name
+for a file user here is F<Xstartup>.  This program typically cleans up
+after F<Xsetup> and registers the user session in F<utmp>/F<wtmp> with
+the L<sessreg(1)> program.  Historically, it also released the console
+(controlling terminal) to the user by changing ownership of the console
+device, using a program named F<GiveConsole>.  See L<xdm(8)/Startup
+Program>.
+
+When the B<xlogin> program is responsible for completing the login and
+launching the session, it may execute this file before creating the user
+session.  However, the B<greeter> program is only responsible for
+authenticating the user and, as a result, L<xdm(8)> will launch this
+program before establishing the user session.
+So, the B<greeter> can ignore this resource.
+
+=item B<DisplayManager>.I<DISPLAY>.B<session>: I<STRING>
+
+This specifies the session to be executed (not running as root).  By
+default, F</usr/bin/xterm> is run.  The conventional name is
+F<Xsession>.  This program is executed with a single argument,
+C<failsafe>, when fail-safe operation is specified as part of the login
+process.  The typical program recognizes this argument and simply
+launches an L<xterm(1)> when it is detected.  Otherwise, this program
+typically executes the user's F<$HOME/.xsession> file if it exists, and
+otherwise the user's F<$HOME/.xinitrc> file if it exists; otherwise, it
+typically executes the system F</etc/X11/xinit/xinitrc> file.  See
+L<xdm(8)/Session Program>.
+
+When the B<xlogin> program is responsible for completing the login and
+launching the session, it may execute this file after creating the user
+session.  However, the B<greeter> program is only responsible for
+authenticating the user and, as a result, L<xdm(8)> will launch this
+program after establishing the user session.
+So, the B<greeter> can ignore this resource.
+
+=item B<DisplayManager>.I<DISPLAY>.B<reset>: I<STRING>
+
+This specifies a program that is run (as root) after the session
+terminates.  By default, no program is run.  The conventional name is
+F<Xreset>.  This program typically removes the user session from
+F<utmp>/F<wtmp> with the L<sessreg(1)> program.  Historically, it also
+removed the console (controlling terminal) from the user by restoring
+ownership of the console device, using a program called F<TakeConsole>.
+See L<xdm(8)>/Reset Program>.
+
+When the B<xlogin> program is responsible for completing the login and
+launching the session, it may execute this file after the user session
+ends.  However, the B<greeter> program is only responsible for
+authenticating the user and, as a result, L<xdm(8)> will launch this
+program after the user session ends.
+So, the B<greeter> can ignore this resource.
+
+=item B<DisplayManager>.I<DISPLAY>.B<userPath>: I<STRING>
+
+L<xdm(8)> sets the C<PATH> environment variable for the session to this
+value.  It should be a colon separated list of directories: see L<sh(1)>
+for a full description.  The default value is
+F</bin:/usr/bin:/usr/sbin:/usr/ucb>.
+
+Note that a more modern entry is F</sbin:/bin:/usr/sbin:/usr/bin>.  An
+B<xlogin> program should observe this resource by setting the C<PATH>
+environment variable to its value when opening the user session and when
+running the F<Xsession> script.  The B<greeter> can ignore this resource.
+
+=item B<DisplayManager>.I<DISPLAY>.B<systemPath>: I<STRING>
+
+L<xdm(8)> sets the C<PATH> environment variable for the startup and
+reset scripts (run as root) to the value of this resource.  The default
+for this resource is F</etc:/bin:/usr/bin:/usr/sbin:/usr/ucb>.  Note the
+absence of C<.> from this entry.  This is a good practice to follow for
+root; it avoids many common Trojan Horse system penetration schemes.
+
+Note that a more modern entry is F</sbin:/bin:/usr/sbin:/usr/bin>.  An
+B<xlogin> program should observe this resource by setting the C<PATH>
+environment variable to its value when running the
+F<Xstartup> and F<Xreset> scripts.
+The B<greeter> can ignore this resource.
+
+=item B<DisplayManager>.I<DISPLAY>.B<systemShell>: I<STRING>
+
+L<xdm(8)> sets the C<SHELL> environment variable for the startup and
+reset scripts to the value of this resource.  It is F</bin/sh> by
+default.
+
+An B<xlogin> program should observe this resource by using its setting
+when launching the F<Xstartup> and F<Xreset> programs.
+The B<greeter> can ignore this resource.
+
+=item B<DisplayManager>.I<DISPLAY>.B<failsafeClient>: I<STRING>
+
+If the default session fails to execute, L<xdm(8)> will fall back to
+this program.  This program is executed with no arguments, but executes
+using the same environment variables as the session would have had (see
+L<xdm(8)/Session Program>).  By default, F</usr/bin/xterm> is used.
+Note that L<twm(1)> or L<failsafewm(1)> are good choices over the
+traditional L<xterm(1)>.
+
+An B<xlogin> program can choose and execute it's own fail-safe
+mechanism.  The B<greeter> can ignore this resource as it will be the
+responsibility of L<xdm(8)> to invoke fail-safe operation.
+
+=item B<DisplayManager>.I<DISPLAY>.B<grabServer>: I<BOOLEAN>
+
+=item B<DisplayManager>.I<DISPLAY>.B<grabTimeout>: I<INTEGER>
+
+To improve security, L<xdm(8)> grabs the server and keyboard while
+reading the login name and password.  The B<grabServer> resource
+specifies if the server should be held for the duration of the
+name/password reading.  When C<false>, the server is ungrabbed after the
+keyboard grab succeeds, otherwise the server is grabbed until just
+before the session begins.  The default is C<false>.  The B<grabTimeout>
+resource specifies the maximum time L<xdm(8)> will wait for the grab to
+succeed.  The grab may fail if some other client has the server grabbed,
+or possibly if the network latencies are very high.  This resources has
+a default value of 3 seconds; you should be cautious when raising it, as
+a user can be spoofed by a look-alike window on the display.  If the
+grab fails, L<xdm(8)> kills and restarts the server (if possible) and
+the session.
+
+Both an B<xlogin> and B<greeter> program should observe these resources
+by providing the same behaviour.
+
+=item B<DisplayManager>.I<DISPLAY>.B<authorize>: I<BOOLEAN>
+
+=item B<DisplayManager>.I<DISPLAY>.B<authName>: I<STRINGLIST>
+
+B<authorize> is a boolean resource that controls whether L<xdm(8)>
+generates and uses authorization for local server connections.  If
+authorization is used, B<authName> is a list of authorization mechanisms
+to use, separated by white space.  XDMCP connections dynamically specify
+which authorization mechanisms are supported, so B<authName> is ignored
+in this case.  When B<authorize> is set for a display and authorization
+is not available, the user is informed by having a different message
+display in the login widget.  By default, B<authorize> is C<true>,
+B<authName> is C<MIT-MAGIC-COOKIE-1> or if C<XDM-AUTHORIZATION-1> is
+available, C<XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1>.
+
+This resource can be ignored by B<xlogin> and B<greeter> programs, as
+there are other mechanisms to determine whether authorization has be
+applied to the display server.
+
+=item B<DisplayManager>.I<DISPLAY>.B<authComplain>: I<BOOLEAN>
+
+If set to C<false>, disables the use of the B<unsecureGreeting> in the
+login window.  See L<xdm(8)/Authentication Widget>.  The default is
+C<true>.
+
+An B<xlogin> and B<greeter> program should observe this resource by
+complaining about lack of authorization when detected and presenting the
+B<xlogin>.B<Login>.B<unsecureGreeting> string when lacking.
 
 =back
 
@@ -864,13 +967,22 @@ configuration file F</usr/lib/X11/xdm/xdm-config>:
 
 This option, described in L<xdm(8)>, is used to tell L<xdm(8)> which
 program to run as a chooser.  This should be set to
-F</usr/bin/xde-xlock>.  See L<xdm(8)/CHOOSER>.
+F</usr/lib/X11/xdm/xde-xchooser>.  See L<xde-xchooser(1)> and
+L<xdm(8)/CHOOSER>.
 
 =item B<DisplayManager>.I<DISPLAY>.B<greeter>
 
 This option, described in L<xdm(8)>, is used to tell L<xdm(8)> which
 program to run as a greeter.  This should be set to
-F</usr/bin/xde-xlock>.  See L<xdm(8)/AUTHENTICATION WIDGET>.
+F</usr/lib/X11/xdm/xde-greeter>.  See L<xde-greeter(1)> and
+L<xdm(8)/AUTHENTICATION WIDGET>.
+
+=item B<DisplayManager>.I<DISPLAY>.B<xlogin>
+
+This option, described in L<xdm(8)>, is used to tell L<xdm(8)> which
+program to run for login.  This should be set to
+F</usr/lib/X11/xdm/xde-xlogin>.  See L<xde-xlogin(1)> and
+L<xdm(8)/AUTHENTICATION WIDGET>.
 
 =back
 
@@ -880,19 +992,19 @@ The following files are used by the program:
 
 =over 4
 
-=item F</usr/bin/xde-xlock>
+=item F</usr/lib/X11/xdm/xde-greeter>
 
-The default location of the B<xde-xlock> executable.
-As this is useful for normal users, it resides in the
+The default location of the B<xde-greeter> executable.
+As this is not useful for normal users, it does not reside in the
 F</usr/bin> directory.
 
-=item F<$XDG_DATA_DIRS/images/${XDG_MENU_PREFIX}banner.png>
+=item F</usr/lib/X11/xdm/banner.png>
 
 The default location of the banner graphic.
 
 =item F<$XDG_DATA_DIRS/images/${XDG_MENU_PREFIX}splash.png>
 
-The default location of the background splash to display on the lock
+The default location of the background splash to display on the
 screen when no other background is available.
 
 =item F</etc/X11/xdm/Xresources>
@@ -906,13 +1018,13 @@ greeter or chooser programs.
 
 Because the greeter and chooser is associated with XDE, a complete set of
 L<xdm(8)> configuration files, including the X resources file containing
-B<XDE-XLock> resources are contained in the F</etc/X11/xdm/xde>
+B<XDE-Greeter> resources are contained in the F</etc/X11/xdm/xde>
 subdirectory.  Application defaults are not loaded from anywhere else
 for security.
 
-=item F</usr/share/X11/app-defaults/XDE-XLock>
+=item F</usr/share/X11/app-defaults/XDE-Greeter>
 
-X resource defaults for B<xde-xlock>.
+X resource defaults for B<xde-greeter>.
 The program will load the default resources from this file and then
 merge the resources specified in the B<RESOURCE_MANAGER> property on the
 X display.  L<xdm(8)> will normally use L<xrdb(1)> to merge the
@@ -957,14 +1069,44 @@ F</usr/local/share:/usr/share> in accordance with XDG specifications.
 
 =head1 BUGS
 
-B<xde-xlock> had no known bugs at the time of release.  Please report
+B<xde-greeter> had no known bugs at the time of release.  Please report
 bugs for current versions to the source code repository at
 L<https://github.com/bbidulock/xde-session/issues>.
 
 =head1 HISTORY
 
-I wrote B<xde-xlock> because there were no stand-alone screen lockers
-that worked well with the L<systemd(8)> multi-session environment.
+I used to use a patched version of L<slim(1)> for this purpose; however,
+L<slim(1)> has deficiencies with regard to establishing XDE sessions and
+has no provision for being used as a B<chooser>.
+
+Historically, L<xdm(8)> has provided a I<greeter> and a I<chooser>.  The
+I<greeter> was a graphical login program that was integrated with
+L<xdm(8)>.  The I<chooser> was a graphical XDCMP chooser program that,
+while part of the XDM distribution, was a separate program launched by
+L<xdm(8)>.  Both of these programs used the archaic Athena widget set.
+
+The XDE fork of L<xdm(8)> provides for a separate I<greeter> program to
+be used for graphical login.  Originally, XDE used a modified version of
+the L<slim(1)> login manager to act also as a I<greeter> for L<xdm(8)>.
+A I<chooser> program was written using perl-gtk2 to act as a much nicer
+looking and more fully IPv6 functional I<chooser> program.
+
+This then begged the question as to why there needed to be a separate
+I<greeter> and I<chooser>.  Why should not the user be able to login to
+the local machine, or choose to login to a remote machine instead.
+After all, choosing the local machine from the I<greeter> functions
+similar to a I<greeter>.
+
+L<slim(1)> took the approach that logging into an X server is not that
+terribly different to unlocking a screen saver.  Why should not the same
+appearance code be used for both.  This led XDE to use a related
+program, L<xde-xlock(1)> to provide the screen locking mechanism for XDE
+in the same fashion as the display manager programs.
+
+Traditional display managers for Linux, such as L<gdm(1)>, have also
+taken the approach that choosing an X session (well, at least an
+C<XSession> F<.desktop> file to run) could also be performed during
+login, instead of selecting one after the login process.
 
 =head1 SEE ALSO
 

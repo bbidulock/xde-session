@@ -1,14 +1,16 @@
 
-xde_man_files = \
+xde_man1_files = \
 	xde-autostart.man \
 	xde-chooser.man \
 	xde-dockapps.man \
 	xde-dockmgr.man \
+	xde-greeter.man \
 	xde-login.man \
 	xde-logout.man \
 	xde-session.man \
 	xde-sm.man \
 	xde-smproxy.man \
+	xde-startwm.man \
 	xde-trayicons.man \
 	xde-traymgr.man \
 	xde-wait.man \
@@ -16,21 +18,24 @@ xde_man_files = \
 	xde-xchooser.man \
 	xde-xlock.man \
 	xde-xlogin.man \
-	xde-xsession.man
+	xde-xsession.man \
+	xde-xswitch.man
 
-nodist_man1_MANS = $(xde_man_files)
-CLEANFILES = $(xde_man_files)
+nodist_man1_MANS = $(xde_man1_files)
+CLEANFILES = $(xde_man1_files)
 
 EXTRA_DIST = \
 	xde-autostart.pod \
 	xde-chooser.pod \
 	xde-dockapps.pod \
 	xde-dockmgr.pod \
+	xde-greeter.pod \
 	xde-login.pod \
 	xde-logout.pod \
 	xde-session.pod \
 	xde-sm.pod \
 	xde-smproxy.pod \
+	xde-startwm.pod \
 	xde-trayicons.pod \
 	xde-traymgr.pod \
 	xde-wait.pod \
@@ -38,12 +43,11 @@ EXTRA_DIST = \
 	xde-xchooser.pod \
 	xde-xlock.pod \
 	xde-xlogin.pod \
-	xde-xsession.pod
+	xde-xsession.pod \
+	xde-xswitch.pod
 
-SUFFIXES = .man .pod
-
-.pod.man:
-	pod2man --center="User Commands" \
+$(xde_man1_files): %.man: %.pod
+	$(AM_V_GEN)pod2man --center="User Commands" \
 		--date="$(DATE)" \
 		--errors="none" \
 		--fixed="CW" \
@@ -54,4 +58,17 @@ SUFFIXES = .man .pod
 		--release="$(PACKAGE) $(VERSION)" \
 		--section="1" \
 		$< >$@
+
+#$(xde_man5_files): %.man: %.pod
+#	$(AM_V_GEN)pod2man --center="Standards, Environments and Macros" \
+#		--date="$(DATE)" \
+#		--errors="none" \
+#		--fixed="CW" \
+#		--fixedbold="CB" \
+#		--fixeditalic="CI" \
+#		--fixedbolditalic="CX" \
+#		--nourls \
+#		--release="$(PACKAGE) $(VERSION)" \
+#		--section="5" \
+#		$< >$@
 

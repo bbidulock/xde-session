@@ -1,9 +1,13 @@
 [Unit]
 Description=X-Window Display Manager
-After=systemd-user-sessions.service
+Conflicts=getty@tty7.service
+After=systemd-user-sessions.service getty@tty1.service
 
 [Service]
 ExecStart=/usr/bin/xdm -nodaemon -config /etc/X11/xdm/xde/xdm-config
+IgnoreSIGPIPE=no
+RestartSec=1s
+TimeoutStopSec=5s
 Type=notify
 NotifyAccess=all
 

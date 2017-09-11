@@ -111,7 +111,13 @@ options listed above:
 
 =over
 
-=item B<--filename>, B<-f>
+=item B<--display> I<DISPLAY>
+
+Specifies the display to use.  This is not normally necessary as the
+display is obtained from the B<DISPLAY> environment variable when this
+option is not specified.
+
+=item B<--filename>
 
 When a user session is selected, output the full path filename to the
 xsessions desktop file instead of just the appid corresponding to the
@@ -295,19 +301,93 @@ managers.
 
 =head1 ENVIRONMENT
 
+The following environment variables (in alphabetical order) are examined
+or set by B<xde-chooser>:
+
 =over
+
+=item B<DESKTOP_SESSION>
+
+To emulate L<lxsession(1)>, the C<DESKTOP_SESSION> environment variable
+is set to the value that resulted from option and environment variable
+processing for children of the session.
+
+=item B<DESKTOP_STARTUP_ID>
+
+B<xde-chooser> is a GTK program and has been configured to automatically
+perform startup notification completion on startup (not that anyone is
+listening at this point).
+
+=item B<DISPLAY>
+
+Used to determine X Display.  When the B<--display> option is specified,
+this environment variable will be set to the specified value.
+
+=item B<FBXDG_DE>
+
+To emulate L<fbautostart>, the C<FBXDG_DE> environment variable is
+examined when the C<--desktop> option is not specified and the
+C<XDG_CURRENT_DESKTOP> environment variable is not set.  C<FBXDG_DE> is
+set to the value that resulted from option and environment variable
+processing for children of the session.
 
 =item B<HOME>
 
-Specifies the location of the user's home directory.  When unspecified,
-defaults to the current working directory.
+Will be used to determine the user's home directory for the purpose of
+calculating the default value for C<XDG_CONFIG_HOME> and
+C<XDG_DATA_HOME> when required.  When unspecified, the home directory
+for the current local user is determined from the password file.
+Failing that, the current directory is used.
 
-=item B<XDG_DATA_HOME>
+=item B<HOSTNAME>
 
-Specifies the user XDG data directory.  When unspecified, defaults to
-F<$HOME/.local/share> in accordance with XDG specifications.
-B<xde-chooser> uses this directory to determine the list of default data
-directories to search.
+Will be used to determine the local host name.  When unspecified, the
+name will be determined from the L<gethostname(3)> call.  This value is
+used to determine the host for which to save session files.  Also, will
+be used to determine the default directory for some configuration and
+commands.
+
+=item B<LANG>
+
+Used to set the current locale.
+
+=item B<_LXSESSION_PID>
+
+To emulate L<lxsession(1)>, the C<_LXSESSION_PID> environment variable
+is set to the PID of B<xde-session>, the process group leader responsible
+for launching all tasks under the X session manager.  The X session can
+be terminated by killing this process.
+
+=item B<USER>
+
+Will be used to determine the name of the local user.  When unspecified,
+the user name for the current pid will be determined from the password
+file and this environment variable will be set.  Failing that it will
+not be set.
+
+=item B<XDG_CONFIG_DIRS>
+
+Specifies the system XDG configuration directory.  When unspecified,
+defaults to F</etc/xdg> in accordance with XDG specifications.
+The directory F</etc/xdg/xde> will be prefixed to the path unless the
+directory is already a component of the path.
+B<xde-chooser> uses these directories to determine the list of default
+configuration directories to search.
+
+=item B<XDG_CONFIG_HOME>
+
+Specifies the user XDG configuration directory.  When unspecified,
+defaults to F<$HOME/.config> in accordance with XDG specifications.
+B<xde-chooser> uses this directory to determine the list of default
+configuration directories to search.  The subdirectory
+F<$XDG_CONFIG_HOME/autostart> will be examined for F<*.desktop> files.
+
+=item B<XDG_CURRENT_DESKTOP>
+
+When the C<--desktop> option is not specified, C<XDG_CURRENT_DESKTOP> is
+examined to determine the current desktop.  C<XDG_CURRENT DESKTOP> is
+set to the value that resulted from option and environment variable
+processing for children of the session.
 
 =item B<XDG_DATA_DIRS>
 
@@ -318,21 +398,41 @@ directory is already a component of the path.
 B<xde-chooser> uses these directories to determine the list of default
 data directories to search.
 
-=item B<XDG_CONFIG_HOME>
+=item B<XDG_DATA_HOME>
 
-Specifies the user XDG configuration directory.  When unspecified,
-defaults to F<~/.config> in accordance wtih XDG specifications.
-B<xde-chooser> uses this directory to find its configuration files that
-are located under F<$XDG_CONFIG_HOME/xde>.
+Specifies the user XDG data directory.  When unspecified, defaults to
+F<$HOME/.local/share> in accordance with XDG specifications.
+B<xde-chooser> uses this directory to determine the list of default data
+directories to search.  The subdirectory F<$XDG_DATA_HOME/xsessions>
+will be examined for F<*.desktop> files.
 
-=item B<XDG_CONFIG_DIRS>
+=item B<XDG_MENU_PREFIX>
 
-Specifies the system XDG configuration directory.  When unspecified,
-defaults to F</etc/xdg> in accordance with XDG specifications.
-The directory F</etc/xdg/xde> will be prefixed to the path unless the
-directory is already a component of the path.
-B<xde-chooser> uses these directories to determine the list of default
-configuration directories to search.
+This variable has no default.  If the variable is not set when the
+B<xde-session> program is executed, it sets it to the specified or
+default B<--vendor> option followed by a dash (C<->).  This variable
+determines which files are used to construct XDG menus.
+
+When the B<--wmname> option is specified and the B<--desktop> option is
+not specified, C<$XDG_CURRENT_DESKTOP> is set to the window manager name
+folded to all uppercase.
+
+=item B<XDG_SESSION_PID>
+
+C<XDG_SESSION_PID> is set to the PID of B<xde-session>, the process group
+leader responsible for launching all tasks under the X session manager.
+The X session can be terminated by killing this process.  See also
+L</SIGNALS>, below.
+
+=item B<XDG_VENDOR_ID>
+
+This environment variable is examined to determine the default for the
+B<--vendor> option.  When the B<--vendor> option is specified or
+defaults, this environment variable is set to the value that results
+from option and environment variable processing.  This is a convenience
+for when the B<--vendor> option cannot be derived from the
+C<XDG_MENU_PREFIX> environment variable.  It is not an XDG standard
+environment variable.
 
 =back
 
@@ -353,7 +453,7 @@ L<https://github.com/bbidulock/xde-session/issues>.
 
 I wrote B<xde-chooser> to provide a mechanism for selecting available
 window managers in an XDG compliant way for the I<unexicon> desktop.
-With L<gdm(1)> going to GTK3, the I<unexicon> desktop uses L<xdm(1)>,
+With L<gdm(1)> going to GTK3, the I<unexicon> desktop uses L<xdm(8)>,
 L<slim(1)>, L<xde-chooser(1)> and L<xde-session(1)> instead.
 
 B<xde-chooser> was originally written as a gtk-perl program;

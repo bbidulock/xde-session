@@ -28,4 +28,7 @@ xde-session -- TODO file.  2016-06-16
       startup.  Should also do X11 Session Management for the dock and
       dock apps.
 
+- [ ] xde-xlock should read DPMS timeouts and give the user the option
+      to lock the screen at any of the given levels.
+
 # vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:

@@ -186,8 +186,8 @@ static char **saveArgv;
 #undef DO_CHOOSER
 #undef DO_LOGOUT
 #undef DO_AUTOSTART
-#define DO_SESSION 1
-#undef DO_STARTWM
+#undef DO_SESSION
+#define DO_STARTWM 1
 
 #if defined(DO_XCHOOSER)
 #   define RESNAME "xde-xchooser"
@@ -1043,7 +1043,7 @@ typedef struct {
 	Window maker_check;		/* _WINDOWMAKER_NOTICEBOARD or None */
 	Window icccm_check;		/* WM_S%d selection owner or root */
 	Window redir_check;		/* set to root when SubstructureRedirect */
-	Window stray_owner;		/* _NET_SYSTEM_TRAY_S%d owner */
+	Window stray_owner;			/* _NET_SYSTEM_TRAY_S%d owner */
 	Window pager_owner;		/* _NET_DESKTOP_LAYOUT_S%d owner */
 	Window compm_owner;		/* _NET_WM_CM_S%d owner */
 	Window audio_owner;		/* PULSE_SERVER owner or root */

@@ -34,7 +34,8 @@ L<smproxy(1)>.
 
 L<xde-wmproxy(1)>:-
 Provide support for window managers that do not support session
-management directly.
+management directly, but which provide some modicum of NetWM/EWMH or
+WinWM/WMH support.
 
 =item 4.
 
