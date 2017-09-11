@@ -1,5 +1,5 @@
 
-xde_man_files = \
+xde_man1_files = \
 	xde-autostart.man \
 	xde-chooser.man \
 	xde-dockapps.man \
@@ -21,8 +21,8 @@ xde_man_files = \
 	xde-xsession.man \
 	xde-xswitch.man
 
-nodist_man1_MANS = $(xde_man_files)
-CLEANFILES = $(xde_man_files)
+nodist_man1_MANS = $(xde_man1_files)
+CLEANFILES = $(xde_man1_files)
 
 EXTRA_DIST = \
 	xde-autostart.pod \
@@ -46,10 +46,8 @@ EXTRA_DIST = \
 	xde-xsession.pod \
 	xde-xswitch.pod
 
-SUFFIXES = .man .pod
-
-.pod.man:
-	pod2man --center="User Commands" \
+$(xde_man1_files): %.man: %.pod
+	$(AM_V_GEN)pod2man --center="User Commands" \
 		--date="$(DATE)" \
 		--errors="none" \
 		--fixed="CW" \
@@ -60,4 +58,17 @@ SUFFIXES = .man .pod
 		--release="$(PACKAGE) $(VERSION)" \
 		--section="1" \
 		$< >$@
+
+#$(xde_man5_files): %.man: %.pod
+#	$(AM_V_GEN)pod2man --center="Standards, Environments and Macros" \
+#		--date="$(DATE)" \
+#		--errors="none" \
+#		--fixed="CW" \
+#		--fixedbold="CB" \
+#		--fixeditalic="CI" \
+#		--fixedbolditalic="CX" \
+#		--nourls \
+#		--release="$(PACKAGE) $(VERSION)" \
+#		--section="5" \
+#		$< >$@
 
