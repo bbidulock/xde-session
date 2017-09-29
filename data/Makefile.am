@@ -360,6 +360,8 @@ nobase_dist_xdgdata_DATA += \
 	share/xde/xsessions/echinus-git.desktop \
 	share/xde/xsessions/ede.desktop \
 	share/xde/xsessions/enlightenment.desktop \
+	share/xde/xsessions/etwm.desktop \
+	share/xde/xsessions/etwm-git.desktop \
 	share/xde/xsessions/evilwm.desktop \
 	share/xde/xsessions/evilwm-git.desktop \
 	share/xde/xsessions/failsafewm.desktop \
