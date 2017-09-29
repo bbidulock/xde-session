@@ -6121,6 +6121,8 @@ action_SwitchDesk(void)
 static void
 action_LockScreen(void)
 {
+	/* not implemented yet */
+	return;
 }
 
 static gboolean

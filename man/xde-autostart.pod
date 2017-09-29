@@ -20,11 +20,19 @@ Note that the functions performed by B<xde-autostart> are integrated
 into L<xde-session(1)>, so only use it when you are not using a full
 blown XDE session.
 
+=head2 BEHAVIOUR
+
 =head2 PHASES
 
 There are several phases to autostart initialization:
 
 =over
+
+=item I<PreDisplayServer>
+
+Initialization that should be established even before the display
+server is provided to the user.  The only functions that use this
+autostart phase that I know of is the GNOME keyring subsystems.
 
 =item I<Initialization>
 
@@ -443,6 +451,15 @@ directories to search.  The subdirectory F<$XDG_DATA_HOME/xsessions>
 will be examined for F<*.desktop> files.
 
 =item B<XDG_MENU_PREFIX>
+
+This variable has no default.  If the variable is not set when the
+B<xde-session> program is executed, it sets it to the specified or
+default B<--vendor> option followed by a dash (C<->).  This variable
+determines which files are used to construct XDG menus.
+
+When the B<--wmname> option is specified and the B<--desktop> option is
+not specified, C<$XDG_CURRENT_DESKTOP> is set to the window manager name
+folded to all uppercase.
 
 =item B<XDG_SESSION_PID>
 
