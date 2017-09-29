@@ -1,0 +1,46 @@
+[Desktop Entry]
+Encoding=UTF-8
+Type=XSession
+Name=ETWM
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Enhanced Tab Window Manager for the X Window System
+Icon=etwm
+TryExec=/usr/bin/etwm
+Exec=etwm
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=etwm
+X-AppInstall-Package=etwm
+X-AppInstall-Section=custom
+X-Arch-Package=etwm 3.8.2-1
+X-Arch-Package-Repository=custom
+X-Arch-Package-Name=etwm
+X-Arch-Package-Version=3.8.2-1
+X-Arch-Package-Description=Richard's Tab Window Manager
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://ctwm.org/
+DesktopNames=ETWM
+X-LightDM-DesktopName=etwm
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=ETWM in an XDE session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop ETWM -startwm start-etwm
+DesktopNames=XDE:ETWM
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=etwm
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true
+ConfigExec=etwm -f %f
