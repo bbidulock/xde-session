@@ -517,6 +517,15 @@ Specifies the value of the B<--nosetbg> option.
 
 Specifies the value of the B<-transparent> option.
 
+=item B<xde-xlock>.B<autoLock>: {B<true>|B<false>}
+
+Specifies whether the screen should lock when a idle timeout expires.
+
+=item B<xde-xlock>.B<systemLock>: {B<true>|B<false>}
+
+Specifies whether the screen should lock when switching virtual
+terminals.
+
 =item B<xde-xlock>.B<face>: I<XFTFONT>
 
 The typeface used to display the input typed by the user.
