@@ -125,6 +125,7 @@ if test "x$enable_xrandr" != xno ; then
 fi
 AC_MSG_CHECKING([for XRANDR support])
 AC_MSG_RESULT([${enable_xrandr:-yes}])
+AM_CONDITIONAL([HAVE_XRANDR],[test  "x$enable_xrandr" != "xno"])
 
 AC_ARG_ENABLE([xinerama],
 	AC_HELP_STRING([--disable-xinerama],
@@ -136,6 +137,7 @@ if test "x$enable_xinerama" != xno ; then
 fi
 AC_MSG_CHECKING([for XINERAMA support])
 AC_MSG_RESULT([${enable_xinerama:-yes}])
+AM_CONDITIONAL([HAVE_XINERAMA],[test  "x$enable_xinerama" != "xno"])
 
 AC_ARG_ENABLE([xvnc],
 	AC_HELP_STRING([--disable-xvnc],
@@ -158,7 +160,6 @@ AC_MSG_CHECKING([for debug support])
 AC_MSG_RESULT([${enable_debug:-no}])
 
 test "x$prefix" = xNONE && prefix="$ac_default_prefix"
-
 sharedir="$datadir"
 eval "sharedir=\"$sharedir\""
 eval "sharedir=\"$sharedir\""

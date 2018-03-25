@@ -7409,10 +7409,10 @@ get_resources(int argc, char *argv[])
 	if ((val = get_xlogin_resource(rdb, "borderWidth", "3"))) {
 		getXrmUint(val, &resources.borderWidth);
 	}
-	if ((val = get_xlogin_resource(rdb, "autoLock", "true"))) {
+	if ((val = get_resource(rdb, "autoLock", "false"))) {
 		getXrmBool(val, &resources.autoLock);
 	}
-	if ((val = get_xlogin_resource(rdb, "systemLock", "true"))) {
+	if ((val = get_resource(rdb, "systemLock", "false"))) {
 		getXrmBool(val, &resources.systemLock);
 	}
 
