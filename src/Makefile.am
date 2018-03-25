@@ -26,7 +26,7 @@ bin_PROGRAMS = \
 	xde-xlogin \
 	xde-xsession
 
-AM_STD_OPTIONS_EXEMPT = \
+AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = \
 	test-login \
 	test-root \
 	test-pipe

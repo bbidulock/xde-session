@@ -1368,7 +1368,7 @@ XContext MessageContext;		/* window to message context */
 void
 setup_environment(void)
 {
-	char *env, buf[PATH_MAX] = { 0, };
+	char *env, buf[PATH_MAX + 1] = { 0, };
 	struct stat st;
 	FILE *f;
 	int status;
@@ -1842,7 +1842,7 @@ get_autostart(void)
 	int size = dlen + 1 + hlen + 1;
 	char *dir;
 	char *dirs = calloc(size, sizeof(*dirs)), *save = dirs;
-	char *path = calloc(PATH_MAX, sizeof(*path));
+	char *path = calloc(PATH_MAX + 1, sizeof(*path));
 
 	strcpy(dirs, envir.XDG_CONFIG_HOME);
 	strcat(dirs, ":");
@@ -11637,7 +11637,7 @@ set_default_welcome(void)
 	const char *s;
 	int i, len;
 
-	welcome = calloc(PATH_MAX, sizeof(*welcome));
+	welcome = calloc(PATH_MAX + 1, sizeof(*welcome));
 
 	if ((s = getenv("XDG_CURRENT_DESKTOP")) && *s) {
 		session = strdup(s);
@@ -11656,7 +11656,7 @@ set_default_welcome(void)
 	len = strlen(session);
 	for (i = 0, p = session; i < len; i++, p++)
 		*p = toupper(*p);
-	snprintf(welcome, PATH_MAX - 1, "Logout of <b>%s</b> session?", session);
+	snprintf(welcome, PATH_MAX, "Logout of <b>%s</b> session?", session);
 	defaults.welcome = strdup(welcome);
 	free(session);
 	free(welcome);
