@@ -292,8 +292,8 @@ main(int argc, char *argv[])
 			{"nolaunch",		no_argument,		NULL,	'N'},
 			{"dry-run",		no_argument,		NULL,	'n'},
 
-			{"client-id",		required_argument,	NULL,	"c"},
-			{"save-file",		required_argument,	NULL,	"s"},
+			{"client-id",		required_argument,	NULL,	'c'},
+			{"save-file",		required_argument,	NULL,	's'},
 
 
 			{"debug",		optional_argument,	NULL,	'D'},
