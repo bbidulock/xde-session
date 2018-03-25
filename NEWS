@@ -5,7 +5,7 @@ Release xde-session-1.5 released 2018-03-25
 
 git shortlog -e -n -w80,6,8 1.4...1.5
 
-Brian Bidulock <bidulock@openss7.org> (109):
+Brian Bidulock <bidulock@openss7.org> (127):
       updated indent
       update manpage xde-wait
       change defaults
@@ -111,10 +111,28 @@ Brian Bidulock <bidulock@openss7.org> (109):
       note todo
       Merge branch 'master' of github.com:bbidulock/xde-session
       update readmes
+      support parallel build
+      support parallel distcheck
+      add mandir
+      quiet build
+      add conditionals
+      add missing etwm desktop files
+      Merge branch 'master' of github.com:bbidulock/xde-session
+      distribute etwm desktop files
+      update adwm defaults
+      do not use veil
+      change autolocking default to off
+      document locking preferences
       correct exemption
       update release files
       remove string warnings
       update release files
+      final update release files
+      Merge branch 'master' of github.com:bbidulock/xde-session
+      update manpage
+      update options
+      only no dry run
+      Merge branch 'master' of github.com:bbidulock/xde-session
 
 
 Release xde-session-1.4 released 2016-07-12
