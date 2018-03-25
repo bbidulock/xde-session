@@ -169,6 +169,16 @@ can provide additional information when registering with the session
 manager than is normally available strictly from ICCCM window
 properties.
 
+Note that dock applications do not normally perform X11R6 session
+management, they do often perform the older B<WM_SAVEYOURSELF> approach
+and so need a session management proxy.  Rather than trying to figure
+out session management properties in real time, B<xde-dockmgr> requests
+a save-yourself phase 2 and determines the necessary properties at that
+point.  It is not a normal proxy in the sense that it performs
+connection by connection session management, it is a proxy in the sense
+that it registers as a client on behalf of dock applications and
+coordinates their restart when they it restarts.
+
 =head1 BEHAVIOR
 
 =head2 SESSION MANAGEMENT
