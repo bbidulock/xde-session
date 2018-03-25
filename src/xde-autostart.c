@@ -10591,7 +10591,9 @@ do_autostarts(XdeStartupPhase want, int need, GHashTable *autostarts, TableConte
 			free(task);
 			continue;
 		}
-		/* FIXME: actually launch the task */
+		if (!options.dryrun) {
+			/* FIXME: actually launch the task */
+		}
 
 	}
 }
