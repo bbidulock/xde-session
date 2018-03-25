@@ -1,5 +1,15 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit a21ceb09b8e406de8361c228912a03498bb2f8b3
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Mar 25 07:12:02 2018 -0600
+
+    final release file update
+
+ ChangeLog | 39 +++++++++++++++++++--------------------
+ NEWS      |  4 +++-
+ 2 files changed, 22 insertions(+), 21 deletions(-)
+
 commit 8148e32830e71a593ad9e052b70123b5c06480da
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Sun Mar 25 07:09:26 2018 -0600
@@ -6715,12 +6725,3 @@ Date:   Sun Jun 29 01:58:17 2014 -0600
  src/xde-chooser.c |  39 ++---
  src/xde-logout.c  | 474 ++++++++++++++++++++++++++++++++++----------------
  2 files changed, 333 insertions(+), 180 deletions(-)
-
-commit be273402bd5a562200c430259394584c678521ea
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jun 28 21:22:53 2014 -0600
-
-    have xde-chooser take over screen like xde-logout
-
- src/xde-chooser.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 63 insertions(+)

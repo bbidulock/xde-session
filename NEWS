@@ -5,7 +5,7 @@ Release xde-session-1.5 released 2018-03-25
 
 git shortlog -e -n -w80,6,8 1.4...1.5
 
-Brian Bidulock <bidulock@openss7.org> (129):
+Brian Bidulock <bidulock@openss7.org> (130):
       updated indent
       update manpage xde-wait
       change defaults
@@ -135,6 +135,7 @@ Brian Bidulock <bidulock@openss7.org> (129):
       Merge branch 'master' of github.com:bbidulock/xde-session
       corrections
       update release files
+      final release file update
 
 
 Release xde-session-1.4 released 2016-07-12
