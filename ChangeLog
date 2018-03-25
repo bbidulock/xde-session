@@ -1,5 +1,29 @@
 # created with git log --stat=76 -M -C -300|fmt -sct -w80
 
+commit 2d1d84ef57257e6e311ea1c7de3cf99f4d45a462
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Mar 25 06:53:25 2018 -0600
+
+    update release files
+
+ AUTHORS   |  2 +-
+ ChangeLog | 40 ++++++++++++++++++++++------------------
+ NEWS      |  8 +++++---
+ README.md |  6 +++---
+ 4 files changed, 31 insertions(+), 25 deletions(-)
+
+commit 62e93ae47c74cafd729ebef20babd8f5c9f92874
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Mar 25 06:52:40 2018 -0600
+
+    remove string warnings
+
+ src/xde-autostart.c | 8 ++++----
+ src/xde-chooser.c   | 8 ++++----
+ src/xde-session.c   | 8 ++++----
+ src/xde-startwm.c   | 8 ++++----
+ 4 files changed, 16 insertions(+), 16 deletions(-)
+
 commit 1160490d70246f72c6ee45eda22b466f8b1bd277
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Sun Mar 25 05:49:58 2018 -0600
@@ -3179,21 +3203,3 @@ Date:   Sat Jan 9 21:32:06 2016 -0700
 
  man/xde-xsession.pod | 14 +++++++-------
  1 file changed, 7 insertions(+), 7 deletions(-)
-
-commit b9d255f529a1014257a1f6d87012657b70608f27
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:30:54 2016 -0700
-
-    spelling
-
- man/xde-xlogin.pod | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-commit 6eaced37b96c773f5434e5cd31f23065349871d7
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:30:17 2016 -0700
-
-    spelling
-
- man/xde-xlock.pod | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
