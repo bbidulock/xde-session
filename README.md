@@ -1,9 +1,9 @@
-[xde-session -- read me first file.  2017-09-11]: #
+[xde-session -- read me first file.  2018-03-25]: #
 
 xde-session
 ===============
 
-Package `xde-session-1.5` was released under GPLv3 license 2017-09-11.
+Package `xde-session-1.5` was released under GPLv3 license 2018-03-25.
 
 This package provides a number of "C"-language tools for working with
 the _X Desktop Environment_.  Most of these tools were previously
@@ -28,7 +28,7 @@ Primary tools included are:
 Release
 -------
 
-This is the `xde-session-1.5` package, released 2017-09-11.  This
+This is the `xde-session-1.5` package, released 2018-03-25.  This
 release, and the latest version, can be obtained from [GitHub][1], using
 a command such as:
 

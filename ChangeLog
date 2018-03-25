@@ -1,5 +1,27 @@
 # created with git log --stat=76 -M -C -300|fmt -sct -w80
 
+commit 1160490d70246f72c6ee45eda22b466f8b1bd277
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Mar 25 05:49:58 2018 -0600
+
+    update release files
+
+ AUTHORS      |    2 +-
+ ChangeLog    | 4984 +++++++++++++++++++++++-------------------------------
+ NEWS         |  118 +-
+ README.md    |   20 +-
+ configure.ac |    8 +-
+ 5 files changed, 2252 insertions(+), 2880 deletions(-)
+
+commit efbdb622fa6e819cf0c7cf5a15d419170a47c7be
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Mar 25 05:30:46 2018 -0600
+
+    correct exemption
+
+ src/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 commit 0b55f9f916c33e447791231b5c0512af51c0de8c
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Mon Sep 11 02:38:36 2017 -0600
@@ -3175,21 +3197,3 @@ Date:   Sat Jan 9 21:30:17 2016 -0700
 
  man/xde-xlock.pod | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
-
-commit 3ce6a4c5fd43ce5fd8f6f0e3ce1f6006ada39caf
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:29:51 2016 -0700
-
-    spelling
-
- man/xde-xchooser.pod | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-commit 092802d700c1910af7e27cb31757b9f6dabfc4c7
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:29:09 2016 -0700
-
-    spelling
-
- man/xde-wmproxy.pod | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
