@@ -284,6 +284,18 @@ main(int argc, char *argv[])
 			{"display",		required_argument,	NULL,	'd'},
 			{"screen",		required_argument,	NULL,	's'},
 
+			{"manage",		no_argument,		NULL,	'm'},
+			{"replace",		no_argument,		NULL,	'r'},
+			{"quit",		no_argument,		NULL,	'q'},
+			{"edit",		no_argument,		NULL,	'e'},
+
+			{"nolaunch",		no_argument,		NULL,	'N'},
+			{"dry-run",		no_argument,		NULL,	'n'},
+
+			{"client-id",		required_argument,	NULL,	"c"},
+			{"save-file",		required_argument,	NULL,	"s"},
+
+
 			{"debug",		optional_argument,	NULL,	'D'},
 			{"verbose",		optional_argument,	NULL,	'v'},
 			{"help",		no_argument,		NULL,	'h'},
