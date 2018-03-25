@@ -1,5 +1,24 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 8148e32830e71a593ad9e052b70123b5c06480da
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Mar 25 07:09:26 2018 -0600
+
+    update release files
+
+ ChangeLog | 3524 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ NEWS      |   20 +-
+ 2 files changed, 3542 insertions(+), 2 deletions(-)
+
+commit e3fb875ec222b8fb57cbf903a1216a1dd55b4632
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Mar 25 07:09:07 2018 -0600
+
+    corrections
+
+ src/xde-dockmgr.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
 commit 556bdaa6d468e4cc8af86af522c51a349271d1e8
 Merge: e429b48 30ad35b
 Author: Brian Bidulock <bidulock@openss7.org>
@@ -6705,23 +6724,3 @@ Date:   Sat Jun 28 21:22:53 2014 -0600
 
  src/xde-chooser.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 63 insertions(+)
-
-commit 55a7b7382f0d881ec367d6d933f9fa8e262b70ea
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jun 28 19:57:01 2014 -0600
-
-    xde-chooser now runs the same as perl version
-
- .indent.pro       |   4 +
- configure.sh      |   4 +-
- src/xde-chooser.c | 291 +++++++++++++++++++++++++++++++++++++-------------
- 3 files changed, 221 insertions(+), 78 deletions(-)
-
-commit ac8e1a4a14fe0e8e10ce8ae67a4382857df020a0
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jun 28 10:03:40 2014 -0600
-
-    get and display default and current session
-
- src/xde-chooser.c | 387 ++++++++++++++++++++++++++++++++------------------
- 1 file changed, 250 insertions(+), 137 deletions(-)
