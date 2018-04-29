@@ -1,5 +1,247 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 5c5e67d406dba408b10a62593398f99a3ce09c13
+Merge: e00a287 d8dbab4
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Apr 29 01:07:42 2018 -0600
+
+    Merge branch 'master' of github.com:bbidulock/xde-session
+
+commit e00a287336f97dbc273ed3f656e371d439732c8b
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Apr 29 00:51:56 2018 -0600
+
+    correct buffer overflow
+
+ src/xde-chooser.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit d8dbab43fec8ce5cdcdf7cd0d94c760e33cd0f3c
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:23 2018 -0600
+
+    update copyright header
+
+ src/xsessions.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit e28d646ff259e4afe8490ef97bdaf39cdc891d9b
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:20 2018 -0600
+
+    update copyright header
+
+ src/xde-xsession.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 538a6cc406317c526a64acbe104985ed96b6703f
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:19 2018 -0600
+
+    update copyright header
+
+ src/xde-xlogin.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+commit 3b8353d6a709a8e7a7839d4d5be05543261df1d6
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:17 2018 -0600
+
+    update copyright header
+
+ src/xde-xlock.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+commit 84caa0a9491fae367d8e93852e6b68dfd0287e23
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:14 2018 -0600
+
+    update copyright header
+
+ src/xde-xchooser.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+commit ef81d087f7f04f949d251c6ba062e0d21233126a
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:11 2018 -0600
+
+    update copyright header
+
+ src/xde-wmproxy.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 335b98a06fc78c52d4f8ac0daf0fd41bbc8e9ecc
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:08 2018 -0600
+
+    update copyright header
+
+ src/xde-wait.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 5bb05cfa3a8619dd25d6609bee8feb46ae8efab6
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:06 2018 -0600
+
+    update copyright header
+
+ src/xde-traymgr.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit ad684e5677621db7f1f8675439c4f91eb0557e2c
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:08:03 2018 -0600
+
+    update copyright header
+
+ src/xde-startwm.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 714e67bbf6a268336fc2eec9fe929403bceb9526
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:58 2018 -0600
+
+    update copyright header
+
+ src/xde-smproxy.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit dbdc47493d4b67938673275b575dbe5bc6f2dc56
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:56 2018 -0600
+
+    update copyright header
+
+ src/xde-sm.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 0a57f5b1937094f8e1aa68abf9c5ef438ed913c0
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:52 2018 -0600
+
+    update copyright header
+
+ src/xde-session.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 60b4e7baaf1153a5e3ebfcb19f762c566dbf7679
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:50 2018 -0600
+
+    update copyright header
+
+ src/xde-logout.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 3de8930cc9d1baef1b8be5dcf39dd67fdfd893a7
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:46 2018 -0600
+
+    update copyright header
+
+ src/xde-login.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 7a4e57bc1c33c6bca212bd88ed94814d4b297615
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:43 2018 -0600
+
+    update copyright header
+
+ src/xde-greeter.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+commit ba1bb00b7c2c052e8aab5e5f7f85b58067c670d5
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:41 2018 -0600
+
+    update copyright header
+
+ src/xde-dockmgr.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 01f3c425b77336681674d924af0ccb91d5d093cb
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:38 2018 -0600
+
+    update copyright header
+
+ src/xde-chooser.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 656054e9606f3bec487f8d0cff9741d30d2f8f44
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:34 2018 -0600
+
+    update copyright header
+
+ src/xde-autostart.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 79ed1558cf902ec652ed8cd0fe1edf1849299402
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:32 2018 -0600
+
+    update copyright header
+
+ src/test-root.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 11c536ed9b343a9062bbc626342e0d158078259f
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:31 2018 -0600
+
+    update copyright header
+
+ src/test-pipe.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 10c0fbfb068b54a43a238a8794bf48555ce86944
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:28 2018 -0600
+
+    update copyright header
+
+ src/smclient.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit bba9ca6f0778671e915e0332477757df01cdb94f
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:26 2018 -0600
+
+    update copyright header
+
+ src/manager.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 6459c24bbf3b30929f353b3825c1ebc1d22b7eb2
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:24 2018 -0600
+
+    update copyright header
+
+ src/display.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit b62ae4c7168d53966b43257605f842f246433232
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Tue Apr 3 00:07:17 2018 -0600
+
+    update copyright header
+
+ src/autostart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 546176c3b3bbc3258568e01be323a5ee6dac06ef
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Mar 25 07:14:41 2018 -0600
+
+    post-release update
+
+ ChangeLog | 19 ++++++++++---------
+ NEWS      |  3 ++-
+ 2 files changed, 12 insertions(+), 10 deletions(-)
+
 commit a21ceb09b8e406de8361c228912a03498bb2f8b3
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Sun Mar 25 07:12:02 2018 -0600
@@ -6414,314 +6656,3 @@ Date:   Thu Jul 24 19:55:12 2014 -0600
 
  src/xde-xchooser.c | 89 ++++++++++++++++++++++++++++++++++++++++++++++----
  1 file changed, 83 insertions(+), 6 deletions(-)
-
-commit 8bf7bbda77b06aad2bcf72c143af936da82d78e1
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 24 15:26:36 2014 -0600
-
-    added more functions to chooser
-
- src/xde-xchooser.c | 141 +++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 125 insertions(+), 16 deletions(-)
-
-commit 906107c35d6f4e00125b0077eb8248468983030b
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 24 10:57:08 2014 -0600
-
-    unfortunately systemd allows none of this
-
- src/xde-login.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 50 insertions(+), 1 deletion(-)
-
-commit 9fc5d94bf15331519c8d66c34871d91f0c8e23fe
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 24 10:56:00 2014 -0600
-
-    should display AF_UNIX address (but moot now)
-
- src/xde-xchooser.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-commit 63cf9cec6a73a0305c83cebe861e7dea548d704f
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Wed Jul 23 12:04:05 2014 -0600
-
-    test session locking
-
- src/xde-logout.c | 37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
-
-commit 0748dd60837135953e8270afcd107565fd4d457e
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Jul 20 10:07:04 2014 -0600
-
-    working on systemd mutli-session integration
-
- configure.template                |   2 +
- src/Makefile.am                   |  18 +-
- src/test-login.c                  | 158 +++++++
- src/xde-login.c                   | 791 ++++++++++++++++++++++++++++++++++
- src/{xde-logout.h => xde-login.h} |   8 +-
- src/xde-logout.c                  | 229 +++++++++-
- src/xde-logout.h                  |   2 +-
- 7 files changed, 1191 insertions(+), 17 deletions(-)
-
-commit 938efbc9fc4082267ac76af3299c905df092ef1f
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jul 19 12:05:00 2014 -0600
-
-    added some ignores
-
- .gitignore | 2 ++
- 1 file changed, 2 insertions(+)
-
-commit b4982bae6bd849dd842ebf2f6561bfdaa31b7943
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Fri Jul 18 12:05:00 2014 -0600
-
-    added -ggdb to debug flags in maintainer script
-
- configure.sh | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-commit 060f8af2892fd6e3703949db5c1ef275dc8775d5
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 17 18:51:49 2014 -0600
-
-    add session management checkpoint and shutdown
-
- src/xde-logout.c | 354 ++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 251 insertions(+), 103 deletions(-)
-
-commit c7e1edfc4e0c5d581864f14280331a7aa798d676
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 17 16:48:43 2014 -0600
-
-    adding session managerment to xde-logout
-
- src/Makefile.am     |   4 +-
- src/xde-autostart.c |   2 +-
- src/xde-logout.c    | 340 ++++++++++++++++++++++++++++++++++++++++++++++++
- src/xde-logout.h    |   1 +
- 4 files changed, 344 insertions(+), 3 deletions(-)
-
-commit 096f70676a9d27952090f36a696b420636be080a
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 17 13:09:25 2014 -0600
-
-    working up session components
-
- .indent.pro                            |    2 +
- src/Makefile.am                        |    4 +-
- src/display.c                          |    3 +-
- src/manager.c                          |  687 +++++
- src/{xde-autostart.h => manager.h}     |   75 +-
- src/smclient.c                         |  346 +++
- src/{xde-autostart.h => smclient.h}    |   94 +-
- src/xde-autostart.c                    |  105 +-
- src/xde-autostart.h                    |    1 +
- src/xde-smproxy.c                      | 4636 ++++++++++++++++++++++++++++
- src/{xde-autostart.h => xde-smproxy.h} |   12 +-
- src/xde-wmproxy.c                      |    9 +-
- 12 files changed, 5813 insertions(+), 161 deletions(-)
-
-commit 629f673897a00aa8d72d6f3898708ad0bffc8a18
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 8 13:14:01 2014 -0600
-
-    some manpage updates
-
- man/xde-smproxy.pod | 2 +-
- man/xde-wmproxy.pod | 7 +++++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
-
-commit f4f349c47d086e88bb87db6432f580a917c42907
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 7 18:30:55 2014 -0600
-
-    rationalize a bit
-
- src/display.c | 52 ++++++++++++++++++++++++++++------------------------
- src/display.h |  1 +
- 2 files changed, 29 insertions(+), 24 deletions(-)
-
-commit 3387140cf717b4fe49d1f80139830bda7f6cf11b
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 7 18:10:10 2014 -0600
-
-    more splitting and workup of xde-xsession
-
- .indent.pro         |    4 +
- src/display.c       | 3212 +++++++++++++++++++++++++++++++++++++++++++++--
- src/display.h       |  106 +-
- src/xde-autostart.c |  873 ++++++-------
- 4 files changed, 3564 insertions(+), 631 deletions(-)
-
-commit 9e33bb6fd213866abcbfcc74766e837a86b4bfd2
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 7 11:23:44 2014 -0600
-
-    more xde-xsession workup
-
- src/Makefile.am     |   3 +-
- src/display.c       | 670 ++++++++++++++++++++++++++++++++++++++++++++++++
- src/display.h       | 359 ++++++++++++++++++++++++++
- src/xde-autostart.c |  23 +-
- src/xde-xsession.c  |  24 +-
- 5 files changed, 1062 insertions(+), 17 deletions(-)
-
-commit fafea4baed23a6d26aae305cdebcd9aa32e8b1de
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 7 10:52:00 2014 -0600
-
-    building up xde-xsession
-
- .indent.pro                      |   1 +
- src/Makefile.am                  |   5 +-
- src/{xsessions.c => autostart.c} |  71 ++--
- src/{xsession.h => autostart.h}  |  14 +-
- src/xde-xsession.c               | 198 +++++++---
- src/xde-xsession.h               |  18 +-
- src/xsession.h                   |   1 +
- src/xsessions.c                  | 723 ++++++++++++++++++++++++++++++++++-
- 8 files changed, 931 insertions(+), 100 deletions(-)
-
-commit aed67510733a675f434294de4d3a16e95920b14a
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 7 08:17:42 2014 -0600
-
-    start splitting off
-
- .gitignore                         |    1 +
- .indent.pro                        |    1 +
- man/xde-xsession.pod               |   26 +-
- src/Makefile.am                    |    8 +-
- src/xde-xsession.c                 | 1382 +++++++++++++++++++++-----------
- src/xde-xsession.h                 |  162 ++++
- src/{xde-xsession.h => xsession.h} |   82 +-
- src/xsessions.c                    |  238 ++++++
- 8 files changed, 1361 insertions(+), 539 deletions(-)
-
-commit 78d4b4c2c0462f8a9bdd54a8b5ef2eb396893c27
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Jul 6 22:38:33 2014 -0600
-
-    checkpoint
-
- man/xde-xsession.pod |   89 ++--
- src/xde-xsession.c   | 1038 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 1091 insertions(+), 36 deletions(-)
-
-commit 072fbafa6483c56f9656e5a3a85726422ec49294
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Fri Jul 4 13:03:05 2014 -0600
-
-    working up documentation
-
- man/xde-xsession.pod | 100 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 100 insertions(+)
-
-commit 8d5aa3fc062053b78446839c231a40db1d9d5b55
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 3 11:10:09 2014 -0600
-
-    started big workup of xde-xsession
-
- man/Makefile.am      |  14 +-
- man/xde-wmproxy.pod  | 124 +++++++---
- man/xde-xsession.pod | 573 +++++++++++++++++++++++++++++++++++++++++++++++
- src/xde-autostart.c  | 185 ++++++++++++++-
- src/xde-xsession.c   |  57 +++++
- src/xde-xsession.h   | 118 ++++++++++
- 6 files changed, 1042 insertions(+), 29 deletions(-)
-
-commit 4689ab1a94a43edd361862997b5749de5497af9e
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Wed Jul 2 20:17:05 2014 -0600
-
-    workup startup notificaiton for xde-autostart
-
- src/xde-autostart.c | 3791 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 3788 insertions(+), 3 deletions(-)
-
-commit 813af024c36525d02d14102523c62146d63e2904
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 1 11:10:09 2014 -0600
-
-    got xde-xchooser working like perl program
-
- .indent.pro          |   3 +
- man/xde-xchooser.pod |   6 +-
- src/xde-autostart.c  |  91 ++++---
- src/xde-chooser.c    |  35 ++-
- src/xde-logout.c     |  30 +-
- src/xde-xchooser.c   | 692 ++++++++++++++++++++++++++++++++++++-----------
- 6 files changed, 630 insertions(+), 227 deletions(-)
-
-commit e0337f6565436b2c052b6ebb739834ccbfd6605b
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jun 30 04:54:58 2014 -0600
-
-    working up xde-autostart
-
- src/xde-autostart.c | 502 ++++++++++++++++++++++++++++++++++++++++++++++++
- src/xde-chooser.c   |  10 +-
- 2 files changed, 505 insertions(+), 7 deletions(-)
-
-commit 1606176b268e6fb3d3dac9ccea7f7a5d0703207f
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Jun 29 23:56:54 2014 -0600
-
-    correction and process file default xde-autostart
-
- src/xde-autostart.c | 118 ++++++++++++++++++++++++++++++++----------------
- src/xde-chooser.c   |   2 +-
- src/xde-logout.c    |   2 +-
- 3 files changed, 82 insertions(+), 40 deletions(-)
-
-commit ff60a7f770266c6c6fc537f416bd2d70aac9cca6
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Jun 29 22:15:26 2014 -0600
-
-    start working up xde-autostart
-
- .gitignore            |   4 +-
- man/Makefile.am       |   5 +
- man/xde-autostart.pod | 244 +++++++++++++++-
- man/xde-chooser.pod   |  10 +-
- man/xde-logout.pod    |  18 +-
- src/Makefile.am       |   7 +
- src/xde-autostart.c   | 732 ++++++++++++++++++++++++++++++++++++++++++++++
- src/xde-autostart.h   | 117 ++++++++
- 8 files changed, 1117 insertions(+), 20 deletions(-)
-
-commit fac0357f7b68f4522ca86e731dd6847c03900f36
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Jun 29 17:22:14 2014 -0600
-
-    identify options better
-
- .indent.pro        |   1 +
- man/xde-logout.pod |  14 ++-
- src/xde-chooser.c  |  39 +++++----
- src/xde-logout.c   | 229 +++++++++++++++++++++++++++++++++++--------------
- 4 files changed, 194 insertions(+), 89 deletions(-)
-
-commit 34cd8c3a0923d8c3149c236026637cf428298a29
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Jun 29 06:36:31 2014 -0600
-
-    xde-logout works now like the perl program
-
- src/xde-logout.c | 727 +++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 584 insertions(+), 143 deletions(-)
-
-commit a1397162c2e589698b6664289662638821d9eb8a
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Jun 29 01:58:17 2014 -0600
-
-    working up xde-logout
-
- src/xde-chooser.c |  39 ++---
- src/xde-logout.c  | 474 ++++++++++++++++++++++++++++++++++----------------
- 2 files changed, 333 insertions(+), 180 deletions(-)

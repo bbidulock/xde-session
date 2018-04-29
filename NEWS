@@ -1,11 +1,45 @@
-xde-session -- history of user-visible changes.  2018-03-25
+xde-session -- history of user-visible changes.  2018-04-29
+
+Release xde-session-1.6 released 2018-04-29
+-------------------------------------------
+
+git shortlog -e -n -w80,6,8 1.5...1.6
+
+Brian Bidulock <bidulock@openss7.org> (26):
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      update copyright header
+      correct buffer overflow
+      Merge branch 'master' of github.com:bbidulock/xde-session
+
 
 Release xde-session-1.5 released 2018-03-25
 -------------------------------------------
 
 git shortlog -e -n -w80,6,8 1.4...1.5
 
-Brian Bidulock <bidulock@openss7.org> (130):
+Brian Bidulock <bidulock@openss7.org> (131):
       updated indent
       update manpage xde-wait
       change defaults
@@ -136,6 +170,7 @@ Brian Bidulock <bidulock@openss7.org> (130):
       corrections
       update release files
       final release file update
+      post-release update
 
 
 Release xde-session-1.4 released 2016-07-12

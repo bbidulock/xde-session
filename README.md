@@ -1,9 +1,9 @@
-[xde-session -- read me first file.  2018-03-25]: #
+[xde-session -- read me first file.  2018-04-29]: #
 
 xde-session
 ===============
 
-Package `xde-session-1.5` was released under GPLv3 license 2018-03-25.
+Package `xde-session-1.6` was released under GPLv3 license 2018-04-29.
 
 This package provides a number of "C"-language tools for working with
 the _X Desktop Environment_.  Most of these tools were previously
@@ -28,7 +28,7 @@ Primary tools included are:
 Release
 -------
 
-This is the `xde-session-1.5` package, released 2018-03-25.  This
+This is the `xde-session-1.6` package, released 2018-04-29.  This
 release, and the latest version, can be obtained from [GitHub][1], using
 a command such as:
 
@@ -85,12 +85,12 @@ Report issues on GitHub [here][2].
 
 [1]: https://github.com/bbidulock/xde-session
 [2]: https://github.com/bbidulock/xde-session/issues
-[3]: https://github.com/bbidulock/xde-session/blob/1.5/NEWS
-[4]: https://github.com/bbidulock/xde-session/blob/1.5/ChangeLog
-[5]: https://github.com/bbidulock/xde-session/blob/1.5/TODO
-[6]: https://github.com/bbidulock/xde-session/blob/1.5/COMPLIANCE
-[7]: https://github.com/bbidulock/xde-session/blob/1.5/INSTALL
-[8]: https://github.com/bbidulock/xde-session/blob/1.5/LICENSE
-[9]: https://github.com/bbidulock/xde-session/blob/1.5/COPYING
+[3]: https://github.com/bbidulock/xde-session/blob/1.6/NEWS
+[4]: https://github.com/bbidulock/xde-session/blob/1.6/ChangeLog
+[5]: https://github.com/bbidulock/xde-session/blob/1.6/TODO
+[6]: https://github.com/bbidulock/xde-session/blob/1.6/COMPLIANCE
+[7]: https://github.com/bbidulock/xde-session/blob/1.6/INSTALL
+[8]: https://github.com/bbidulock/xde-session/blob/1.6/LICENSE
+[9]: https://github.com/bbidulock/xde-session/blob/1.6/COPYING
 
 [ vim: set ft=markdown sw=4 tw=72 nocin nosi fo+=tcqlorn spell: ]: #
