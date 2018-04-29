@@ -8029,10 +8029,10 @@ create_session(const char *label, const char *filename)
 	len = xhome ? strlen(xhome) : strlen(home) + strlen("/.config");
 	dlen = len + strlen("/xde");
 	flen = dlen + strlen("/default");
-	cdir = calloc(dlen, sizeof(*cdir));
-	file = calloc(flen, sizeof(*file));
+	cdir = calloc(dlen + 1, sizeof(*cdir));
+	file = calloc(flen + 1, sizeof(*file));
 	if (xhome)
-		strcpy(cdir, xhome);
+		strncpy(cdir, xhome, dlen);
 	else {
 		strcpy(cdir, home);
 		strcat(cdir, "/.config");
