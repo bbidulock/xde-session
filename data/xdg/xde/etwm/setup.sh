@@ -64,6 +64,7 @@ editfile() {
 makelink() {
 	local dir=$1 name=$2 targ=$3 file=
 	file="$dir/$name"
+	[ -d "$dir" ] || mkdir -p "$dir"
 	if [ -L "$file" ]; then
 		if [ "`readlink $file`" != "$targ" ]; then
 			rm -fv "$file"
