@@ -57,6 +57,8 @@ screen when it first opens the display as well as choices.
 Query
 ~~~~~
 
+(Say something here!)
+
 Logind Notes
 ------------
 
@@ -138,6 +140,234 @@ from the environment variables XDG_SEAT and XDG_SESSION_ID; however, the
 synchronous logind interface can determine this easily as well.   Also,
 there is the org.freedesktop.login1.Seat.ActiveSession(so) property and
 org.freedesktop.login1.Session.Active(b) property.
+
+Autostart and XSMP Notes
+------------------------
+
+For some interesting discussion, see:
+
+1. https://gist.github.com/najamelan/b44e943145b03e018229
+
+2. https://github.com/GNOME/gnome-session/blob/master/gnome-session/README
+
+3. https://github.com/GNOME/gnome-session/blob/837a0bfcc44d104ff48285077f3a3e8e01ecc29a/gnome-session/gsm-manager.c#L437#L466
+
+4. https://lists.freedesktop.org/archives/xdg/2007-January/007436.html
+
+5. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=692987
+
+Desktop Entry Field Extensions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Many of the desktop entry field extensions have to do with integrating
+the desktop entry autostart specificaion with X11 R6 Session Management.
+Matching on PID and binary name is workable, but only on the same
+host and is not all that accurate.  Setting PID and hostname using SM
+properties, and even setting the `DESKTOP_STARTUP_ID` in an SM property
+would be a good idea.
+
+Otherwise, the session manager can look for `SM_CLIENT_ID` on session
+leader windows and match with `WM_CLIENT_MACHINE` and `_NET_WM_PID`
+properties on the same windows.
+
+Also, the autostart process could proxy connections to the session
+manager proper, or the session manager can establish multiple
+connections, one of which is dedicated to autostart entries.
+
+Regular Extensions
+~~~~~~~~~~~~~~~~~~
+
+The following are `XSession` desktop entry field extensions:
+
+`DesktopNames`::
+
+Used in an `XSession` file to indicate which desktop names should be set
+in the `XDG_CURRENT_DESKTOP` environment variable when the session is
+launched.  This is mentioned in the desktop-entry specification, but not
+detailed (as `XSession` files are not detailed either, even though they
+are commonly used and appear in `/usr/share/xsessions`).
+
+
+GNOME Extensions
+~~~~~~~~~~~~~~~~
+
+The following are GNOME autostart desktop entry field extensions:
+
+`X-GNOME-Autostart-startup-id`::
+
+Seems to only be added to gnome-session/saved-session synthetic
+autostart entries to specify the session management client ID to be
+passed in `DESKTOP_STARTUP_ID`
+
+`X-GNOME-Autostart-discard-exec`::
+
+Seems to only be added to gnome-session/saved-session synthetic
+autostart entries to specify the session management discard function to
+be executed to discard the a saved synthetic autostart `.desktop` file.
+
+
+Following is an example file listing illustrating the use of
+`X-GNOME-Autostart-startup-id` and `X-GNOME-Autostart-discard-exec`:
+
+.Example .desktop file listing
+----------
+[Desktop Entry]
+Name=Terminal
+Comment=Use the command line
+TryExec=gnome-terminal
+Exec=gnome-terminal --sm-client-id 
+10b640906f608ec80d135297575769740300000019930029 --sm-client-state-file 
+/home/fredo/.config/session-state/gnome-terminal-1352976798.desktop
+Icon=utilities-terminal
+Type=Application
+X-GNOME-DocPath=gnome-terminal/index.html
+X-GNOME-Bugzilla-Bugzilla=GNOME
+X-GNOME-Bugzilla-Product=gnome-terminal
+X-GNOME-Bugzilla-Component=BugBuddyBugs
+X-GNOME-Bugzilla-Version=3.4.1.1
+Categories=GNOME;GTK;Utility;TerminalEmulator;
+StartupNotify=true
+OnlyShowIn=GNOME;
+X-GNOME-Autostart-startup-id=10b640906f608ec80d135297575769740300000019930029
+X-GNOME-Autostart-discard-exec=/bin/rm -rf 
+/home/fredo/.config/session-state/gnome-terminal-1352976798.desktop
+----------
+
+`X-GNOME-WMName`::
+
+Used in an `XSession` file to specify the window manager name
+independenly of the application id of the `XSession` file.
+
+`X-GNOME-WMSettings`::
+
+Used in an `XSession` file to specify the window manager speciifc gconf
+schema to be used for the window manager (assuming that it registers
+with gconf).
+
+`X-GNOME-Autostart-enabled`::
+
+Seems to be the inverted `Hidden` field.
+
+`X-GNOME-Autostart-Phase`::
+
+There are several phase values as follows:
+
+`Startup`;;
+
+The session manager internal startup, which also includes starting the
+dbus-daemon (if it is not already running).  These things are started
+for the session manager's own purposes.
+
+`PreDisplayServer`;;
+
+The first phase of normal startup (startup controlled by `.desktop`
+files rahter than session manager code).  It covers the possible
+installation of files in `$HOME` by some initial setup programs and must
+be done before other components use those files.
+
+`DisplayServer`;;
+
+This phase is internal to the session manager and does not consult
+`.desktop` files in this phase.
+
+`Initialization`;;
+
+Covers low-level stuff like settings helpers, that need to be running
+  very early (before any windows are displayed).  Some examples would be
+  merging `.Xresources` files with `xrdb`.  Setting up `.Xmodmap` files
+  with `xmodmap`, and executing the shell scripts in
+  `/etc/X11/xinit/xinitrd.d/` and `$HOME/.xinitrc.d`.
+Examples are setting up canberra GTK modules, importing the `DISPLAY`
+  and `XAUTHORITY` environment variables into `systemd` and also the
+  DBUS activation environment.  `.desktop` files are seldom used instead
+  of scripts for these function.
+One exception is the pusle audio X11 integration.
+
+`WindowManager`;;
+
+Includes window managers and compositing managers, and anything else
+that has to be running before any windows are mapped.
+
+`Panel`;;
+
+Includes anything that permanently takes up screen real estate (via EWMH
+struts).  This is the first phase where things actually appear on the
+screen.
+
+`Desktop`;;
+
+Includes anything that draws directly on the desktop (e.g.
+backgrounder).
+
+`Application`;;
+
+Sometimes called `Applications` (with the 's' on the end).  This is
+everything else.
+
+`Running`;;
+
+The next four phases correspond to X11R6 Session Management phases and
+do not involve `.desktop` files per se.  This is the running state of
+the X11R6 session manager.
+
+`QueryEndSession`;;
+
+This is the user interaction of a session closedown.
+
+`EndSession`;;
+
+This is the end of the session after user interaction.
+
+`Exit`;;
+
+This is the session manager closed down.
+
+`X-GNOME-Autostart-Notify`::
+
+This is in fitting with the SM integration proposal for the autostart
+environment.  See https://lists.freedesktop.org/archives/xdg/2007-January/007436.html
+for details.  In short, an autostart program that supports this field
+(set to "true"), will accept an `SM_CLIENT_ID` in the `DESKTOP_STARTUP_ID`
+environment variable.
+
+`X-GNOME-Autostart-Delay`::
+
+An extra delay, in seconds, to wait (once it is due to run) before
+launching the autostart desktop entry.
+
+`X-GNOME-AutoRestart`::
+
+Seems to be an indication that the entry should stay running, even if it
+exits with an error or on a signal.
+
+KDE Extensions
+~~~~~~~~~~~~~~
+
+The following are KDE autostart desktop entry field extensions:
+
+`X-KDE-autostart-phase`::
+Can be `0`, `1` or `2` as follows:
+
+`0`;; Roughly equivalent to the `PreDisplayServer` GNOME phase.
+`1`;; Roughly equivalent to the `Initialization` GNOME phase.
+`2`;; Roughly equivalent to the `Application` GNOME phase.
+
+`X-KDE-autostart-after`::
+This is the way that KDE handles between the `WindowManager` and
+`Application` GNOME phases within the single application phase.  Values
+are:
+
+`panel`;; Start after the panel has started.
+`kdesktop`;; Start after the desktop has started.
+
+`X-KDE-StartupNotify`::
+Just an old deprecated equivalent to the now standard `StartupNotify`
+field.
+
+`X-KDE-UniqueApplet`::
+An indication that one should be running all the time.  Uniqueness
+cannot be determined by argv[0], I don't think.
+
 
 
 # vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:
