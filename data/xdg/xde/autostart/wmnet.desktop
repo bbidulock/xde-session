@@ -12,6 +12,7 @@ Terminal=false
 OnlyShowIn=FLUXBOX;BLACKBOX;LXDE;OPENBOX;WMAKER;PEKWM;ADWM;WAIMEA;
 Categories=DockApp;WMAKER;
 StartupNotify=false
+StartupWMClass=wmnet
 X-AppInstall-Package=wmnet
 X-AppInstall-Popcon=0
 X-AppInstall-Section=main
