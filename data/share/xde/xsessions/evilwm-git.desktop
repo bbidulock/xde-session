@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=evilwm
@@ -8,6 +9,7 @@ GenericName[pt]=Gestor de Janelas
 Icon=evilwm
 TryExec=/usr/bin/evilwm
 Exec=evilwm
+Terminal=false
 NoDisplay=true
 Hidden=true
 Categories=WindowManager;Application;System;
@@ -19,6 +21,7 @@ X-GNOME-WMName=evilwm
 X-AppInstall-Package=evilwm-git
 X-AppInstall-Popcon=2
 X-AppInstall-Section=aur
+X-Arch-Package=evilwm 1.1.0-1
 X-Arch-Package-Repository=aur
 X-Arch-Package-Name=evilwm-git
 X-Arch-Package-Version=20140124.b814db3-1

@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=PekWM
@@ -9,6 +10,7 @@ Comment=Small, fast, functional, and flexible window manager
 Icon=pekwm
 TryExec=/usr/bin/pekwm
 Exec=pekwm
+Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -17,7 +19,9 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=pekwm
 X-AppInstall-Package=pekwm
+X-AppInstall-Popcon=0
 X-AppInstall-Section=community
+X-Arch-Package=pekwm 0.1.17-2
 X-Arch-Package-Repository=community
 X-Arch-Package-Name=pekwm
 X-Arch-Package-Version=0.1.17-2

@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=FVWM-Crystal
@@ -9,6 +10,7 @@ Comment=Umm... Nice desktop. Transparent, and all...
 Icon=fvwm-crystal
 TryExec=/usr/bin/fvwm-crystal
 Exec=fvwm-crystal
+Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -17,6 +19,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=fvwm
 X-AppInstall-Package=fvwm-crystal
+X-AppInstall-Popcon=0
 X-AppInstall-Section=extra
 X-Arch-Package=fvwm-crystal 3.3.2-2
 X-Arch-Package-Repository=extra

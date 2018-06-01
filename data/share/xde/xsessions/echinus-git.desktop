@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=echinus
@@ -9,6 +10,7 @@ Comment=A window manager for X in the spirit of dwm
 Icon=echinus
 TryExec=/usr/bin/echinus
 Exec=echinus
+Terminal=false
 NoDisplay=true
 Hidden=true
 Categories=WindowManager;Application;System;
@@ -18,6 +20,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=echinus
 X-AppInstall-Package=echinus-git
+X-AppInstall-Popcon=0
 X-AppInstall-Section=custom
 X-Arch-Package=echinus-git 0.4.9.r31.g2acd233-1
 X-Arch-Package-Repository=custom

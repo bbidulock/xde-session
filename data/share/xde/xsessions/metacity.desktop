@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=Metacity
@@ -47,6 +48,7 @@ Comment=Minimal GTK2 Window Manager
 Icon=metacity
 TryExec=/usr/bin/metacity
 Exec=metacity
+Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;GTK;
 StartupNotify=true

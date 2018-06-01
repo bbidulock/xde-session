@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=EDE
@@ -9,6 +10,7 @@ Comment=This session logs you into EDE Desktop
 Icon=ede
 TryExec=/usr/bin/startede
 Exec=startede
+Terminal=false
 Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=false
@@ -16,6 +18,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=pekwm
 X-AppInstall-Package=ede
+X-AppInstall-Popcon=0
 X-AppInstall-Section=custom
 X-Arch-Package-Repository=custom
 X-Arch-Package-Name=ede

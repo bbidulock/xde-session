@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=MVWM
@@ -66,6 +67,7 @@ Comment[zu]=Isendlalelo esisebenza njengomlawuli wesibonisi esinamandla se-ICCCM
 Icon=mvwm
 TryExec=/usr/bin/mvwm
 Exec=mvwm
+Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=true

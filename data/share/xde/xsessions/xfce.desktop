@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=Xfce Session
@@ -80,6 +81,7 @@ Comment[zh_TW]=使用這個工作階段來執行 Xfce 作為您的桌面環境
 Icon=archlinux-wm-xfce
 TryExec=/usr/bin/startxfce4
 Exec=startxfce4
+Terminal=false
 Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=true
@@ -87,6 +89,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=xfwm
 X-AppInstall-Package=xfwm4
+X-AppInstall-Popcon=0
 X-AppInstall-Section=extra
 X-Arch-Package-Repository=extra
 X-Arch-Package-Name=xfwm4

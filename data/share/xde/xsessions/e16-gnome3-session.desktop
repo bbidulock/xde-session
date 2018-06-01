@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=E16 GNOME3
@@ -9,6 +10,7 @@ Comment[it]=Questo avvia GNOME 3 usando Enlightenment (e16) come window manager
 Icon=e16
 TryExec=/usr/bin/gnome-session
 Exec=gnome-session --session=e16-gnome
+Terminal=false
 Hidden=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -17,6 +19,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=enlightenment
 X-AppInstall-Package=gnome-session
+X-AppInstall-Popcon=0
 X-AppInstall-Section=extra
 X-Arch-Package=gnome-session 3.16.0-1
 X-Arch-Package-Repository=extra

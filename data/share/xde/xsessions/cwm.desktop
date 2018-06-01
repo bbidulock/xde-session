@@ -1,7 +1,8 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
-Name=CWM
+Name=cwm
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
@@ -9,6 +10,7 @@ Comment=OpenBSD fork of calmwm, a clean and lightweight window manager
 Icon=cwm
 TryExec=/usr/bin/cwm
 Exec=cwm
+Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -17,6 +19,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=cwm
 X-AppInstall-Package=cwm
+X-AppInstall-Popcon=0
 X-AppInstall-Section=custom
 X-Arch-Package=cwm 5.6-1
 X-Arch-Package-Repository=custom

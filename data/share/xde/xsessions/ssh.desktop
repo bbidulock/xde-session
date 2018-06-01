@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=Secure Remote connection
@@ -126,8 +127,11 @@ Comment[zh_HK]=本作業階段會使用 ssh 登入至遠端主機
 Comment[zh_TW]=本作業階段會使用 ssh 登入至遠端主機
 TryExec=/usr/lib/gdm/gdm-ssh-session
 Exec=/usr/lib/gdm/gdm-ssh-session
+Terminal=false
 Categories=WindowManager;Application;System;
+StartupNotify=false
 X-AppInstall-Package=gdm-old
+X-AppInstall-Popcon=0
 X-AppInstall-Section=custom
 X-Arch-Package=gdm-old 2.20.11-9.2
 X-Arch-Package-Repository=custom

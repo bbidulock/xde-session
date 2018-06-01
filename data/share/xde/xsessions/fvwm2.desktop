@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=FVWM
@@ -70,6 +71,7 @@ Comment[zu]=Isendlalelo esisebenza njengomlawuli wesibonisi esinamandla se-ICCCM
 Icon=fvwm
 TryExec=/usr/bin/fvwm
 Exec=fvwm
+Terminal=false
 NoDisplay=true
 Hidden=true
 Categories=WindowManager;Application;System;

@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=LXDE
@@ -19,6 +20,7 @@ Comment[zh_TW]=LXDE - 輕量級的 X11 桌面環境
 Icon=lxde-icon
 TryExec=/usr/bin/startlxde
 Exec=startlxde
+Terminal=false
 Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=true
@@ -26,6 +28,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=Openbox
 X-AppInstall-Package=lxde-common
+X-AppInstall-Popcon=0
 X-AppInstall-Section=community
 X-Arch-Package=lxde-common 0.99.0-2
 X-Arch-Package-Repository=community

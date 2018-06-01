@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=Waimea
@@ -9,6 +10,7 @@ Comment=An X11 window manager designed for maximum efficiency
 Icon=waimea
 TryExec=/usr/bin/waimea
 Exec=waimea
+Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false

@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=2bwm
@@ -9,6 +10,7 @@ Comment=2bwm - A fast floating and keyboard driven window manager
 Icon=2bWM
 TryExec=/usr/bin/2bwm
 Exec=2bwm
+Terminal=false
 NoDisplay=true
 Hidden=true
 Categories=WindowManager;Application;System;
@@ -18,6 +20,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=2bwm
 X-AppInstall-Package=2bwm-git
+X-AppInstall-Popcon=0
 X-AppInstall-Section=custom
 X-Arch-Package=2bwm-git 0.1.r106.g0419aae-1
 X-Arch-Package-Repository=custom

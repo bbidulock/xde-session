@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=spectrwm
@@ -9,6 +10,7 @@ Comment=The spectrwm window manager for X11
 Icon=spectrwm
 TryExec=/usr/bin/spectrwm
 Exec=spectrwm
+Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -17,6 +19,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=spectrwm
 X-AppInstall-Package=spectrwm
+X-AppInstall-Popcon=0
 X-AppInstall-Section=community
 X-Arch-Package=spectrwm 2.7.2-1
 X-Arch-Package-Repository=community

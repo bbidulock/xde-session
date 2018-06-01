@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=Wind
@@ -9,7 +10,9 @@ Comment=Wind window manager
 Icon=windwm
 TryExec=/usr/bin/wind
 Exec=wind
+Terminal=false
 NoDisplay=true
+Hidden=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=false
@@ -17,6 +20,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=wind
 X-AppInstall-Package=windwm
+X-AppInstall-Popcon=0
 X-AppInstall-Section=custom
 X-Arch-Package=windwm 1.5-1
 X-Arch-Package-Repository=custom

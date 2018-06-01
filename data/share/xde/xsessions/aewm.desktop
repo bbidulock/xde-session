@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=AEWM
@@ -9,6 +10,7 @@ Comment=An Exiguous Window Manager
 Icon=aewm
 TryExec=/usr/bin/aewm
 Exec=aewm
+Terminal=false
 NoDisplay=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
@@ -17,6 +19,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=AEWM
 X-AppInstall-Package=aewm
+X-AppInstall-Popcon=0
 X-AppInstall-Section=custom
 X-Arch-Package=aewm 1.3.12-6
 X-Arch-Package-Repository=custom

@@ -1,4 +1,5 @@
 [Desktop Entry]
+Version=1.0
 Encoding=UTF-8
 Type=XSession
 Name=IceWM Session
@@ -9,6 +10,7 @@ Comment=Simple and fast window manger
 Icon=icewm
 TryExec=/usr/bin/icewm-session
 Exec=icewm-session
+Terminal=false
 NoDisplay=true
 Hidden=true
 Categories=WindowManager;Application;System;
@@ -18,6 +20,7 @@ X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
 X-GNOME-WMName=icewm
 X-AppInstall-Package=icewm-git
+X-AppInstall-Popcon=0
 X-AppInstall-Section=custom
 X-Arch-Package=icewm-git 1.3.9.104-1
 X-Arch-Package-Repository=custom
