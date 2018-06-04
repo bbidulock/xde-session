@@ -224,31 +224,395 @@ specified before any non-option argument.)
 
 =head1 USAGE
 
-B<xde-chooser> can be run from the command line to check its operation
-without having to be involved in an session or started by L<xinit(1)>.
-The B<--dry-run> option is usedful in combination with B<--exec> to keep
-the chooser from attempting to execute the window manager.
+B<xde-chooser> can be run from an XDM to launch an X session, run as a
+desktop application to switch a running X session, or run from the
+command line to test its operation.  These three uses are detailed
+below.
 
-B<xde-chooser> can also be run as a desktop application to switch the
+=head2 LAUNCHING AN X SESSION
+
+B<xde-chooser> is meant to be called directly from an F<~/.xinitrc>
+file, or from a display manager such as L<xde-xdm(1)> or L<slim(1)>.
+It is normally not necessary to perform any initialization before
+executing B<xde-chooser>.
+
+=head2 SWITCHING X SESSIONS
+
+B<xde-chooser> can be run as a desktop application to switch the
 window manager currently being used (this is because L<xdg-launch> with
 the B<-x> flag is capable of switching the running window manager in
 many cases).  Simply run it with the B<--exec> option.  An application
 F<.desktop> file is distributed with the release to provide a menu item
-for this funcion of the program.
+for this function of the program.
 
 (Note that switching the window manager may fail when L<xdg-launch>
 cannot determine how to stop a running window manager when the running
 window manager does not conform to ICCCM 2.0 C<WM_S0> manager selection
 semantics.)
 
-=head1 WINDOW MANAGERS
+=head2 TESTING OPERATION
 
-The I<XDE> suite ships with a number of session files that are contained
-in the F</usr/share/xde/xsessions> directory.  Currently these are:
-F<AfterStep>, F<blackbox>, F<fluxbox>, F<Fvwm1>, F<fvwm-crystal>,
-F<Fvwm>, F<fvwm>, F<gnome>, F<icewm-session>, F<Jwm>, F<LXDE>,
-F<openbox>, F<openbox-gnome>, F<openbox-kde>, F<pekwm>, F<ssh>, F<twm>,
-F<wmaker>, F<wmii>, F<xfce>.
+B<xde-chooser> can also be run from the command line to check its operation
+without having to be involved in an session or started by L<xinit(1)>.
+The B<--dry-run> option is useful in combination with B<--exec> to keep
+the chooser from attempting to execute the window manager.
+
+=head1 CONFORMANCE
+
+There are, in fact, no standards specifications for C<XSession> files.
+There are many extensions added to the file format by various display
+managers and session managers.
+
+Display manager extensions tend to be focused on selecting an X session
+coincident with login to an X display.  This is likely because the
+classical GNOME2 L<gdm(1)> program allowed the user to select the X
+session coincident with the login process.
+
+Session manager extensions tend to be focused on the startup process for
+the session, the capabilities of the window manager, and ongoing session
+management capabilities of the combination of session manager with
+window manager.
+
+=head2 WINDOW MANAGERS
+
+The I<XDE> suite (and B<xde-session> package) ships with a number of
+session files that are contained in the F</usr/share/xde/xsessions>
+directory.  The purpose of the B<xde-session> package has been to
+support a wide range of light-weight window managers not specially
+supported by any other session manager.  So, although B<xde-chooser> is
+capable of launching a normal GNOME or KDE session, it might not be the
+best way to do so.
+
+The wide range of window managers supported by B<xde-chooser>, and for
+which C<XSession> F<.desktop> files are shipped, are as follows:
+L<2bwm(1)>,
+L<adwm(1)>,
+L<aewm(1)>,
+L<aewm++(1)>,
+L<AfterStep(1)>,
+L<arch-meego(1)>,
+L<awesome(1)>,
+L<blackbox(1)>,
+L<bspwm(1)>,
+L<budgie-desktop(1)>,
+L<cde(1)>,
+L<cinamon(1)>,
+L<compiz(1)>,
+L<ctwm(1)>,
+L<cwm(1)>,
+L<deepin(1)>,
+L<dwm(1)>,
+L<e16(1)>,
+L<echinus(1)>,
+L<ede(1)>,
+L<enlightenment(1)>,
+L<etwm(1)>,
+L<evilwm(1)>,
+L<failsafewm(1)>,
+L<fluxbox(1)>,
+L<flwm(1)>,
+L<fvwm(1)>,
+L<glasswm(1)>,
+L<gnome(1)>,
+L<goomwwm(1)>,
+L<herbstluftwm(1)>,
+L<i3(1)>,
+L<icewm(1)>,
+L<jwm(1)>,
+L<kodi(1)>,
+L<larswm(1)>,
+L<logram(1)>,
+L<lxde(1)>,
+L<lxqt(1)>,
+L<lxsession(1)>,
+L<mantis-wm(1)>,
+L<mate(1)>,
+L<matwm2(1)>,
+L<mcwm(1)>,
+L<metacity(1)>,
+L<mutter(1)>,
+L<mvwm(1)>,
+L<mwm(1)>,
+L<notion(1)>,
+L<openbox(1)>,
+L<pawm(1)>,
+L<pekwm(1)>,
+L<plan9port(1)>,
+L<plasma(1)>,
+L<qtile(1)>,
+L<rio(1)>,
+L<spectrwm(1)>,
+L<ssh(1)>,
+L<sugar(1)>,
+L<trinity(1)>,
+L<twm(1)>,
+L<twobwm(1)>,
+L<uwm(1)>,
+L<velox(1)>,
+L<vtwm(1)>,
+L<waimea(1)>,
+L<wind(1)>,
+L<windowmaker(1)>,
+L<windwm(1)>,
+L<wm2(1)>,
+L<wmaker(1)>,
+L<wmii(1)>,
+L<wmx(1)>,
+L<xdwm(1)>,
+L<xfce(1)>,
+L<xmonad(1)>,
+L<xsession(1)> and
+L<yeahwm(1)>.
+
+=head2 XSESSION DESKTOP ENTRIES
+
+The C<XSession> files read by B<xde-chooser> are capable of
+understanding various extensions to the desktop entry specification and
+maintain compatibility to the extent possible with GNOME and KDE
+extensions.  From these extensions B<xde-chooser> understands how to
+launch a window manager on its own, within a lightweight session
+manager, or within full blown session manager, whether that of XDE or
+the GNOME or KDE session managers.
+
+Instead of separate F<.desktop> files for each mode of launching the
+window manager (within various sessions), B<xde-chooser> uses desktop
+entry file actions to provide the mechanism for launching the window
+manager in various ways.  An example C<XSession> file is as follows:
+
+=head3 [Desktop Entry] Section
+
+An example C<[Desktop Entry]> section from the F<adwm.desktop>
+C<XSession> file is as follows:
+
+    [Desktop Entry]
+    Version=1.0
+    Encoding=UTF-8
+    Type=XSession
+    Name=adwm
+    GenericName=Window Manager
+    GenericName[fr]=Gestionnaire de Fenêtres
+    GenericName[pt]=Gestor de Janelas
+    Comment=An advanced dynamic window manager for X
+    Icon=adwm
+    TryExec=/usr/bin/adwm
+    Exec=adwm
+    Terminal=false
+    NoDisplay=true
+    Categories=WindowManager;Application;System;
+    StartupNotify=true
+    X-GNOME-Autostart-Notify=true
+    X-GNOME-Autostart-Phase=WindowManager
+    X-GNOME-Provides=windowmanager
+    X-GNOME-WMName=ADWM
+    X-AppInstall-Package=adwm
+    X-AppInstall-Popcon=0.00
+    X-AppInstall-Section=aur
+    X-Arch-Package=adwm 0.7.4-1
+    X-Arch-Package-Repository=aur
+    X-Arch-Package-Name=adwm
+    X-Arch-Package-Version=0.7.4-1
+    X-Arch-Package-Description=Advanced dynamic window manager for X
+    X-Arch-Package-Groups=None
+    X-Arch-Package-URL=http://github.com/bbidulock/adwm
+    X-Arch-Package-Votes=3
+    DesktopNames=ADWM
+    X-LightDM-DesktopName=adwm
+    Actions=XDE;
+
+The fields are interpreted as follows:
+
+=over
+
+=item C<Version=1.0>
+
+The Desktop Entry specification version in conformance with the XDG
+L<Desktop Entry Specification>.  Should always be C<1.0>, and defaults
+to C<1.0> if this entry is not present.
+
+=item C<Encoding=UTF-8>
+
+The encoding of this file in conformance with the XDG
+L<Desktop Entry Specification>.  Should always be C<UTF-8>, and defaults
+to C<UTF-8> if this entry is not present.
+
+=item C<Type=XSession>
+
+Provides the type of desktop entry file.  The only valid types in the
+formal Desktop Entry specification are C<Application> and C<Autostart>;
+however, C<XSession> is typically used for X sessions and the type will
+default to C<XSession> if this field is not provided.  This field may be
+set to C<Application> when the file is to also reside with other
+applications.
+
+=item C<Name=adwm>
+
+The name of the desktop entry in accordance with specification.
+
+=item C<GenericName=Window Manager>
+
+=item C<GenericName[fr]=Gestionnaire de Fenêtres>
+
+=item C<GenericName[pt]=Gestor de Janelas>
+
+The generic name of the desktop entry in accordance with specification.
+The generic name should be the same for all window managers and
+therefore for all C<XSession> files.
+
+=item C<Comment=An advanced dynamic window manager for X>
+
+The description of the desktop entry in conformance with specification.
+
+=item C<Icon=adwm>
+
+The icon of the desktop entry in conformance with specification.  The
+B<xde-icons> package provides a large number of light-weight window
+manager icons, installed into XDG icon theme directories, that are not
+normally shipped with, nor installed by most light-weight window
+managers.
+
+=item C<TryExec=/usr/bin/adwm>
+
+The binary that must be available to use the desktop entry in
+conformance with the XDG L<Desktop Entry Specification>.  This should
+always be the binary executable of the window manager itself.  This
+should normally use an absolute path.
+
+=item C<Exec=adwm>
+
+The command for the entry per specification.  This should be the command
+necessary to start the window manager on its own (without a session).
+The command should not use an absolute path.
+
+=item C<Terminal=false>
+
+Optional per specification: false when not provided.
+
+=item C<NoDisplay=true>
+
+Should be set to true.  This field is ignored by B<xde-chooser>, but
+will be observed by XDG desktop entry programs such as menus and
+launchers if the file is to also reside within an applications
+directory.
+
+=item C<Hidden=true>
+
+Should be included an set to C<true> when the desktop entry is simply
+used to occlude another C<XSession> entry in a lower priority XDG
+directory.  B<xde-chooser> uses normal XDG search rules, so it is common
+to set C<$XDG_CONFIG_DIRS=/etc/xdg/xde:/etc/xdg> and
+C<$XDG_DATA_DIRS=/usr/local/share/xde:/usr/share/xde:/usr/local/share:/usr/share>
+so that the shipped C<XSession> files are discovered first and the
+undesirable ones that appear in F</usr/share/xsessions> can be occluded
+by a file of the same name in F</usr/share/xde/xsessions> with
+the C<Hidden> flag set to C<true>.
+
+=item C<Categories=WindowManager;Application;System;>
+
+Categories for window managers should always be set as above.
+
+=item C<StartupNotify=true>
+
+Specifies whether the window manager will perform desktop startup
+notification completion in accordance with the
+L<Desktop Startup Notification Specification>.  L<adwm(1)> does, so in
+this case it is set to C<true>.  It is assumed that if a window manager
+performs desktop startup notification for itself and indicates that it
+supports C<_NET_STARTUP_ID>, C<_NET_STARTUP_INFO_BEGIN> and
+C<_NET_STARTUP_INFO> in C<_NET_SUUPPORTED> that it also supports
+assisting non-startup-notification-aware clients.
+
+=item C<X-GNOME-Autostart-Notify=true>
+
+=item C<X-GNOME-Autostart-Phase=WindowManager>
+
+=item C<X-GNOME-Provides=windowmanager>
+
+=item C<X-GNOME-WMName=ADWM>
+
+=item C<X-AppInstall-Package=adwm>
+
+=item C<X-AppInstall-Popcon=0.00>
+
+=item C<X-AppInstall-Section=aur>
+
+=item C<X-Arch-Package=adwm 0.7.4-1>
+
+=item C<X-Arch-Package-Repository=aur>
+
+=item C<X-Arch-Package-Name=adwm>
+
+=item C<X-Arch-Package-Version=0.7.4-1>
+
+=item C<X-Arch-Package-Description=Advanced dynamic window manager for X>
+
+=item C<X-Arch-Package-Groups=None>
+
+=item C<X-Arch-Package-URL=http://github.com/bbidulock/adwm>
+
+=item C<X-Arch-Package-Votes=3>
+
+=item C<DesktopNames=ADWM>
+
+=item C<X-LightDM-DesktopName=adwm>
+
+=item C<Actions=XDE;>
+
+=back
+
+Note that the C<OnlyShowIn> and C<NotShowIn> fields are pointless (as
+the current desktop has not yet been set), and they should not appear in
+the C<XSession> file.
+
+=head3 [Window Manager] Section
+    
+    [Window Manager]
+    Name=adwm
+    SessionManaged=false
+    StartupNotification=true
+    X-XDE-Managed=true
+
+=over
+
+=item C<Name=adwm>
+
+=item C<SessionManaged=false>
+
+=item C<StartupNotification=true>
+
+=item C<X-XDE-Managed=true>
+
+=back
+
+=head3 [Desktop Action ACTION] Section
+    
+    [Desktop Action XDE]
+    Name=XDE
+    Comment=adwm in an XDE session
+    Icon=xde
+    TryExec=/usr/bin/xde-session
+    Exec=xde-session -desktop ADWM -startwm start-adwm
+    DesktopNames=XDE:ADWM
+    X-LightDM-DesktopName=xde
+
+=over
+
+=item C<[Desktop Action XDE]>
+
+=item C<Name=XDE>
+
+=item C<Comment=adwm in an XDE session>
+
+=item C<Icon=xde>
+
+=item C<TryExec=/usr/bin/xde-session>
+
+=item C<Exec=xde-session -desktop ADWM -startwm start-adwm>
+
+=item C<DesktopNames=XDE:ADWM>
+
+=item C<X-LightDM-DesktopName=xde>
+
+=back
 
 =head1 FILES
 
@@ -435,11 +799,6 @@ C<XDG_MENU_PREFIX> environment variable.  It is not an XDG standard
 environment variable.
 
 =back
-
-=head1 USAGE
-
-B<xde-chooser> is meant to be called directly from an F<~/.xinitrc>
-file, or from a display manager such as L<slim(1)>.
 
 =head1 BUGS
 

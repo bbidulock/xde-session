@@ -222,7 +222,7 @@ save-yourself phase 2).
 Dock applications that support the B<WM_SAVE_YOURSELF> protocol will
 receive a B<WM_SAVE_YOURSELF> client message each time the session
 manager issues a checkpoint or shutdown.  This allows applications to
-save state.  If a dock application does not support he
+save state.  If a dock application does not support the
 B<WM_SAVE_YOURSELF> protocol, the dock manager will provide enough
 information to the session manager to restart the application (using
 B<WM_COMMAND>), but no state will be restored.
