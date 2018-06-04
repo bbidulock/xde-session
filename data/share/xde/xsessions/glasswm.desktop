@@ -1,0 +1,48 @@
+[Desktop Entry]
+Type=XSession
+Name=Glass
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Small windowmanager forked from aewm++
+Icon=glasswm
+TryExec=/usr/bin/glasswm
+Exec=glasswm
+Terminal=false
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=Glass
+X-AppInstall-Package=glasswm
+X-AppInstall-Popcon=0.00
+X-AppInstall-Section=aur
+X-Arch-Package=glasswm 0.9.0-2
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=glasswm
+X-Arch-Package-Version=0.9.0-2
+X-Arch-Package-Description=Small windowmanager forked from aewm++
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=https://github.com/RiJo/glass
+X-Arch-Package-Votes=1
+DesktopNames=GLASSWM
+X-LightDM-DesktopName=glass
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=Window manager in an XDE Session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop GLASSWM -startwm start-glass
+DesktopNames=XDE:GLASSWM
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=Glass
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=true

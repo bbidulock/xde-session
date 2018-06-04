@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=FVWM
 Name[bn]=জি-ভি
@@ -95,11 +93,11 @@ X-Arch-Package-Version=2.6.5-4
 X-Arch-Package-Description=A multiple large virtual desktop window manager originally derived from twm
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.fvwm.org
-Aliases=fvwm;
 DesktopNames=FVWM
 X-LightDM-DesktopName=fvwm
 X-SuSE-translate=true
 Actions=XDE;
+Aliases=fvwm;
 
 [Desktop Action XDE]
 Name=XDE

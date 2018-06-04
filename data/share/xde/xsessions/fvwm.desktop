@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=FVWM
 Name[bn]=জি-ভি
@@ -85,15 +83,16 @@ X-GNOME-Bugzilla-Bugzilla=GNOME
 X-GNOME-Bugzilla-Product=Fvwm
 X-GNOME-Bugzilla-Component=general
 X-AppInstall-Package=fvwm
-X-AppInstall-Popcon=572
+X-AppInstall-Popcon=0
 X-AppInstall-Section=extra
-X-Arch-Package=fvwm 2.6.5-4
+X-Arch-Package=fvwm 2.6.7-2
 X-Arch-Package-Repository=extra
 X-Arch-Package-Name=fvwm
-X-Arch-Package-Version=2.6.5-4
+X-Arch-Package-Version=2.6.7-2
 X-Arch-Package-Description=A multiple large virtual desktop window manager originally derived from twm
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.fvwm.org
+X-Arch-Package-Votes=0
 DesktopNames=FVWM
 X-LightDM-DesktopName=fvwm
 X-SuSE-translate=true

@@ -1,0 +1,47 @@
+[Desktop Entry]
+Type=XSession
+Name=sscrotwm
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=The sscrotwm window manager
+Icon=
+TryExec=/usr/bin/sscrotwm
+Exec=sscrotwm
+Terminal=false
+NoDisplay=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=sscrotwm
+X-AppInstall-Package=sscrotwm-git
+X-AppInstall-Popcon=0.00
+X-AppInstall-Section=aur
+X-Arch-Package=sscrotwm-git r33.07c58bf-1
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=sscrotwm-git
+X-Arch-Package-Version=r33.07c58bf-1
+X-Arch-Package-Description=A minimalist fork of scrotwm/spectrwm.
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://github.com/sporkexec/sscrotwm
+X-Arch-Package-Votes=3
+DesktopNames=SSCROTWM
+X-LightDM-DesktopName=sscrotwm
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=sscrotwm in an XDE Session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop SSCROTWM -startwm start-sscrotwm
+DesktopNames=XDE:SSCROTWM
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=sscrotwm
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=true

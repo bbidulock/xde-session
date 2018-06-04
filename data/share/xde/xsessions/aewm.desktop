@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=AEWM
 GenericName=Window Manager
@@ -28,6 +26,7 @@ X-Arch-Package-Version=1.3.12-6
 X-Arch-Package-Description=Minimal window manager - includes separate utilities
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.red-bean.com/decklin/aewm
+X-Arch-Package-Votes=2
 DesktopNames=AEWM
 X-LightDM-DesktopName=aewm
 Actions=XDE;

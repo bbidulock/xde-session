@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=FVWM1
 Name[bn]=জি-ভি
@@ -73,6 +71,7 @@ TryExec=/usr/bin/fvwm1
 Exec=fvwm1
 Terminal=false
 NoDisplay=true
+Hidden=true
 Categories=WindowManager;Application;System;
 StartupNotify=false
 X-GNOME-Autostart-Notify=false
@@ -84,9 +83,21 @@ X-GNOME-WMSettingsModule=Fvwm
 X-GNOME-Bugzilla-Bugzilla=GNOME
 X-GNOME-Bugzilla-Product=Fvwm
 X-GNOME-Bugzilla-Component=general
+X-AppInstall-Package=fvwm
+X-AppInstall-Popcon=572
+X-AppInstall-Section=extra
+X-Arch-Package=fvwm 2.6.5-4
+X-Arch-Package-Repository=extra
+X-Arch-Package-Name=fvwm
+X-Arch-Package-Version=2.6.5-4
+X-Arch-Package-Description=A multiple large virtual desktop window manager originally derived from twm
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://www.fvwm.org
 DesktopNames=FVWM
 X-LightDM-DesktopName=fvwm
+X-SuSE-translate=true
 Actions=XDE;
+Aliases=fvwm;
 
 [Desktop Action XDE]
 Name=XDE

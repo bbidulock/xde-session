@@ -1,6 +1,4 @@
 [Desktop Entry]
-Version=1.0
-Encoding=UTF-8
 Type=XSession
 Name=FVWM-Crystal
 GenericName=Window Manager
@@ -21,15 +19,26 @@ X-GNOME-WMName=fvwm
 X-AppInstall-Package=fvwm-crystal
 X-AppInstall-Popcon=0
 X-AppInstall-Section=extra
-X-Arch-Package=fvwm-crystal 3.3.2-2
+X-Arch-Package=fvwm-crystal 3.4.1-1
 X-Arch-Package-Repository=extra
 X-Arch-Package-Name=fvwm-crystal
-X-Arch-Package-Version=3.3.2-2
+X-Arch-Package-Version=3.4.1-1
 X-Arch-Package-Description=Transparent Themes for fvwm
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://fvwm-crystal.sourceforge.net/
+X-Arch-Package-Votes=0
 DesktopNames=FVWM
 X-LightDM-DesktopName=fvwm
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=FVWM in an XDE Session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop FVWM -startwm fvwm-crystal
+DesktopNames=XDE:FVWM
+X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=fvwm

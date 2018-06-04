@@ -1,0 +1,49 @@
+[Desktop Entry]
+Type=XSession
+Name=CDE
+GenericName=Window Manager
+GenericName[fr]=Gestionnaire de Fenêtres
+GenericName[pt]=Gestor de Janelas
+Comment=Use this session to boot into the Common Desktop Environment
+Icon=
+TryExec=/usr/bin/startxsession.sh
+Exec=startxsession.sh
+Terminal=false
+NoDisplay=true
+Hidden=true
+Categories=WindowManager;Application;System;
+StartupNotify=false
+X-GNOME-Autostart-Notify=false
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+X-GNOME-WMName=CDE
+X-AppInstall-Package=cdesktopenv
+X-AppInstall-Popcon=0.00
+X-AppInstall-Section=aur
+X-Arch-Package=cdesktopenv 2.2.4-2
+X-Arch-Package-Repository=aur
+X-Arch-Package-Name=cdesktopenv
+X-Arch-Package-Version=2.2.4-2
+X-Arch-Package-Description=CDE - Common Desktop Environment
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=http://sourceforge.net/projects/cdesktopenv/
+X-Arch-Package-Votes=19
+DesktopNames=CDE
+X-LightDM-DesktopName=CDE
+Actions=XDE;
+
+[Desktop Action XDE]
+Name=XDE
+Comment=Window manager in an XDE Session
+Icon=xde
+TryExec=/usr/bin/xde-session
+Exec=xde-session -desktop CDE -startwm startsession.sh
+DesktopNames=XDE:CDE
+X-LightDM-DesktopName=xde
+
+[Window Manager]
+Name=CDE
+SessionManaged=false
+StartupNotification=false
+X-XDE-Managed=true
+
