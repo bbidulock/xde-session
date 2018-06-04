@@ -233,7 +233,6 @@ typedef struct {
 	char *welcome;
 	char *charset;
 	char *language;
-	char *desktop;
 	char *icon_theme;
 	char *gtk2_theme;
 	char *curs_theme;
@@ -263,7 +262,6 @@ typedef struct {
 	double yposition;
 	Bool setstyle;
 	Bool filename;
-	Bool splash;
 	char **execute;
 } Options;
 
@@ -281,7 +279,6 @@ Options options = {
 	.welcome = NULL,
 	.charset = NULL,
 	.language = NULL,
-	.desktop = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
 	.curs_theme = NULL,
@@ -312,7 +309,6 @@ Options options = {
 	.setstyle = True,
 	.filename = False,
 	.execute = NULL,
-	.splash = True,
 };
 
 Options defaults = {
@@ -358,7 +354,6 @@ Options defaults = {
 	.yposition = 0.5,
 	.setstyle = True,
 	.filename = False,
-	.splash = True,
 };
 
 typedef struct {
@@ -2651,31 +2646,6 @@ get_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
 }
 
 static const char *
-get_dm_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
-{
-	const char *value;
-
-	if (!(value = get_nc_resource(xrdb, "DisplayManager", "DisplayManager", resource)))
-		value = dflt;
-	return (value);
-}
-
-static const char *
-get_dm_dpy_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
-{
-	const char *value;
-	static char nc[64], *p;
-
-	snprintf(nc, sizeof(nc), "DisplayManager.%s", options.display);
-	for (p = nc + 15; *p; p++)
-		if (*p == ':' || *p == '.')
-			*p = '_';
-	if (!(value = get_nc_resource(xrdb, nc, nc, resource)))
-		value = dflt;
-	return (value);
-}
-
-static const char *
 get_xlogin_resource(XrmDatabase xrdb, const char *resource, const char *dflt)
 {
 	const char *value;
@@ -2783,19 +2753,6 @@ getXrmString(const char *val, char **string)
 	if ((tmp = strdup(val))) {
 		free(*string);
 		*string = tmp;
-		return TRUE;
-	}
-	return FALSE;
-}
-
-static gboolean
-getXrmStringList(const char *val, char ***list)
-{
-	gchar **tmp;
-
-	if ((tmp = g_strsplit(val, " ", -1))) {
-		g_strfreev(*list);
-		*list = tmp;
 		return TRUE;
 	}
 	return FALSE;
@@ -3106,117 +3063,6 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "transparent", NULL))) {
 		getXrmBool(val, &options.transparent);
 	}
-	// DisplayManager.servers:		:0 local /usr/bin/X11/X :0
-	// DisplayManager.requestPort:		177
-	// DisplayManager.debugLevel:		0
-	// DisplayManager.errorLogFile:		
-	// DisplayManager.daemonMode:		true
-	// DisplayManager.pidFile:		
-	// DisplayManager.lockPidFile:		true
-	// DisplayManager.authDir:		/usr/lib/X11/xdm
-	if ((val = get_dm_resource(rdb, "authDir", "/usr/lib/X11/xdm"))) {
-		getXrmString(val, &resources.authDir);
-	}
-	// DisplayManager.autoRescan:		true
-	// DisplayManager.removeDomainname:	true
-	// DisplayManager.keyFile:		
-	// DisplayManager.accessFile:		
-	// DisplayManager.exportList:		
-	if ((val = get_dm_resource(rdb, "exportList", ""))) {
-		getXrmStringList(val, &resources.exportList);
-	}
-	// DisplayManager.randomFile:		/dev/mem
-	// DisplayManager.prngSocket:		/tmp/entropy
-	// DisplayManager.prngPort:		0
-	// DisplayManager.randomDevice:		DEV_RANDOM
-	// DisplayManager.greeterLib:		/usr/lib/X11/xdm/libXdmGreet.so
-	// DisplayManager.choiceTimeout:	15
-	// DisplayManager.sourceAddress:	false
-	// DisplayManager.willing:		
-
-	// DisplayManager.*.serverAttempts:	1
-	// DisplayManager.*.openDelay:		15
-	// DisplayManager.*.openRepeat:		5
-	// DisplayManager.*.openTimeout:	120
-	// DisplayManager.*.startAttempts:	4
-	// DisplayManager.*.reservAttempts:	2
-	// DisplayManager.*.pingInterval:	5
-	// DisplayManager.*.pingTimeout:	5
-	// DisplayManager.*.terminateServer:	false
-	// DisplayManager.*.grabServer:		false
-	if ((val = get_dm_dpy_resource(rdb, "grabServer", "false"))) {
-		getXrmBool(val, &resources.grabServer);
-	}
-	// DisplayManager.*.grabTimeout:	3
-	if ((val = get_dm_dpy_resource(rdb, "grabTimeout", "3"))) {
-		getXrmInt(val, &resources.grabTimeout);
-	}
-	// DisplayManager.*.resetSignal:	1
-	// DisplayManager.*.termSignal:		15
-	// DisplayManager.*.resetForAuth:	false
-	// DisplayManager.*.authorize:		true
-	if ((val = get_dm_dpy_resource(rdb, "authorize", "true"))) {
-		getXrmBool(val, &resources.authorize);
-	}
-	// DisplayManager.*.authComplain:	true
-	if ((val = get_dm_dpy_resource(rdb, "authComplain", "true"))) {
-		getXrmBool(val, &resources.authComplain);
-	}
-	// DisplayManager.*.authName:		XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1
-	if ((val = get_dm_dpy_resource(rdb, "authName", "XDM-AUTHORIZATION-1 MIT-MAGIC-COOKIE-1"))) {
-		getXrmStringList(val, &resources.authName);
-	}
-	// DisplayManager.*.authFile:		
-	if ((val = get_dm_dpy_resource(rdb, "authFile", NULL))) {
-		getXrmString(val, &resources.authFile);
-	}
-	// DisplayManager.*.resources:		
-	// DisplayManager.*.xrdb:		/usr/bin/X11/xrdb
-	// DisplayManager.*.setup:		
-	if ((val = get_dm_dpy_resource(rdb, "setup", NULL))) {
-		getXrmString(val, &resources.setup);
-	}
-	// DisplayManager.*.startup:		
-	if ((val = get_dm_dpy_resource(rdb, "startup", NULL))) {
-		getXrmString(val, &resources.startup);
-	}
-	// DisplayManager.*.reset:		
-	if ((val = get_dm_dpy_resource(rdb, "reset", NULL))) {
-		getXrmString(val, &resources.reset);
-	}
-	// DisplayManager.*.session:		/usr/bin/X11/xterm -ls
-	if ((val = get_dm_dpy_resource(rdb, "session", NULL))) {
-		getXrmString(val, &resources.session);
-	}
-	// DisplayManager.*.userPath:		:/bin:/usr/bin:/usr/bin/X11:/usr/ucb
-	if ((val = get_dm_dpy_resource(rdb, "userPath", NULL))) {
-		getXrmString(val, &resources.userPath);
-	}
-	// DisplayManager.*.systemPath:		/etc:/bin:/usr/bin:/usr/bin/X11:/usr/ucb
-	if ((val = get_dm_dpy_resource(rdb, "systemPath", NULL))) {
-		getXrmString(val, &resources.systemPath);
-	}
-	// DisplayManager.*.systemShell:	/bin/sh
-	if ((val = get_dm_dpy_resource(rdb, "systemShell", NULL))) {
-		getXrmString(val, &resources.systemShell);
-	}
-	// DisplayManager.*.failsafeClient:	/usr/bin/X11/xterm
-	if ((val = get_dm_dpy_resource(rdb, "failsafeClient", NULL))) {
-		getXrmString(val, &resources.failsafeClient);
-	}
-	// DisplayManager.*.userAuthDir:	/tmp
-	if ((val = get_dm_dpy_resource(rdb, "userAuthDir", NULL))) {
-		getXrmString(val, &resources.userAuthDir);
-	}
-	// DisplayManager.*.chooser:		/usr/lib/X11/xdm/chooser
-	if ((val = get_dm_dpy_resource(rdb, "chooser", NULL))) {
-		getXrmString(val, &resources.chooser);
-	}
-	// DisplayManager.*.greeter:		
-	if ((val = get_dm_dpy_resource(rdb, "greeter", NULL))) {
-		getXrmString(val, &resources.greeter);
-	}
-
 	XrmDestroyDatabase(rdb);
 	XCloseDisplay(dpy);
 }
@@ -3228,17 +3074,6 @@ set_default_debug(void)
 
 	if (env)
 		options.debug = atoi(env);
-}
-
-static void
-set_default_display(void)
-{
-	const char *env = getenv("DISPLAY");
-
-	if (env) {
-		free(options.display);
-		options.display = strdup(env);
-	}
 }
 
 static void
@@ -3259,15 +3094,6 @@ set_default_x11(void)
 		if ((options.tty = calloc(16, sizeof(*options.tty))))
 			snprintf(options.tty, 16, "tty%s", options.vtnr);
 	}
-}
-
-static void
-set_default_desktop(void)
-{
-	const char *env = getenv("XDG_CURRENT_DESKTOP");
-
-	free(options.desktop);
-	options.desktop = env ? strdup(env) : strdup("XDE");
 }
 
 static void
@@ -3587,9 +3413,7 @@ static void
 set_defaults(int argc, char *argv[])
 {
 	set_default_debug();
-	set_default_display();
 	set_default_x11();
-	set_default_desktop();
 	set_default_vendor();
 	set_default_xdgdirs(argc, argv);
 	set_default_banner();
@@ -3598,13 +3422,6 @@ set_defaults(int argc, char *argv[])
 	set_default_language();
 	set_default_session();
 	set_default_choice();
-}
-
-static void
-get_default_display(void)
-{
-	if (options.display)
-		setenv("DISPLAY", options.display, 1);
 }
 
 static void
@@ -3618,7 +3435,7 @@ get_default_x11(void)
 	long *data = NULL;
 
 	if (!(dpy = XOpenDisplay(0))) {
-		EPRINTF("cannot open display %s\n", options.display);
+		EPRINTF("cannot open display %s\n", getenv("DISPLAY"));
 		exit(EXIT_FAILURE);
 	}
 	root = RootWindow(dpy, 0);
@@ -3657,7 +3474,7 @@ get_default_x11(void)
 			snprintf(options.tty, 16, "tty%s", options.vtnr);
 	}
 	if (!options.tty)
-		options.tty = strdup(options.display);
+		options.tty = strdup(getenv("DISPLAY"));
 	XCloseDisplay(dpy);
 }
 
@@ -3897,7 +3714,6 @@ get_default_file(void)
 static void
 get_defaults(int argc, char *argv[])
 {
-	get_default_display();
 	get_default_x11();
 	get_default_vendor();
 	get_default_banner();
@@ -3932,36 +3748,38 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"display",	    required_argument,	NULL, 'd'},
-			{"desktop",	    required_argument,	NULL, 'e'},
-			{"session",	    required_argument,	NULL, 's'},
-			{"prompt",	    no_argument,	NULL, 'p'},
+
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'l'},
+			{"prompt",	    no_argument,	NULL, 'p'},
 			{"side",	    required_argument,	NULL, 'S'},
-			{"exec",	    required_argument,	NULL, 'x'},
 			{"noask",	    no_argument,	NULL, 'N'},
-			{"file",	    required_argument,	NULL, 'f'},
-			{"nosplash",	    no_argument,	NULL, '4'},
-
-			{"toolwait",	    optional_argument,	NULL, 'W'},
 
 			{"charset",	    required_argument,	NULL, 'c'},
 			{"language",	    required_argument,	NULL, 'L'},
 			{"default",	    no_argument,	NULL, 'd'},
+			{"exec",	    no_argument,	NULL, 'e'},
 			{"icons",	    required_argument,	NULL, 'i'},
 			{"theme",	    required_argument,	NULL, 't'},
-			{"exec",	    no_argument,	NULL, 'e'},
 			{"xde-theme",	    no_argument,	NULL, 'x'},
 
 			{"timeout",	    required_argument,	NULL, 'T'},
 			{"filename",	    no_argument,	NULL, 'f'},
 			{"vendor",	    required_argument,	NULL, '5'},
+			{"dry-run",	    no_argument,	NULL, 'n'},
+
+			{"exec",	    required_argument,	NULL, 'x'},
+			{"file",	    required_argument,	NULL, 'f'},
+			{"nosplash",	    no_argument,	NULL, '4'},
+
+			{"toolwait",	    optional_argument,	NULL, 'W'},
+
+
 			{"xsessions",	    no_argument,	NULL, 'X'},
 			{"default",	    required_argument,	NULL, '6'},
 			{"setbg",	    no_argument,	NULL, '8'},
 			{"transparent",	    no_argument,	NULL, '9'},
 
-			{"dry-run",	    no_argument,	NULL, 'n'},
 			{"debug",	    optional_argument,	NULL, 'D'},
 			{"verbose",	    optional_argument,	NULL, 'v'},
 			{"help",	    no_argument,	NULL, 'h'},
@@ -3985,30 +3803,11 @@ main(int argc, char *argv[])
 		case 0:
 			goto bad_usage;
 
-		case 'd':	/* -d, --display DISPLAY, -d --default */
-			if (optarg) {
-				/* -d, --display DISPLAY */
-				free(options.display);
-				options.display = strndup(optarg, 256);
-				setenv("DISPLAY", optarg, 1);
-			} else {
-				/* -d, --default */
-				options.setdflt = True;
-			}
+		case 'd':	/* -d, --default */
+			options.setdflt = True;
 			break;
-		case 'e':	/* -e, --desktop DESKTOP, -e --exec */
-			if (optarg) {
-				/* -e, --desktop DESKTOP */
-				free(options.desktop);
-				options.desktop = strdup(optarg);
-			} else {
-				/* -e, --exec */
-				options.launch = True;
-			}
-			break;
-		case 's':	/* -s, --session SESSION */
-			free(options.session);
-			options.session = strdup(optarg);
+		case 'e':	/* -e --exec */
+			options.launch = True;
 			break;
 		case 'p':	/* -p, --prompt */
 			options.prompt = True;
@@ -4068,9 +3867,6 @@ main(int argc, char *argv[])
 				/* -f, --filename */
 				options.filename = True;
 			}
-			break;
-		case '4':	/* --nosplash */
-			options.splash = False;
 			break;
 		case 'c':	/* -c --charset CHARSET */
 			free(options.charset);
