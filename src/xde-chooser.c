@@ -251,7 +251,6 @@ typedef struct {
 	char *vendor;
 	char *prefix;
 	char *backdrop;
-	char *file;
 	unsigned source;
 	Bool xsession;
 	Bool setbg;
@@ -297,7 +296,6 @@ Options options = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.backdrop = NULL,
-	.file = NULL,
 	.source = BackgroundSourceSplash,
 	.xsession = True,
 	.setbg = False,
@@ -343,7 +341,6 @@ Options defaults = {
 	.vendor = NULL,
 	.prefix = NULL,
 	.backdrop = NULL,
-	.file = NULL,
 	.source = BackgroundSourceSplash,
 	.xsession = True,
 	.setbg = False,
@@ -3664,54 +3661,6 @@ get_default_choice(void)
 }
 
 static void
-get_default_file(void)
-{
-	char **xdg_dirs, **dirs, *file, *files;
-	int i, size, n = 0, next;
-
-	if (options.file)
-		return;
-	if (!options.session)
-		return;
-
-	if (!(xdg_dirs = get_config_dirs(&n)) || !n)
-		return;
-
-	file = calloc(PATH_MAX + 1, sizeof(*file));
-	files = NULL;
-	size = 0;
-	next = 0;
-
-	/* process in reverse order */
-	for (i = n - 1, dirs = &xdg_dirs[i]; i >= 0; i--, dirs--) {
-		strncpy(file, *dirs, PATH_MAX);
-		strncat(file, "/lxsession/", PATH_MAX);
-		strncat(file, options.session, PATH_MAX);
-		strncat(file, "/autostart", PATH_MAX);
-		if (access(file, R_OK)) {
-			DPRINTF("%s: %s\n", file, strerror(errno));
-			continue;
-		}
-		size += strlen(file) + 1;
-		files = realloc(files, size * sizeof(*files));
-		if (next)
-			strncat(files, ":", size);
-		else {
-			*files = '\0';
-			next = 1;
-		}
-		strncat(files, file, size);
-	}
-	options.file = files;
-
-	free(file);
-
-	for (i = 0; i < n; i++)
-		free(xdg_dirs[i]);
-	free(xdg_dirs);
-}
-
-static void
 get_defaults(int argc, char *argv[])
 {
 	get_default_x11();
@@ -3722,7 +3671,6 @@ get_defaults(int argc, char *argv[])
 	get_default_language();
 	get_default_session();
 	get_default_choice();
-	get_default_file();
 }
 
 int
@@ -3747,8 +3695,6 @@ main(int argc, char *argv[])
 		int option_index = 0;
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
-			{"display",	    required_argument,	NULL, 'd'},
-
 			{"banner",	    required_argument,	NULL, 'b'},
 			{"splash",	    required_argument,	NULL, 'l'},
 			{"prompt",	    no_argument,	NULL, 'p'},
@@ -3858,15 +3804,8 @@ main(int argc, char *argv[])
 		case 'N':	/* -N, --noask */
 			options.noask = True;
 			break;
-		case 'f':	/* -f, --file FILE, -f, --filename */
-			if (optarg) {
-				/* -f, --file FILE */
-				free(options.file);
-				options.file = strdup(optarg);
-			} else {
-				/* -f, --filename */
-				options.filename = True;
-			}
+		case 'f':	/* -f, --filename */
+			options.filename = True;
 			break;
 		case 'c':	/* -c --charset CHARSET */
 			free(options.charset);
