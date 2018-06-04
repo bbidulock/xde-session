@@ -104,60 +104,31 @@ Print copying permissions to standard output and exit.
 
 =back
 
-=head2 GENERAL OPTIONS
+=head2 CHOOSER OPTIONS
 
 The following general options can be used with most of the command
 options listed above:
 
 =over
 
-=item B<--display> I<DISPLAY>
-
-Specifies the display to use.  This is not normally necessary as the
-display is obtained from the B<DISPLAY> environment variable when this
-option is not specified.
-
-=item B<--filename>
-
-When a user session is selected, output the full path filename to the
-xsessions desktop file instead of just the appid corresponding to the
-file.  This is useful for passing the full filename to a session manager
-such as L<xde-session(1)>.
-
 =item B<--default>, B<-d>
 
-When a I<SESSION> is specified, also set the future default to I<SESSION>.
+When a I<SESSION> argument is specified, also set the future default to
+I<SESSION>.
 
 =item B<--prompt>, B<-p>
 
 Prompt the user for the session regardless of the value of the
 I<SESSION> argument.
 
-=item B<--noask>, B<-n>
-
-Do not ask the user whether she wishes to set the current session as the
-default session when I<SESSION> is specified or chosen as something
-different than the current default.
-
 =item B<--timeout>, B<-T> I<SECONDS>
 
 Specify the timeout in seconds that the program will wait for user input
 before proceeding with the default session.  Set to zero to defeat the
-timeout altogether.  The default is 15 seconds.
-
-=item B<--charset>, B<-c> I<CHARSET>
-
-Specify the character set with which to output the menu.  Defaults to
-the character set in use by the current locale.
-Because B<xde-chooser> is intended on running after the login, use of
-this option is seldom necessary.
-
-=item B<--language>, B<-l> I<LANGUAGE>
-
-Specify the output language for the menu.  Defaults to the language set
-in the current locale.
-Because B<xde-chooser> is intended on running after the login, use of
-this option is seldom necessary.
+timeout altogether.  The default is 15 seconds.  This option is useful
+when you have multiple monitors and the B<xde-chooser> window winds up
+on a monitor that is not visible to the user.  (At least some X session
+will be invoked that will hopefully utilize all monitors.)
 
 =item B<--banner>, B<-b> I<BANNER>
 
@@ -197,6 +168,50 @@ L<xdg-launch(1)>.)
 
 Use the current XDE desktop theme for the selection window instead of
 the specified or default GTK theme.
+
+=back
+
+=head2 DEPRECATED OPTIONS
+
+=over
+
+=item B<--filename>
+
+When a user session is selected, output the full path file name for the
+X session desktop file instead of just the application id corresponding
+to the file.  This is useful for passing the full file name to a session
+manager such as L<xde-session(1)>.  In general, it is better to use the
+B<--exec> option and specify the session manager in the X session
+F<.desktop> file itself.  This option may mysteriously disappear at some
+point.
+
+=item B<--noask>, B<-n>
+
+Do not ask the user whether she wishes to set the current session as the
+default session when I<SESSION> is specified or chosen as something
+different than the current default.
+
+=item B<--charset>, B<-c> I<CHARSET>
+
+Specify the character set with which to output the menu.  Defaults to
+the character set in use by the current locale.
+Because B<xde-chooser> is intended on running after the login, use of
+this option is seldom necessary.
+Just set the user locale properly in login scripts.
+
+=item B<--language>, B<-l> I<LANGUAGE>
+
+Specify the output language for the menu.  Defaults to the language set
+in the current locale.
+Because B<xde-chooser> is intended on running after the login, use of
+this option is seldom necessary.
+Just set the user locale properly in login scripts.
+
+=back
+
+=head2 GENERAL OPTIONS
+
+=over
 
 =item B<--dry-run>, B<-N>
 
@@ -385,8 +400,6 @@ An example C<[Desktop Entry]> section from the F<adwm.desktop>
 C<XSession> file is as follows:
 
     [Desktop Entry]
-    Version=1.0
-    Encoding=UTF-8
     Type=XSession
     Name=adwm
     GenericName=Window Manager
@@ -423,26 +436,13 @@ The fields are interpreted as follows:
 
 =over
 
-=item C<Version=1.0>
-
-The Desktop Entry specification version in conformance with the XDG
-L<Desktop Entry Specification>.  Should always be C<1.0>, and defaults
-to C<1.0> if this entry is not present.
-
-=item C<Encoding=UTF-8>
-
-The encoding of this file in conformance with the XDG
-L<Desktop Entry Specification>.  Should always be C<UTF-8>, and defaults
-to C<UTF-8> if this entry is not present.
-
 =item C<Type=XSession>
 
-Provides the type of desktop entry file.  The only valid types in the
-formal Desktop Entry specification are C<Application> and C<Autostart>;
-however, C<XSession> is typically used for X sessions and the type will
-default to C<XSession> if this field is not provided.  This field may be
-set to C<Application> when the file is to also reside with other
-applications.
+Provides the type of desktop entry file.  The only valid type in the
+formal Desktop Entry specification is C<Application>; however,
+C<XSession> is typically used for X sessions.  This field may be set to
+C<Application> when the file is to also reside with other applications.
+B<xde-chooser> will accept either C<XSession> or C<Application>.
 
 =item C<Name=adwm>
 
@@ -455,8 +455,8 @@ The name of the desktop entry in accordance with specification.
 =item C<GenericName[pt]=Gestor de Janelas>
 
 The generic name of the desktop entry in accordance with specification.
-The generic name should be the same for all window managers and
-therefore for all C<XSession> files.
+The generic name is often the same for all window managers and therefore
+for all C<XSession> files.
 
 =item C<Comment=An advanced dynamic window manager for X>
 
