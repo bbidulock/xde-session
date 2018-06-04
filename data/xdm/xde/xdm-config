@@ -36,7 +36,7 @@ DisplayManager*authComplain:		true
 DisplayManager*resources:		/etc/X11/xdm/xde/Xresources
 DisplayManager*chooser:			/etc/X11/xdm/xde/chooser
 DisplayManager*xlogin:			/etc/X11/xdm/xde/xlogin
-DisplayManager*greeter:			/ext/X11/xdm/xde/greeter
+DisplayManager*greeter:			/etc/X11/xdm/xde/greeter
 !DisplayManager*xrdb:			/usr/bin/xrdb
 !DisplayManager*cpp:			/usr/bin/cpp
 DisplayManager*setup:			/etc/X11/xdm/xde/Xsetup
