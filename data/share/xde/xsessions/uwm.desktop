@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://uwm.sourceforge.net/
 DesktopNames=UWM
 X-LightDM-DesktopName=uwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Micro (μ) Window Manger as an XDG session
+Icon=uwm16x16
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=UWM
+X-LightDM-DesktopName=uwm
 
 [Desktop Action XDE]
 Name=XDE

@@ -27,7 +27,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://github.com/seanpringle/goomwwm
 DesktopNames=GOOMWWM
 X-LightDM-DesktopName=goomwwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=GOOMWWM in an XDG session
+Icon=goomwwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=GOOMWWM
+X-LightDM-DesktopName=goomwwm
 
 [Desktop Action XDE]
 Name=XDE

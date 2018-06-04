@@ -31,7 +31,16 @@ X-Arch-Package-Votes=1
 Aliases=adwm;
 DesktopNames=ADWM
 X-LightDM-DesktopName=adwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=adwm as an XDG session
+Icon=adwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=ADWM
+X-LightDM-DesktopName=adwm
 
 [Desktop Action XDE]
 Name=XDE
@@ -39,7 +48,7 @@ Comment=adwm in an XDE session
 Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop ADWM -startwm start-adwm
-DesktopNames=XDE:ADWM
+DesktopNames=XDE;ADWM;
 X-LightDM-DesktopName=xde
 
 [Window Manager]

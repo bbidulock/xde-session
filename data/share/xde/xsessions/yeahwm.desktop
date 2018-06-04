@@ -28,7 +28,16 @@ X-Arch-Package-Groups=yeahtools
 X-Arch-Package-URL=http://phrat.de/index.html
 DesktopNames=YEAHWM
 X-LightDM-DesktopName=yeahwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=YeahWM as an XDG session
+Icon=yeahwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=YEAHWM
+X-LightDM-DesktopName=yeahwm
 
 [Desktop Action XDE]
 Name=XDE

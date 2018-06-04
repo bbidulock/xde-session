@@ -29,7 +29,16 @@ X-Arch-Package-URL=http://www.fluxbox.org
 X-Arch-Package-Votes=0
 DesktopNames=FLUXBOX
 X-LightDM-DesktopName=fluxbox
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Fluxbox in an XDG session
+Icon=flusbox
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=FLUXBOX
+X-LightDM-DesktopName=fluxbox
 
 [Desktop Action XDE]
 Name=XDE

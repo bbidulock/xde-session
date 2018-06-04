@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.all-day-breakfast.com/wm2/
 DesktopNames=WM2
 X-LightDM-DesktopName=wm2
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=wm2 as an XDG session
+Icon=wm2
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=WM2
+X-LightDM-DesktopName=wm2
 
 [Desktop Action XDE]
 Name=XDE

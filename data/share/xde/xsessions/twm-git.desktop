@@ -106,7 +106,16 @@ Aliases=twm;
 DesktopNames=TWM
 X-LightDM-DesktopName=twm
 X-SuSE-translate=true
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=TWM as an XDG session
+Icon=twm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=TWM
+X-LightDM-DesktopName=twm
 
 [Desktop Action XDE]
 Name=XDE

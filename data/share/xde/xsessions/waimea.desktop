@@ -29,7 +29,16 @@ X-Arch-Package-URL=http://sourceforge.net/projects/waimea
 X-Arch-Package-Votes=1
 DesktopNames=WAIMEA
 X-LightDM-DesktopName=waimea
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Waimea as an XDG session
+Icon=waimea
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=WAIMEA
+X-LightDM-DesktopName=waimea
 
 [Desktop Action XDE]
 Name=XDE

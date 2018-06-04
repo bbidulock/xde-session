@@ -96,7 +96,16 @@ X-Arch-Package-Votes=0
 DesktopNames=FVWM
 X-LightDM-DesktopName=fvwm
 X-SuSE-translate=true
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=FVWM as an XDG session
+Icon=fvwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=FVWM
+X-LightDM-DesktopName=fvwm
 
 [Desktop Action XDE]
 Name=XDE

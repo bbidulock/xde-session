@@ -30,8 +30,17 @@ X-Arch-Package-URL=
 X-Arch-Package-Votes=
 DesktopNames=WMNAME
 X-LightDM-DesktopName=wmname
-Actions=XDE;
+Actions=XDG;XDE;
 Aliases=wmname;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Window manager as an XDG Session
+Icon=wmname
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=WMNAME
+X-LightDM-DesktopName=wmname
 
 [Desktop Action XDE]
 Name=XDE

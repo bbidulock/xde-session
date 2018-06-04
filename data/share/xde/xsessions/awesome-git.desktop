@@ -29,8 +29,26 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://awesome.naquadah.org/
 DesktopNames=AWESOME
 X-LightDM-DesktopName=awesome
-Actions=XDE;Cinnamon;GNOME;
+Actions=XDG;XDE;Cinnamon;GNOME;
 Aliases=awesome;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=awesome as an XDG session
+Icon=xdg
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=XDG;AWESOME;
+X-LightDM-DesktopName=xdg
+
+[Desktop Action XDG]
+Name=XDG
+Comment=awesome as an XDG session
+Icon=awesome
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=AWESOME
+X-LightDM-DesktopName=awesome
 
 [Desktop Action XDE]
 Name=XDE

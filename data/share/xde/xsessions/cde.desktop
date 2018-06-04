@@ -30,16 +30,6 @@ X-Arch-Package-URL=http://sourceforge.net/projects/cdesktopenv/
 X-Arch-Package-Votes=19
 DesktopNames=CDE
 X-LightDM-DesktopName=CDE
-Actions=XDE;
-
-[Desktop Action XDE]
-Name=XDE
-Comment=Window manager in an XDE Session
-Icon=xde
-TryExec=/usr/bin/xde-session
-Exec=xde-session -desktop CDE -startwm startsession.sh
-DesktopNames=XDE:CDE
-X-LightDM-DesktopName=xde
 
 [Window Manager]
 Name=CDE

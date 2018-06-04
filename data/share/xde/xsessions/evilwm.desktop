@@ -27,7 +27,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://evilwm.sourceforge.net
 DesktopNames=EVILWM
 X-LightDM-DesktopName=evilwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=evilwm as an XDG session
+Icon=evilwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=EVILWM
+X-LightDM-DesktopName=evilwm
 
 [Desktop Action XDE]
 Name=XDE

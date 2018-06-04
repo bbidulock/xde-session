@@ -29,7 +29,16 @@ X-Arch-Package-URL=https://github.com/baskerville/bspwm
 X-Arch-Package-Votes=0
 DesktopNames=BSPWM
 X-LightDM-DesktopName=bspwm
-Actions=XDE;BSPWM;
+Actions=XDG;XDE;BSPWM;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=bspwm in an XDG session
+Icon=bspwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=BSPWM
+X-LightDM-DesktopName=bspwm
 
 [Desktop Action XDE]
 Name=XDE
@@ -37,7 +46,7 @@ Comment=bswpm in an XDE session
 Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop BSPWM -startwm start-bspwm
-DesktopNames=XDE:BSPWM
+DesktopNames=XDE;BSPWM;
 X-LightDM-DesktopName=xde
 
 [Desktop Action BSPWM]

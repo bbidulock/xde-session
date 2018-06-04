@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://github.com/aperezdc/xdwm
 DesktopNames=XDWM
 X-LightDM-DesktopName=xdwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=XDWM as an XDG session
+Icon=xdwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=XDWM
+X-LightDM-DesktopName=xdwm
 
 [Desktop Action XDE]
 Name=XDE

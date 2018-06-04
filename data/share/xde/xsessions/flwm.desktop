@@ -29,7 +29,16 @@ X-Arch-Package-URL=http://flwm.sourceforge.net/
 X-Arch-Package-Votes=4
 DesktopNames=FLWM
 X-LightDM-DesktopName=flwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=FLWM in an XDG session
+Icon=flwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=FLWM
+X-LightDM-DesktopName=flwm
 
 [Desktop Action XDE]
 Name=XDE

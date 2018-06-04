@@ -30,7 +30,16 @@ X-Arch-Package-URL=https://github.com/RiJo/glass
 X-Arch-Package-Votes=1
 DesktopNames=GLASSWM
 X-LightDM-DesktopName=glass
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Glass as an XDG Session
+Icon=glasswm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=GLASSWM
+X-LightDM-DesktopName=glass
 
 [Desktop Action XDE]
 Name=XDE

@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/venam/2bwm
 X-LightDM-DesktopName=2bwm
 DesktopNames=2BWM
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=2bwm as an XDG session
+Icon=2bwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+X-LightDM-DesktopName=2bwm
+DesktopNames=2BWM
 
 [Desktop Action XDE]
 Name=XDE
@@ -37,7 +46,7 @@ Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop 2BWM -startwm start-2bwm
 X-LightDM-DesktopName=xde
-DesktopNames=XDE:2BWM
+DesktopNames=XDE;2BWM;
 
 [Window Manager]
 Name=2bwm

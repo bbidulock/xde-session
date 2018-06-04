@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://freecode.com/projects/failsafewm/
 DesktopNames=FAILSAFEWM
 X-LightDM-DesktopName=failsafewm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=failsafewm as an XDG session
+Icon=failsafewm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=FAILSAFEWM
+X-LightDM-DesktopName=failsafewm
 
 [Desktop Action XDE]
 Name=XDE

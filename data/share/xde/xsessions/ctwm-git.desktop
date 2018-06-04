@@ -30,7 +30,16 @@ X-Arch-Package-URL=http://ctwm.org/
 Aliases=ctwm;
 DesktopNames=CTWM
 X-LightDM-DesktopName=ctwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=CTWM as an XDG session
+Icon=ctwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=CTWM
+X-LightDM-DesktopName=ctwm
 
 [Desktop Action XDE]
 Name=XDE

@@ -29,7 +29,16 @@ X-Arch-Package-URL=http://github.com/sporkexec/sscrotwm
 X-Arch-Package-Votes=3
 DesktopNames=SSCROTWM
 X-LightDM-DesktopName=sscrotwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=sscrotwm as an XDG Session
+Icon=sscrotwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=SSCROTWM
+X-LightDM-DesktopName=sscrotwm
 
 [Desktop Action XDE]
 Name=XDE

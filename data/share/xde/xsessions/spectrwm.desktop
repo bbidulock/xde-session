@@ -28,11 +28,20 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.spectrwm.org
 DesktopNames=SPECTRWM
 X-LightDM-DesktopName=spectrwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action DG]
+Name=XDG
+Comment=spectrwm as an DG session
+Icon=spectrwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=SPECTRWM
+X-LightDM-DesktopName=spectrwm
 
 [Desktop Action XDE]
 Name=XDE
-Comment=spectrwm under and XDE session
+Comment=spectrwm under an XDE session
 Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop SPECTRWM -startwm spectrwm

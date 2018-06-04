@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.ohloh.net/p/velox-wm
 DesktopNames=VELOX
 X-LightDM-DesktopName=velox
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=velox under an XDG session
+Icon=velox
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=VELOX
+X-LightDM-DesktopName=velox
 
 [Desktop Action XDE]
 Name=XDE

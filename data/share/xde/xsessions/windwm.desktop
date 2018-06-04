@@ -30,7 +30,16 @@ X-Arch-Package-URL=http://windwm.sourceforge.net/
 Aliases=wind;
 DesktopNames=WIND
 X-LightDM-DesktopName=wind
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Wind as an XDG session
+Icon=windwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=WIND
+X-LightDM-DesktopName=wind
 
 [Desktop Action XDE]
 Name=XDE

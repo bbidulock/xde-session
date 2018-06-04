@@ -91,7 +91,16 @@ X-Arch-Package-URL=https://github.com/ThomasAdam/mvwm
 DesktopNames=MVWM
 X-LightDM-DesktopName=mvwm
 X-SuSE-translate=true
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=MVWM as an XDG session
+Icon=mvwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=MVWM
+X-LightDM-DesktopName=mvwm
 
 [Desktop Action XDE]
 Name=XDE

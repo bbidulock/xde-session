@@ -30,7 +30,16 @@ X-Arch-Package-URL=https://github.com/bbidulock/flwm
 Aliases=flwm;
 DesktopNames=FLWM
 X-LightDM-DesktopName=flwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=FLWM as an XDG session
+Icon=flwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=FLWM
+X-LightDM-DesktopName=flwm
 
 [Desktop Action XDE]
 Name=XDE

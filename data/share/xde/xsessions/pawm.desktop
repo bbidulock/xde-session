@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://sites.google.com/site/pleyadestest/david/projects/pawm
 DesktopNames=PAWM
 X-LightDM-DesktopName=pawm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Puto Amo as an XDG session
+Icon=pawm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=PAWM
+X-LightDM-DesktopName=pawm
 
 [Desktop Action XDE]
 Name=XDE

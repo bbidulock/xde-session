@@ -28,7 +28,16 @@ X-Arch-Package-Groups=i3
 X-Arch-Package-URL=http://i3wm.org/
 DesktopNames=I3
 X-LightDM-DesktopName=i3
-Actions=XDE;Debug;GNOME;
+Actions=XDG;XDE;Debug;GNOME;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=i3 as an XDG session
+Icon=i3
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=I3
+X-LightDM-DesktopName=i3
 
 [Desktop Action XDE]
 Name=XDE

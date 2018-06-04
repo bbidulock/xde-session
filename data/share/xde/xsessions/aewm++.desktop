@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://github.com/frankhale/aewmpp
 DesktopNames=AEWM
 X-LightDM-DesktopName=aewm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=aewm++ as an XDG session
+Icon=aewm++
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=AEWM
+X-LightDM-DesktopName=aewm
 
 [Desktop Action XDE]
 Name=XDE
@@ -36,7 +45,7 @@ Comment=aewm++ in an XDE session
 Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop 'AEWM++' -startwm 'start-aewm++'
-DesktopNames=XDE:AEWM
+DesktopNames=XDE;AEWM;
 X-LightDM-DesktopName=xde
 
 [Window Manager]

@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=https://www.pekwm.org/projects/pekwm
 DesktopNames=PEKWM
 X-LightDM-DesktopName=pekwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=PekWM as an XDG session
+Icon=pekwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=PEKWM
+X-LightDM-DesktopName=pekwm
 
 [Desktop Action XDE]
 Name=XDE

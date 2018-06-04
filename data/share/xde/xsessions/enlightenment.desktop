@@ -52,7 +52,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.enlightenment.org
 DesktopNames=ENLIGHTENMENT
 X-LightDM-DesktopName=enlightenment
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Englightenment as an XDG Session
+Icon=enlightenment
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=ENLIGHTENMENT
+X-LightDM-DesktopName=enlightenment
 
 [Desktop Action XDE]
 Name=XDE

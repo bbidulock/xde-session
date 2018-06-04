@@ -30,12 +30,21 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.qtile.org
 X-Arch-Package-Votes=0
 DesktopNames=QTILE
-X-LightDM-DesktopName=wmname
-Actions=XDE;
+X-LightDM-DesktopName=qtile
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Qtile as an XDG Session
+Icon=qtile
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=QTILE
+X-LightDM-DesktopName=qtile
 
 [Desktop Action XDE]
 Name=XDE
-Comment=Window manager in an XDE Session
+Comment=Qtile in an XDE Session
 Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop QTILE -startwm start-wmname

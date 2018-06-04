@@ -96,8 +96,17 @@ X-Arch-Package-URL=http://www.fvwm.org
 DesktopNames=FVWM
 X-LightDM-DesktopName=fvwm
 X-SuSE-translate=true
-Actions=XDE;
+Actions=XDG;XDE;
 Aliases=fvwm;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Fvwm1 as an XDG session
+Icon=fvwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=FVWM
+X-LightDM-DesktopName=fvwm
 
 [Desktop Action XDE]
 Name=XDE

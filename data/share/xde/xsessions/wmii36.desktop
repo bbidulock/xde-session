@@ -30,7 +30,16 @@ X-Arch-Package-URL=http://wmii.suckless.org/
 Aliases=wmii;
 DesktopNames=WMII
 X-LightDM-DesktopName=wmii
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=wmii as an XDG session
+Icon=wmii
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=WMII
+X-LightDM-DesktopName=wmii
 
 [Desktop Action XDE]
 Name=XDE

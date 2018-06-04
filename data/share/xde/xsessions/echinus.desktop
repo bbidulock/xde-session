@@ -29,7 +29,16 @@ X-Arch-Package-URL=http://plhk.ru/echinus
 X-Arch-Package-Votes=6
 DesktopNames=ECHINUS
 X-LightDM-DesktopName=echinus
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=echinus as an XDG session
+Icon=echinus
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=ECHINUS
+X-LightDM-DesktopName=echinus
 
 [Desktop Action XDE]
 Name=XDE

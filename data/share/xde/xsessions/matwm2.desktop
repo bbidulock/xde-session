@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://squidjam.com/matwm/
 DesktopNames=MATWM2
 X-LightDM-DesktopName=matwm2
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=matwm2 as an XDG session
+Icon=matwm2
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=MATWM2
+X-LightDM-DesktopName=matwm2
 
 [Desktop Action XDE]
 Name=XDE

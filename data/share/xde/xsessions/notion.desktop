@@ -28,9 +28,18 @@ X-Arch-Package-Description=Tabbed tiling, window manager. Fork of Ion3
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://sourceforge.net/projects/notion/
 X-Arch-Package-Votes=0
-DesktopNames=WMNAME
-X-LightDM-DesktopName=wmname
-Actions=XDE;
+DesktopNames=Notion
+X-LightDM-DesktopName=notion
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Notion as an XDG Session
+Icon=
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=NOTION
+X-LightDM-DesktopName=notion
 
 [Desktop Action XDE]
 Name=XDE

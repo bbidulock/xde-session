@@ -28,7 +28,16 @@ X-Arch-Package-URL=http://ctwm.org/
 Aliases=etwm;
 DesktopNames=ETWM
 X-LightDM-DesktopName=etwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=ETWM as an XDG session
+Icon=etwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=ETWM
+X-LightDM-DesktopName=etwm
 
 [Desktop Action XDE]
 Name=XDE

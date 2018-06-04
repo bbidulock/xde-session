@@ -50,7 +50,17 @@ DesktopNames=OPENBOX
 X-LightDM-DesktopName=openbox
 X-KDE-WindowManagerRestartArgument=--replace
 X-Ubuntu-Gettext-Domain=openbox
-Actions=XDE;Gnome;KDE;Session;
+Actions=XDG;XDE;Gnome;KDE;Session;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Openbox as an XDG session
+Icon=openbox
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=OPENBOX
+X-LightDM-DesktopName=openbox
+X-XDE-Managed=true
 
 [Desktop Action XDE]
 Name=XDE

@@ -30,16 +30,16 @@ X-Arch-Package-URL=https://github.com/bbidulock/waimea
 Aliases=waimea;
 DesktopNames=WAIMEA
 X-LightDM-DesktopName=waimea
-Actions=XDE;
+Actions=XDG;XDE;
 
-[Desktop Action XDE]
-Name=XDE
-Comment=Waimea under an XDE session
-Icon=xde
-TryExec=/usr/bin/xde-session
-Exec=xde-session -desktop WAIMEA -startwm start-waimea
-DesktopNames=XDE:WAIMEA
-X-LightDM-DesktopName=xde
+[Desktop Action XDG]
+Name=XDG
+Comment=Waimea as an XDG session
+Icon=waimea
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=WAIMEA
+X-LightDM-DesktopName=waimea
 
 [Window Manager]
 Name=waimea

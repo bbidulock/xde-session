@@ -28,16 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://wwwcip.cs.fau.de/~re06huxa/herbstluftwm
 DesktopNames=HERBSTLUFTWM
 X-LightDM-DesktopName=herbstluftwm
-Actions=XDE;
+Actions=XDG;XDE;
 
-[Desktop Action XDE]
-Name=XDE
-Comment=herbstluftwm in an XDE session
-Icon=xde
-TryExec=/usr/bin/xde-session
-Exec=xde-session -desktop HERBSTLUFTWM -startwm start-herbstluftwm
-DesktopNames=XDE:HERBSTLUFTWM
-X-LightDM-DesktopName=xde
+[Desktop Action XDG]
+Name=XDG
+Comment=herbstluftwm as an XDG session
+Icon=herbstluftwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=HERBSTLUFTWM
+X-LightDM-DesktopName=herbstluftwm
 
 [Window Manager]
 Name=herbstluftwm

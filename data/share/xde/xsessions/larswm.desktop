@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://porneia.free.fr/larswm/larswm.html
 DesktopNames=LARSWM
 X-LightDM-DesktopName=larswm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=larswm as an XDG session
+Icon=larswm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=LARSWM
+X-LightDM-DesktopName=larswm
 
 [Desktop Action XDE]
 Name=XDE

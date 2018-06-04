@@ -28,16 +28,24 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://sourceforge.net/projects/lesstif/
 DesktopNames=MWM
 X-LightDM-DesktopName=mwm
-Actions=XDE;
+Actions=XDG;XDE;
 
-[Desktop Action XDE]
-Name=XDE
-Comment=MWM under an XDE session
-Icon=xde
-TryExec=/usr/bin/xde-session
-Exec=xde-session -desktop MWM -startwm mwm
-DesktopNames=XDE:MWM
-X-LightDM-DesktopName=xde
+[Desktop Action XDG]
+Name=XDG
+Comment=MWM as an XDG session
+Icon=mwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=MWM
+X-LightDM-DesktopName=mwm
+
+[Desktop Action CDE]
+Name=CDE
+Comment=MWM under CDE
+TryExec=/usr/bin/startxsession.sh
+Exec=startxsession.sh
+DesktopNames=CDE
+X-LightDM-DesktopName=cde
 
 [Window Manager]
 Name=mwm

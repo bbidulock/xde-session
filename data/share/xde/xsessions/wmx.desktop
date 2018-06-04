@@ -28,7 +28,15 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.all-day-breakfast.com/wmx/
 DesktopNames=WMX
 X-LightDM-DesktopName=wmx
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Icon=wmx
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=WMX
+X-LightDM-DesktopName=wmx
 
 [Desktop Action XDE]
 Name=XDE

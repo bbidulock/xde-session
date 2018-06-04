@@ -36,7 +36,7 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.enlightenment.org
 DesktopNames=E16
 X-LightDM-DesktopName=e16
-Actions=XDE;KDE;Gnome2;Gnome3;
+Actions=XDG;XDE;KDE;Gnome2;Gnome3;
 
 [Desktop Action KDE]
 Name=KDE
@@ -69,6 +69,15 @@ TryExec=/usr/bin/gnome-session
 Exec=gnome-session --session=e16-gnome
 DesktopNames=GNOME
 X-LightDM-DesktopName=gnome
+
+[Desktop Action XDG]
+Name=XDG
+Comment=E16 as an XDG session
+Icon=e16
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=E16
+X-LightDM-DesktopName=e16
 
 [Desktop Action XDE]
 Name=XDE

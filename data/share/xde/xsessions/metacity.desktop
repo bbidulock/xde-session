@@ -73,7 +73,16 @@ DesktopNames=METACITY
 X-LightDM-DesktopName=metacity
 X-KDE-WindowManagerRestartArgument=--replace
 X-SuSE-translate=true
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=metacity as an XDG session
+Icon=metacity
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=METACITY
+X-LightDM-DesktopName=metacity
 
 [Desktop Action XDE]
 Name=XDE

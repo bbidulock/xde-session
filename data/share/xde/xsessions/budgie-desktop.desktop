@@ -160,7 +160,16 @@ X-Arch-Package-URL=https://budgie-desktop.org/
 X-Arch-Package-Votes=0
 DesktopNames=Budgie;GNOME
 X-LightDM-DesktopName=budgie
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Budgie as an XDG Session
+Icon=budgie
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=Budgie
+X-LightDM-DesktopName=budgie
 
 [Desktop Action XDE]
 Name=XDE
@@ -168,7 +177,7 @@ Comment=Window manager in an XDE Session
 Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop Budgie -startwm start-budgie
-DesktopNames=XDE:Budgie
+DesktopNames=XDE;Budgie;
 X-LightDM-DesktopName=xde
 
 [Window Manager]

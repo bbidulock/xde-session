@@ -31,7 +31,16 @@ X-Arch-Package-Votes=0
 Aliases=fluxbox;
 DesktopNames=FLUXBOX
 X-LightDM-DesktopName=fluxbox
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Fluxbox as an XDG session
+Icon=fluxbox
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=FLUXBOX
+X-LightDM-DesktopName=fluxbox
 
 [Desktop Action XDE]
 Name=XDE

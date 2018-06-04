@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://github.com/andreas-volker/mantis-wm
 DesktopNames=MANTIS
 X-LightDM-DesktopName=mantis
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Mantis as an XDG session
+Icon=mantis-wm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=MANTIS
+X-LightDM-DesktopName=mantis
 
 [Desktop Action XDE]
 Name=XDE

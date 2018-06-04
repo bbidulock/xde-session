@@ -30,7 +30,16 @@ X-Arch-Package-URL=http://www.vtwm.org
 Aliases=vtwm;
 DesktopNames=VTWM
 X-LightDM-DesktopName=vtwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=VTWM as an XDG session
+Icon=vtwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=VTWM
+X-LightDM-DesktopName=vtwm
 
 [Desktop Action XDE]
 Name=XDE

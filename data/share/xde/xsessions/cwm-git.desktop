@@ -30,7 +30,16 @@ X-Arch-Package-URL=http://www.openbsd.org/cgi-bin/man.cgi?query=cwm&sektion=1
 Aliases=cwm;
 DesktopNames=CWM
 X-LightDM-DesktopName=cwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=cwm as an XDG session
+Icon=cwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=CWM
+X-LightDM-DesktopName=cwm
 
 [Desktop Action XDE]
 Name=XDE

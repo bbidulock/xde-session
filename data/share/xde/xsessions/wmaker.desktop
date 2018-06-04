@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.windowmaker.org/
 DesktopNames=WMAKER
 X-LightDM-DesktopName=wmaker
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=WindowMaker as an XDG session
+Icon=wmaker
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=WMAKER
+X-LightDM-DesktopName=wmaker
 
 [Desktop Action XDE]
 Name=XDE

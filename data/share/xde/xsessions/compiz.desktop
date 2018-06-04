@@ -113,7 +113,16 @@ DesktopNames=COMPIZ
 X-LightDM-DesktopName=compiz
 X-KDE-WindowManagerConfigure=simple-ccsm
 X-KDE-WindowManagerRestartArgument=--replace
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=compiz as an XDG session
+Icon=compiz
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=COMPIZ
+X-LightDM-DesktopName=compiz
 
 [Desktop Action XDE]
 Name=XDE

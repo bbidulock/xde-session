@@ -30,7 +30,16 @@ X-Arch-Package-Votes=1
 DesktopNames=AFTERSTEP
 X-LightDM-DesktopName=afterstep
 X-Ubuntu-Gettext-Domain=gnome-session-3.0
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=AfterStep as an XDG session
+Icon=AfterStep
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=AFTERSTEP
+X-LightDM-DesktopName=afterstep
 
 [Desktop Action XDE]
 Name=XDE
@@ -38,7 +47,7 @@ Comment=AfterStep in an XDE session
 Icon=xde
 TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop AFTERSTEP -startwm afterstep
-DesktopNames=XDE:AFTERSTEP
+DesktopNames=XDE;AFTERSTEP;
 X-LightDM-DesktopName=xde
 
 [Window Manager]

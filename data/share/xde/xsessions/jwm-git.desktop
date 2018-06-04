@@ -28,7 +28,16 @@ X-Arch-Package-URL=http://joewing.net/projects/jwm/
 Aliases=jwm;
 DesktopNames=JWM
 X-LightDM-DesktopName=jwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=JWM as an XDG session
+Icon=jwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=JWM
+X-LightDM-DesktopName=jwm
 
 [Desktop Action XDE]
 Name=XDE

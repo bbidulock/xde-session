@@ -31,7 +31,16 @@ Aliases=icewm;
 DesktopNames=ICEWM
 X-LightDM-DesktopName=icewm
 X-SuSE-translate=true
-Actions=XDE;Session;
+Actions=XDG;XDE;Session;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=IceWM as an XDG session
+Icon=icewm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=ICEWM
+X-LightDM-DesktopName=icewm
 
 [Desktop Action XDE]
 Name=XDE

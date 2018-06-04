@@ -28,7 +28,16 @@ X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://dwm.suckless.org
 DesktopNames=DWM
 X-LightDM-DesktopName=dwm
-Actions=XDE;
+Actions=XDG;XDE;
+
+[Desktop Action XDG]
+Name=XDG
+Comment=Dwm as an XDG session
+Icon=dwm
+TryExec=/usr/bin/xdg-session
+Exec=xdg-session %k
+DesktopNames=DWM
+X-LightDM-DesktopName=dwm
 
 [Desktop Action XDE]
 Name=XDE
