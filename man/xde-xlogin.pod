@@ -313,6 +313,107 @@ L<XOpenDisplay(1x)> failed, retry.
 
 =head1 USAGE
 
+=head1 SESSION MANAGEMENT
+
+B<xde-xlogin> provides for both L<gdm(1)> style and L<dtsession(1)>
+style session management by optionally providing the user with the
+ability to select an X session from the available sessions as well as a
+saved session from the following list of saved sessions:
+
+=over
+
+=item I<current>
+
+Starts the user's most recent session.  The most recent session is the
+last saved current session.
+
+=item I<home>
+
+Starts the user's home session.  The user's home session is the session
+that was last saved as a home session.
+
+=item I<display-current>
+
+Creates a display-specific session and starts the first of the following
+sessions that exists:
+
+=over
+
+=item 1.
+
+I<display-home> session.
+
+=item 2.
+
+I<home> session.
+
+=item 3.
+
+new user (initial) session.
+
+=back
+
+=item I<display-home>
+
+Creates a new display-specific session and starts the user's I<home>
+session if it exits; otherwise, starts a new user (initial) session.
+
+=item I<failsafe>
+
+Starts a fail-safe session.
+
+=back
+
+Although the user's list of saved sessions is not known until after the
+user logs in, the dialog presents all of the session choices.  If a user
+selects a session that does not exist, B<xde-xlogin> takes the following
+actions, if the user selects:
+
+=over
+
+=item I<home>
+
+B<xde-xlogin> starts a new user session.
+
+=item I<current>
+
+B<xde-xlogin> starts the user's home session, if it exists.  If it does
+not, it starts a new user session.
+
+
+=item I<display-home>,
+      I<display-current>
+
+If the user selects a display-specific session and one does not exist,
+B<xde-xlogin> posts a warning dialog stating that a new session will be
+created.  The warning dialog contains two actions:
+
+=over
+
+=item B<Cancel>
+
+Cancels the login and returns the user to the login screen.
+
+=item B<OK>
+
+If a I<display-home> session was selected, B<xde-xlogin> creates a new
+display-specific session and starts the user's generic I<home> session
+if it exists.  If it does not exist, it starts a new user session.
+
+If a I<display-current> session was selected, B<xde-xlogin> creates a
+new display-specific session and starts a I<display-home>, I<home>, or
+new user session, depending on which it finds first.
+
+=back
+
+=back
+
+Note that B<xde-xlogin> does not actually launch these sessions, but
+passes the selection to the session manager chosen.
+
+A new user (initial) session, follows the rules for launching an X
+session.
+
 =head1 X RESOURCES
 
 Most values that affect the look and feel of B<xde-xlogin> may also be

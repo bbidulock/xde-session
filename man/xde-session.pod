@@ -41,6 +41,141 @@ session.
 A characteristic of this approach is that processes started by
 B<xde-session> are immediate children of B<xde-session>.
 
+=head2 SESSIONS
+
+A session is the collection of applications, settings and resources that
+are present on the user's desktop.  Session management is a set of
+conventions and protocols that allow a special session manager, such as
+B<xde-session>, to save and restore a user's session.  A user is able to
+log into their system and be presented with the same set of running
+applications, settings and resources as were present when the user
+logged off.  When a user logs into the desktop for the first time, a
+default initial (new user) session is loaded.  Afterwards,
+B<xde-session> supports the notion of a current, a home, and a
+display-specific session, that may be either current or home.
+
+=head3 Initial Session
+
+When a user logs into the desktop for the first time, B<xde-session>
+will generate the user's initial session using system default values.
+The user may select from the available predefined initial sessions using
+the L<xde-chooser(1)> program, as with any other session.  The initial
+session is sometimes referred to as the I<new user> session.  Refer to
+L</SESSION RESOURCE MANAGEMENT> and L</SESSION APPLICATION MANAGEMENT>
+for more information.
+
+=head3 Current Session
+
+The user's running session is always considered the current session,
+whether restored upon login from a saved home session, a saved current
+session or the system default initial session.  Based on the user's
+session management settings, when the user exits the session, the
+current session is automatically saved.  When the user next logs into
+the desktop, B<xde-session> allows the user to select the previously
+saved current session as the session to start.  This means that the
+desktop will be restored to the same state it was in when the user last
+logged out.
+
+=head3 Home Session
+
+Another option is having the desktop be restored to the same state every
+time the user logs in, regardless of its state when the user logged out.
+The user may save the state of the current session, then via the session
+management settings, have the desktop start that session every time the
+user logs in.  Alternatively, B<xde-session> will allows the user to
+select the home session as the session to start at login.
+
+=head3 Display Specific Sessions
+
+To run a specific session for a specific display, a user can create a
+display-specific session.  To do this, B<xde-session> will copy the
+F<$HOME/.config/xde-session/sessions/> directory to the
+F<$HOME/.config/xde-sessions/$display/sessions/> directory, where
+F<$display> is the real, unqualified hostname (for example: C<pablo:0>).
+When the user logs in, B<xde-session> will allow the user to select a
+display-specific home or current session as the session to start.
+B<xde-session> will actually launch the session only if it is compatible
+with the user's login display.
+
+=head2 XSMP
+
+For an application to be saved upon logout and restarted upon login, it
+must participate in a simple session management protocol.
+B<xde-session> supports the X11R6 XSMP Session Management Protocol.
+
+Applications that wish to save their state can take part in the
+B<WM_SAVE_YOURSELF> protocol.  TO do this, an application needs to set
+the B<WM_SAVE_YOURSELF> property on one and only one of its top-level
+windows.  When the user presses the C<Set Home Session> button in the
+session manager, B<xde-session> sends a B<SaveYourself> message to the
+top-level window of each of its clients.  The message sets the save-type
+to C<Local>, shutdown to C<0>, interact-style to C<None> and fast to
+C<0>.
+
+When an application receives the message, it sends a
+B<SaveYourselfPhase2Request> message to the Session Manager, which will
+reply with a B<SaveYourselfPhase2> message.  Only when the window
+manager receives the B<SaveYourselfPhase2> message will it save its
+state.  The information saved by the Window Manager for each of its
+client's set of windows will include: geometry, icon state and
+workspace.
+
+If the interact-style of the initial B<SaveYourself> message is C<None>,
+the application cannot interact with the user in any way as it is saving
+its state.  If it is C<Any>, the application can interact with the user
+for any purpose.  This includes the ability to de-iconify itself, as
+well as change its current workspace.  To minimize confusion, the
+Session Manager issues a ToolTalk message to the Window Manager
+requesting the recommended order to interact.  The Window Manager
+response with the list of B<SM_CLIENT_ID>s and their associated
+workspace numbers in workspace order.  After receiving an Interact
+message (with interact-style set to C<Any>), an application should go
+system-modal to prevent other, less well-behaved non-interacting
+applications from allowing user interaction while the application is
+interacting with its user.
+
+Because an application will usually save its state into a file, the
+Session Manager provides B<XdeSessionSavePath> as a convenience function
+that returns a full pathname of a file in which an application can save
+its state.  While the application is saving its state, B<xde-session>
+awaits notice form the application that it is done.  To tell
+B<xde-session> that the state save is complete, the application updates
+the B<WM_COMMAND> property on its top-level window.
+
+The B<WM_COMMAND> property on an application's top-level window serves
+two purposes.  First, a change of this property is the indication to
+B<xde-session> that an application is done saving its state and
+B<xde-session> can proceed to the next application.  Second, the
+B<WM_COMMAND> property value is expected to contain the command line
+that B<xde-session> will use to restart the application at session
+startup.  If an application is launched with a full pathname, then it
+should use the full pathname when setting B<WM_COMMAND>.  Applications
+that do not need to save their state, but wish to be restarted, can
+simply set B<WM_COMMAND> during application startup and forget about it.
+
+The X11R6 XSMP protocol provides the following features (that are not
+found in the ICCCM protocol):
+
+=over
+
+=item -
+
+It allows applications to interact with the user during normal shutdown
+to confirm or discard unsaved changes.
+
+=item -
+
+It provides a mechanism to explicitly tell applications to exit.
+
+=item -
+
+Most importantly, it provides a common framework to support applications
+that are not X clients and applications that exit before the session is
+saved, but that must remain part of the session for restart purposes
+(for example, an input method server).
+
+=back
+
 =head1 COMMANDS
 
 Command options that control the major behaviour of B<xde-session> are as
