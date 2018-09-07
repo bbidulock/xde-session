@@ -30,7 +30,7 @@ if [ -s "$TWM_CONFIG_SDIR/version" ]; then
 fi
 
 if [ -x "`which xde-menugen 2>/dev/null`" ]; then
-    xde-menugen --format $TWM_TYPE >"$TWM_CONFIG_HOME/menu"
+    xde-menugen --format=$TWM_TYPE --launch --output="$TWM_CONFIG_HOME/menu"
 fi
 
 config="$here/config"

@@ -149,10 +149,10 @@ if [ -s "$here/version" ]; then
 	done
 	if [ "$generate" = "true" ]; then
 		desktop=$(echo "$name"|sed -e 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/')
-		if which xdg-menugen >/dev/null 2>&1; then
-			xdg-menugen --format "${name}3" --desktop "$desktop" -launch -o "$priv/menu.xml" &
-		elif which xde-menugen >/dev/null 2>&1; then
-			xde-menugen --format "${name}3" --desktop "$desktop" -launch -o "$priv/menu.xml" &
+		if which xde-menugen >/dev/null 2>&1; then
+			xde-menugen --format="${name}3" --desktop="$desktop" --launch --output="$priv/menu.xml" &
+		elif which xdg-menugen >/dev/null 2>&1; then
+			xdg-menugen --format="${name}3" --desktop="$desktop" --launch --output="$priv/menu.xml" &
 		fi
 	fi
 fi

@@ -59,10 +59,10 @@ fi
 
 desktop=$(echo "$prog"|sed 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/')
 
-if [ -x "`which xdg-menugen 2>/dev/null`" ]; then
-    xdg-menugen --format "$prog" --desktop "$desktop" -o "$path/menu" &
-elif [ -x "`which xde-menugen 2>/dev/null`" ]; then
-    xde-menugen --format "$prog" --desktop "$desktop" >"$path/menu" &
+if [ -x "`which xde-menugen 2>/dev/null`" ]; then
+    xde-menugen --format="$prog" --desktop="$desktop" --output="$path/menu" &
+elif [ -x "`which xdg-menugen 2>/dev/null`" ]; then
+    xdg-menugen --format="$prog" --desktop="$desktop" --output="$path/menu" &
 fi
 
 config="$here/config"

@@ -156,10 +156,10 @@ if ( -s "$here/version" ) {
 		}
 		unless ($iver) {
 			my $desktop = "\U$name\E";
-			if (which('xdg-menugen')) {
-				system("xdg-menugen --format $name --desktop $desktop -o '$path/menu' &");
-			} elsif (which('xde-menugen')) {
-				system("xde-menugen --format $name --desktop $desktop >'$path/menu' &");
+			if (which('xde-menugen')) {
+				system("xde-menugen --format=$name --desktop=$desktop --output='$path/menu' &");
+			} elsif (which('xdg-menugen')) {
+				system("xdg-menugen --format=$name --desktop=$desktop --output='$path/menu' &");
 			}
 		}
 	}
