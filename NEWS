@@ -1,11 +1,11 @@
-xde-session -- history of user-visible changes.  2018-09-06
+xde-session -- history of user-visible changes.  2018-09-14
 
-Release xde-session-1.6.19 released 2018-09-06
-----------------------------------------------
+Release xde-session-1.7 released 2018-09-14
+-------------------------------------------
 
-git shortlog -e -n -w80,6,8 1.6...HEAD
+git shortlog -e -n -w80,6,8 1.6...1.7
 
-Brian Bidulock <bidulock@openss7.org> (17):
+Brian Bidulock <bidulock@openss7.org> (18):
       runtime directories need to be created
       add StartupWMClass where needed
       provide notes about autostart
@@ -23,6 +23,7 @@ Brian Bidulock <bidulock@openss7.org> (17):
       add XDG action to most xsessions
       correct menu generation
       more better documentation
+      update for release
 
 Brian Bidulock <bidulock@openss7.com> (1):
       Merge pull request #3 from milkmiruku/master

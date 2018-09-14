@@ -1,5 +1,17 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 040caaf8986099d967e4fd763422bc40ae917f37
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Sep 14 04:42:35 2018 -0600
+
+    update for release
+
+ AUTHORS   |   4 +-
+ ChangeLog | 754 ++++++++++++++++++++++++++++++++++++++++++----------------
+ NEWS      |  36 ++-
+ README.md |  20 +-
+ 4 files changed, 599 insertions(+), 215 deletions(-)
+
 commit cc20df091d90eabb828c524044ed2d7f38a7e2fa
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Thu Sep 6 19:06:03 2018 -0600
@@ -6996,13 +7008,3 @@ Date:   Thu Jul 31 15:26:51 2014 -0600
  src/xde-xlock.c  | 458 ++++++++++++++++++++++++++++++++++++++++++---------
  src/xde-xlogin.c | 447 +++++++++++++++++++++++++++++++++++++++++--------
  3 files changed, 769 insertions(+), 147 deletions(-)
-
-commit 512ae28a3bde694c628d220a2b6567e0bbc347fa
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Wed Jul 30 05:55:38 2014 -0600
-
-    more rework and reorg
-
- src/xde-xlock.c  |   7 +-
- src/xde-xlogin.c | 281 ++++++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 238 insertions(+), 50 deletions(-)
