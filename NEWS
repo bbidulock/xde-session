@@ -1,11 +1,42 @@
-xde-session -- history of user-visible changes.  2018-04-29
+xde-session -- history of user-visible changes.  2018-09-06
+
+Release xde-session-1.6.19 released 2018-09-06
+----------------------------------------------
+
+git shortlog -e -n -w80,6,8 1.6...HEAD
+
+Brian Bidulock <bidulock@openss7.org> (17):
+      runtime directories need to be created
+      add StartupWMClass where needed
+      provide notes about autostart
+      update sessions files
+      add documentation
+      update xsession files
+      some update methods
+      more ignores
+      Merge branch 'master' of github.com:bbidulock/xde-session
+      remove cruft from xde-chooser
+      remove more cruft from xde-choose
+      remove more xde-chooser cruft
+      remove more xde-chooser cruft
+      document deprecated options
+      add XDG action to most xsessions
+      correct menu generation
+      more better documentation
+
+Brian Bidulock <bidulock@openss7.com> (1):
+      Merge pull request #3 from milkmiruku/master
+
+Milk Brewster <github@milkmiruku.com> (1):
+      fx DisplayManager*greeter: path typo
+
 
 Release xde-session-1.6 released 2018-04-29
 -------------------------------------------
 
 git shortlog -e -n -w80,6,8 1.5...1.6
 
-Brian Bidulock <bidulock@openss7.org> (26):
+Brian Bidulock <bidulock@openss7.org> (27):
       update copyright header
       update copyright header
       update copyright header
@@ -32,6 +63,7 @@ Brian Bidulock <bidulock@openss7.org> (26):
       update copyright header
       correct buffer overflow
       Merge branch 'master' of github.com:bbidulock/xde-session
+      update release files
 
 
 Release xde-session-1.5 released 2018-03-25

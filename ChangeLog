@@ -1,5 +1,557 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit cc20df091d90eabb828c524044ed2d7f38a7e2fa
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 6 19:06:03 2018 -0600
+
+    more better documentation
+
+ man/xde-chooser.pod | 687 ++++++++++++++++++++++++++++++------------------
+ man/xde-session.pod | 135 ++++++++++
+ man/xde-xlogin.pod  | 101 +++++++
+ 3 files changed, 660 insertions(+), 263 deletions(-)
+
+commit 265c16eb8bddc3a948db41849e976d325b8b9dfc
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 6 19:05:29 2018 -0600
+
+    correct menu generation
+
+ data/xdg/xde/adwm/setup.sh     | 8 ++++----
+ data/xdg/xde/blackbox/setup.pl | 8 ++++----
+ data/xdg/xde/blackbox/setup.sh | 8 ++++----
+ data/xdg/xde/ctwm/setup        | 8 ++++----
+ data/xdg/xde/ctwm/setup.sh     | 8 ++++----
+ data/xdg/xde/etwm/setup        | 8 ++++----
+ data/xdg/xde/etwm/setup.sh     | 8 ++++----
+ data/xdg/xde/fluxbox/setup.sh  | 8 ++++----
+ data/xdg/xde/icewm/setup.sh    | 8 ++++----
+ data/xdg/xde/jwm/setup.sh      | 8 ++++----
+ data/xdg/xde/openbox/setup.sh  | 8 ++++----
+ data/xdg/xde/pekwm/setup.sh    | 8 ++++----
+ data/xdg/xde/twm/setup.sh      | 8 ++++----
+ data/xdg/xde/twm/start         | 2 +-
+ data/xdg/xde/vtwm/setup.sh     | 8 ++++----
+ data/xdg/xde/waimea/setup      | 8 ++++----
+ data/xdg/xde/waimea/setup.sh   | 8 ++++----
+ 17 files changed, 65 insertions(+), 65 deletions(-)
+
+commit 631a5e72a1d12ed3d915efa511d9e947209549ea
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 4 16:59:25 2018 -0600
+
+    add XDG action to most xsessions
+
+ data/share/xde/xsessions/2bwm-git.desktop        | 13 ++++++++--
+ data/share/xde/xsessions/2bwm.desktop            | 13 ++++++++--
+ data/share/xde/xsessions/AfterStep-git.desktop   | 13 ++++++++--
+ data/share/xde/xsessions/AfterStep.desktop       | 13 ++++++++--
+ data/share/xde/xsessions/Fvwm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/Fvwm1.desktop           | 11 ++++++++-
+ data/share/xde/xsessions/adwm-git.desktop        | 13 ++++++++--
+ data/share/xde/xsessions/adwm.desktop            | 13 ++++++++--
+ data/share/xde/xsessions/aewm++.desktop          | 13 ++++++++--
+ data/share/xde/xsessions/aewm.desktop            | 13 ++++++++--
+ data/share/xde/xsessions/awesome-git.desktop     | 20 ++++++++++++++-
+ data/share/xde/xsessions/awesome.desktop         | 13 ++++++++--
+ data/share/xde/xsessions/blackbox-git.desktop    | 13 ++++++++--
+ data/share/xde/xsessions/blackbox.desktop        | 13 ++++++++--
+ data/share/xde/xsessions/bspwm-git.desktop       | 13 ++++++++--
+ data/share/xde/xsessions/bspwm.desktop           | 13 ++++++++--
+ data/share/xde/xsessions/budgie-desktop.desktop  | 13 ++++++++--
+ data/share/xde/xsessions/cde.desktop             | 10 --------
+ data/share/xde/xsessions/compiz.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/ctwm-git.desktop        | 11 ++++++++-
+ data/share/xde/xsessions/ctwm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/cwm-git.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/cwm.desktop             | 11 ++++++++-
+ data/share/xde/xsessions/dwm-git.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/dwm.desktop             | 11 ++++++++-
+ data/share/xde/xsessions/e16-session.desktop     | 11 ++++++++-
+ data/share/xde/xsessions/echinus-git.desktop     | 11 ++++++++-
+ data/share/xde/xsessions/echinus.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/enlightenment.desktop   | 11 ++++++++-
+ data/share/xde/xsessions/etwm-git.desktop        | 11 ++++++++-
+ data/share/xde/xsessions/etwm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/evilwm-git.desktop      | 11 ++++++++-
+ data/share/xde/xsessions/evilwm.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/failsafewm.desktop      | 11 ++++++++-
+ data/share/xde/xsessions/fluxbox-git.desktop     | 11 ++++++++-
+ data/share/xde/xsessions/fluxbox-wm.desktop      | 11 ++++++++-
+ data/share/xde/xsessions/fluxbox.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/flwm-git.desktop        | 11 ++++++++-
+ data/share/xde/xsessions/flwm-tc.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/flwm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/fvwm-crystal.desktop    | 11 ++++++++-
+ data/share/xde/xsessions/fvwm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/fvwm2.desktop           | 11 ++++++++-
+ data/share/xde/xsessions/glasswm.desktop         | 11 ++++++++-
+ .../xsessions/gnome-session-compiz-awn.desktop   | 10 +++++++-
+ data/share/xde/xsessions/goomwwm.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/herbstluftwm.desktop    | 18 +++++++-------
+ data/share/xde/xsessions/i3.desktop              | 11 ++++++++-
+ data/share/xde/xsessions/icewm-git.desktop       | 11 ++++++++-
+ data/share/xde/xsessions/icewm.desktop           | 11 ++++++++-
+ data/share/xde/xsessions/icewm2.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/jwm-git.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/jwm.desktop             | 11 ++++++++-
+ data/share/xde/xsessions/larswm-git.desktop      | 11 ++++++++-
+ data/share/xde/xsessions/larswm.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/mantis-wm.desktop       | 11 ++++++++-
+ data/share/xde/xsessions/matwm2-svn.desktop      | 11 ++++++++-
+ data/share/xde/xsessions/matwm2.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/metacity.desktop        | 11 ++++++++-
+ data/share/xde/xsessions/mvwm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/mwm.desktop             | 26 +++++++++++++-------
+ data/share/xde/xsessions/notion.desktop          | 15 ++++++++---
+ data/share/xde/xsessions/openbox-git.desktop     | 12 ++++++++-
+ data/share/xde/xsessions/openbox.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/pawm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/pekwm-git.desktop       | 11 ++++++++-
+ data/share/xde/xsessions/pekwm.desktop           | 11 ++++++++-
+ data/share/xde/xsessions/qtile.desktop           | 15 ++++++++---
+ data/share/xde/xsessions/spectrwm-git.desktop    | 13 ++++++++--
+ data/share/xde/xsessions/spectrwm.desktop        | 13 ++++++++--
+ data/share/xde/xsessions/sscrotwm.desktop        | 11 ++++++++-
+ data/share/xde/xsessions/template.desktop        | 11 ++++++++-
+ data/share/xde/xsessions/twm-git.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/twm.desktop             | 11 ++++++++-
+ data/share/xde/xsessions/uwm-git.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/uwm.desktop             | 11 ++++++++-
+ data/share/xde/xsessions/velox-git.desktop       | 11 ++++++++-
+ data/share/xde/xsessions/velox.desktop           | 11 ++++++++-
+ data/share/xde/xsessions/vtwm-git.desktop        | 11 ++++++++-
+ data/share/xde/xsessions/vtwm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/waimea-cvs.desktop      | 11 ++++++++-
+ data/share/xde/xsessions/waimea-git.desktop      | 18 +++++++-------
+ data/share/xde/xsessions/waimea.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/wind.desktop            | 11 ++++++++-
+ .../xde/xsessions/windowmaker-crm-git.desktop    | 11 ++++++++-
+ data/share/xde/xsessions/windowmaker-git.desktop | 11 ++++++++-
+ data/share/xde/xsessions/windwm-git.desktop      | 11 ++++++++-
+ data/share/xde/xsessions/windwm.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/wm2-svn.desktop         | 11 ++++++++-
+ data/share/xde/xsessions/wm2.desktop             | 11 ++++++++-
+ data/share/xde/xsessions/wmaker.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/wmii.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/wmii36.desktop          | 11 ++++++++-
+ data/share/xde/xsessions/wmx-svn.desktop         | 10 +++++++-
+ data/share/xde/xsessions/wmx.desktop             | 10 +++++++-
+ data/share/xde/xsessions/xdwm.desktop            | 11 ++++++++-
+ data/share/xde/xsessions/yeahwm.desktop          | 11 ++++++++-
+ 97 files changed, 992 insertions(+), 150 deletions(-)
+
+commit af8a6aa8193b7bc76daeb9143b16ccc0929bed4e
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 4 13:56:55 2018 -0600
+
+    document deprecated options
+
+ man/xde-chooser.pod | 116 ++++++++++++++++++++++++------------------------
+ 1 file changed, 58 insertions(+), 58 deletions(-)
+
+commit 9b28a919f91205b68384617550d0a4de05546311
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 4 00:40:12 2018 -0600
+
+    remove more xde-chooser cruft
+
+ src/xde-chooser.c | 65 ++-------------------------------------------------
+ 1 file changed, 2 insertions(+), 63 deletions(-)
+
+commit 3eb3f58cb0e4ee86f9fb081cfd1de8bba21ee075
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 4 00:36:50 2018 -0600
+
+    remove more xde-chooser cruft
+
+ src/xde-chooser.c | 240 ++++----------------------------------------------
+ 1 file changed, 18 insertions(+), 222 deletions(-)
+
+commit afde48919507e72d7234e739397a41930c3bede9
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 4 06:06:10 2018 +0000
+
+    remove more cruft from xde-choose
+
+ src/xde-chooser.c | 10368 ++++++++----------------------------------------
+ 1 file changed, 1636 insertions(+), 8732 deletions(-)
+
+commit d081a8df2d6fdb170069916c587d47f002776212
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 4 04:22:05 2018 +0000
+
+    remove cruft from xde-chooser
+
+ src/xde-chooser.c | 1677 +------------------------------------------------
+ 1 file changed, 12 insertions(+), 1665 deletions(-)
+
+commit aacaaafdb1d384a2390b45a44981764c79d534a7
+Merge: 2d6a6e6 4595283
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Jun 3 20:25:23 2018 -0600
+
+    Merge branch 'master' of github.com:bbidulock/xde-session
+
+commit 2d6a6e6f9fbec84044c18404b5f8027292f762d9
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Jun 3 20:24:42 2018 -0600
+
+    more ignores
+
+ data/share/xde/xsessions/.gitignore | 1 +
+ 1 file changed, 1 insertion(+)
+
+commit 7eb7dfce16e205df412afab4bf5b666e167c1e6c
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Jun 3 20:23:59 2018 -0600
+
+    some update methods
+
+ data/share/xde/xsessions/.gitignore  |  1 +
+ data/share/xde/xsessions/updateem.sh | 64 ++++++++++++++++++++++++++++++++
+ 2 files changed, 65 insertions(+)
+
+commit 87281eaf91745a28488a346339135eaa35a22184
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Jun 3 20:23:07 2018 -0600
+
+    update xsession files
+
+ data/share/xde/xsessions/2bwm-git.desktop        |  13 +-
+ data/share/xde/xsessions/2bwm.desktop            |   2 -
+ .../{AfterStep.desktop => AfterStep-git.desktop} |  14 +-
+ data/share/xde/xsessions/AfterStep.desktop       |  17 +-
+ data/share/xde/xsessions/Fvwm.desktop            |   4 +-
+ data/share/xde/xsessions/Fvwm1.desktop           |  15 +-
+ data/share/xde/xsessions/LXDE.desktop            |   2 -
+ data/share/xde/xsessions/adwm-git.desktop        |  13 +-
+ data/share/xde/xsessions/adwm.desktop            |  13 +-
+ data/share/xde/xsessions/aewm++.desktop          |   2 -
+ data/share/xde/xsessions/aewm.desktop            |   3 +-
+ data/share/xde/xsessions/arch-meego.desktop      |   1 -
+ .../share/xde/xsessions/awesome-cinnamon.desktop |   1 -
+ data/share/xde/xsessions/awesome-git.desktop     |   2 -
+ data/share/xde/xsessions/awesome-gnome.desktop   |   1 -
+ data/share/xde/xsessions/awesome.desktop         |   2 -
+ data/share/xde/xsessions/blackbox-git.desktop    |   2 -
+ data/share/xde/xsessions/blackbox.desktop        |   2 -
+ .../{bspwm.desktop => bspwm-git.desktop}         |  17 +-
+ data/share/xde/xsessions/bspwm.desktop           |  19 +-
+ data/share/xde/xsessions/budgie-desktop.desktop  | 178 +++++++++++++++++++
+ data/share/xde/xsessions/cde.desktop             |  49 +++++
+ data/share/xde/xsessions/compiz.desktop          |   2 -
+ data/share/xde/xsessions/ctwm-git.desktop        |   2 -
+ data/share/xde/xsessions/ctwm.desktop            |   2 -
+ data/share/xde/xsessions/cwm-git.desktop         |   2 -
+ data/share/xde/xsessions/cwm.desktop             |   2 -
+ data/share/xde/xsessions/dwm-git.desktop         |   2 -
+ data/share/xde/xsessions/dwm.desktop             |   2 -
+ .../xde/xsessions/e16-gnome2-session.desktop     |   2 -
+ .../xde/xsessions/e16-gnome3-session.desktop     |   2 -
+ data/share/xde/xsessions/e16-kde-session.desktop |   2 -
+ data/share/xde/xsessions/e16-session.desktop     |   2 -
+ data/share/xde/xsessions/echinus-git.desktop     |  13 +-
+ data/share/xde/xsessions/echinus.desktop         |   3 +-
+ data/share/xde/xsessions/ede.desktop             |   2 -
+ data/share/xde/xsessions/enlightenment.desktop   |   1 -
+ data/share/xde/xsessions/etwm-git.desktop        |   1 -
+ data/share/xde/xsessions/etwm.desktop            |   1 -
+ data/share/xde/xsessions/evilwm-git.desktop      |   2 -
+ data/share/xde/xsessions/evilwm.desktop          |   2 -
+ data/share/xde/xsessions/failsafewm.desktop      |   2 -
+ data/share/xde/xsessions/fluxbox-git.desktop     |  13 +-
+ data/share/xde/xsessions/fluxbox-wm.desktop      |  19 +-
+ data/share/xde/xsessions/fluxbox.desktop         |   7 +-
+ data/share/xde/xsessions/flwm-git.desktop        |   2 -
+ data/share/xde/xsessions/flwm-tc.desktop         |   2 -
+ data/share/xde/xsessions/flwm.desktop            |   2 -
+ data/share/xde/xsessions/fvwm-crystal.desktop    |  17 +-
+ data/share/xde/xsessions/fvwm.desktop            |   9 +-
+ data/share/xde/xsessions/fvwm2.desktop           |   9 +-
+ data/share/xde/xsessions/glasswm.desktop         |  48 +++++
+ data/share/xde/xsessions/gnome-compiz.desktop    |   1 -
+ .../xsessions/gnome-session-compiz-awn.desktop   |   1 -
+ data/share/xde/xsessions/gnome.desktop           |   1 -
+ data/share/xde/xsessions/goomwwm.desktop         |   2 -
+ data/share/xde/xsessions/herbstluftwm.desktop    |   2 -
+ .../xde/xsessions/i3-gnome-xsession.desktop      |   1 -
+ data/share/xde/xsessions/i3-with-shmlog.desktop  |   2 -
+ data/share/xde/xsessions/i3.desktop              |   2 -
+ data/share/xde/xsessions/icewm-git.desktop       |   1 -
+ data/share/xde/xsessions/icewm-session.desktop   |   2 -
+ data/share/xde/xsessions/icewm.desktop           |   2 -
+ data/share/xde/xsessions/icewm2.desktop          |   1 -
+ data/share/xde/xsessions/jwm-git.desktop         |   1 -
+ data/share/xde/xsessions/jwm.desktop             |   1 -
+ data/share/xde/xsessions/larswm-git.desktop      |   2 -
+ data/share/xde/xsessions/larswm.desktop          |   2 -
+ data/share/xde/xsessions/logram.desktop          |   1 -
+ .../xde/xsessions/lxsession-default-apps.desktop |   1 -
+ data/share/xde/xsessions/mantis-wm.desktop       |   2 -
+ data/share/xde/xsessions/mate.desktop            |   1 -
+ data/share/xde/xsessions/matwm2-svn.desktop      |   2 -
+ data/share/xde/xsessions/matwm2.desktop          |   2 -
+ data/share/xde/xsessions/mcwm-git.desktop        |   1 -
+ data/share/xde/xsessions/mcwm.desktop            |   1 -
+ data/share/xde/xsessions/metacity.desktop        |   2 -
+ data/share/xde/xsessions/mutter.desktop          |   2 -
+ data/share/xde/xsessions/mvwm.desktop            |   2 -
+ data/share/xde/xsessions/mwm.desktop             |   2 -
+ data/share/xde/xsessions/notion.desktop          |  48 +++++
+ ...enbox-kde.desktop => openbox-git-kde.desktop} |  21 ++-
+ data/share/xde/xsessions/openbox-git.desktop     |   2 -
+ data/share/xde/xsessions/openbox-gnome.desktop   |   2 -
+ data/share/xde/xsessions/openbox-kde.desktop     |  11 +-
+ data/share/xde/xsessions/openbox.desktop         |   2 -
+ data/share/xde/xsessions/pawm.desktop            |   2 -
+ data/share/xde/xsessions/pekwm-git.desktop       |   2 -
+ data/share/xde/xsessions/pekwm.desktop           |   2 -
+ data/share/xde/xsessions/plan9port.desktop       |   1 -
+ data/share/xde/xsessions/qtile.desktop           |  49 +++++
+ data/share/xde/xsessions/rio.desktop             |   1 -
+ data/share/xde/xsessions/spectrwm-git.desktop    |   2 -
+ data/share/xde/xsessions/spectrwm.desktop        |   2 -
+ data/share/xde/xsessions/sscrotwm.desktop        |  47 +++++
+ data/share/xde/xsessions/ssh.desktop             |   2 -
+ data/share/xde/xsessions/template.desktop        |  49 +++++
+ data/share/xde/xsessions/trinity.desktop         |   1 -
+ data/share/xde/xsessions/twm-git.desktop         |   2 -
+ data/share/xde/xsessions/twm.desktop             |   2 -
+ data/share/xde/xsessions/twobwm.desktop          |   1 -
+ data/share/xde/xsessions/uwm-git.desktop         |   2 -
+ data/share/xde/xsessions/uwm.desktop             |   2 -
+ data/share/xde/xsessions/velox-git.desktop       |   2 -
+ data/share/xde/xsessions/velox.desktop           |   2 -
+ data/share/xde/xsessions/vtwm-git.desktop        |   2 -
+ data/share/xde/xsessions/vtwm.desktop            |   2 -
+ data/share/xde/xsessions/waimea-cvs.desktop      |   2 -
+ data/share/xde/xsessions/waimea-git.desktop      |   2 -
+ data/share/xde/xsessions/waimea.desktop          |   2 -
+ data/share/xde/xsessions/wind.desktop            |   2 -
+ .../xde/xsessions/windowmaker-crm-git.desktop    |   2 -
+ data/share/xde/xsessions/windowmaker-git.desktop |   2 -
+ data/share/xde/xsessions/windwm-git.desktop      |   2 -
+ data/share/xde/xsessions/windwm.desktop          |   2 -
+ data/share/xde/xsessions/wm2-svn.desktop         |   2 -
+ data/share/xde/xsessions/wm2.desktop             |   2 -
+ data/share/xde/xsessions/wmaker.desktop          |   2 -
+ data/share/xde/xsessions/wmii.desktop            |   2 -
+ data/share/xde/xsessions/wmii36.desktop          |   2 -
+ data/share/xde/xsessions/wmx-svn.desktop         |   2 -
+ data/share/xde/xsessions/wmx.desktop             |   2 -
+ data/share/xde/xsessions/xdwm.desktop            |   2 -
+ data/share/xde/xsessions/xfce.desktop            |   2 -
+ data/share/xde/xsessions/xmonad-gnome.desktop    |   1 -
+ data/share/xde/xsessions/xmonad.desktop          |  14 +-
+ data/share/xde/xsessions/xsession.desktop        |   1 -
+ data/share/xde/xsessions/yeahwm.desktop          |   2 -
+ 128 files changed, 603 insertions(+), 304 deletions(-)
+
+commit e0e2b7d6689bcde174e444291bb915e25866bb04
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Jun 3 20:19:40 2018 -0600
+
+    add documentation
+
+ man/Application.desktop.pod | 796 +++++++++++++++++++++++++++++++++++++++
+ man/Autostart.desktop.pod   | 798 +++++++++++++++++++++++++++++++++++++++
+ man/Makefile.am             |  37 +-
+ man/XSession.desktop.pod    | 809 ++++++++++++++++++++++++++++++++++++++++
+ man/xde-chooser.pod         | 395 +++++++++++++++++++-
+ man/xde-dockmgr.pod         |   2 +-
+ 6 files changed, 2804 insertions(+), 33 deletions(-)
+
+commit 4595283a0c6a463407deb2f69c06bc710bc2b511
+Merge: 549191d 8a9eafa
+Author: Brian Bidulock <bidulock@openss7.com>
+Date:   Sun Jun 3 14:43:07 2018 -0600
+
+    Merge pull request #3 from milkmiruku/master
+
+    fix DisplayManager*greeter: path typo
+
+commit 5cd9827cd968282cd36c1bfdb124651053a8d681
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jun 1 02:31:50 2018 -0600
+
+    update sessions files
+
+ data/share/xde/xsessions/2bwm-git.desktop        |  3 +
+ data/share/xde/xsessions/2bwm.desktop            |  3 +
+ data/share/xde/xsessions/AfterStep.desktop       |  3 +
+ data/share/xde/xsessions/Fvwm.desktop            |  2 +
+ data/share/xde/xsessions/Fvwm1.desktop           |  2 +
+ data/share/xde/xsessions/LXDE.desktop            |  3 +
+ data/share/xde/xsessions/adwm-git.desktop        |  3 +
+ data/share/xde/xsessions/adwm.desktop            |  4 +-
+ data/share/xde/xsessions/aewm++.desktop          |  3 +
+ data/share/xde/xsessions/aewm.desktop            |  3 +
+ data/share/xde/xsessions/awesome-git.desktop     |  3 +
+ data/share/xde/xsessions/awesome.desktop         |  3 +
+ data/share/xde/xsessions/blackbox-git.desktop    |  3 +
+ data/share/xde/xsessions/blackbox.desktop        |  3 +
+ data/share/xde/xsessions/bspwm.desktop           |  3 +
+ data/share/xde/xsessions/budgie-desktop.desktop  |  0
+ data/share/xde/xsessions/cde.desktop             |  0
+ data/share/xde/xsessions/cinnamon.desktop        |  0
+ data/share/xde/xsessions/cinnamon2d.desktop      |  0
+ data/share/xde/xsessions/compiz.desktop          | 75 ++++++++++++++++++--
+ data/share/xde/xsessions/ctwm-git.desktop        |  3 +
+ data/share/xde/xsessions/ctwm.desktop            |  3 +
+ data/share/xde/xsessions/cwm-git.desktop         |  5 +-
+ data/share/xde/xsessions/cwm.desktop             |  5 +-
+ data/share/xde/xsessions/deepin.desktop          |  0
+ data/share/xde/xsessions/dwm-git.desktop         |  3 +
+ data/share/xde/xsessions/dwm.desktop             |  3 +
+ .../xde/xsessions/e16-gnome2-session.desktop     |  3 +
+ .../xde/xsessions/e16-gnome3-session.desktop     |  3 +
+ data/share/xde/xsessions/e16-kde-session.desktop |  3 +
+ data/share/xde/xsessions/e16-session.desktop     |  3 +
+ data/share/xde/xsessions/echinus-git.desktop     |  3 +
+ data/share/xde/xsessions/echinus.desktop         |  3 +
+ data/share/xde/xsessions/ede.desktop             |  3 +
+ data/share/xde/xsessions/evilwm-git.desktop      |  3 +
+ data/share/xde/xsessions/evilwm.desktop          |  3 +
+ data/share/xde/xsessions/failsafewm.desktop      |  3 +
+ data/share/xde/xsessions/fluxbox-git.desktop     |  6 +-
+ data/share/xde/xsessions/fluxbox-wm.desktop      |  4 ++
+ data/share/xde/xsessions/fluxbox.desktop         |  4 ++
+ data/share/xde/xsessions/flwm-git.desktop        |  3 +
+ data/share/xde/xsessions/flwm-tc.desktop         |  3 +
+ data/share/xde/xsessions/flwm.desktop            |  2 +
+ data/share/xde/xsessions/fvwm-crystal.desktop    |  3 +
+ data/share/xde/xsessions/fvwm.desktop            |  2 +
+ data/share/xde/xsessions/fvwm2.desktop           |  2 +
+ data/share/xde/xsessions/glasswm.desktop         |  0
+ data/share/xde/xsessions/gnome-classic.desktop   |  0
+ .../xde/xsessions/gnome-flashback-compiz.desktop |  0
+ .../xsessions/gnome-flashback-metacity.desktop   |  0
+ data/share/xde/xsessions/gnome-xorg.desktop      |  0
+ data/share/xde/xsessions/gnome.desktop           |  2 +
+ data/share/xde/xsessions/goomwwm.desktop         |  3 +
+ data/share/xde/xsessions/herbstluftwm.desktop    |  3 +
+ data/share/xde/xsessions/i3-with-shmlog.desktop  |  3 +
+ data/share/xde/xsessions/i3.desktop              |  3 +
+ data/share/xde/xsessions/icewm-git.desktop       |  3 +
+ data/share/xde/xsessions/icewm-session.desktop   |  3 +
+ data/share/xde/xsessions/icewm.desktop           |  4 ++
+ data/share/xde/xsessions/kodi.desktop            |  0
+ data/share/xde/xsessions/larswm-git.desktop      |  3 +
+ data/share/xde/xsessions/larswm.desktop          |  3 +
+ data/share/xde/xsessions/lxqt.desktop            |  0
+ data/share/xde/xsessions/mantis-wm.desktop       |  3 +
+ data/share/xde/xsessions/matwm2-svn.desktop      |  3 +
+ data/share/xde/xsessions/matwm2.desktop          |  3 +
+ data/share/xde/xsessions/metacity.desktop        |  2 +
+ data/share/xde/xsessions/mutter.desktop          |  2 +
+ data/share/xde/xsessions/mvwm.desktop            |  2 +
+ data/share/xde/xsessions/mwm.desktop             |  3 +
+ data/share/xde/xsessions/notion.desktop          |  0
+ data/share/xde/xsessions/openbox-git.desktop     |  6 +-
+ data/share/xde/xsessions/openbox-gnome.desktop   |  5 +-
+ data/share/xde/xsessions/openbox-kde.desktop     |  3 +
+ data/share/xde/xsessions/openbox.desktop         |  2 +
+ data/share/xde/xsessions/pawm.desktop            |  3 +
+ data/share/xde/xsessions/pekwm-git.desktop       |  4 ++
+ data/share/xde/xsessions/pekwm.desktop           |  4 ++
+ .../xde/xsessions/plasma-mediacenter.desktop     |  0
+ data/share/xde/xsessions/plasma.desktop          |  0
+ data/share/xde/xsessions/qtile.desktop           |  0
+ data/share/xde/xsessions/spectrwm-git.desktop    |  3 +
+ data/share/xde/xsessions/spectrwm.desktop        |  3 +
+ data/share/xde/xsessions/sscrotwm.desktop        |  0
+ data/share/xde/xsessions/ssh.desktop             |  4 ++
+ data/share/xde/xsessions/sugar.desktop           |  0
+ data/share/xde/xsessions/twm-git.desktop         |  3 +
+ data/share/xde/xsessions/twm.desktop             |  3 +
+ data/share/xde/xsessions/uwm-git.desktop         |  3 +
+ data/share/xde/xsessions/uwm.desktop             |  3 +
+ data/share/xde/xsessions/velox-git.desktop       |  3 +
+ data/share/xde/xsessions/velox.desktop           |  3 +
+ data/share/xde/xsessions/vtwm-git.desktop        |  3 +
+ data/share/xde/xsessions/vtwm.desktop            |  3 +
+ data/share/xde/xsessions/waimea-cvs.desktop      |  3 +
+ data/share/xde/xsessions/waimea-git.desktop      |  3 +
+ data/share/xde/xsessions/waimea.desktop          |  2 +
+ data/share/xde/xsessions/wind.desktop            |  4 ++
+ .../xde/xsessions/windowmaker-crm-git.desktop    |  3 +
+ data/share/xde/xsessions/windowmaker-git.desktop |  3 +
+ data/share/xde/xsessions/windwm-git.desktop      |  3 +
+ data/share/xde/xsessions/windwm.desktop          |  3 +
+ data/share/xde/xsessions/wm2-svn.desktop         |  3 +
+ data/share/xde/xsessions/wm2.desktop             |  3 +
+ data/share/xde/xsessions/wmaker.desktop          |  3 +
+ data/share/xde/xsessions/wmii.desktop            |  3 +
+ data/share/xde/xsessions/wmii36.desktop          |  3 +
+ data/share/xde/xsessions/wmx-svn.desktop         |  3 +
+ data/share/xde/xsessions/wmx.desktop             |  3 +
+ data/share/xde/xsessions/xdwm.desktop            |  3 +
+ data/share/xde/xsessions/xfce.desktop            |  3 +
+ data/share/xde/xsessions/yeahwm.desktop          |  3 +
+ 112 files changed, 353 insertions(+), 10 deletions(-)
+
+commit 549191d9e16eaddaeaa3038ae1526017b2efdf58
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Wed May 30 07:26:57 2018 -0600
+
+    provide notes about autostart
+
+ NOTES | 230 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 230 insertions(+)
+
+commit f99b23d88519193ffe1110d141853d88de050790
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Wed May 30 07:26:36 2018 -0600
+
+    add StartupWMClass where needed
+
+ data/xdg/xde/autostart/wmnet.desktop    | 1 +
+ data/xdg/xde/autostart/wmsysmon.desktop | 1 +
+ 2 files changed, 2 insertions(+)
+
+commit bf458ed7f338867a321d2be779ff32b8af873c22
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Wed May 23 00:45:09 2018 -0600
+
+    runtime directories need to be created
+
+ data/xdg/xde/adwm/setup.sh     | 1 +
+ data/xdg/xde/blackbox/setup.sh | 1 +
+ data/xdg/xde/ctwm/setup.sh     | 1 +
+ data/xdg/xde/etwm/setup.sh     | 1 +
+ data/xdg/xde/fluxbox/setup.sh  | 1 +
+ data/xdg/xde/icewm/setup.sh    | 1 +
+ data/xdg/xde/jwm/setup.sh      | 1 +
+ data/xdg/xde/openbox/setup.sh  | 1 +
+ data/xdg/xde/pekwm/setup.sh    | 1 +
+ data/xdg/xde/twm/setup.sh      | 1 +
+ data/xdg/xde/vtwm/setup.sh     | 1 +
+ data/xdg/xde/waimea/setup.sh   | 1 +
+ 12 files changed, 12 insertions(+)
+
+commit 8a9eafaeb8b29578a5582407107f21765018cef9
+Author: Milk Brewster <github@milkmiruku.com>
+Date:   Wed May 9 21:45:02 2018 +0100
+
+    fx DisplayManager*greeter: path typo
+
+ data/xdm/xde/xdm-config | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 9bc23b159474b9931ebbfd4e4eb624c3cd39bec0
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Apr 29 01:19:15 2018 -0600
+
+    update release files
+
+ AUTHORS      |   2 +-
+ ChangeLog    | 553 ++++++++++++++++++++++++-------------------------------
+ NEWS         |  39 +++-
+ README.md    |  20 +-
+ configure.ac |   8 +-
+ 5 files changed, 294 insertions(+), 328 deletions(-)
+
 commit 5c5e67d406dba408b10a62593398f99a3ce09c13
 Merge: e00a287 d8dbab4
 Author: Brian Bidulock <bidulock@openss7.org>
@@ -6454,205 +7006,3 @@ Date:   Wed Jul 30 05:55:38 2014 -0600
  src/xde-xlock.c  |   7 +-
  src/xde-xlogin.c | 281 ++++++++++++++++++++++++++++++++++++++++++---------
  2 files changed, 238 insertions(+), 50 deletions(-)
-
-commit 5eaeba0a96966ec7768ef9aac48f4dae350ae2d0
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Wed Jul 30 05:40:48 2014 -0600
-
-    better arrangement
-
- src/xde-xlock.c | 377 ++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 339 insertions(+), 38 deletions(-)
-
-commit caa38cdedf8d97e8ce49a2ef481bf3c1395679d5
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Wed Jul 30 02:47:17 2014 -0600
-
-    check for MIT-SCREEN-SAVER extension
-
- src/xde-xlock.c | 116 +++++++++++++++++++++++++++++++++++++---------------
- 1 file changed, 83 insertions(+), 33 deletions(-)
-
-commit dc389298cf81c824105342603dc0881443e00462
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 29 22:50:34 2014 -0600
-
-    update
-
- README.in | 28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
-
-commit a2b00b0f8e703ddaea6d780646f384ee980981ea
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 29 21:16:06 2014 -0600
-
-    add readme for github
-
- README.md | 109 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 109 insertions(+)
-
-commit 3323ecb15c0b2352545b800db3b526bc4503ff69
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 29 20:46:44 2014 -0600
-
-    add documentation for xde-xlock
-
- man/Makefile.am   |  37 +-------
- man/xde-xlock.pod | 259 ++++++++++++++++++++++++++++++++++++++++++++++++++
- src/xde-xlock.c   |  32 ++++---
- 3 files changed, 282 insertions(+), 46 deletions(-)
-
-commit 35a2780cc64337bcb7224fd6e768d4074057253d
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 29 19:46:19 2014 -0600
-
-    added in xde-xlock
-
- .gitignore       |   1 +
- src/Makefile.am  |   6 +
- src/xde-xlock.c  | 970 ++++++++++++++++++++++++++++++++++++++-------------
- src/xde-xlogin.c | 378 ++------------------
- 4 files changed, 752 insertions(+), 603 deletions(-)
-
-commit ad850cd580d984abcbc155b104c1fcea92cca3b9
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 29 19:09:11 2014 -0600
-
-    split out pane and panel
-
- src/xde-xlogin.c | 93 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 50 insertions(+), 43 deletions(-)
-
-commit cc759e133a9f9f935c12c220f8af9a6614c1d651
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 29 18:14:11 2014 -0600
-
-    prepare for RANDR changes
-
- src/xde-xlogin.c | 152 +++++++++++++++++++++++++++++++--------------------
- 1 file changed, 92 insertions(+), 60 deletions(-)
-
-commit 8ec08d592eb42083136ed008f0b879ac06f57b0d
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 29 17:14:39 2014 -0600
-
-    handle multiple screens and monitors
-
- src/xde-xlogin.c | 164 +++++++++++++++++++++++++++++++--------------------
- 1 file changed, 101 insertions(+), 63 deletions(-)
-
-commit f5bef3f43fd8b34047c2f0492da6960f4558755b
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Jul 29 16:11:31 2014 -0600
-
-    working up login, logout, lock
-
- src/xde-logout.c |  70 ++++-
- src/xde-xlock.c  | 148 ++++++++--
- src/xde-xlogin.c | 816 +++++++++++----------------------------------------
- 3 files changed, 365 insertions(+), 669 deletions(-)
-
-commit 4f4123f928663c29435ccb1b358c01997dae9067
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 28 18:17:40 2014 -0600
-
-    add switch users to xde-logout
-
- src/xde-logout.c | 163 +++++++++++++++++++++++++++++++++++++++------------
- src/xde-xlogin.c |  20 +++++--
- 2 files changed, 141 insertions(+), 42 deletions(-)
-
-commit 827aa02be864b5444193809da1225cc2f76d2083
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 28 17:02:06 2014 -0600
-
-    change user menu for xde-xlogin
-
- src/Makefile.am  |   4 +-
- src/xde-logout.c |   2 +-
- src/xde-xlogin.c | 305 +++++++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 297 insertions(+), 14 deletions(-)
-
-commit 03ca77b017549a7873bac2ab6719a9848b16ff03
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 28 12:53:59 2014 -0600
-
-    use $HOME/.dmrc for defaults as well
-
- man/xde-chooser.pod | 48 +++++++++++++++++++++--------------
- src/xde-chooser.c   | 66 +++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 91 insertions(+), 23 deletions(-)
-
-commit 7aea37d6a4b0ba643ed85e5dc28b8bfaecd15144
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Jul 28 10:53:13 2014 -0600
-
-    working up xlock and xlogin
-
- src/xde-xlock.c  | 723 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- src/xde-xlogin.c | 169 +++++++++++-
- 2 files changed, 870 insertions(+), 22 deletions(-)
-
-commit 288f9e730c9983610fcc2b78b83fa8c6dd9ac9bc
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Jul 27 12:12:12 2014 -0600
-
-    removed stray binary
-
- .gitignore    |   1 +
- src/test-root | Bin 13419 -> 0 bytes
- 2 files changed, 1 insertion(+)
-
-commit 2fbc368180446a6c0ae6e74724cb04c9c92fef3c
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jul 26 22:43:27 2014 -0600
-
-    working up xchooser, xlogin and xlock
-
- NOTES              |   63 ++
- src/Makefile.am    |    8 +-
- src/test-root      |  Bin 0 -> 13419 bytes
- src/test-root.c    |  156 ++++
- src/vncExt.c       |  384 ++++++++++
- src/vncExt.h       |  343 +++++++++
- src/xde-logout.c   |   65 +-
- src/xde-xchooser.c |  442 +++++------
- src/xde-xlock.c    |  241 ++++++
- src/xde-xlogin.c   | 1954 +++++++++++++++++++++++++++++++++---------------
- 10 files changed, 2830 insertions(+), 826 deletions(-)
-
-commit f34ef5cb99cecbf0de104caaaf8ad842ce15a986
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Fri Jul 25 13:41:24 2014 -0600
-
-    do not expect broadcast on IPv6 addresses
-
- src/xde-xchooser.c | 31 +++++++++++--------------------
- 1 file changed, 11 insertions(+), 20 deletions(-)
-
-commit d7e381fdf5adf71a246a633273f2337d667ef334
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Fri Jul 25 12:28:22 2014 -0600
-
-    working up much better xdm chooser
-
- src/xde-xchooser.c | 577 +++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 534 insertions(+), 43 deletions(-)
-
-commit 220d341208899537a84b54c16422b19e493caaee
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Fri Jul 25 12:27:21 2014 -0600
-
-    better icon
-
- src/xde-logout.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-commit 1fbdd898001604e8411e7a53d76b09efc9010bc1
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 24 19:55:12 2014 -0600
-
-    getting there
-
- src/xde-xchooser.c | 89 ++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 83 insertions(+), 6 deletions(-)
