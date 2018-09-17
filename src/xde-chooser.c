@@ -506,6 +506,8 @@ enum {
 	XSESS_COL_ORIGINAL,		/* XDE-Managed? original setting */
 	XSESS_COL_FILENAME,		/* the full file name */
 	XSESS_COL_TOOLTIP,		/* the tooltip information */
+	XSESS_COL_ACTION,		/* the action selected */
+	XSESS_COL_ACTIONS,		/* the actions available */
 };
 
 static void reparse(Display *dpy, Window root);
@@ -691,6 +693,45 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	}
 }
 
+void
+on_render_combo(GtkTreeViewColumn *col, GtkCellRenderer *cell,
+		GtkTreeModel *store, GtkTreeIter *iter, gpointer data)
+{
+	gchar *action = NULL, *actions = NULL;
+	gchar **acts, **a, *act;
+	GtkListStore *model = NULL;
+	GtkTreeIter m_iter;
+
+	gtk_tree_model_get(GTK_TREE_MODEL(store), iter,
+			XSESS_COL_ACTION, &action,
+			XSESS_COL_ACTIONS, &actions,
+			-1);
+	if (!actions)
+		return;
+	if (!(acts = g_strsplit(actions, ";", -1)))
+		return;
+	model = gtk_list_store_new(1, G_TYPE_STRING);
+	gtk_list_store_append(model, &m_iter);
+	DPRINTF("Adding action '%s'\n","");
+	gtk_list_store_set(model, &m_iter, 0, "", -1);
+
+	for (a = acts; (act = *a); a++) {
+		gtk_list_store_append(model, &m_iter);
+		DPRINTF("Adding action '%s'\n",act);
+		gtk_list_store_set(model, &m_iter, 0, act, -1);
+	}
+	g_strfreev(acts);
+	g_object_set(G_OBJECT(cell),
+			"has-entry", FALSE,
+			"model", model,
+			"text-column", 0,
+			"mode", GTK_CELL_RENDERER_MODE_EDITABLE,
+			"editable", TRUE,
+			"text", action,
+			NULL);
+	/* could set two columns on combo box */
+}
+
 static char **
 get_xsession_dirs(int *np)
 {
@@ -758,35 +799,31 @@ get_xsession_entry(const char *key, const char *file)
 /** @brief wean out entries that should not be used
   */
 static gboolean
-bad_xsession(const char *appid, GKeyFile *entry)
+bad_xaction(const char *appid, GKeyFile *entry, const char *group)
 {
 	gchar *name, *exec, *tryexec, *binary;
 
-	if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-					   G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
-		DPRINTF("%s: no Name\n", appid);
+	if (!(name = g_key_file_get_string(entry, group, G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
+		DPRINTF("%s: %s: no Name\n", appid, group);
 		return TRUE;
 	}
 	g_free(name);
-	if (!(exec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-					   G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
-		DPRINTF("%s: no Exec\n", appid);
+	if (!(exec = g_key_file_get_string(entry, group, G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
+		DPRINTF("%s: %s: no Exec\n", appid, group);
 		return TRUE;
 	}
-	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
-				   G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
-		DPRINTF("%s: is Hidden\n", appid);
+	if (g_key_file_get_boolean(entry, group, G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
+		DPRINTF("%s: %s: is Hidden\n", appid, group);
 		return TRUE;
 	}
-	if ((tryexec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-					     G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, NULL))) {
+	if ((tryexec = g_key_file_get_string(entry, group, G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, NULL))) {
 		binary = g_strdup(tryexec);
 		g_free(tryexec);
 	} else {
 		char *p;
 
-		/* parse the first word of the exec statement and see whether
-		   it is executable or can be found in PATH */
+		/* parse the first word of the exec statement and see whether it is
+		   executable or can be found in PATH */
 		binary = g_strdup(exec);
 		if ((p = strpbrk(binary, " \t")))
 			*p = '\0';
@@ -795,7 +832,7 @@ bad_xsession(const char *appid, GKeyFile *entry)
 	g_free(exec);
 	if (binary[0] == '/') {
 		if (access(binary, X_OK)) {
-			DPRINTF("%s: %s: %s\n", appid, binary, strerror(errno));
+			DPRINTF("%s: %s: %s: %s\n", appid, group, binary, strerror(errno));
 			g_free(binary);
 			return TRUE;
 		}
@@ -825,12 +862,18 @@ bad_xsession(const char *appid, GKeyFile *entry)
 		}
 		free(path);
 		if (!execok) {
-			DPRINTF("%s: %s: not executable\n", appid, binary);
+			DPRINTF("%s: %s: %s: not executable\n", appid, group, binary);
 			g_free(binary);
 			return TRUE;
 		}
 	}
 	return FALSE;
+}
+
+static gboolean
+bad_xsession(const char *appid, GKeyFile *entry)
+{
+	return bad_xaction(appid, entry, G_KEY_FILE_DESKTOP_GROUP);
 }
 
 static void
@@ -905,6 +948,7 @@ get_xsessions(void)
 	return (xsessions);
 }
 
+
 static gboolean
 on_idle(gpointer data)
 {
@@ -927,7 +971,7 @@ on_idle(gpointer data)
 		}
 		g_hash_table_iter_init(&xiter, xsessions);
 	}
-	if (!g_hash_table_iter_next(&xiter, (gpointer *) & key, (gpointer *) & file))
+	if (!g_hash_table_iter_next(&xiter, (gpointer *) &key, (gpointer *) &file))
 		return G_SOURCE_REMOVE;
 
 	if (!(entry = get_xsession_entry(key, file)))
@@ -938,32 +982,54 @@ on_idle(gpointer data)
 		return G_SOURCE_CONTINUE;
 	}
 
-	gchar *i, *n, *c, *k, *e, *l, *f, *t;
+	gchar *i, *n, *c, *k, *e, *l, *f, *t, *a, **s, **d, *b;
 	gboolean m;
+	gsize len;
 
 	f = g_strdup(file);
 	l = g_strdup(key);
-	i = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-				  G_KEY_FILE_DESKTOP_KEY_ICON, NULL);
-	n = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-					 G_KEY_FILE_DESKTOP_KEY_NAME, NULL, NULL) ? : g_strdup("");
-	c = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-					 G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL,
+	i = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_ICON, NULL);
+	n = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_NAME, NULL,
+					 NULL) ? : g_strdup("");
+	c = g_key_file_get_locale_string(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_COMMENT, NULL,
 					 NULL) ? : g_strdup("");
 	k = g_markup_printf_escaped("<b>%s</b>\n%s", n, c);
-	e = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
-				  G_KEY_FILE_DESKTOP_KEY_EXEC, NULL) ? : g_strdup("");
-	m = g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL);
+	e = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_EXEC,
+				  NULL) ? : g_strdup("");
+	m = g_key_file_has_group(entry, "Window Manager") ? g_key_file_get_boolean(entry, "Window Manager", "X-XDE-Managed", NULL) : FALSE;
 	if (options.debug) {
 		t = g_markup_printf_escaped("<b>Name:</b> %s" "\n"
 					    "<b>Comment:</b> %s" "\n"
 					    "<b>Exec:</b> %s" "\n"
-					    "<b>Icon:</b> %s" "\n" "<b>file:</b> %s", n, c, e, i,
-					    f);
+					    "<b>Icon:</b> %s" "\n" "<b>file:</b> %s", n, c, e, i, f);
 	} else {
 		t = g_markup_printf_escaped("<b>%s</b>: %s", n, c);
 	}
+	a = NULL;
+	b = NULL;
+	if ((s = g_key_file_get_string_list(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_ACTIONS, &len, NULL))) {
+		gchar *group;
+		b = calloc(PATH_MAX, sizeof(*b));
+		group = calloc(PATH_MAX + 1, sizeof(*group));
 
+		for (d = s; (a = *d); d++) {
+			snprintf(group, PATH_MAX, "Desktop Action %s", a);
+			if (bad_xaction(key, entry, group))
+				continue;
+			if (b[0])
+				strcat(b, ";");
+			strcat(b, a);
+		}
+		if (b[0]) {
+			char *p;
+
+			a = strdup(b);
+			if ((p = strchr(a, ';')))
+				*p = '\0';
+		}
+		g_strfreev(s);
+		free(group);
+	}
 	gtk_list_store_append(store, &iter);
 	/* *INDENT-OFF* */
 	gtk_list_store_set(store, &iter,
@@ -976,6 +1042,8 @@ on_idle(gpointer data)
 			XSESS_COL_ORIGINAL,	m,
 			XSESS_COL_FILENAME,	f,
 			XSESS_COL_TOOLTIP,	t,
+			XSESS_COL_ACTION,	a,
+			XSESS_COL_ACTIONS,	b,
 			-1);
 	/* *INDENT-ON* */
 	g_free(f);
@@ -985,6 +1053,8 @@ on_idle(gpointer data)
 	g_free(k);
 	g_free(e);
 	g_free(t);
+	g_free(a);
+	g_free(b);
 	g_key_file_free(entry);
 
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
@@ -1012,25 +1082,48 @@ on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer data)
 	GtkTreeIter iter;
 
 	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter, path)) {
-		GValue user_v = G_VALUE_INIT;
-		GValue orig_v = G_VALUE_INIT;
-		gboolean user;
-		gboolean orig;
+		gboolean user, orig;
 
-		gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter, XSESS_COL_MANAGED, &user_v);
-		gtk_tree_model_get_value(GTK_TREE_MODEL(store), &iter, XSESS_COL_ORIGINAL, &orig_v);
-		user = g_value_get_boolean(&user_v);
-		orig = g_value_get_boolean(&orig_v);
+		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter,
+				   XSESS_COL_MANAGED, &user, XSESS_COL_ORIGINAL, &orig, -1);
 		if (orig) {
 			user = user ? FALSE : TRUE;
-			g_value_set_boolean(&user_v, user);
-			gtk_list_store_set_value(GTK_LIST_STORE(store), &iter,
-						 XSESS_COL_MANAGED, &user_v);
+			gtk_list_store_set(GTK_LIST_STORE(store), &iter, XSESS_COL_MANAGED, user, -1);
 		}
-		g_value_unset(&user_v);
-		g_value_unset(&orig_v);
 	}
 }
+
+void
+on_action_change(GtkCellRendererCombo *rend, gchar *path, GtkTreeIter *combo_iter, gpointer data)
+{
+	DPRINTF("Editing action change\n");
+}
+
+void
+on_action_edited(GtkCellRenderer *rend, gchar *path, gchar *new_text, gpointer data)
+{
+	GtkListStore *store = GTK_LIST_STORE(data);
+	GtkTreeIter iter;
+
+	if (!new_text || !new_text[0])
+		new_text = NULL;
+
+	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter, path))
+		gtk_list_store_set(GTK_LIST_STORE(store), &iter, XSESS_COL_ACTION, new_text, -1);
+}
+
+void
+on_action_editing(GtkCellRenderer *rend, GtkCellEditable *editable, gchar *path, gpointer data)
+{
+	DPRINTF("Started editing rend=%p, editable=%p, path=%s\n", rend, editable, path);
+}
+
+void
+on_action_cancel(GtkCellRenderer *rend, gpointer data)
+{
+	DPRINTF("Editing action cancelled\n");
+}
+
 
 static void
 on_logout_clicked(GtkButton *button, gpointer user_data)
@@ -1042,13 +1135,12 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		const gchar *label;
+		gchar *label = NULL;
 
-		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
-		if ((label = g_value_get_string(&label_v)))
+		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, -1);
+		if (label)
 			DPRINTF("Label selected %s\n", label);
-		g_value_unset(&label_v);
+		g_free(label);
 	}
 	free(options.current);
 	options.current = strdup("logout");
@@ -1067,8 +1159,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		const gchar *label;
+		gchar *label = NULL;
 		char *home = getenv("HOME") ? : ".";
 		char *xhome = getenv("XDG_CONFIG_HOME");
 		char *cdir, *file;
@@ -1095,8 +1186,8 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 		strcpy(file, cdir);
 		strcat(file, "/default");
 
-		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
-		if ((label = g_value_get_string(&label_v)))
+		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, -1);
+		if (label)
 			DPRINTF("Label selected %s\n", label);
 
 		if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
@@ -1121,8 +1212,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 
 			free(dmrc);
 		}
-
-		g_value_unset(&label_v);
+		g_free(label);
 		free(file);
 		free(cdir);
 	}
@@ -1137,19 +1227,15 @@ on_launch_clicked(GtkButton *button, gpointer user_data)
 
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		GValue manage_v = G_VALUE_INIT;
-		const gchar *label;
+		gchar *label = NULL;
 		gboolean manage;
 
-		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
-		gtk_tree_model_get_value(model, &iter, XSESS_COL_MANAGED, &manage_v);
-		label = g_value_get_string(&label_v);
-		manage = g_value_get_boolean(&manage_v);
+		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, XSESS_COL_MANAGED, &manage, -1);
 		free(options.current);
 		options.current = strdup(label);
 		options.managed = manage;
 		choose_result = ChooseResultLaunch;
+		g_free(label);
 		gtk_main_quit();
 	}
 }
@@ -1162,11 +1248,10 @@ on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 	GtkTreeIter iter;
 
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		const gchar *label;
+		gchar *label = NULL;
 
-		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
-		if ((label = g_value_get_string(&label_v)))
+		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, -1);
+		if (label)
 			DPRINTF("Label selected %s\n", label);
 		if (label && !strcmp(label, options.session)) {
 			gtk_widget_set_sensitive(buttons[1], FALSE);
@@ -1177,7 +1262,7 @@ on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 			// gtk_widget_set_sensitive(buttons[2], TRUE);
 			gtk_widget_set_sensitive(buttons[3], TRUE);
 		}
-		g_value_unset(&label_v);
+		g_free(label);
 	} else {
 		gtk_widget_set_sensitive(buttons[1], FALSE);
 		// gtk_widget_set_sensitive(buttons[2], TRUE);
@@ -1194,22 +1279,17 @@ on_row_activated(GtkTreeView *sess, GtkTreePath *path, GtkTreeViewColumn *col, g
 
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-		GValue label_v = G_VALUE_INIT;
-		GValue manage_v = G_VALUE_INIT;
-		const gchar *label;
+		gchar *label = NULL;
 		gboolean manage;
 
-		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
-		gtk_tree_model_get_value(model, &iter, XSESS_COL_MANAGED, &manage_v);
-		if ((label = g_value_get_string(&label_v)))
+		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label , XSESS_COL_MANAGED, &manage, -1);
+		if (label)
 			DPRINTF("Label selected %s\n", label);
-		manage = g_value_get_boolean(&manage_v);
 		free(options.current);
 		options.current = strdup(label);
 		options.managed = manage;
 		choose_result = ChooseResultLaunch;
-		g_value_unset(&label_v);
-		g_value_unset(&manage_v);
+		g_free(label);
 		gtk_main_quit();
 	}
 }
@@ -1229,13 +1309,12 @@ on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 		gtk_tree_selection_select_path(selection, path);
 		if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
-			GValue label_v = G_VALUE_INIT;
-			const gchar *label;
+			gchar *label = NULL;
 
-			gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
-			if ((label = g_value_get_string(&label_v)))
+			gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, -1);
+			if (label)
 				DPRINTF("Label clicked was: %s\n", label);
-			g_value_unset(&label_v);
+			g_free(label);
 		}
 	}
 	return FALSE;		/* propagate event */
@@ -1950,7 +2029,7 @@ GetPanel(void)
 	gtk_box_pack_start(GTK_BOX(pan), sw, TRUE, TRUE, 0);
 
 	/* *INDENT-OFF* */
-	store = gtk_list_store_new(9
+	store = gtk_list_store_new(11
 			,G_TYPE_STRING	/* icon */
 			,G_TYPE_STRING	/* Name */
 			,G_TYPE_STRING	/* Comment */
@@ -1960,6 +2039,8 @@ GetPanel(void)
 			,G_TYPE_BOOLEAN	/* X-XDE-managed original setting */
 			,G_TYPE_STRING	/* the file name */
 			,G_TYPE_STRING	/* tooltip */
+			,G_TYPE_STRING	/* action */
+			,G_TYPE_STRING  /* actions */
 	    );
 	/* *INDENT-ON* */
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store),
@@ -1983,22 +2064,38 @@ GetPanel(void)
 	g_signal_connect(G_OBJECT(selection), "changed", G_CALLBACK(on_selection_changed), buttons);
 
 	GtkCellRenderer *rend = gtk_cell_renderer_toggle_new();
-
+	g_object_set(G_OBJECT(rend),
+			"mode", GTK_CELL_RENDERER_MODE_ACTIVATABLE,
+			"editable", TRUE,
+			NULL);
 	gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), TRUE);
 	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), store);
 	GtkTreeViewColumn *col;
 
-	col = gtk_tree_view_column_new_with_attributes("Managed", rend, "active", XSESS_COL_MANAGED,
-						       NULL);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(sess), GTK_TREE_VIEW_COLUMN(col));
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(sess), -1, "Managed", rend,
+						    "active", XSESS_COL_MANAGED,
+						    NULL);
 
+	rend = gtk_cell_renderer_combo_new();
+	g_object_set(G_OBJECT(rend),
+			"has-entry", FALSE,
+			"mode", GTK_CELL_RENDERER_MODE_EDITABLE,
+			"editable", TRUE,
+			NULL);
+	g_signal_connect(G_OBJECT(rend), "edited", G_CALLBACK(on_action_edited), store);
+	g_signal_connect(G_OBJECT(rend), "editing-started", G_CALLBACK(on_action_editing), store);
+	g_signal_connect(G_OBJECT(rend), "editing-canceled", G_CALLBACK(on_action_cancel), store);
+	g_signal_connect(G_OBJECT(rend), "changed", G_CALLBACK(on_action_change), store);
+	gtk_tree_view_insert_column_with_data_func(GTK_TREE_VIEW(sess), -1, "Session", rend,
+						   on_render_combo, NULL, NULL);
 	rend = gtk_cell_renderer_pixbuf_new();
-	gtk_tree_view_insert_column_with_data_func(GTK_TREE_VIEW(sess),
-						   -1, "Icon", rend, on_render_pixbuf, NULL, NULL);
+	gtk_tree_view_insert_column_with_data_func(GTK_TREE_VIEW(sess), -1, "Icon", rend,
+						   on_render_pixbuf, NULL, NULL);
 
 	rend = gtk_cell_renderer_text_new();
-	col = gtk_tree_view_column_new_with_attributes("Window Manager", rend, "markup",
-						       XSESS_COL_MARKUP, NULL);
+	col = gtk_tree_view_column_new_with_attributes("Window Manager", rend,
+						       "markup", XSESS_COL_MARKUP,
+						       NULL);
 	gtk_tree_view_column_set_sort_column_id(GTK_TREE_VIEW_COLUMN(col), XSESS_COL_NAME);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(sess), GTK_TREE_VIEW_COLUMN(col));
 
