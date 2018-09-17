@@ -2293,7 +2293,7 @@ GetWindow(Bool noshow)
 	    (string = gtk_tree_model_get_string_from_iter(model, &iter))) {
 		GtkTreeView *tree = GTK_TREE_VIEW(sess);
 		GtkTreePath *path = gtk_tree_path_new_from_string(string);
-		GtkTreeViewColumn *cursor = gtk_tree_view_get_column(tree, 1);
+		GtkTreeViewColumn *cursor = gtk_tree_view_get_column(tree, 2);
 
 		g_free(string);
 		gtk_tree_view_set_cursor_on_cell(tree, path, cursor, NULL, FALSE);
