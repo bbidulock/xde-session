@@ -682,6 +682,7 @@ typedef enum {
 	LOGOUT_ACTION_SUSPEND,		/* suspend the computer */
 	LOGOUT_ACTION_HIBERNATE,	/* hibernate the computer */
 	LOGOUT_ACTION_HYBRIDSLEEP,	/* hybrid sleep the computer */
+	LOGOUT_ACTION_SUSPENDHIBERNATE,	/* suspend then hibernate the computer */
 	LOGOUT_ACTION_SWITCHUSER,	/* switch users */
 	LOGOUT_ACTION_SWITCHDESK,	/* switch desktops */
 	LOGOUT_ACTION_LOCKSCREEN,	/* lock screen */
@@ -1194,6 +1195,7 @@ static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SUSPEND]		= AvailStatusUndef,
 	[LOGOUT_ACTION_HIBERNATE]	= AvailStatusUndef,
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= AvailStatusUndef,
 	[LOGOUT_ACTION_SWITCHUSER]	= AvailStatusUndef,
 	[LOGOUT_ACTION_SWITCHDESK]	= AvailStatusUndef,
 	[LOGOUT_ACTION_LOCKSCREEN]	= AvailStatusUndef,
@@ -3396,6 +3398,24 @@ on_hybridsleep(GtkMenuItem *item, gpointer data)
 }
 
 static void
+on_suspendhibernate(GtkMenuItem *item, gpointer data)
+{
+	gchar *status = data;
+	gboolean challenge;
+
+	if (!status)
+		return;
+	if (!strcmp(status, "yes")) {
+		challenge = FALSE;
+	} else if (!strcmp(status, "challenge")) {
+		challenge = TRUE;
+	} else
+		return;
+	if (challenge) {
+	}
+}
+
+static void
 free_value(gpointer data, GClosure *unused)
 {
 	if (data)
@@ -3504,6 +3524,9 @@ append_power_actions(GtkMenu *menu)
 		gotone = TRUE;
 	if (append_power_action(submenu, islocal, "CanHybridSleep", "Hybrid Sleep",
 				"system-sleep", G_CALLBACK(on_hybridsleep)))
+		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanSuspendThenHibernate", "Suspend Hibernate",
+				"system-suspend-hibernate", G_CALLBACK(on_suspendhibernate)))
 		gotone = TRUE;
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(power), submenu);
@@ -3956,6 +3979,24 @@ test_power_functions()
 		value = NULL;
 	} else {
 		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
+
+	result = g_dbus_proxy_call_sync(sd_manager, "CanSuspendThenHibernate",
+					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+	if (ok && !err) {
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+		DPRINTF("CanSuspendThenHibernate status is %s\n", value);
+		if (islocal)
+			action_can[LOGOUT_ACTION_SUSPENDHIBERNATE] = status_of_string(value);
+		g_variant_unref(var);
+		g_variant_unref(result);
+		value = NULL;
+	} else {
+		EPRINTF("CanSuspendThenHibernate call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 }
