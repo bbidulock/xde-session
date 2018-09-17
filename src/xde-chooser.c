@@ -2066,7 +2066,6 @@ GetPanel(void)
 	GtkCellRenderer *rend = gtk_cell_renderer_toggle_new();
 	g_object_set(G_OBJECT(rend),
 			"mode", GTK_CELL_RENDERER_MODE_ACTIVATABLE,
-			"editable", TRUE,
 			NULL);
 	gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(rend), TRUE);
 	g_signal_connect(G_OBJECT(rend), "toggled", G_CALLBACK(on_managed_toggle), store);
