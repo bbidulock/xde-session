@@ -1,5 +1,117 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 96656c7a92bc460266f8739a54b56cad9e3eaa8f
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:53:11 2018 -0600
+
+    start on column 2
+
+ src/xde-chooser.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 41b4f134b006a31f08cc896a8352fade71492122
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:46:34 2018 -0600
+
+    toggle has no editable property
+
+ src/xde-chooser.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+commit 89cad6273346a9ee2855dc81601d9e779c3e3802
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:28:57 2018 -0600
+
+    change icons
+
+ src/xde-greeter.c  | 2 +-
+ src/xde-logout.c   | 6 +++---
+ src/xde-xchooser.c | 2 +-
+ src/xde-xlock.c    | 2 +-
+ src/xde-xlogin.c   | 2 +-
+ 5 files changed, 7 insertions(+), 7 deletions(-)
+
+commit f334e2abfc386b52a07990196632206d01a6585e
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:17:34 2018 -0600
+
+    add XDE svg icon
+
+ data/share/xde/pixmaps/xde.svg | 85 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 85 insertions(+)
+
+commit 6e5f199423fa3176b724d92cc177b806e5c26960
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:17:00 2018 -0600
+
+    update
+
+ NEWS | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+commit c530c16ed9ee96d62dc2e87ba69a5bcdd66bebef
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:16:55 2018 -0600
+
+    update
+
+ ChangeLog | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+commit 3f40d10f13179785b0980b07eb76661f294d6ca3
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:15:18 2018 -0600
+
+    add suspend-then-hibernate to xde-xlogin
+
+ src/xde-xlogin.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+commit 4f6bae7ad22c1e3ac75d94d9c0298ea66dbfa157
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:13:17 2018 -0600
+
+    add suspend-then-hibernate to xde-xlock
+
+ src/xde-xlock.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+commit 517fd4c5e1ef1f3a0205e4fb8a6861f5439d1429
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:10:51 2018 -0600
+
+    add suspend-then-hibernate to xde-xchooser
+
+ src/xde-xchooser.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+commit a8e8a8b81df1bec9947d82469402ad53ba6c6cbf
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:09:47 2018 -0600
+
+    add suspend-then-hibernate to xde-chooser
+
+ src/xde-chooser.c | 277 ++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 187 insertions(+), 90 deletions(-)
+
+commit 5632070b27e1ca1f4a6137d30ad209be9e61a7ef
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 05:06:33 2018 -0600
+
+    add suspend-then-hibernate to xde-logout
+
+ src/xde-logout.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+commit 48d3885007eeee2153a2d513d08e88826f8b0f47
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 04:59:52 2018 -0600
+
+    add suspend-then-hibernate support to xde-greeter
+
+ src/xde-greeter.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
 commit e3d4ae63da399182e4d5ea5b74cbe581062952cf
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Fri Sep 14 05:02:58 2018 -0600
@@ -6571,442 +6683,3 @@ Date:   Sun Aug 3 06:57:19 2014 -0600
  xdm/xde/xdm-config     |  67 +++++++
  xdm/xde/xlogin         |  15 ++
  16 files changed, 971 insertions(+)
-
-commit 3a4d637e8980219acc52539ae1d0e827b297196e
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Aug 3 01:04:14 2014 -0600
-
-    cannot grab here
-
- src/xde-chooser.c | 2 --
- 1 file changed, 2 deletions(-)
-
-commit 35bbc01ff68e01f0ae08430b3f5e47bce57edb94
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sun Aug 3 00:57:18 2014 -0600
-
-    provided splash background where possible
-
- .indent.pro        |  3 ++
- src/xde-chooser.c  | 90 ++++++++++++++++++++++++++++++++++++++++++++++++--
- src/xde-logout.c   | 90 ++++++++++++++++++++++++++++++++++++++++++++++++--
- src/xde-xchooser.c | 90 ++++++++++++++++++++++++++++++++++++++++++++++++--
- src/xde-xlock.c    | 90 ++++++++++++++++++++++++++++++++++++++++++++++++--
- src/xde-xlogin.c   | 90 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 6 files changed, 438 insertions(+), 15 deletions(-)
-
-commit d00dfff72588267bba755b5965f61a9ae9917c88
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Aug 2 23:01:49 2014 -0600
-
-    add missing images
-
- Makefile.am | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-commit 6d799b62960f33fd00a8b3735327b74c855fb53b
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Aug 2 23:00:08 2014 -0600
-
-    handle default backgrounds (splash)
-
- share/xde/images/arch-banner.png     | Bin 11567 -> 11148 bytes
- share/xde/images/arch-splash.jpg     | Bin 0 -> 306689 bytes
- share/xde/images/banner.png          | Bin 15 -> 10186 bytes
- share/xde/images/splash.jpg          | Bin 0 -> 235728 bytes
- share/xde/images/unexicon-splash.jpg | Bin 0 -> 908695 bytes
- src/xde-chooser.c                    | 106 +++++++++++++++++++++++++++++
- src/xde-logout.c                     | 110 +++++++++++++++++++++++++++++-
- src/xde-xchooser.c                   | 112 +++++++++++++++++++++++++++++-
- src/xde-xlock.c                      | 113 ++++++++++++++++++++++++++++++-
- src/xde-xlogin.c                     | 112 +++++++++++++++++++++++++++++-
- 10 files changed, 542 insertions(+), 11 deletions(-)
-
-commit 1bfbbe4b7281492a459f5feaf7a549890714c8eb
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Aug 2 22:28:36 2014 -0600
-
-    handle defaults better
-
- src/xde-chooser.c  | 387 ++++++++++++++++++++++++++++++++++++++++++-------
- src/xde-logout.c   | 294 +++++++++++++++++++++++++++++++++----
- src/xde-xchooser.c | 293 ++++++++++++++++++++++++++++++++++---
- src/xde-xlock.c    | 293 ++++++++++++++++++++++++++++++++++---
- src/xde-xlogin.c   | 293 ++++++++++++++++++++++++++++++++++---
- 5 files changed, 1421 insertions(+), 139 deletions(-)
-
-commit 120f2ce0be63361376682cada860cfbea26cb1b3
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Aug 2 18:51:12 2014 -0600
-
-    install scripts as executable
-
- Makefile.am        | 128 ++++++++++++++++++++++++++++++++-----------------
- configure.template |   4 +-
- 2 files changed, 87 insertions(+), 45 deletions(-)
-
-commit 980b4019103f936db8e29432dd2aa5babaf4298f
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Aug 2 18:25:41 2014 -0600
-
-    passes distcheck again
-
- src/xde-login.c    | 41 ++++++++++++++++++++---------------------
- src/xde-xchooser.c | 20 ++++++++++----------
- src/xde-xlock.c    | 20 ++++++++++----------
- src/xde-xlogin.c   | 20 ++++++++++----------
- 4 files changed, 50 insertions(+), 51 deletions(-)
-
-commit b344e8615c22122d32c2b2558ddf620fff4718b7
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Aug 2 16:35:01 2014 -0600
-
-    rework local locations of config files for inplace execution
-
- Makefile.am                                      | 599 +++++++++++--------
- share/lxpanel/profile/BLACKBOX/panels/panel      | 203 +++++++
- share/lxpanel/profile/FLUXBOX/panels/panel       | 203 +++++++
- share/lxpanel/profile/FVWM/panels/panel          | 203 +++++++
- share/lxpanel/profile/ICEWM/panels/panel         | 203 +++++++
- share/lxpanel/profile/OPENBOX/panels/panel       | 203 +++++++
- share/lxpanel/profile/WMAKER/panels/panel        | 203 +++++++
- {xde => share/xde}/images/arch-banner.png        | Bin
- {xde => share/xde}/images/banner.png             |   0
- {xde => share/xde}/images/unexicon-banner.png    | Bin
- {xde => share/xde}/xsessions/2bwm.desktop        |   0
- {xde => share/xde}/xsessions/AfterStep.desktop   |   0
- {xde => share/xde}/xsessions/Fvwm.desktop        |   0
- {xde => share/xde}/xsessions/Fvwm1.desktop       |   0
- {xde => share/xde}/xsessions/Jwm.desktop         |   0
- {xde => share/xde}/xsessions/LXDE.desktop        |   0
- {xde => share/xde}/xsessions/adwm.desktop        |   0
- {xde => share/xde}/xsessions/aewm++.desktop      |   0
- {xde => share/xde}/xsessions/aewm.desktop        |   0
- {xde => share/xde}/xsessions/awesome.desktop     |   0
- {xde => share/xde}/xsessions/blackbox.desktop    |   0
- {xde => share/xde}/xsessions/bspwm.desktop       |   0
- {xde => share/xde}/xsessions/ctwm.desktop        |   0
- {xde => share/xde}/xsessions/cwm.desktop         |   0
- {xde => share/xde}/xsessions/dwm.desktop         |   0
- .../xde}/xsessions/e16-gnome2-session.desktop    |   0
- .../xde}/xsessions/e16-gnome3-session.desktop    |   0
- .../xde}/xsessions/e16-kde-session.desktop       |   0
- {xde => share/xde}/xsessions/e16-session.desktop |   0
- {xde => share/xde}/xsessions/echinus.desktop     |   0
- {xde => share/xde}/xsessions/ede.desktop         |   0
- {xde => share/xde}/xsessions/evilwm.desktop      |   0
- {xde => share/xde}/xsessions/failsafewm.desktop  |   0
- {xde => share/xde}/xsessions/fluxbox.desktop     |   0
- {xde => share/xde}/xsessions/flwm.desktop        |   0
- .../xde}/xsessions/fvwm-crystal.desktop          |   0
- {xde => share/xde}/xsessions/fvwm.desktop        |   0
- {xde => share/xde}/xsessions/gnome.desktop       |   0
- .../xde}/xsessions/herbstluftwm.desktop          |   0
- .../xde}/xsessions/i3-with-shmlog.desktop        |   0
- {xde => share/xde}/xsessions/i3.desktop          |   0
- .../xde}/xsessions/icewm-session.desktop         |   0
- {xde => share/xde}/xsessions/icewm.desktop       |   0
- {xde => share/xde}/xsessions/larswm.desktop      |   0
- {xde => share/xde}/xsessions/mantis-wm.desktop   |   0
- {xde => share/xde}/xsessions/matwm2.desktop      |   0
- {xde => share/xde}/xsessions/metacity.desktop    |   0
- {xde => share/xde}/xsessions/mutter.desktop      |   0
- {xde => share/xde}/xsessions/mwm.desktop         |   0
- .../xde}/xsessions/openbox-gnome.desktop         |   0
- {xde => share/xde}/xsessions/openbox-kde.desktop |   0
- {xde => share/xde}/xsessions/openbox.desktop     |   0
- {xde => share/xde}/xsessions/pawm.desktop        |   0
- {xde => share/xde}/xsessions/pekwm.desktop       |   0
- {xde => share/xde}/xsessions/spectrwm.desktop    |   0
- {xde => share/xde}/xsessions/ssh.desktop         |   0
- {xde => share/xde}/xsessions/twm.desktop         |   0
- {xde => share/xde}/xsessions/uwm.desktop         |   0
- {xde => share/xde}/xsessions/velox.desktop       |   0
- {xde => share/xde}/xsessions/vtwm.desktop        |   0
- {xde => share/xde}/xsessions/waimea.desktop      |   0
- {xde => share/xde}/xsessions/wind.desktop        |   0
- {xde => share/xde}/xsessions/windwm.desktop      |   0
- {xde => share/xde}/xsessions/wm2.desktop         |   0
- {xde => share/xde}/xsessions/wmaker.desktop      |   0
- {xde => share/xde}/xsessions/wmii.desktop        |   0
- {xde => share/xde}/xsessions/wmx.desktop         |   0
- {xde => share/xde}/xsessions/xdwm.desktop        |   0
- {xde => share/xde}/xsessions/xfce.desktop        |   0
- {xde => share/xde}/xsessions/yeahwm.desktop      |   0
- src/xde-chooser.c                                |   4 +-
- xdg/pcmanfm/BLACKBOX/pcmanfm.conf                |  36 ++
- xdg/pcmanfm/FLUXBOX/pcmanfm.conf                 |  36 ++
- xdg/pcmanfm/FVWM/pcmanfm.conf                    |  36 ++
- xdg/pcmanfm/ICEWM/pcmanfm.conf                   |  36 ++
- xdg/pcmanfm/OPENBOX/pcmanfm.conf                 |  36 ++
- xdg/pcmanfm/WMAKER/pcmanfm.conf                  |  36 ++
- {xde => xdg/xde}/adwm/adwmrc                     |   0
- {xde => xdg/xde}/adwm/keysrc                     |   0
- {xde => xdg/xde}/adwm/stylerc                    |   0
- {xde => xdg/xde}/adwm/version                    |   0
- {xde => xdg/xde}/autostart/bbrun.desktop         |   0
- {xde => xdg/xde}/autostart/cbatticon.desktop     |   0
- .../xde}/autostart/compton-fluxbox.desktop       |   0
- {xde => xdg/xde}/autostart/compton.desktop       |   0
- {xde => xdg/xde}/autostart/dhcpcd-gtk.desktop    |   0
- {xde => xdg/xde}/autostart/docker.desktop        |   0
- {xde => xdg/xde}/autostart/gatotray.desktop      |   0
- {xde => xdg/xde}/autostart/icewmtray.desktop     |   0
- {xde => xdg/xde}/autostart/idesk.desktop         |   0
- {xde => xdg/xde}/autostart/lxpanel.desktop       |   0
- {xde => xdg/xde}/autostart/menutray.desktop      |   0
- {xde => xdg/xde}/autostart/nm-applet.desktop     |   0
- {xde => xdg/xde}/autostart/pnmixer.desktop       |   0
- .../xde}/autostart/remmina-applet.desktop        |   0
- {xde => xdg/xde}/autostart/retrovol.desktop      |   0
- {xde => xdg/xde}/autostart/smproxy.desktop       |   0
- {xde => xdg/xde}/autostart/wmCalClock.desktop    |   0
- {xde => xdg/xde}/autostart/wmWeather.desktop     |   0
- {xde => xdg/xde}/autostart/wmappl.desktop        |   0
- {xde => xdg/xde}/autostart/wmbattery.desktop     |   0
- {xde => xdg/xde}/autostart/wmblob.desktop        |   0
- {xde => xdg/xde}/autostart/wmbubble.desktop      |   0
- {xde => xdg/xde}/autostart/wmclockmon.desktop    |   0
- {xde => xdg/xde}/autostart/wmcore.desktop        |   0
- {xde => xdg/xde}/autostart/wmcpuload.desktop     |   0
- {xde => xdg/xde}/autostart/wmmixer.desktop       |   0
- {xde => xdg/xde}/autostart/wmnd.desktop          |   0
- {xde => xdg/xde}/autostart/wmnet.desktop         |   0
- {xde => xdg/xde}/autostart/wmsysmon.desktop      |   0
- {xde => xdg/xde}/autostart/wmsystemtray.desktop  |   0
- {xde => xdg/xde}/autostart/wmtimer.desktop       |   0
- {xde => xdg/xde}/autostart/wmweather+.desktop    |   0
- {xde => xdg/xde}/autostart/xde-input.desktop     |   0
- {xde => xdg/xde}/autostart/xde-panel.desktop     |   0
- {xde => xdg/xde}/autostart/xde-setbg.desktop     |   0
- {xde => xdg/xde}/blackbox/keys                   |   0
- {xde => xdg/xde}/blackbox/menu                   |   0
- {xde => xdg/xde}/blackbox/rc                     |   0
- {xde => xdg/xde}/blackbox/setup.pl               |   0
- {xde => xdg/xde}/blackbox/setup.sh               |   0
- {xde => xdg/xde}/blackbox/start.sh               |   0
- {xde => xdg/xde}/blackbox/version                |   0
- {xde => xdg/xde}/blackbox/xde-rc                 |   0
- xdg/xde/compton/FLUXBOX/compton.conf             |  63 ++
- xdg/xde/compton/compton.conf                     |  63 ++
- xdg/xde/compton/default/compton.conf             |  63 ++
- {xde => xdg/xde}/ctwm/apps                       |   0
- {xde => xdg/xde}/ctwm/buttons                    |   0
- {xde => xdg/xde}/ctwm/defaults                   |   0
- {xde => xdg/xde}/ctwm/getstyles                  |   0
- {xde => xdg/xde}/ctwm/keys                       |   0
- {xde => xdg/xde}/ctwm/menu                       |   0
- {xde => xdg/xde}/ctwm/rc                         |   0
- {xde => xdg/xde}/ctwm/setstyle                   |   0
- {xde => xdg/xde}/ctwm/setup                      |   0
- {xde => xdg/xde}/ctwm/setup.sh                   |   0
- {xde => xdg/xde}/ctwm/start                      |   0
- {xde => xdg/xde}/ctwm/start.sh                   |   0
- {xde => xdg/xde}/ctwm/stylemenu                  |   0
- {xde => xdg/xde}/ctwm/version                    |   0
- {xde => xdg/xde}/ctwm/winmenu                    |   0
- {xde => xdg/xde}/echinus/version                 |   0
- xdg/xde/fbpanel/FLUXBOX                          | 368 ++++++++++++
- xdg/xde/fbpanel/LXDE                             | 368 ++++++++++++
- xdg/xde/fbpanel/default                          | 368 ++++++++++++
- {xde => xdg/xde}/fluxbox/apps                    |   0
- {xde => xdg/xde}/fluxbox/fbdesk                  |   0
- {xde => xdg/xde}/fluxbox/fbdesk.icons            |   0
- {xde => xdg/xde}/fluxbox/fbpager                 |   0
- {xde => xdg/xde}/fluxbox/init                    |   0
- {xde => xdg/xde}/fluxbox/keys                    |   0
- {xde => xdg/xde}/fluxbox/menu                    |   0
- {xde => xdg/xde}/fluxbox/menuconfig              |   0
- {xde => xdg/xde}/fluxbox/overlay                 |   0
- {xde => xdg/xde}/fluxbox/setup.sh                |   0
- {xde => xdg/xde}/fluxbox/slitlist                |   0
- {xde => xdg/xde}/fluxbox/start.sh                |   0
- {xde => xdg/xde}/fluxbox/startup                 |   0
- {xde => xdg/xde}/fluxbox/unexicon-menu           |   0
- {xde => xdg/xde}/fluxbox/usermenu                |   0
- {xde => xdg/xde}/fluxbox/version                 |   0
- {xde => xdg/xde}/fluxbox/windowmenu              |   0
- {xde => xdg/xde}/fluxbox/xde-init                |   0
- {xde => xdg/xde}/fvwm/version                    |   0
- {xde => xdg/xde}/icewm/focus_mode                |   0
- {xde => xdg/xde}/icewm/keys                      |   0
- {xde => xdg/xde}/icewm/menu                      |   0
- {xde => xdg/xde}/icewm/preferences               |   0
- {xde => xdg/xde}/icewm/preferences.bak           |   0
- {xde => xdg/xde}/icewm/prefoverride              |   0
- {xde => xdg/xde}/icewm/programs                  |   0
- {xde => xdg/xde}/icewm/recent.menu               |   0
- {xde => xdg/xde}/icewm/setup.sh                  |   0
- {xde => xdg/xde}/icewm/start.sh                  |   0
- {xde => xdg/xde}/icewm/theme                     |   0
- {xde => xdg/xde}/icewm/toolbar                   |   0
- {xde => xdg/xde}/icewm/version                   |   0
- {xde => xdg/xde}/icewm/winoptions                |   0
- {xde => xdg/xde}/jwm/defaults                    |   0
- {xde => xdg/xde}/jwm/desktop                     |   0
- {xde => xdg/xde}/jwm/getstyles                   |   0
- {xde => xdg/xde}/jwm/groups                      |   0
- {xde => xdg/xde}/jwm/keys                        |   0
- {xde => xdg/xde}/jwm/menu                        |   0
- {xde => xdg/xde}/jwm/paths                       |   0
- {xde => xdg/xde}/jwm/rc                          |   0
- {xde => xdg/xde}/jwm/root                        |   0
- {xde => xdg/xde}/jwm/setstyle                    |   0
- {xde => xdg/xde}/jwm/setup.sh                    |   0
- {xde => xdg/xde}/jwm/start.sh                    |   0
- {xde => xdg/xde}/jwm/style                       |   0
- {xde => xdg/xde}/jwm/tray                        |   0
- {xde => xdg/xde}/jwm/version                     |   0
- {xde => xdg/xde}/lxde/version                    |   0
- xdg/xde/lxpanel/BLACKBOX/panels/panel            | 219 +++++++
- xdg/xde/lxpanel/FLUXBOX/panels/panel             | 219 +++++++
- xdg/xde/lxpanel/FVWM/panels/panel                | 219 +++++++
- xdg/xde/lxpanel/ICEWM/panels/panel               | 219 +++++++
- xdg/xde/lxpanel/JWM/panels/panel                 | 219 +++++++
- xdg/xde/lxpanel/LXDE/panels/panel                | 211 +++++++
- xdg/xde/lxpanel/OPENBOX/panels/panel             | 219 +++++++
- xdg/xde/lxpanel/PEKWM/panels/panel               | 219 +++++++
- xdg/xde/lxpanel/WMAKER/panels/panel              | 219 +++++++
- xdg/xde/lxpanel/default/panels/panel             | 219 +++++++
- xdg/xde/lxsession/FLUXBOX/autostart              |  11 +
- xdg/xde/lxsession/FLUXBOX/desktop.conf           |  29 +
- xdg/xde/lxsession/LXDE/desktop.conf              |  29 +
- {xde => xdg/xde}/metacity/version                |   0
- {xde => xdg/xde}/openbox/lxde-rc.xml             |   0
- {xde => xdg/xde}/openbox/lxde-rc.xml.new         |   0
- {xde => xdg/xde}/openbox/menu                    |   0
- {xde => xdg/xde}/openbox/menu.bak                |   0
- {xde => xdg/xde}/openbox/menu.xml                |   0
- {xde => xdg/xde}/openbox/menu.xml.back           |   0
- {xde => xdg/xde}/openbox/menu.xml.new            |   0
- {xde => xdg/xde}/openbox/menu.xml.old            |   0
- {xde => xdg/xde}/openbox/rc.xml                  |   0
- {xde => xdg/xde}/openbox/rc.xml.orig             |   0
- {xde => xdg/xde}/openbox/unx-rc.xml              |   0
- {xde => xdg/xde}/openbox/version                 |   0
- {xde => xdg/xde}/openbox/xdg-menu.xml            |   0
- xdg/xde/pcmanfm/BLACKBOX/pcmanfm.conf            |  31 +
- .../xde/pcmanfm/FLUXBOX/desktop-items-0.conf     |   0
- xdg/xde/pcmanfm/FLUXBOX/pcmanfm.conf             |  38 ++
- xdg/xde/pcmanfm/ICEWM/pcmanfm.conf               |  31 +
- .../xde/pcmanfm/LXDE/desktop-items-0.conf        |   0
- xdg/xde/pcmanfm/LXDE/pcmanfm.conf                |  37 ++
- .../xde/pcmanfm/PEKWM/desktop-items-0.conf       |   0
- xdg/xde/pcmanfm/PEKWM/pcmanfm.conf               |  31 +
- xdg/xde/pcmanfm/default/desktop-items-0.conf     |  16 +
- xdg/xde/pcmanfm/default/pcmanfm.conf             |  26 +
- {xde => xdg/xde}/pekwm/autoproperties            |   0
- {xde => xdg/xde}/pekwm/config_system             |   0
- {xde => xdg/xde}/pekwm/history                   |   0
- {xde => xdg/xde}/pekwm/keys                      |   0
- {xde => xdg/xde}/pekwm/menu                      |   0
- {xde => xdg/xde}/pekwm/mouse                     |   0
- {xde => xdg/xde}/pekwm/start                     |   0
- {xde => xdg/xde}/pekwm/vars                      |   0
- {xde => xdg/xde}/pekwm/version                   |   0
- {xde => xdg/xde}/pekwm/window                    |   0
- {xde => xdg/xde}/twm/apps                        |   0
- {xde => xdg/xde}/twm/buttons                     |   0
- {xde => xdg/xde}/twm/defaults                    |   0
- {xde => xdg/xde}/twm/getstyles                   |   0
- {xde => xdg/xde}/twm/keys                        |   0
- {xde => xdg/xde}/twm/menu                        |   0
- {xde => xdg/xde}/twm/rc                          |   0
- {xde => xdg/xde}/twm/setstyle                    |   0
- {xde => xdg/xde}/twm/setup.sh                    |   0
- {xde => xdg/xde}/twm/start                       |   0
- {xde => xdg/xde}/twm/start.sh                    |   0
- {xde => xdg/xde}/twm/stylemenu                   |   0
- {xde => xdg/xde}/twm/version                     |   0
- {xde => xdg/xde}/twm/winmenu                     |   0
- {xde => xdg/xde}/uwm/buttons                     |   0
- {xde => xdg/xde}/uwm/keys                        |   0
- {xde => xdg/xde}/uwm/menu                        |   0
- {xde => xdg/xde}/uwm/panel                       |   0
- {xde => xdg/xde}/uwm/setup                       |   0
- {xde => xdg/xde}/uwm/start                       |   0
- {xde => xdg/xde}/uwm/uwmrc                       |   0
- {xde => xdg/xde}/uwm/version                     |   0
- {xde => xdg/xde}/uwm/winmenu                     |   0
- {xde => xdg/xde}/vtwm/apps                       |   0
- {xde => xdg/xde}/vtwm/buttons                    |   0
- {xde => xdg/xde}/vtwm/defaults                   |   0
- {xde => xdg/xde}/vtwm/getstyles                  |   0
- {xde => xdg/xde}/vtwm/keys                       |   0
- {xde => xdg/xde}/vtwm/menu                       |   0
- {xde => xdg/xde}/vtwm/rc                         |   0
- {xde => xdg/xde}/vtwm/setstyle                   |   0
- {xde => xdg/xde}/vtwm/setup.sh                   |   0
- {xde => xdg/xde}/vtwm/start                      |   0
- {xde => xdg/xde}/vtwm/start.sh                   |   0
- {xde => xdg/xde}/vtwm/stylemenu                  |   0
- {xde => xdg/xde}/vtwm/version                    |   0
- {xde => xdg/xde}/vtwm/winmenu                    |   0
- {xde => xdg/xde}/waimea/actionrc                 |   0
- {xde => xdg/xde}/waimea/menu                     |   0
- {xde => xdg/xde}/waimea/setup                    |   0
- {xde => xdg/xde}/waimea/setup.sh                 |   0
- {xde => xdg/xde}/waimea/start                    |   0
- {xde => xdg/xde}/waimea/start.sh                 |   0
- {xde => xdg/xde}/waimea/version                  |   0
- {xde => xdg/xde}/wmaker/version                  |   0
- xdg/xde/xde-panel/ADWM/rc.xml                    |  48 ++
- xdg/xde/xde-panel/BLACKBOX/rc.xml                |  47 ++
- xdg/xde/xde-panel/ECHINUS/rc.xml                 |  47 ++
- xdg/xde/xde-panel/FLUXBOX/rc.xml                 |  47 ++
- xdg/xde/xde-panel/FVWM/rc.xml                    |  47 ++
- xdg/xde/xde-panel/ICEWM/rc.xml                   |  47 ++
- xdg/xde/xde-panel/JWM/rc.xml                     |  47 ++
- xdg/xde/xde-panel/METACITY/rc.xml                |  47 ++
- xdg/xde/xde-panel/OPENBOX/rc.xml                 |  47 ++
- xdg/xde/xde-panel/PEKWM/rc.xml                   |  47 ++
- xdg/xde/xde-panel/WAIMEA/rc.xml                  |  47 ++
- xdg/xde/xde-panel/WMAKER/rc.xml                  |  47 ++
- xdg/xde/xde-panel/default/rc.xml                 |  47 ++
- 300 files changed, 6146 insertions(+), 257 deletions(-)
-
-commit b8c8f9e798d270033da968a3b8f009912a65ff82
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Aug 2 15:52:00 2014 -0600
-
-    more rationalization and common factoring
-
- src/xde-xchooser.c |  582 ++++++++++++++----
- src/xde-xlock.c    | 1555 ++++++++++++++++++++++++++++++++++++++++++++++--
- src/xde-xlogin.c   |  575 ++++++++++++++----
- 3 files changed, 2442 insertions(+), 270 deletions(-)
-
-commit 5ae4ef76892e021d7d77f1b3285fc49bf5042ada
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Aug 2 12:52:06 2014 -0600
-
-    label tweaks
-
- src/xde-logout.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-commit c11eccf2c25677d7bb09b49af8e22fbfd2f2b7d9
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Fri Aug 1 20:10:51 2014 -0600
-
-    rationalize xde-logout for multiple screens and monitors
-
- src/xde-chooser.c  |    8 +-
- src/xde-logout.c   | 1125 ++++++++++++++++++++++++++++++------------------
- src/xde-xchooser.c |   30 ++
- src/xde-xlock.c    |   88 ++--
- src/xde-xlogin.c   |   26 ++
- 5 files changed, 825 insertions(+), 452 deletions(-)
-
-commit 56adeee713da1f46cd31f90d57eb9544b9790015
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 31 21:41:07 2014 -0600
-
-    rationalize approach across four programs
-
- src/Makefile.am    |    8 +-
- src/xde-chooser.c  | 1016 ++++++++++++++++++++-------
- src/xde-xchooser.c | 1779 +++++++++++++++++++++++++++++++++++++++---------
- src/xde-xlock.c    |  116 +++-
- src/xde-xlogin.c   | 1488 ++++++++++++++++++++++++++++++++++++++--
- 5 files changed, 3740 insertions(+), 667 deletions(-)

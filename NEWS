@@ -1,4 +1,24 @@
-xde-session -- history of user-visible changes.  2018-09-14
+xde-session -- history of user-visible changes.  2018-09-17
+
+Release xde-session-1.8 released 2018-09-17
+-------------------------------------------
+
+git shortlog -e -n -w80,6,8 1.7...1.8
+
+Brian Bidulock <bidulock@openss7.org> (12):
+      add suspend-then-hibernate support to xde-greeter
+      add suspend-then-hibernate to xde-logout
+      add suspend-then-hibernate to xde-chooser
+      add suspend-then-hibernate to xde-xchooser
+      add suspend-then-hibernate to xde-xlock
+      add suspend-then-hibernate to xde-xlogin
+      update
+      update
+      add XDE svg icon
+      change icons
+      toggle has no editable property
+      start on column 2
+
 
 Release xde-session-1.7 released 2018-09-14
 -------------------------------------------
