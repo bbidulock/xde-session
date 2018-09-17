@@ -682,6 +682,7 @@ typedef enum {
 	LOGOUT_ACTION_SUSPEND,		/* suspend the computer */
 	LOGOUT_ACTION_HIBERNATE,	/* hibernate the computer */
 	LOGOUT_ACTION_HYBRIDSLEEP,	/* hybrid sleep the computer */
+	LOGOUT_ACTION_SUSPENDHIBERNATE,	/* suspend then hibernate the computer */
 	LOGOUT_ACTION_SWITCHUSER,	/* switch users */
 	LOGOUT_ACTION_SWITCHDESK,	/* switch desktops */
 	LOGOUT_ACTION_LOCKSCREEN,	/* lock screen */
@@ -1194,6 +1195,7 @@ static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SUSPEND]		= AvailStatusUndef,
 	[LOGOUT_ACTION_HIBERNATE]	= AvailStatusUndef,
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= AvailStatusUndef,
 	[LOGOUT_ACTION_SWITCHUSER]	= AvailStatusUndef,
 	[LOGOUT_ACTION_SWITCHDESK]	= AvailStatusUndef,
 	[LOGOUT_ACTION_LOCKSCREEN]	= AvailStatusUndef,
@@ -3505,6 +3507,9 @@ append_power_actions(GtkMenu *menu)
 	if (append_power_action(submenu, islocal, "CanHybridSleep", "Hybrid Sleep",
 				"system-sleep", G_CALLBACK(on_hybridsleep)))
 		gotone = TRUE;
+	if (append_power_action(submenu, islocal, "CanSuspendThenHibernate", "Suspend Hibernate",
+				"system-suspend-hibernate", G_CALLBACK(on_suspendhibernate)))
+		gotone = TRUE;
 
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(power), submenu);
 	if (gotone)
@@ -3948,6 +3953,24 @@ test_power_functions()
 		EPRINTF("CanHybridSleep call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
+
+	result = g_dbus_proxy_call_sync(sd_manager, "CanSuspendThenHibernate",
+					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+	ok = (result != NULL);
+	if (ok && !err) {
+		g_variant_iter_init(&iter, result);
+		var = g_variant_iter_next_value(&iter);
+		value = g_variant_get_string(var, NULL);
+		DPRINTF("CanSuspendThenHibernate status is %s\n", value);
+		if (islocal)
+			action_can[LOGOUT_ACTION_SUSPENDHIBERNATE] = status_of_string(value);
+		g_variant_unref(var);
+		g_variant_unref(result);
+		value = NULL;
+	} else {
+		EPRINTF("CanSuspendThenHibernate call failed: %s\n", err ? err->message : NULL);
+		g_clear_error(&err);
+	}
 }
 
 /** @brief test availability of user functions
@@ -4030,6 +4053,7 @@ static const char *button_tips[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SUSPEND]		= "Suspend the computer.",
 	[LOGOUT_ACTION_HIBERNATE]	= "Hibernate the computer.",
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= "Hybrid sleep the computer.",
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= "Suspend then hibernate the computer.",
 	[LOGOUT_ACTION_SWITCHUSER]	= "Switch users.",
 	[LOGOUT_ACTION_SWITCHDESK]	= "Switch window managers.",
 	[LOGOUT_ACTION_LOCKSCREEN]	= "Lock the screen.",
@@ -4048,6 +4072,7 @@ static const char *button_labels[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SUSPEND]		= "Suspend",
 	[LOGOUT_ACTION_HIBERNATE]	= "Hibernate",
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= "Hybrid Sleep",
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= "Suspend Hibernate",
 	[LOGOUT_ACTION_SWITCHUSER]	= "Switch User",
 	[LOGOUT_ACTION_SWITCHDESK]	= "Switch Desktop",
 	[LOGOUT_ACTION_LOCKSCREEN]	= "Lock Screen",
@@ -4068,6 +4093,7 @@ static const char *button_icons[LOGOUT_ACTION_COUNT][3] = {
 	[LOGOUT_ACTION_SUSPEND]		= { GTK_STOCK_SAVE,			"system-suspend",		"gnome-session-suspend"		},
 	[LOGOUT_ACTION_HIBERNATE]	= { GTK_STOCK_SAVE_AS,			"system-suspend-hibernate",	"gnome-session-hibernate"	},
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= { GTK_STOCK_REVERT_TO_SAVED,		"system-sleep",			"gnome-session-sleep"		},
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= { GTK_STOCK_SAVE_AS,			"system-suspend-hibernate",	"gnome-session-sleep"		},
 	[LOGOUT_ACTION_SWITCHUSER]	= { GTK_STOCK_JUMP_TO,			"system-users",			"system-switch-user"		},
 	[LOGOUT_ACTION_SWITCHDESK]	= { GTK_STOCK_JUMP_TO,			"system-switch-user",		"gnome-session-switch"		},
 	[LOGOUT_ACTION_LOCKSCREEN]	= { GTK_STOCK_DIALOG_AUTHENTICATION,	"system-lock-screen",		"gnome-lock-screen"		},
@@ -4109,6 +4135,7 @@ static void action_Reboot(void);
 static void action_Suspend(void);
 static void action_Hibernate(void);
 static void action_HybridSleep(void);
+static void action_SuspendThenHibernate(void);
 static void action_SwitchUser(void);
 static void action_SwitchDesk(void);
 static void action_LockScreen(void);
@@ -4127,6 +4154,7 @@ static const ActionFunctionPointer logout_actions[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SUSPEND]		= &action_Suspend,
 	[LOGOUT_ACTION_HIBERNATE]	= &action_Hibernate,
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= &action_HybridSleep,
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= &action_SuspendThenHibernate,
 	[LOGOUT_ACTION_SWITCHUSER]	= &action_SwitchUser,
 	[LOGOUT_ACTION_SWITCHDESK]	= &action_SwitchDesk,
 	[LOGOUT_ACTION_LOCKSCREEN]	= &action_LockScreen,
@@ -4145,6 +4173,7 @@ static const char *check_message[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SUSPEND]		= "suspend",
 	[LOGOUT_ACTION_HIBERNATE]	= "hibernate",
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= "hybrid sleep",
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= "suspend hibernate",
 	[LOGOUT_ACTION_SWITCHUSER]	= NULL,
 	[LOGOUT_ACTION_SWITCHDESK]	= NULL,
 	[LOGOUT_ACTION_LOCKSCREEN]	= NULL,
@@ -6102,6 +6131,12 @@ static void
 action_HybridSleep(void)
 {
 	action_power("HybridSleep");
+}
+
+static void
+action_SuspendThenHibernate(void)
+{
+	action_power("SuspendThenHibernate");
 }
 
 static void
