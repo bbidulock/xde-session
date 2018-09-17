@@ -3502,7 +3502,7 @@ append_power_actions(GtkMenu *menu)
 				"system-suspend", G_CALLBACK(on_suspend)))
 		gotone = TRUE;
 	if (append_power_action(submenu, islocal, "CanHibernate", "Hibernate",
-				"system-suspend-hibernate", G_CALLBACK(on_hibernate)))
+				"system-hibernate", G_CALLBACK(on_hibernate)))
 		gotone = TRUE;
 	if (append_power_action(submenu, islocal, "CanHybridSleep", "Hybrid Sleep",
 				"system-sleep", G_CALLBACK(on_hybridsleep)))
@@ -4091,9 +4091,9 @@ static const char *button_icons[LOGOUT_ACTION_COUNT][3] = {
 	[LOGOUT_ACTION_POWEROFF]	= { GTK_STOCK_STOP,			"system-shutdown",		"gnome-session-halt"		},
 	[LOGOUT_ACTION_REBOOT]		= { GTK_STOCK_REFRESH,			"system-reboot",		"gnome-session-reboot"		},
 	[LOGOUT_ACTION_SUSPEND]		= { GTK_STOCK_SAVE,			"system-suspend",		"gnome-session-suspend"		},
-	[LOGOUT_ACTION_HIBERNATE]	= { GTK_STOCK_SAVE_AS,			"system-suspend-hibernate",	"gnome-session-hibernate"	},
+	[LOGOUT_ACTION_HIBERNATE]	= { GTK_STOCK_SAVE_AS,			"system-hibernate",		"gnome-session-hibernate"	},
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= { GTK_STOCK_REVERT_TO_SAVED,		"system-sleep",			"gnome-session-sleep"		},
-	[LOGOUT_ACTION_SUSPENDHIBERNATE]= { GTK_STOCK_SAVE_AS,			"system-suspend-hibernate",	"gnome-session-sleep"		},
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= { GTK_STOCK_SAVE_AS,			"system-suspend-hibernate",	"gnome-session-hibernate"	},
 	[LOGOUT_ACTION_SWITCHUSER]	= { GTK_STOCK_JUMP_TO,			"system-users",			"system-switch-user"		},
 	[LOGOUT_ACTION_SWITCHDESK]	= { GTK_STOCK_JUMP_TO,			"system-switch-user",		"gnome-session-switch"		},
 	[LOGOUT_ACTION_LOCKSCREEN]	= { GTK_STOCK_DIALOG_AUTHENTICATION,	"system-lock-screen",		"gnome-lock-screen"		},

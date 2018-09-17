@@ -3519,7 +3519,7 @@ append_power_actions(GtkMenu *menu)
 				"system-suspend", G_CALLBACK(on_suspend)))
 		gotone = TRUE;
 	if (append_power_action(submenu, islocal, "CanHibernate", "Hibernate",
-				"system-suspend-hibernate", G_CALLBACK(on_hibernate)))
+				"system-hibernate", G_CALLBACK(on_hibernate)))
 		gotone = TRUE;
 	if (append_power_action(submenu, islocal, "CanHybridSleep", "Hybrid Sleep",
 				"system-sleep", G_CALLBACK(on_hybridsleep)))
