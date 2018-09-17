@@ -5,7 +5,7 @@ Release xde-session-1.7 released 2018-09-14
 
 git shortlog -e -n -w80,6,8 1.6...1.7
 
-Brian Bidulock <bidulock@openss7.org> (18):
+Brian Bidulock <bidulock@openss7.org> (19):
       runtime directories need to be created
       add StartupWMClass where needed
       provide notes about autostart
@@ -24,6 +24,7 @@ Brian Bidulock <bidulock@openss7.org> (18):
       correct menu generation
       more better documentation
       update for release
+      release update
 
 Brian Bidulock <bidulock@openss7.com> (1):
       Merge pull request #3 from milkmiruku/master
