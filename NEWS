@@ -5,7 +5,7 @@ Release xde-session-1.8 released 2018-09-17
 
 git shortlog -e -n -w80,6,8 1.7...1.8
 
-Brian Bidulock <bidulock@openss7.org> (12):
+Brian Bidulock <bidulock@openss7.org> (14):
       add suspend-then-hibernate support to xde-greeter
       add suspend-then-hibernate to xde-logout
       add suspend-then-hibernate to xde-chooser
@@ -18,6 +18,8 @@ Brian Bidulock <bidulock@openss7.org> (12):
       change icons
       toggle has no editable property
       start on column 2
+      hybrid-sleep on critical battery level
+      update release files
 
 
 Release xde-session-1.7 released 2018-09-14
