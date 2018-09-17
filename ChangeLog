@@ -1,5 +1,18 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit e3d4ae63da399182e4d5ea5b74cbe581062952cf
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Sep 14 05:02:58 2018 -0600
+
+    release update
+
+ AUTHORS      |  2 +-
+ ChangeLog    | 22 ++++++++++++----------
+ NEWS         | 11 ++++++-----
+ README.md    | 20 ++++++++++----------
+ configure.ac |  8 ++++----
+ 5 files changed, 33 insertions(+), 30 deletions(-)
+
 commit 040caaf8986099d967e4fd763422bc40ae917f37
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Fri Sep 14 04:42:35 2018 -0600
@@ -6997,14 +7010,3 @@ Date:   Thu Jul 31 21:41:07 2014 -0600
  src/xde-xlock.c    |  116 +++-
  src/xde-xlogin.c   | 1488 ++++++++++++++++++++++++++++++++++++++--
  5 files changed, 3740 insertions(+), 667 deletions(-)
-
-commit 59a26a3a7f72a9e20c80964ac081b6ecbf456598
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Jul 31 15:26:51 2014 -0600
-
-    better expose, power menu
-
- .indent.pro      |  11 ++
- src/xde-xlock.c  | 458 ++++++++++++++++++++++++++++++++++++++++++---------
- src/xde-xlogin.c | 447 +++++++++++++++++++++++++++++++++++++++++--------
- 3 files changed, 769 insertions(+), 147 deletions(-)
