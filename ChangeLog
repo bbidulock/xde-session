@@ -1,5 +1,15 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 8fd64e1582cebe6f3d5637a67eab69541b11819c
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Sep 17 06:09:17 2018 -0600
+
+    update release files
+
+ ChangeLog | 380 ++++------------------------------------------------------
+ NEWS      |   4 +-
+ 2 files changed, 25 insertions(+), 359 deletions(-)
+
 commit f1664fdab7b04b9a52d96cf13179ac6ada32be9e
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Mon Sep 17 06:06:36 2018 -0600
@@ -6325,25 +6335,3 @@ Date:   Mon Aug 4 20:21:11 2014 -0600
  src/xde-xlock.c    |  50 +++--
  src/xde-xlogin.c   |  50 +++--
  4 files changed, 382 insertions(+), 264 deletions(-)
-
-commit b8c267c603833b2459b390b931a02ce8bfbd5e3b
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Aug 4 16:40:52 2014 -0600
-
-    add RANDR monitor support and rough out PAM
-
-     - add RANDR monitor dynamic change support (primarily
-       for vncclient(1) that will change the screen size and
-       resolution after initialization)
-
-     - rough out PAM support for xde-xlock, xde-xlogin and
-       xde-xchooser: should probably add it to xde-logout as
-       well
-
- src/Makefile.am    |   6 +-
- src/xde-chooser.c  | 164 ++++++++++++++++++++++++++-
- src/xde-logout.c   | 164 ++++++++++++++++++++++++++-
- src/xde-xchooser.c | 295 ++++++++++++++++++++++++++++++++++++++++++++-----
- src/xde-xlock.c    | 293 +++++++++++++++++++++++++++++++++++++++++++-----
- src/xde-xlogin.c   | 295 ++++++++++++++++++++++++++++++++++++++++++++-----
- 6 files changed, 1122 insertions(+), 95 deletions(-)
