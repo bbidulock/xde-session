@@ -899,7 +899,7 @@ GDBusProxy *sd_display = NULL;
 
 #ifdef DO_XLOCKING
 static void LockScreen(gboolean hard);
-static void UnlockScreen(void);
+static void UnlockScreen(gboolean play);
 static void AbortLockScreen(void);
 static void AutoLockScreen(void);
 static void SystemLockScreen(void);
@@ -929,7 +929,7 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 		SystemLockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
 		DPRINTF("unlocking screen due to systemd request\n");
-		UnlockScreen();
+		UnlockScreen(TRUE);
 	}
 #endif
 }
@@ -1311,7 +1311,7 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 			return GDK_FILTER_REMOVE;
 		case LockCommandUnlock:
 			DPRINTF("unlocking screen due to xclient message\n");
-			UnlockScreen();
+			UnlockScreen(TRUE);
 			return GDK_FILTER_REMOVE;
 		case LockCommandQuit:
 			exit(EXIT_SUCCESS);
@@ -6380,14 +6380,14 @@ RelockScreen(void)
 }
 
 static void
-UnlockScreen(void)
+UnlockScreen(gboolean play)
 {
 	DPRINT();
 
 	if (lock_state == LockStateUnlocked) {
 		EPRINTF("already unlocked!\n");
 		return;
-	} else {
+	} else if (play) {
 #ifdef CANBERRA_SOUND
 		GdkDisplay *disp = gdk_display_get_default();
 		GdkScreen *scrn = gdk_display_get_default_screen(disp);
@@ -6641,7 +6641,7 @@ do_run(int argc, char *argv[])
 #ifdef DO_XLOCKING
 	if (options.command != CommandLock) {
 		DPRINTF("unlocking screen due to program request\n");
-		UnlockScreen();
+		UnlockScreen(FALSE);
 	}
 #endif
 	for (;;) {
@@ -6655,7 +6655,7 @@ do_run(int argc, char *argv[])
 		DPRINT();
 		if (lock_state == LockStateAborted) {
 			DPRINTF("unlocking screen due to lock state abort\n");
-			UnlockScreen();
+			UnlockScreen(FALSE);
 			continue;
 		}
 #endif
@@ -6687,7 +6687,7 @@ do_run(int argc, char *argv[])
 			DPRINT();
 #ifdef DO_XLOCKING
 			DPRINTF("unlocking screen due to successful login\n");
-			UnlockScreen();
+			UnlockScreen(TRUE);
 #else
 #if defined(DO_XLOGIN)
 			run_login(argc, argv);
