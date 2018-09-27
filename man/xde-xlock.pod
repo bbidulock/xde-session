@@ -883,6 +883,24 @@ F</usr/bin/xde-xlock>.  See L<xdm(8)/AUTHENTICATION WIDGET>.
 
 =back
 
+=head1 SOUND EVENTS
+
+B<xde-xlock> plays the following event sounds:
+
+=over
+
+=item C<desktop-screen-lock>
+
+This sound is played when the screen is locked, but is cancelled when
+the screen lock has been cancelled before timeout.
+
+=item C<desktop-screen-unlock>
+
+This sound is played when the screen is unlocked, but not when a screen
+lock is cancelled before the timeout.
+
+=back
+
 =head1 FILES
 
 The following files are used by the program:

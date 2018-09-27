@@ -42,12 +42,12 @@
 
  *****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "autoconf.h"
-#endif
-
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
 #endif
 
 #include <stddef.h>
@@ -113,15 +113,16 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#define GTK_EVENT_STOP		TRUE
-#define GTK_EVENT_PROPAGATE	FALSE
-
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
 #include <fontconfig/fontconfig.h>
 #include <pango/pangofc-fontmap.h>
+
+#ifdef CANBERRA_SOUND
+#include <canberra-gtk.h>
+#endif
 
 #include <ctype.h>
 #include <sys/socket.h>
@@ -173,6 +174,9 @@ timestamp(void)
 #define EXIT_SUCCESS		0
 #define EXIT_FAILURE		1
 #define EXIT_SYNTAXERR		2
+
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
 
 static int saveArgc;
 static char **saveArgv;
@@ -261,6 +265,16 @@ enum {
 #define EXIT_FAILURE	REMANAGE_DISPLAY
 #undef EXIT_SYNTAXERR
 #define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
+
+#define CA_CONTEXT_ID	55
+
+typedef enum {
+	CaEventWindowManager = CA_CONTEXT_ID,
+	CaEventWorkspaceChange,
+	CaEventDesktopChange,
+	CaEventWindowChange,
+	CaEventLockScreen,
+} CaEventId;
 
 typedef enum {
 	CommandDefault,
@@ -6330,6 +6344,15 @@ LockScreen(gboolean hard)
 	if (lock_state == LockStateLocked) {
 		DPRINTF("already locked!\n");
 		return;
+	} else {
+#ifdef CANBERRA_SOUND
+		GdkDisplay *disp = gdk_display_get_default();
+		GdkScreen *scrn = gdk_display_get_default_screen(disp);
+		ca_context *ca = ca_gtk_context_get_for_screen(scrn);
+
+		ca_context_cancel(ca, CaEventLockScreen);
+		ca_context_play(ca, CaEventLockScreen, CA_PROP_EVENT_ID, "desktop-screen-lock", NULL);
+#endif				/* CANBERRA_SOUND */
 	}
 	ShowWindow();
 	lock_state = LockStateLocked;
@@ -6364,6 +6387,15 @@ UnlockScreen(void)
 	if (lock_state == LockStateUnlocked) {
 		EPRINTF("already unlocked!\n");
 		return;
+	} else {
+#ifdef CANBERRA_SOUND
+		GdkDisplay *disp = gdk_display_get_default();
+		GdkScreen *scrn = gdk_display_get_default_screen(disp);
+		ca_context *ca = ca_gtk_context_get_for_screen(scrn);
+
+		ca_context_cancel(ca, CaEventLockScreen);
+		ca_context_play(ca, CaEventLockScreen, CA_PROP_EVENT_ID, "desktop-screen-unlock", NULL);
+#endif				/* CANBERRA_SOUND */
 	}
 	HideWindow();
 	lock_state = LockStateUnlocked;
@@ -6386,6 +6418,13 @@ AbortLockScreen(void)
 		if (lock_time.tv_sec) {
 			gettimeofday(&tv, NULL);
 			if (tv.tv_sec < lock_time.tv_sec + options.protect) {
+#ifdef CANBERRA_SOUND
+				GdkDisplay *disp = gdk_display_get_default();
+				GdkScreen *scrn = gdk_display_get_default_screen(disp);
+				ca_context *ca = ca_gtk_context_get_for_screen(scrn);
+
+				ca_context_cancel(ca, CaEventLockScreen);
+#endif				/* CANBERRA_SOUND */
 				DPRINTF("Screen saver interrupted: unlocking screen\n");
 				lock_state = LockStateAborted;
 				gtk_main_quit();

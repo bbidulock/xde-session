@@ -109,6 +109,7 @@ PKG_CHECK_MODULES([GDK],[gdk-pixbuf-xlib-2.0])
 PKG_CHECK_MODULES([GLIB],[glib-2.0])
 PKG_CHECK_MODULES([GOBJ],[gobject-2.0])
 PKG_CHECK_MODULES([GIO],[gio-2.0])
+PKG_CHECK_MODULES([GIO_UNIX],[gio-unix-2.0])
 PKG_CHECK_MODULES([GTK],[gtk+-2.0 >= 2.4.0])
 PKG_CHECK_MODULES([UNIQUE],[unique-1.0])
 PKG_CHECK_MODULES([WNCK],[libwnck-1.0])
@@ -149,6 +150,18 @@ if test "x$enable_xvnc" != xno ; then
 fi
 AC_MSG_CHECKING([for XVNC support])
 AC_MSG_RESULT([${enable_xvnc:-yes}])
+
+AC_ARG_ENABLE([canberra],
+	AC_HELP_STRING([--disable-canberra],
+		[Disable canberra sound @<:@default=auto@:>@]))
+if test "x$enable_canberra" != xno ; then
+	PKG_CHECK_MODULES([SOUND],[libcanberra-gtk],
+		[AC_DEFINE([CANBERRA_SOUND],[1],[Define to 1 to support libcanberra sound.])],
+		[enable_canberra=no])
+fi
+AC_MSG_CHECKING([for libcanberra sound support])
+AC_MSG_RESULT([${enable_canberra:-yes}])
+AM_CONDITIONAL([HAVE_CANBERRA_SOUND],[test "x$enable_canberra" != "xno"])
 
 AC_ARG_ENABLE([debug],
 	AC_HELP_STRING([--enable-debug],
