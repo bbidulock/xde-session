@@ -75,6 +75,8 @@ done
 
 xde-setwm -N $name -p $$ -r $vers -c $prog --replace --config-file "$priv/rc.xml" || :
 
+[ -x /usr/bin/numlockx ] && /usr/bin/numlockx off
+
 exec $prog --replace --config-file "$priv/rc.xml"
 
 exit 127

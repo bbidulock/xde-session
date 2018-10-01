@@ -46,6 +46,8 @@ done
 
 xde-setwm -N $name -p $$ -r $vers -c $prog -f "$priv/adwmrc" || :
 
+[ -x /usr/bin/numlockx ] && /usr/bin/numlockx off
+
 exec $prog -f "$priv/adwmrc"
 
 exit 127

@@ -52,6 +52,8 @@ done
 
 xde-setwm -N $name -p $$ -r $vers -c $prog --replace --config "$priv/config" || :
 
+[ -x /usr/bin/numlockx ] && /usr/bin/numlockx off
+
 exec $prog --replace --config "$priv/config"
 
 exit 127

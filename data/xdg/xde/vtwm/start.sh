@@ -46,6 +46,8 @@ done
 
 xde-setwm -N $name -p $$ -r $vers -c $prog -rc "$priv/init" || :
 
+[ -x /usr/bin/numlockx ] && /usr/bin/numlockx off
+
 if true; then
 	exec $prog -f "$priv/rc"
 else

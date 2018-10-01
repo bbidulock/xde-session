@@ -44,6 +44,8 @@ done
 
 xde-setwm -N $name -p $$ -r $vers -c $prog -rc "$priv/init" || :
 
+[ -x /usr/bin/numlockx ] && /usr/bin/numlockx off
+
 # older versions did not accept -f flag
 if [ -n "$($prog -h 2>&1|awk '/ -f /{print\"1\";exit}')" ]; then
 	exec $prog -f "$priv/init"

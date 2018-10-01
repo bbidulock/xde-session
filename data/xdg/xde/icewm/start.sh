@@ -72,6 +72,8 @@ export ICEWM_PRIVCFG="$priv"
 
 xde-setwm -N $name -p $$ -r $vers -c $prog --replace -c "$priv/preferences" || :
 
+[ -x /usr/bin/numlockx ] && /usr/bin/numlockx off
+
 exec $prog --replace -c "$priv/preferences"
 
 exit 127
