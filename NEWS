@@ -1,4 +1,25 @@
-xde-session -- history of user-visible changes.  2018-09-17
+xde-session -- history of user-visible changes.  2018-10-06
+
+Release xde-session-1.9 released 2018-10-06
+-------------------------------------------
+
+git shortlog -e -n -w80,6,8 1.9...HEAD
+
+
+
+
+Release xde-session-1.9 released 2018-10-06
+-------------------------------------------
+
+git shortlog -e -n -w80,6,8 1.8...1.9
+
+Brian Bidulock <bidulock@openss7.org> (5):
+      post release update
+      add sound support to lock screen
+      don't play sound on initial screen unlock
+      turn numlock off when launching window managers
+      fix gcc 8.2 warnings of redundant strncpy/strncat
+
 
 Release xde-session-1.8 released 2018-09-17
 -------------------------------------------

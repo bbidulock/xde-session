@@ -1,5 +1,74 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit a3adb71b061d75ffe12f92dbf7ebc24738c47160
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sat Oct 6 01:55:54 2018 -0600
+
+    fix gcc 8.2 warnings of redundant strncpy/strncat
+
+ src/xde-autostart.c | 112 ++++++++++++++++++++++++------------------------
+ src/xde-chooser.c   |  68 ++++++++++++++---------------
+ src/xde-greeter.c   |  52 +++++++++++-----------
+ src/xde-logout.c    |  52 +++++++++++-----------
+ src/xde-session.c   | 112 ++++++++++++++++++++++++------------------------
+ src/xde-startwm.c   | 112 ++++++++++++++++++++++++------------------------
+ src/xde-xchooser.c  |  52 +++++++++++-----------
+ src/xde-xlock.c     |  52 +++++++++++-----------
+ src/xde-xlogin.c    |  52 +++++++++++-----------
+ src/xde-xsession.c  |  28 ++++++------
+ 10 files changed, 346 insertions(+), 346 deletions(-)
+
+commit 1bba528d264ffae60f53f889fffc49d0f7950ae8
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Oct 1 00:45:02 2018 -0600
+
+    turn numlock off when launching window managers
+
+ data/xdg/xde/adwm/start.sh     | 2 ++
+ data/xdg/xde/blackbox/start.sh | 2 ++
+ data/xdg/xde/ctwm/start.sh     | 2 ++
+ data/xdg/xde/etwm/start.sh     | 2 ++
+ data/xdg/xde/fluxbox/start.sh  | 2 ++
+ data/xdg/xde/icewm/start.sh    | 2 ++
+ data/xdg/xde/jwm/start.sh      | 2 ++
+ data/xdg/xde/openbox/start.sh  | 2 ++
+ data/xdg/xde/pekwm/start.sh    | 2 ++
+ data/xdg/xde/twm/start.sh      | 2 ++
+ data/xdg/xde/vtwm/start.sh     | 2 ++
+ data/xdg/xde/waimea/start.sh   | 2 ++
+ 12 files changed, 24 insertions(+)
+
+commit 4906c8a70c4a60d1d4471b0d53f7fb5561926436
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 27 05:21:01 2018 -0600
+
+    don't play sound on initial screen unlock
+
+ src/xde-xlock.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+commit fa435d26047ac03c4f96265d2e39924f893db6de
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 27 04:06:35 2018 -0600
+
+    add sound support to lock screen
+
+ configure.ac      | 13 +++++++++++++
+ man/xde-xlock.pod | 18 +++++++++++++++++
+ src/Makefile.am   | 12 ++++++------
+ src/xde-xlock.c   | 53 ++++++++++++++++++++++++++++++++++++++++++++-------
+ 4 files changed, 83 insertions(+), 13 deletions(-)
+
+commit 45920d2ab22af989a09cfd50146236105a2225db
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 27 04:06:08 2018 -0600
+
+    post release update
+
+ ChangeLog | 32 ++++++++++----------------------
+ NEWS      |  3 ++-
+ 2 files changed, 12 insertions(+), 23 deletions(-)
+
 commit 8fd64e1582cebe6f3d5637a67eab69541b11819c
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Mon Sep 17 06:09:17 2018 -0600
@@ -6258,80 +6327,3 @@ Date:   Tue Aug 5 01:56:32 2014 -0600
 
  .gitignore | 1 -
  1 file changed, 1 deletion(-)
-
-commit 658ba5bdd88ef07f29ba50e63e1438bce45b3e6a
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 01:54:57 2014 -0600
-
-    added a maintainer script
-
- rebuild.sh | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-commit 84627cc5524485daa479aa1c15024905049138ad
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 01:54:33 2014 -0600
-
-    config files were ignored
-
- data/share/lxpanel/profile/BLACKBOX/config |  4 +++
- data/share/lxpanel/profile/FLUXBOX/config  |  4 +++
- data/share/lxpanel/profile/FVWM/config     |  4 +++
- data/share/lxpanel/profile/ICEWM/config    |  4 +++
- data/share/lxpanel/profile/OPENBOX/config  |  4 +++
- data/share/lxpanel/profile/WMAKER/config   |  4 +++
- data/xdg/xde/ctwm/config                   | 41 ++++++++++++++++++++++++++
- data/xdg/xde/jwm/config                    | 21 +++++++++++++
- data/xdg/xde/lxpanel/BLACKBOX/config       |  4 +++
- data/xdg/xde/lxpanel/FLUXBOX/config        |  4 +++
- data/xdg/xde/lxpanel/FVWM/config           |  4 +++
- data/xdg/xde/lxpanel/ICEWM/config          |  4 +++
- data/xdg/xde/lxpanel/JWM/config            |  4 +++
- data/xdg/xde/lxpanel/LXDE/config           |  4 +++
- data/xdg/xde/lxpanel/OPENBOX/config        |  4 +++
- data/xdg/xde/lxpanel/PEKWM/config          |  4 +++
- data/xdg/xde/lxpanel/WMAKER/config         |  4 +++
- data/xdg/xde/lxpanel/default/config        |  3 ++
- data/xdg/xde/pekwm/config                  | 19 ++++++++++++
- data/xdg/xde/twm/config                    | 41 ++++++++++++++++++++++++++
- data/xdg/xde/vtwm/config                   | 41 ++++++++++++++++++++++++++
- data/xdg/xde/waimea/config                 | 25 ++++++++++++++++
- 22 files changed, 251 insertions(+)
-
-commit 76b8c719e048104f7e03cd40438f10459607eee7
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Aug 4 23:44:34 2014 -0600
-
-    more consistent xsession list store naming and handling
-
- src/xde-chooser.c  | 216 ++++++++++++++++++++++++++-----------------------
- src/xde-logout.c   |   1 +
- src/xde-xchooser.c |  88 +++++++++++---------
- src/xde-xlock.c    |  88 +++++++++++---------
- src/xde-xlogin.c   |  88 +++++++++++---------
- 5 files changed, 264 insertions(+), 217 deletions(-)
-
-commit cf0cedcd57ed775488b1ce4897f5033dbfbfe82e
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Aug 4 22:22:07 2014 -0600
-
-    handle selections better and set cursors
-
- src/xde-chooser.c  | 72 +++++++++++++++++++++++++++++++++++---------------
- src/xde-logout.c   |  6 +++++
- src/xde-xchooser.c | 44 ++++++++++++++++++++++++++----
- src/xde-xlock.c    | 44 ++++++++++++++++++++++++++----
- src/xde-xlogin.c   | 44 ++++++++++++++++++++++++++----
- 5 files changed, 173 insertions(+), 37 deletions(-)
-
-commit 8652d0b943edd51722433ba81cc1ef53778d900c
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Mon Aug 4 20:21:11 2014 -0600
-
-    build chooser xsession list better, retain filename
-
- src/xde-chooser.c  | 496 +++++++++++++++++++++++++++----------------------
- src/xde-xchooser.c |  50 +++--
- src/xde-xlock.c    |  50 +++--
- src/xde-xlogin.c   |  50 +++--
- 4 files changed, 382 insertions(+), 264 deletions(-)
