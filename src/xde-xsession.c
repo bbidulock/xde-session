@@ -215,15 +215,15 @@ get_directories(void)
 	else {
 		len = strlen(home) + strlen("/.config") + 1;
 		xhome = calloc(len, sizeof(*xhome));
-		strncpy(xhome, home, len);
-		strncat(xhome, "/.config", len);
+		strcpy(xhome, home);
+		strcat(xhome, "/.config");
 	}
 	xdirs = strdup(getenv("XDG_CONFIG_DIRS") ? : "/etc/xdg");
 	len = strlen(xhome) + 1 + strlen(xdirs) + 1;
 	xboth = calloc(len, sizeof(*xboth));
-	strncpy(xboth, xhome, len);
-	strncat(xboth, ":", len);
-	strncat(xboth, xdirs, len);
+	strcpy(xboth, xhome);
+	strcat(xboth, ":");
+	strcat(xboth, xdirs);
 
 	free(xdg_dirs.conf.home);
 	xdg_dirs.conf.home = xhome;
@@ -238,15 +238,15 @@ get_directories(void)
 	else {
 		len = strlen(home) + strlen("/.local/share") + 1;
 		xhome = calloc(len, sizeof(*xhome));
-		strncpy(xhome, home, len);
-		strncat(xhome, "/.local/share", len);
+		strcpy(xhome, home);
+		strcat(xhome, "/.local/share");
 	}
 	xdirs = strdup(getenv("XDG_DATA_DIRS") ? : "/usr/local/share:/usr/share");
 	len = strlen(xhome) + 1 + strlen(xdirs) + 1;
 	xboth = calloc(len, sizeof(*xboth));
-	strncpy(xboth, xhome, len);
-	strncat(xboth, ":", len);
-	strncat(xboth, xdirs, len);
+	strcpy(xboth, xhome);
+	strcat(xboth, ":");
+	strcat(xboth, xdirs);
 
 	free(xdg_dirs.data.home);
 	xdg_dirs.data.home = xhome;
@@ -403,8 +403,8 @@ find_read_config(void)
 				continue;
 			len = strlen(dir) + strlen("xde/session.ini") + 1;
 			file = calloc(len, sizeof(*file));
-			strncpy(file, dir, len);
-			strncat(file, "xde/session.ini", len);
+			strcpy(file, dir);
+			strcat(file, "xde/session.ini");
 			if (!access(file, R_OK)) {
 				if (g_key_file_load_from_file(config, file, flags, NULL)) {
 					rcfile = file;
@@ -628,8 +628,8 @@ set_defaults(void)
 
 		len = strlen(options.vendor) + 2;
 		prefix = calloc(len, sizeof(*prefix));
-		strncpy(prefix, options.vendor, len);
-		strncat(prefix, "-", len);
+		strcpy(prefix, options.vendor);
+		strcat(prefix, "-");
 		setenv("XDG_MENU_PREFIX", prefix, 0);
 		free(prefix);
 		setenv("XDG_VENDOR_ID", options.vendor, 0);

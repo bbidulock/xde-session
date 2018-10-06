@@ -2184,10 +2184,10 @@ setup(void)
 			char *path = calloc(len, sizeof(*path));
 			struct stat st;
 
-			strncpy(path, dir, len);
-			strncat(path, "/", len);
-			strncat(path, options.wmname, len);
-			strncat(path, script, len);
+			strcpy(path, dir);
+			strcat(path, "/");
+			strcat(path, options.wmname);
+			strcat(path, script);
 
 			status = stat(path, &st);
 			if (status == -1) {
@@ -2236,10 +2236,10 @@ startwm(void)
 			char *path = calloc(len, sizeof(*path));
 			struct stat st;
 
-			strncpy(path, dir, len);
-			strncat(path, "/", len);
-			strncat(path, options.wmname, len);
-			strncat(path, script, len);
+			strcpy(path, dir);
+			strcat(path, "/");
+			strcat(path, options.wmname);
+			strcat(path, script);
 
 			status = stat(path, &st);
 			if (status == -1) {
@@ -7471,8 +7471,8 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 
 			len = strlen(home) + strlen("/.dmrc");
 			dmrc = calloc(len + 1, sizeof(*dmrc));
-			strncpy(dmrc, home, len);
-			strncat(dmrc, "/.dmrc", len);
+			strcpy(dmrc, home);
+			strcat(dmrc, "/.dmrc");
 
 			g_key_file_set_string(options.dmrc, "Desktop", "Session", label);
 			g_key_file_save_to_file(options.dmrc, dmrc, NULL);
@@ -8062,8 +8062,8 @@ create_session(const char *label, const char *filename)
 
 			len = strlen(home) + strlen("/.dmrc");
 			dmrc = calloc(len + 1, sizeof(*dmrc));
-			strncpy(dmrc, home, len);
-			strncat(dmrc, "/.dmrc", len);
+			strcpy(dmrc, home);
+			strcat(dmrc, "/.dmrc");
 
 			g_key_file_set_string(options.dmrc, "Desktop", "Session", options.session);
 			g_key_file_save_to_file(options.dmrc, dmrc, NULL);
@@ -8397,9 +8397,9 @@ reparse(Display *dpy, Window root)
 
 				len = strlen(prefix) + strlen(list[0]) + strlen(suffix) + 1;
 				rc_string = calloc(len, sizeof(*rc_string));
-				strncpy(rc_string, prefix, len);
-				strncat(rc_string, list[0], len);
-				strncat(rc_string, suffix, len);
+				strcpy(rc_string, prefix);
+				strcat(rc_string, list[0]);
+				strcat(rc_string, suffix);
 				gtk_rc_parse_string(rc_string);
 				free(rc_string);
 			}
@@ -8646,8 +8646,8 @@ GetPanel(void)
 	int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
 	char *title = calloc(len, sizeof(*title));
 
-	strncpy(title, "XDCMP Host Menu from ", len);
-	strncat(title, hostname, len);
+	strcpy(title, "XDCMP Host Menu from ");
+	strcat(title, hostname);
 
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(title, renderer,
@@ -8963,8 +8963,8 @@ startup_x11(int argc, char *argv[])
 		len = strlen(home) + strlen(suffix) + 1;
 		file = calloc(len, sizeof(*file));
 
-		strncpy(file, home, len);
-		strncat(file, suffix, len);
+		strcpy(file, home);
+		strcat(file, suffix);
 		gtk_rc_add_default_file(file);
 		free(file);
 	}
@@ -10028,13 +10028,13 @@ get_data_dirs(int *np)
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.local/share")) + strlen(xdata) + 2;
 	dirs = calloc(len + 1, sizeof(*dirs));
 	if (xhome)
-		strncpy(dirs, xhome, len);
+		strcpy(dirs, xhome);
 	else {
-		strncpy(dirs, home, len);
-		strncat(dirs, "/.local/share", len);
+		strcpy(dirs, home);
+		strcat(dirs, "/.local/share");
 	}
-	strncat(dirs, ":", len);
-	strncat(dirs, xdata, len);
+	strcat(dirs, ":");
+	strcat(dirs, xdata);
 	end = dirs + strlen(dirs);
 	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
 	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
@@ -10059,13 +10059,13 @@ get_config_dirs(int *np)
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
 	dirs = calloc(len + 1, sizeof(*dirs));
 	if (xhome)
-		strncpy(dirs, xhome, len);
+		strcpy(dirs, xhome);
 	else {
-		strncpy(dirs, home, len);
-		strncat(dirs, "/.config", len);
+		strcpy(dirs, home);
+		strcat(dirs, "/.config");
 	}
-	strncat(dirs, ":", len);
-	strncat(dirs, xconf, len);
+	strcat(dirs, ":");
+	strcat(dirs, xconf);
 	end = dirs + strlen(dirs);
 	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
 	xdg_dirs = calloc(n + 1, sizeof(*xdg_dirs));
@@ -10090,21 +10090,21 @@ get_autostart_dirs(int *np)
 	len = (xhome ? strlen(xhome) : strlen(home) + strlen("/.config")) + strlen(xconf) + 2;
 	dirs = calloc(len + 1, sizeof(*dirs));
 	if (xhome)
-		strncpy(dirs, xhome, len);
+		strcpy(dirs, xhome);
 	else {
-		strncpy(dirs, home, len);
-		strncat(dirs, "/.config", len);
+		strcpy(dirs, home);
+		strcat(dirs, "/.config");
 	}
-	strncat(dirs, ":", len);
-	strncat(dirs, xconf, len);
+	strcat(dirs, ":");
+	strcat(dirs, xconf);
 	end = dirs + strlen(dirs);
 	for (n = 0, pos = dirs; pos < end; n++, *strchrnul(pos, ':') = '\0', pos += strlen(pos) + 1) ;
 	xdg_dirs = calloc(n, sizeof(*xdg_dirs));
 	for (n = 0, pos = dirs; pos < end; n++, pos += strlen(pos) + 1) {
 		len = strlen(pos) + strlen("/autostart") + 1;
 		xdg_dirs[n] = calloc(len + 1, sizeof(*xdg_dirs[n]));
-		strncpy(xdg_dirs[n], pos, len);
-		strncat(xdg_dirs[n], "/autostart", len);
+		strcpy(xdg_dirs[n], pos);
+		strcat(xdg_dirs[n], "/autostart");
 	}
 	free(dirs);
 	if (np)
@@ -10254,9 +10254,9 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 			int len = strlen(dir) + blen;
 			char *file = calloc(len + 1, sizeof(*file));
 
-			strncpy(file, dir, len);
-			strncat(file, "/", len);
-			strncat(file, binary, len);
+			strcpy(file, dir);
+			strcat(file, "/");
+			strcat(file, binary);
 			if (!access(file, X_OK)) {
 				execok = TRUE;
 				free(file);
@@ -10311,9 +10311,9 @@ get_autostarts(void)
 			}
 			len = strlen(*dirs) + strlen(d->d_name) + 2;
 			file = calloc(len + 1, sizeof(*file));
-			strncpy(file, *dirs, len);
-			strncat(file, "/", len);
-			strncat(file, d->d_name, len);
+			strcpy(file, *dirs);
+			strcat(file, "/");
+			strcat(file, d->d_name);
 			if (stat(file, &st)) {
 				EPRINTF("%s: %s\n", file, strerror(errno));
 				free(file);
@@ -11466,8 +11466,8 @@ set_default_vendor(void)
 		free(defaults.prefix);
 		len = strlen(vendor) + 1;
 		prefix = defaults.prefix = calloc(len + 1, sizeof(*prefix));
-		strncpy(prefix, vendor, len);
-		strncat(prefix, "-", len);
+		strcpy(prefix, vendor);
+		strcat(prefix, "-");
 	}
 	if (!defaults.vendor)
 		defaults.vendor = strdup("");
@@ -11515,20 +11515,20 @@ set_default_xdgdirs(int argc, char *argv[])
 		len = strlen(here) + strlen("/data/xdg/xde:")
 		    + strlen(here) + strlen("/data/xdg:") + strlen(confdir);
 		conf = calloc(len + 1, sizeof(*conf));
-		strncpy(conf, here, len);
-		strncat(conf, "/data/xdg/xde:", len);
-		strncat(conf, here, len);
-		strncat(conf, "/data/xdg:", len);
-		strncat(conf, confdir, len);
+		strcpy(conf, here);
+		strcat(conf, "/data/xdg/xde:");
+		strcat(conf, here);
+		strcat(conf, "/data/xdg:");
+		strcat(conf, confdir);
 
 		len = strlen(here) + strlen("/data/share/xde:")
 		    + strlen(here) + strlen("/data/share:") + strlen(datadir);
 		data = calloc(len + 1, sizeof(*data));
-		strncpy(data, here, len);
-		strncat(data, "/data/share/xde:", len);
-		strncat(data, here, len);
-		strncat(data, "/data/share:", len);
-		strncat(data, datadir, len);
+		strcpy(data, here);
+		strcat(data, "/data/share/xde:");
+		strcat(data, here);
+		strcat(data, "/data/share:");
+		strcat(data, datadir);
 	} else {
 		conf = strdup(confdir);
 		data = strdup(datadir);
@@ -11910,8 +11910,8 @@ get_default_vendor(void)
 
 		free(options.prefix);
 		options.prefix = calloc(len + 1, sizeof(*options.prefix));
-		strncpy(options.prefix, options.vendor, len);
-		strncat(options.prefix, "-", len);
+		strcpy(options.prefix, options.vendor);
+		strcat(options.prefix, "-");
 	} else {
 		free(options.prefix);
 		options.prefix = strdup("");

@@ -3634,9 +3634,9 @@ test_lock_screen_program()
 				*(p = strchrnul(b, ':')) = '\0';
 				len = strlen(b) + 1 + strlen(prog->name) + 1;
 				path = calloc(len, sizeof(*path));
-				strncpy(path, b, len);
-				strncat(path, "/", len);
-				strncat(path, prog->name, len);
+				strcpy(path, b);
+				strcat(path, "/");
+				strcat(path, prog->name);
 				status = stat(path, &st);
 				free(path);
 				if (status == 0 && S_ISREG(st.st_mode) && (st.st_mode & S_IXOTH)) {
@@ -4597,8 +4597,8 @@ create_session(const char *label, const char *filename)
 
 			len = strlen(home) + strlen("/.dmrc");
 			dmrc = calloc(len + 1, sizeof(*dmrc));
-			strncpy(dmrc, home, len);
-			strncat(dmrc, "/.dmrc", len);
+			strcpy(dmrc, home);
+			strcat(dmrc, "/.dmrc");
 
 			g_key_file_set_string(options.dmrc, "Desktop", "Session", options.session);
 			g_key_file_save_to_file(options.dmrc, dmrc, NULL);
@@ -4932,9 +4932,9 @@ reparse(Display *dpy, Window root)
 
 				len = strlen(prefix) + strlen(list[0]) + strlen(suffix) + 1;
 				rc_string = calloc(len, sizeof(*rc_string));
-				strncpy(rc_string, prefix, len);
-				strncat(rc_string, list[0], len);
-				strncat(rc_string, suffix, len);
+				strcpy(rc_string, prefix);
+				strcat(rc_string, list[0]);
+				strcat(rc_string, suffix);
 				gtk_rc_parse_string(rc_string);
 				free(rc_string);
 			}
@@ -5330,8 +5330,8 @@ GetPanel(void)
 	int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
 	char *title = calloc(len, sizeof(*title));
 
-	strncpy(title, "XDCMP Host Menu from ", len);
-	strncat(title, hostname, len);
+	strcpy(title, "XDCMP Host Menu from ");
+	strcat(title, hostname);
 
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 	GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(title, renderer,
@@ -5647,8 +5647,8 @@ startup_x11(int argc, char *argv[])
 		len = strlen(home) + strlen(suffix) + 1;
 		file = calloc(len, sizeof(*file));
 
-		strncpy(file, home, len);
-		strncat(file, suffix, len);
+		strcpy(file, home);
+		strcat(file, suffix);
 		gtk_rc_add_default_file(file);
 		free(file);
 	}
@@ -8427,8 +8427,8 @@ set_default_vendor(void)
 		free(defaults.prefix);
 		len = strlen(vendor) + 1;
 		prefix = defaults.prefix = calloc(len + 1, sizeof(*prefix));
-		strncpy(prefix, vendor, len);
-		strncat(prefix, "-", len);
+		strcpy(prefix, vendor);
+		strcat(prefix, "-");
 	}
 	if (!defaults.vendor)
 		defaults.vendor = strdup("");
@@ -8476,20 +8476,20 @@ set_default_xdgdirs(int argc, char *argv[])
 		len = strlen(here) + strlen("/data/xdg/xde:")
 		    + strlen(here) + strlen("/data/xdg:") + strlen(confdir);
 		conf = calloc(len + 1, sizeof(*conf));
-		strncpy(conf, here, len);
-		strncat(conf, "/data/xdg/xde:", len);
-		strncat(conf, here, len);
-		strncat(conf, "/data/xdg:", len);
-		strncat(conf, confdir, len);
+		strcpy(conf, here);
+		strcat(conf, "/data/xdg/xde:");
+		strcat(conf, here);
+		strcat(conf, "/data/xdg:");
+		strcat(conf, confdir);
 
 		len = strlen(here) + strlen("/data/share/xde:")
 		    + strlen(here) + strlen("/data/share:") + strlen(datadir);
 		data = calloc(len + 1, sizeof(*data));
-		strncpy(data, here, len);
-		strncat(data, "/data/share/xde:", len);
-		strncat(data, here, len);
-		strncat(data, "/data/share:", len);
-		strncat(data, datadir, len);
+		strcpy(data, here);
+		strcat(data, "/data/share/xde:");
+		strcat(data, here);
+		strcat(data, "/data/share:");
+		strcat(data, datadir);
 	} else {
 		conf = strdup(confdir);
 		data = strdup(datadir);
@@ -8871,8 +8871,8 @@ get_default_vendor(void)
 
 		free(options.prefix);
 		options.prefix = calloc(len + 1, sizeof(*options.prefix));
-		strncpy(options.prefix, options.vendor, len);
-		strncat(options.prefix, "-", len);
+		strcpy(options.prefix, options.vendor);
+		strcat(options.prefix, "-");
 	} else {
 		free(options.prefix);
 		options.prefix = strdup("");
