@@ -28,10 +28,10 @@ X-Arch-Package-Description=Advanced dynamic window manager for X
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://github.com/bbidulock/adwm
 X-Arch-Package-Votes=1
-Aliases=adwm;
 DesktopNames=ADWM
 X-LightDM-DesktopName=adwm
 Actions=XDG;XDE;
+Aliases=adwm;
 
 [Desktop Action XDG]
 Name=XDG
@@ -41,6 +41,8 @@ TryExec=/usr/bin/xdg-session
 Exec=xdg-session %k
 DesktopNames=ADWM
 X-LightDM-DesktopName=adwm
+SessionManaged=true
+StartupNotification=false
 
 [Desktop Action XDE]
 Name=XDE
@@ -50,9 +52,12 @@ TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop ADWM -startwm start-adwm
 DesktopNames=XDE;ADWM;
 X-LightDM-DesktopName=xde
+SessionManaged=true
+StartupNotification=false
 
 [Window Manager]
 Name=adwm
 SessionManaged=false
 StartupNotification=true
 X-XDE-Managed=true
+ConfigExec=adwm -f %n

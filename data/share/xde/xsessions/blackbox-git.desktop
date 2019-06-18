@@ -55,3 +55,4 @@ Name=blackbox
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=true
+ConfigExec=blackbox -rc %f

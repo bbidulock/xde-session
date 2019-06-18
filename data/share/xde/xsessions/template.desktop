@@ -41,6 +41,8 @@ TryExec=/usr/bin/xdg-session
 Exec=xdg-session %k
 DesktopNames=WMNAME
 X-LightDM-DesktopName=wmname
+SessionManaged=true
+StartupNotification=false
 
 [Desktop Action XDE]
 Name=XDE
@@ -50,9 +52,12 @@ TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop WMNAME -startwm start-wmname
 DesktopNames=XDE:WMNAME
 X-LightDM-DesktopName=xde
+SessionManaged=true
+StartupNotification=false
 
 [Window Manager]
 Name=WMName
 SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=true
+ConfigExec=wmname -f %f

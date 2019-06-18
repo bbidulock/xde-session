@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=XSession
-Name=cwm
+Name=CWM
 GenericName=Window Manager
 GenericName[fr]=Gestionnaire de Fenêtres
 GenericName[pt]=Gestor de Janelas
@@ -16,21 +16,22 @@ StartupNotify=false
 X-GNOME-Autostart-Notify=false
 X-GNOME-Autostart-Phase=WindowManager
 X-GNOME-Provides=windowmanager
-X-GNOME-WMName=cwm
+X-GNOME-WMName=CWM
 X-AppInstall-Package=cwm-git
-X-AppInstall-Popcon=0
-X-AppInstall-Section=custom
-X-Arch-Package=cwm-git 20150423-1
-X-Arch-Package-Repository=custom
+X-AppInstall-Popcon=0.00
+X-AppInstall-Section=aur
+X-Arch-Package=cwm-git 20160402-1
+X-Arch-Package-Repository=aur
 X-Arch-Package-Name=cwm-git
-X-Arch-Package-Version=20150423-1
+X-Arch-Package-Version=20160402-1
 X-Arch-Package-Description=OpenBSD fork of calmwm, a clean and lightweight window manager
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://www.openbsd.org/cgi-bin/man.cgi?query=cwm&sektion=1
-Aliases=cwm;
+X-Arch-Package-Votes=7
 DesktopNames=CWM
 X-LightDM-DesktopName=cwm
 Actions=XDG;XDE;
+Aliases=cwm;
 
 [Desktop Action XDG]
 Name=XDG
@@ -40,6 +41,8 @@ TryExec=/usr/bin/xdg-session
 Exec=xdg-session %k
 DesktopNames=CWM
 X-LightDM-DesktopName=cwm
+SessionManaged=true
+StartupNotification=false
 
 [Desktop Action XDE]
 Name=XDE
@@ -49,9 +52,11 @@ TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop CWM -startwm start-cwm
 DesktopNames=XDE:CWM
 X-LightDM-DesktopName=xde
+SessionManaged=true
+StartupNotification=false
 
 [Window Manager]
 Name=cwm
-SessionManaged=true
+SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=true

@@ -27,10 +27,11 @@ X-Arch-Package-Version=3.8.2.r521.g53f6772-1
 X-Arch-Package-Description=Claude's Tab Window Manager
 X-Arch-Package-Groups=None
 X-Arch-Package-URL=http://ctwm.org/
-Aliases=ctwm;
+X-Arch-Package-Votes=
 DesktopNames=CTWM
 X-LightDM-DesktopName=ctwm
 Actions=XDG;XDE;
+Aliases=ctwm;
 
 [Desktop Action XDG]
 Name=XDG
@@ -40,6 +41,8 @@ TryExec=/usr/bin/xdg-session
 Exec=xdg-session %k
 DesktopNames=CTWM
 X-LightDM-DesktopName=ctwm
+SessionManaged=true
+StartupNotification=false
 
 [Desktop Action XDE]
 Name=XDE
@@ -49,10 +52,12 @@ TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop CTWM -startwm start-ctwm
 DesktopNames=XDE:CTWM
 X-LightDM-DesktopName=xde
+SessionManaged=true
+StartupNotification=false
 
 [Window Manager]
 Name=ctwm
-SessionManaged=true
+SessionManaged=false
 StartupNotification=false
 X-XDE-Managed=true
 ConfigExec=ctwm -f %f

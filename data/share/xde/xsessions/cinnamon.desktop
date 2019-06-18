@@ -1,0 +1,33 @@
+[Desktop Entry]
+Type=XSession
+Name=Cinnamon
+GenericName=Desktop Environment
+
+
+Comment=This session logs you into Cinnamon
+Icon=
+TryExec=/usr/bin/cinnamon
+Exec=cinnamon-session-cinnamon
+Terminal=false
+NoDisplay=true
+Hidden=true
+X-GNOME-Provides=cinnamon
+X-AppInstall-Package=cinnamon
+X-AppInstall-Popcon=0
+X-AppInstall-Section=community
+X-Arch-Package=cinnamon 3.8.3-1
+X-Arch-Package-Repository=community
+X-Arch-Package-Name=cinnamon
+X-Arch-Package-Version=3.8.3-1
+X-Arch-Package-Description=Linux desktop which provides advanced innovative features and a traditional user experience
+X-Arch-Package-Groups=None
+X-Arch-Package-URL=https://github.com/linuxmint/Cinnamon
+X-Arch-Package-Votes=0
+X-Ubuntu-Gettext-Domain=cinnamon
+DesktopNames=CINNAMON
+
+[Window Manager]
+Name=WMName
+SessionManaged=true
+StartupNotification=false
+X-XDE-Managed=true

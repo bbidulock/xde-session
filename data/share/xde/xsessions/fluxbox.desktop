@@ -33,12 +33,14 @@ Actions=XDG;XDE;
 
 [Desktop Action XDG]
 Name=XDG
-Comment=Fluxbox in an XDG session
-Icon=flusbox
+Comment=Fluxbox as an XDG session
+Icon=fluxbox
 TryExec=/usr/bin/xdg-session
 Exec=xdg-session %k
 DesktopNames=FLUXBOX
 X-LightDM-DesktopName=fluxbox
+SessionManaged=true
+StartupNotification=false
 
 [Desktop Action XDE]
 Name=XDE
@@ -48,9 +50,12 @@ TryExec=/usr/bin/xde-session
 Exec=xde-session -desktop FLUXBOX -startwm fluxbox
 DesktopNames=XDE:FLUXBOX
 X-LightDM-DesktopName=xde
+SessionManaged=true
+StartupNotification=false
 
 [Window Manager]
 Name=fluxbox
 SessionManaged=true
 StartupNotification=false
 X-XDE-Managed=false
+ConfigExec=fluxbox -rc %f
