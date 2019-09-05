@@ -388,7 +388,7 @@ find_read_config(void)
 			if (g_key_file_load_from_file(config, options.rcfile, flags, NULL))
 				rcfile = strdup(options.rcfile);
 			else
-				EPRINTF("%s: could not load key file\n", rcfile);
+				EPRINTF("%s: could not load key file\n", options.rcfile);
 		}
 	}
 	if (!rcfile) {
