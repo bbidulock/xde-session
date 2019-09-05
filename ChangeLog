@@ -1,5 +1,150 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 9f88a529a83c531b9bba194390913fb6f5df86f8
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 09:40:31 2019 -0600
+
+    handle gcc 9.1 string truncation stupidity
+
+ src/display.c       | 3 ++-
+ src/xde-autostart.c | 3 ++-
+ src/xde-session.c   | 3 ++-
+ src/xde-smproxy.c   | 3 ++-
+ src/xde-startwm.c   | 3 ++-
+ 5 files changed, 10 insertions(+), 5 deletions(-)
+
+commit 29ed8e7ea718584eb68b1d3df736ea324b7dfb3c
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 09:40:21 2019 -0600
+
+    gcc caught an error
+
+ src/xde-xsession.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit a4471543feb7ab6897ad4f43cfe05bcd17d787e3
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 09:23:58 2019 -0600
+
+    better defaults now
+
+ configure.sh | 3 ---
+ 1 file changed, 3 deletions(-)
+
+commit 9033d497904f8cb57119200473bf39fde6c5078f
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 09:23:39 2019 -0600
+
+    update build with better defaults and lzip
+
+ configure.ac | 27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
+
+commit 0d7a8a960fa189d6a01f8554824079d4fe8f7129
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 09:22:27 2019 -0600
+
+    build release notes with distribution
+
+ dist.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit 6fd403712c90cfd387201a2a684300a8df78a54a
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 09:21:48 2019 -0600
+
+    put filename last in sed command
+
+ autogen.sh | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+commit f25ae2d919c0c19050e3fb5d1ebec0740eba0020
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 09:21:24 2019 -0600
+
+    update release notes
+
+ RELEASE.md | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
+
+commit 1c394d8dd838d8d1b468ea57a0798ce22ff5c9b4
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 09:19:53 2019 -0600
+
+    improve build
+
+ Makefile.am | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+commit e0d62eda6b66cbffbcf1b7732d11d7d4c557c028
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sat Aug 31 01:48:35 2019 -0600
+
+    generate NEWS better
+
+ gennews.sh | 26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
+
+commit c65950d7d0c1303b00c13c2ef3051b93d7bfe23a
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 17 22:53:33 2019 -0600
+
+    update for gettext 0.20.1
+
+ autogen.sh | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+commit 8777cb3d7dbbfc3f1458ec206fb8b9401d4a02bf
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jun 17 22:53:17 2019 -0600
+
+    some better .desktop xsession files
+
+ data/share/xde/xsessions/adwm-git.desktop     |  7 ++++-
+ data/share/xde/xsessions/adwm.desktop         |  5 ++++
+ data/share/xde/xsessions/aewm++.desktop       |  8 +++++-
+ data/share/xde/xsessions/aewm.desktop         |  7 ++++-
+ data/share/xde/xsessions/blackbox-git.desktop |  1 +
+ data/share/xde/xsessions/blackbox.desktop     |  3 ++-
+ data/share/xde/xsessions/cinnamon.desktop     | 33 +++++++++++++++++++++++
+ data/share/xde/xsessions/cinnamon2d.desktop   | 33 +++++++++++++++++++++++
+ data/share/xde/xsessions/ctwm-git.desktop     |  9 +++++--
+ data/share/xde/xsessions/ctwm.desktop         |  7 ++++-
+ data/share/xde/xsessions/cwm-git.desktop      | 23 +++++++++-------
+ data/share/xde/xsessions/cwm.desktop          | 22 +++++++++------
+ data/share/xde/xsessions/fluxbox-git.desktop  |  9 +++++--
+ data/share/xde/xsessions/fluxbox-wm.desktop   |  7 ++++-
+ data/share/xde/xsessions/fluxbox.desktop      |  9 +++++--
+ data/share/xde/xsessions/spectrwm-git.desktop |  2 +-
+ data/share/xde/xsessions/spectrwm.desktop     |  4 +--
+ data/share/xde/xsessions/template.desktop     |  5 ++++
+ 18 files changed, 162 insertions(+), 32 deletions(-)
+
+commit e78febb5f06d08103b2d07061951d90060677d04
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jan 18 10:40:08 2019 -0700
+
+    reformat TODO
+
+ TODO | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+commit 68c682379a9d679fc795ea3792969d0b21552abf
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sat Oct 6 02:00:42 2018 -0600
+
+    update release files
+
+ .gitignore   |  15 +++---
+ AUTHORS      |   2 +-
+ ChangeLog    | 146 ++++++++++++++++++++++++++-----------------------------
+ Makefile.am  |  15 ++++--
+ NEWS         |  23 ++++++++-
+ README.md    |  20 ++++----
+ RELEASE.md   |  15 ++++++
+ configure.ac |   8 +--
+ 8 files changed, 142 insertions(+), 102 deletions(-)
+
 commit a3adb71b061d75ffe12f92dbf7ebc24738c47160
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Sat Oct 6 01:55:54 2018 -0600
@@ -6175,155 +6320,3 @@ Date:   Thu Aug 7 05:39:49 2014 -0600
  src/xde-xlock.c      | 202 +++++++++++++++++++++++++++++++++++++++++++++-
  src/xde-xlogin.c     | 202 +++++++++++++++++++++++++++++++++++++++++++++-
  4 files changed, 608 insertions(+), 9 deletions(-)
-
-commit b0f16ebbb4729a52b5159b68153b93d30318cfb3
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Wed Aug 6 05:00:54 2014 -0600
-
-    ensure vendor option included on all
-
- src/xde-chooser.c  |  71 +++++++++++++++++++++++-----------
- src/xde-logout.c   |  30 ++++++++++----
- src/xde-xchooser.c | 103 ++++++++++++++++++++++++++++++++++++-------------
- src/xde-xlock.c    |  90 ++++++++++++++++++++++++++++++++----------
- src/xde-xlogin.c   | 103 ++++++++++++++++++++++++++++++++++++-------------
- 5 files changed, 292 insertions(+), 105 deletions(-)
-
-commit 55c116bdb8ec8211d2a1be917ef2fd806c03f047
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Wed Aug 6 03:32:24 2014 -0600
-
-    ensure window moves and resizes when screen resizes
-
- src/xde-chooser.c  | 10 ++++++++++
- src/xde-logout.c   | 10 ++++++++++
- src/xde-xchooser.c | 10 ++++++++++
- src/xde-xlock.c    | 10 ++++++++++
- src/xde-xlogin.c   | 10 ++++++++++
- 5 files changed, 50 insertions(+)
-
-commit d84f367bdba386cad609030a9b409a8b87308288
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 21:20:31 2014 -0600
-
-    better background handling
-
- src/xde-chooser.c  | 162 +++++++++++++++++++++-------------------
- src/xde-logout.c   | 112 +++++++++++++++-------------
- src/xde-xchooser.c | 196 ++++++++++++++++++++++++++++---------------------
- src/xde-xlock.c    | 196 ++++++++++++++++++++++++++++---------------------
- src/xde-xlogin.c   | 196 ++++++++++++++++++++++++++++---------------------
- 5 files changed, 490 insertions(+), 372 deletions(-)
-
-commit 660c1214dd7ce08fad0e5ed29da52ad1bb111dfe
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 20:23:43 2014 -0600
-
-    corrected typo in object path
-
- src/xde-logout.c | 254 ++++++++++++++++++++++++++++-----------------------
- 1 file changed, 142 insertions(+), 112 deletions(-)
-
-commit aa1cd27ebd790b31ff4109033d8e1955a1298101
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 09:51:12 2014 -0600
-
-    try non-interactive power management
-
- src/xde-logout.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-commit a3e1fb97ac37011094d09279034cde781a96af15
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 08:21:05 2014 -0600
-
-    more corrections to xdm socket output
-
- src/xde-xchooser.c | 74 +++++++++++++++++++++++++++++++-------------------
- src/xde-xlock.c    | 74 +++++++++++++++++++++++++++++++-------------------
- src/xde-xlogin.c   | 74 +++++++++++++++++++++++++++++++-------------------
- 3 files changed, 138 insertions(+), 84 deletions(-)
-
-commit a3af6de2e329aeee0782ce60b112225823730799
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 06:52:14 2014 -0600
-
-    copy port number correctly for xdm socket address
-
- src/xde-xchooser.c | 4 ++--
- src/xde-xlock.c    | 4 ++--
- src/xde-xlogin.c   | 4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
-commit 5cff9591c0bb3ddf78cdaee220bc3a61317cca76
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 06:39:59 2014 -0600
-
-    copy xdm address correctly
-
- src/xde-xchooser.c | 3 ++-
- src/xde-xlock.c    | 3 ++-
- src/xde-xlogin.c   | 3 ++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
-
-commit 79e1e4870f32d9e747baf8adaf9de8436ee3955f
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 06:06:56 2014 -0600
-
-    handle xdm address port properly
-
- src/xde-xchooser.c | 9 +++++++--
- src/xde-xlock.c    | 9 +++++++--
- src/xde-xlogin.c   | 9 +++++++--
- 3 files changed, 21 insertions(+), 6 deletions(-)
-
-commit 7de0f91ba771b48f7f04c5f30851fb97c5e0382b
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 05:28:14 2014 -0600
-
-    no camel case on xdm option flags
-
- src/xde-xchooser.c | 20 ++++++++++----------
- src/xde-xlock.c    | 50 +++++++++++++++++++++++++-------------------------
- src/xde-xlogin.c   | 20 ++++++++++----------
- 3 files changed, 45 insertions(+), 45 deletions(-)
-
-commit 2d09ce7db36aa3eb20055958b05c05a4d2527f05
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 02:08:24 2014 -0600
-
-    more ignored files that shouldn't be
-
- .gitignore              |   1 -
- data/xdg/xde/ctwm/rc.m4 | 119 ++++++++++++++++++++++++++++++++++++++++++++
- data/xdg/xde/twm/rc.m4  | 119 ++++++++++++++++++++++++++++++++++++++++++++
- data/xdg/xde/vtwm/rc.m4 | 119 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 357 insertions(+), 1 deletion(-)
-
-commit e1af957d383e555bc1725344026a88bc52f69d92
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 02:04:36 2014 -0600
-
-    ignored an entire directory - fixed
-
- .gitignore                                     |  26 +++---
- data/xdg/xde/xde-session/BLACKBOX/desktop.conf |  89 ++++++++++++++++++
- data/xdg/xde/xde-session/FLUXBOX/autostart     |   4 +
- data/xdg/xde/xde-session/FLUXBOX/desktop.conf  |  89 ++++++++++++++++++
- data/xdg/xde/xde-session/FVWM/desktop.conf     |  89 ++++++++++++++++++
- data/xdg/xde/xde-session/ICEWM/desktop.conf    |  89 ++++++++++++++++++
- data/xdg/xde/xde-session/LXDE/autostart        |   8 ++
- data/xdg/xde/xde-session/OPENBOX/desktop.conf  |  89 ++++++++++++++++++
- data/xdg/xde/xde-session/WMAKER/desktop.conf   |  89 ++++++++++++++++++
- data/xdg/xde/xde-session/default/input.ini     |  57 ++++++++++++
- data/xdg/xde/xde-session/default/xsettings.ini | 101 +++++++++++++++++++++
- 11 files changed, 717 insertions(+), 13 deletions(-)
-
-commit 87db515bf0eea3f4704128776bbe074b01dddb51
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Aug 5 01:56:32 2014 -0600
-
-    remove config from ignore file
-
- .gitignore | 1 -
- 1 file changed, 1 deletion(-)
