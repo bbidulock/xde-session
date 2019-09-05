@@ -1,5 +1,18 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit e4c2705dc76a3410b0d6a5350124d62c0abaceb1
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Sep 5 13:27:23 2019 -0600
+
+    update release files
+
+ AUTHORS      |   2 +-
+ ChangeLog    | 297 +++++++++++++++++------------------
+ NEWS         | 466 ++++++-------------------------------------------------
+ README.md    |  20 +--
+ configure.ac |  12 +-
+ 5 files changed, 208 insertions(+), 589 deletions(-)
+
 commit 9f88a529a83c531b9bba194390913fb6f5df86f8
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Thu Sep 5 09:40:31 2019 -0600
@@ -6308,15 +6321,3 @@ Date:   Thu Aug 7 06:38:04 2014 -0600
  src/xde-xlock.c    | 3 ++-
  src/xde-xlogin.c   | 3 ++-
  3 files changed, 6 insertions(+), 3 deletions(-)
-
-commit 9b7f4eb85d4185d09b66cd9473f5ebe8dc96e487
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Aug 7 05:39:49 2014 -0600
-
-    handle xdmcp addresses a bit better
-
- data/xdm/xde/Xaccess |   8 +-
- src/xde-xchooser.c   | 205 ++++++++++++++++++++++++++++++++++++++++++++++-
- src/xde-xlock.c      | 202 +++++++++++++++++++++++++++++++++++++++++++++-
- src/xde-xlogin.c     | 202 +++++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 608 insertions(+), 9 deletions(-)

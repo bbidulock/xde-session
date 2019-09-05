@@ -20,7 +20,7 @@ git tag -n100 -l 1.10
 
 git shortlog -e -n -w80,6,8 1.9...1.10
 
-Brian Bidulock <bidulock@openss7.org> (12):
+Brian Bidulock <bidulock@openss7.org> (13):
       reformat TODO
       some better .desktop xsession files
       update for gettext 0.20.1
@@ -33,6 +33,7 @@ Brian Bidulock <bidulock@openss7.org> (12):
       better defaults now
       gcc caught an error
       handle gcc 9.1 string truncation stupidity
+      update release files
 
 
 Release xde-session-1.9 released 2018-10-06
