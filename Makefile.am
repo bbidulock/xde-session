@@ -65,7 +65,7 @@ README.html: README.md
 	$(AM_V_GEN)$(MARKDOWN) $< >$@
 
 README.txt: README.html
-	$(AM_V_GEN)$(LINKS) -dump -width 80 $< | sed -r -e 's,^[[:space:]]*,,' >$@
+	$(AM_V_GEN)$(LINKS) -dump -width 80 -nolist $< | sed -r -e 's,^[[:space:]]*,,' >$@
 
 RELEASE: RELEASE.md
 	$(AM_V_GEN)cat $< | fmt -sct -w80 -g72 >$@
@@ -74,5 +74,11 @@ RELEASE.html: RELEASE.md
 	$(AM_V_GEN)$(MARKDOWN) $< >$@
 
 RELEASE.txt: RELEASE.html
-	$(AM_V_GEN)$(LINKS) -dump -width 80 $< | sed -r -e 's,^[[:space:]]*,,' >$@
+	$(AM_V_GEN)$(LINKS) -dump -width 80 -nolist $< | sed -r -e 's,^[[:space:]]*,,' >$@
+
+NOTES.html: NOTES
+	$(AM_V_GEN)$(ASCIIDOC) -o - $< >$@
+
+TODO.html: TODO
+	$(AM_V_GEN)$(ASCIIDOC) -o - $< >$@
 
