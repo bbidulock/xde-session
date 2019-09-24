@@ -29,8 +29,8 @@ esac
 	--enable-maintainer-mode \
 	--enable-dependency-tracking \
 	CPPFLAGS="$CPPFLAGS" \
-	CFLAGS="$DEBUG_CFLAGS -Wall -Werror $CFLAGS" \
-	CXXFLAGS="$DEBUG_CXXFLAGS -Wall -Werror $CXXFLAGS" \
+	CFLAGS="$DEBUG_CFLAGS -Wall -Werror -Wno-deprecated-declarations $CFLAGS" \
+	CXXFLAGS="$DEBUG_CXXFLAGS -Wall -Werror -Wno-deprecated-declarations $CXXFLAGS" \
 	LDFLAGS="$LDFLAGS" \
 	DEBUG_CFLAGS="$DEBUG_CFLAGS" \
 	DEBUG_CXXFLAGS="$DEBUG_CXXFLAGS"
