@@ -370,4 +370,4 @@ cannot be determined by argv[0], I don't think.
 
 
 
-# vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:
+// vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn:
