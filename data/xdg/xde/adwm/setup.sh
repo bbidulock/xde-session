@@ -169,8 +169,12 @@ runscript() {
 	[ -x "$script" ] && $script $@
 }
 
-makelink "$priv" "keysrc"  "/usr/share/adwm/styles/Penguins/keysrc"
-makelink "$priv" "stylerc" "/usr/share/adwm/styles/Penguins/stylerc"
+theme=$(grep gtk-theme-name $HOME/.gtkrc-2.0.xde 2>/dev/null|sed 's,[^"]*",,;s,".*,,') || \
+theme='Penguins'
+
+makelink "$priv" "keysrc"   "/usr/share/adwm/styles/$theme/keysrc"
+makelink "$priv" "buttonrc" "/usr/share/adwm/styles/$theme/buttonrc"
+makelink "$priv" "stylerc"  "/usr/share/adwm/styles/$theme/stylerc"
 
 exit 0
 

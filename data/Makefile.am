@@ -97,6 +97,7 @@ nobase_dist_xdgconf_DATA += \
 
 nobase_dist_xdgconf_DATA += \
 	xdg/xde/adwm/adwmrc \
+	xdg/xde/adwm/buttonrc \
 	xdg/xde/adwm/keysrc \
 	xdg/xde/adwm/stylerc \
 	xdg/xde/adwm/version \
