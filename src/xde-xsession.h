@@ -174,6 +174,7 @@ typedef struct {
 	char *curs_theme;
 	Bool usexde;
 	Bool xinit;
+	Bool noask;
         Bool managed;
 	char *choice;
         char *current;
@@ -240,6 +241,7 @@ typedef struct {
 	char *curs_theme;
 	char *usexde;
 	char *xinit;
+	char *noask;
         char *managed;
 	char *choice;
         char *current;

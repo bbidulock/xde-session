@@ -91,6 +91,7 @@ Options options = {
 	.curs_theme = NULL,
 	.usexde = False,
 	.xinit = False,
+	.noask = False,
 	.managed = False,
 	.choice = NULL,
         .current = NULL,
@@ -154,6 +155,7 @@ Optargs defaults = {
 	.curs_theme = "",
 	.usexde = "false",
 	.xinit = "false",
+	.noask = "false",
 	.managed = "flase",
 	.choice = "choose",
         .current = "",
@@ -1180,6 +1182,8 @@ Command Options:\n\
 General Options:\n\
     -0, --xinit                         (%3$s)\n\
         perform additional .xinitrc initializations\n\
+    -N, --noask                         (%31$s)\n\
+        do not ask for a choice but proceed with default\n\
     -d, --display DISPLAY               (%4$s)\n\
         specify the X display to use\n\
     -r, --rcfile CONFIG                 (%28$s)\n\
@@ -1227,7 +1231,7 @@ General Options:\n\
         set the cursor theme to use\n\
     -X, --xde-theme                     (%24$s)\n\
         use the XDE desktop theme for the selection window\n\
-    -n, --dryrun                        (%25$s)\n\
+    -n, --dry-run                       (%25$s)\n\
         do not do anything: just print it\n\
     -D, --debug [LEVEL]                 (%26$d)\n\
         increment or set debug LEVEL\n\
@@ -1265,6 +1269,7 @@ General Options:\n\
                 , options.rcfile ? : (optargs.rcfile ? : defaults.rcfile)
                 , options.session
                 , options.current
+                , optargs.noask ? : defaults.noask
         );
         /* *INDENT-ON* */
 }
@@ -1291,6 +1296,7 @@ main(int argc, char *argv[])
 			{"manage",	no_argument,		NULL, '4'},
 
 			{"xinit",	no_argument,		NULL, '0'},
+			{"noask",	no_argument,		NULL, 'N'},
 			{"display",	required_argument,	NULL, 'd'},
                         {"rcfile",      required_argument,      NULL, 'r'},
 			{"desktop",	required_argument,	NULL, 'e'},
@@ -1301,6 +1307,8 @@ main(int argc, char *argv[])
 			{"exec",	required_argument,	NULL, 'x'},
 			{"autostart",	no_argument,		NULL, '6'},
 			{"noautostart",	no_argument,		NULL, 'a'},
+			{"autowait",	no_argument,		NULL, 'A'},
+			{"noautowait",	no_argument,		NULL, '9'},
 			{"wait",	no_argument,		NULL, 'w'},
 			{"nowait",	no_argument,		NULL, '7'},
 			{"pause",	optional_argument,	NULL, 'p'},
@@ -1318,7 +1326,8 @@ main(int argc, char *argv[])
 			{"cursors",	required_argument,	NULL, 'z'},
 			{"xde-theme",	no_argument,		NULL, 'X'},
 
-			{"dryrun",	no_argument,		NULL, 'n'},
+			{"foreground",	no_argument,		NULL, 'F'},
+			{"dry-run",	no_argument,		NULL, 'n'},
 			{"debug",	optional_argument,	NULL, 'D'},
 			{"verbose",	optional_argument,	NULL, 'v'},
 			{"help",	no_argument,		NULL, 'h'},
@@ -1379,6 +1388,9 @@ main(int argc, char *argv[])
 
 		case '0':	/* -0, --xinit */
 			options.xinit = True;
+			break;
+		case 'N':	/* -N, --noask */
+			options.noask = True;
 			break;
 		case 'd':	/* -d, --display DISPLAY */
 			free(options.display);
