@@ -14,7 +14,7 @@ B<xde-sm> is an X11 Session Manager.  It is a more beautiful replacement
 for the historical L<xsm(1)>.
 
 B<xde-sm> provides a master X11R6 Session Manager.  It is not intended
-to be too fancy.  There are six session management programs in the XDE
+to be too fancy.  There are eight session management programs in the XDE
 suite as follows:
 
 =over
@@ -26,24 +26,32 @@ Provide support for X11R6 Session Management.
 
 =item 2.
 
+L<xde-chooser(1)>:-
+
+=item 3.
+
 L<xde-smproxy(1)>:-
 Provide support for non-session aware applications in the spirit of
 L<smproxy(1)>.
 
-=item 2.
+=item 4.
 
 L<xde-wmproxy(1)>:-
 Provide support for window managers that do not support session
 management directly, but which provide some modicum of NetWM/EWMH or
 WinWM/WMH support.
 
-=item 4.
+=item 5.
 
 L<xde-autostart(1)>:-
 Provides support for applications that are automatically launched at
 startup (in accordance with XDG specifications).
 
-=item 5.
+=item 6.
+
+L<xde-startwm(1)>:-
+
+=item 7.
 
 L<xde-dockmgr(1)>:-
 Provides a proxy X11R6 Session Manager for managing L<wmaker(1)> dock
@@ -51,7 +59,7 @@ applications.
 This proxy manager is responsible for managing L<wmaker(1)> dock
 applications, which are typically not session-management-aware.
 
-=item 6.
+=item 8.
 
 L<xde-traymgr(1)>:-
 Provides a proxy X11R6 Session Manager for managing system tray icons.
@@ -64,7 +72,7 @@ Of these, only B<xde-sm> is necessary.  B<xde-sm> has options that will
 perform the functions of other components.  One of the reasons for
 integrating functionality into the primary session manager, is that it
 is the only session manager with which we can guarantee connectivity
-(vie the B<SESSION_MANAGER> environment variable set for the entire
+(via the B<SESSION_MANAGER> environment variable set for the entire
 session at startup).
 
 =head1 OPTIONS
@@ -216,10 +224,11 @@ can be used to perform a remote checkpoint of a session.
 
 When B<xde-sm> starts up, it first checks to see if the user previously
 saved any sessions.  If no saved session exist, B<xde-sm> starts up a
-set of default applications (as described above in L</CONFIGURATION>).
-If at least one session exists, a session menu is presented.  The
-B<--session> option forces the specified session or selection to be
-loaded, bypassing the session menu.
+set of default applications (as described above in L</CONFIGURATION>),
+or presents a menu of optional sessions to start.  If at least one
+saved session exists, a session menu is presented.  The B<--session>
+option forces the specified session or selection to be loaded, bypassing
+the session menu.
 
 =head2 SESSION MENU
 
@@ -329,7 +338,7 @@ applications as well as the regular "session aware" applications.
 
 =item I<Session Log>
 
-The session log window present useful information about the session.
+The session log window presents useful information about the session.
 For example, when a session is restarted, all of the restart commands
 will be display in the log window.
 
@@ -457,6 +466,45 @@ B<xde-sm> requires a remote execution protocol to restart applications
 on remote machines.  Currently, B<xde-sm> supports the L<ssh(1)>
 protocol.  To restart an application on remote machine X, machine X must
 have L<sshd(1)> installed.
+
+=head2 SYSTEMD INTEGRATION
+
+B<xde-sm> monitors the system bus for messages from L<systemd(1)>.  When
+actions are detected, the behavior is as follows;
+
+=over
+
+=item Suspend
+
+When the system is suspending, B<xde-sm> checkpoints the system before
+allowing the suspend to proceed.  This is in case the system does not
+resume from suspend.
+
+=item Hybernate
+
+When the system is hibernating, B<xde-sm> checkpoints the session state
+to permanent storage.  This is so that the desktop may be restored if
+the system fails to resume from hibernation.
+
+=item Hybrid Suspend/Hybernate
+
+When the system is performing a hybrid suspend/hibernate, B<xde-sm>
+checkpoints the session state to permanent storage.  This is so that the
+desktop may be restored if the system fails to resume from hibernation.
+
+=item Shutdown
+
+When the system is shutting down, B<xde-sm> checkpoints the session
+state to permanent storage.  This is so that the desktop may be restored
+when the system starts up again.
+
+=item Restart
+
+When the system is restarting, B<xde-sm> checkpoints the session state
+to permanent storage.  This is so that the desktop may be restored when
+the system restarts.
+
+=back
 
 =head1 CONFIGURATION
 

@@ -1,0 +1,15 @@
+=pod
+
+=head1 NAME
+
+ xde-sessions - start a managed session
+
+=head1 SYNOPSIS
+
+ xde-sessions [ COMMAND ] [ OPTIONS ] [ SESSION ]
+
+=head1 DESCRIPTION
+
+=cut
+
+# vim: set sw=4 tw=72 nocin spell spelllang=en_ca:

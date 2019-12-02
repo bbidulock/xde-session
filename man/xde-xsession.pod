@@ -31,7 +31,7 @@ assistance.
 =item 3.
 
 Integrated screen locker and user management (switch user) with
-L<systemd(8)> integration.
+L<systemd(1)> integration.
 
 =item 4.
 
@@ -46,12 +46,12 @@ Integrated XINPUT and XSETTINGS management.
 
 Full desktop theme support for a wide range of supported window managers
 and support for desktop themes for unsupported window managers
-conforming to EWMH/NetWM, GNOME1/WinWM, OSF/Motif or WindowMaker
+conforming to EWMH/NetWM, GNOME/WinWM, OSF/Motif or WindowMaker
 compliant window managers.
 
 =item 7.
 
-Window manager root menu and panel menu support.
+Window manager root menu and panel menu setup support.
 
 =item 8.
 
@@ -159,16 +159,6 @@ Launch the session as specified by I<SESSION>.  If there is an existing
 session, this command option (or default action) has the same effect as
 specifying B<--choose>.
 
-=item B<--xinit>
-
-Launch the session as specified by I<SESSION> after performing normal
-F<~/.xinitrc> or F<~/.xsession> intializations.  If there is an existing
-session, this command option will fail.
-
-This option may be used directly from, or in lieue of, an F<~/.xinitrc>
-or F<~/.xsession> file or can be called directly from
-F</etc/X11/xinit/xinitrc> or F</exc/X11/xdm/Xsession> scripts.
-
 =item B<--choose>
 
 Ask an existing session to provide a chooser dialog.  See also,
@@ -214,76 +204,446 @@ Print copying permissions to standard output and exit.
 
 =back
 
-=head2 GENERAL OPTIONS
+=head2 SESSION OPTIONS
 
-The following general options can be used with most of the command
+The following session options can be used with most of the command
 options listed above.  Almost all options can be specified in the
 configuration file or have defaults that can be obtained from the
 C<XSession> desktop entry file.
 
 =over
 
+=item B<--xinit>, B<-0>
+
+Launch the session as specified by I<SESSION> after performing normal
+F<~/.xinitrc> or F<~/.xsession> intializations.  If there is an existing
+session, this command option will fail.
+
+This option may be used directly from, or in lieue of, an F<~/.xinitrc>
+or F<~/.xsession> file or can be called directly from
+F</etc/X11/xinit/xinitrc> or F</exc/X11/xdm/Xsession> scripts.
+
+=item B<--noask, -N>
+
+=item B<--default>
+
+When a I<SESSION> argument is specified, also set the future default to
+I<SESSION>.
+
+=item B<--prompt>
+
+Prompt the user for the session regardless of the value of the
+I<SESSION> argument.
+
+=item B<--timeout>, B<-T> I<SECONDS>
+
+Specify the timeout in seconds that the program will wait for user
+input before proceeding with the default session.  Set to zero to defeat
+the timeout altogether.  The default is 15 seconds.  This option is
+useful when you have multiple monitors and the B<xde-xsession> chooser
+window winds up on a monitor that is not visible to the user.  (At least
+some X session will be invoked that will hopefully utilize all
+monitors.)
+
 =item B<--display>, B<-d> I<DISPLAY>
+
+Specify the display to use.  This is not normally necessary as the
+display is obtained from the B<DISPLAY> environment variable when this
+option is not specified.
+
+=item B<--rcfile>, B<-r> I<CONFIG>
 
 =item B<--desktop>, B<-e> I<DESKTOP>
 
-=item B<--session>, B<-s> I<SESSION>
+Specify the desktop environment (DE) to use, I<DESKTOP>, e.g. C<ADWM>,
+C<BLACKBOX>, C<ICEWM>, C<FLUXBOX>.  The default value when not specified
+is C<XDE>.  The desktop environment must be specified when
+B<--autostart> is specified.
+
+In L<lxsession(1)> compatibility mode, this is equivalent to the B<-e>
+option to L<lxsession(1)>.  This option may also be specified using the
+B<XDG_CURRENT_DESKTOP> or B<FBXDG_DE> environment variables described in
+L</ENVIRONMENT>, below.
+
+=item B<--session>, B<-s> I<PROFILE>
+
+Invokes L<lxsession(1)> compatibility mode, and specifies the session
+profile to use for emulating L<lxsession(1)>.  This is equivalent to the
+B<-s> option to L<lxsession(1)>.  This option may also be specified
+using the B<DESKTOP_SESSION> environment variable described in
+L</ENVIRONMENT>, below.
 
 =item B<--startwm>, B<-m> I<EXECUTE>
 
+Execute the command string, I<EXECUTE>, to start a window manager.
+Shell characters will be interpreted.  When specified, the window
+manager will be started before all other tasks.
+
+When not specified, this option will be determined from the
+F<session.conf> file in the F<SESSION> subdirectory under
+C<$XDG_CONFIG_HOME/xde-xsession>, where I<SESSION> is specified by the
+B<-s> option, or by the first non-option argument.
+
+In L<lxsession(1)> compatibility mode, this option will be determined
+from the L<lxsession(1)> F<desktop.conf> file in the I<SESSION>
+subdirectory under F<$XDG_CONFIG_HOME/lxsession>, where I<SESSION> is
+specified with the B<-s> option.
+
+=item B<--setup>, B<-I> I<COMMAND>
+
+Execute the command string, I<COMMAND>, to set up the window manager
+before it is invoked.  This option defaults to executing the shell setup
+program in F<$XDG_CONFIG_{HOME,DIRS}/\LDESKTOP\E/setup.sh> if such a
+shell file exists.  The option may be repeated to execute a numer of
+commands in the order specified.  These commands are executed in the
+foreground, one after the other, before the window manager or any other
+task is started.  The session will die if any of these commands exit
+with a non-zero exit status or terminate on a signal.
+
+This option can be repeated and the commands will be executed in the
+order that they were specified.
+
+=item B<--wmname> I<WMNAME>
+
+Specifies the name of the window manager executable.
+
+When setting up the session, unless B<--setup> option is specified, this
+name is used to look in configuration directories for an executable file
+named F<$XDG_CONFIG_HOME:$XDG_CONFIG_DIRS/$WMNAME/setup.sh>.  If one
+exists and is executable, it is run as the setup script.
+
+When starting the window manager, unless the B<--startwm> option is
+specified, this name is used to look in configuration directories for an
+executable file named F<$XDG_CONFIG_HOME:$XDG_CONFIG_DIRS/$WMNAME/start.sh>.
+If one exists and is executable, it is run instead of the window
+manager.  If the start shell script does not exists or is not
+executable, I<WMNAME>, is simply executed with no arguments.  If you
+wish to pass arguments to the program, use the B<--startwm> option.
+
 =item B<--file>, B<-f> I<FILE>
 
-=item B<--setup> I<COMMAND>
+Execute the commands contained in the file, I<FILE>, after executing the
+window manager, but before executing any other commands or autostarting
+tasks.  File is compatible with L<lxsession(1)> F<autostart> file.  Each
+line of the file contains a shell command to execute, optionally
+prefixed with a C<@> to indicate that the process should be restarted
+when it exits abnormally.  Tasks executed from this file will be started
+before any specified by the B<-x> option, or auto-started from XDG
+autostart desktop files.
+
+In L<lxsession(1)> compatibility mode, this option will default to the
+F<autostart> file in the I<SESSION> subdirectory under
+F<$XDG_CONFIG_HOME/lxsession>, where I<SESSION> is specified with the
+B<-s> option.
 
 =item B<--exec>, B<-x> I<COMMAND>
 
-=item B<--autostart>, B<--noautostart>, B<-a>
+Execute the command string, I<COMMAND>, to start applications after the
+window manager, and before autostart tasks are executed.  This option
+defaults to none.  The option may be repeated to execute a number of
+commands in the order specified.  It is possible to prefix the
+I<COMMAND> string with a single C<@> that will indicate that the task
+should be restarted when it exits abnormally.
 
-=item B<--wait>, B<-w>, B<--nowait>
+This option can be repeated and the commands will be executed in order.
+
+=item B<--noautostart>, B<-a> | B<--autostart>
+
+Specifies whether (or not) to autostart XDG applications in accordance
+with the L<Desktop Application Autostart Specification>.  (The inverted
+sense of the B<-a> flag is for compatibility with L<lxsession(1)>.)
+The default is to autostart XDG applications.
+
+=item B<--autowait>, B<--no-autowait>
+
+Normally, when B<xde-xsession> is executing an autostart entry, it will
+determine whether the application needs to wait for resources or a
+startup phase before launching the application.  This option requests
+that B<xde-xsession> wait (or not wait) for any resources or startup
+phase.  See L</Autostart>, below.
+
+Note that when B<--noautostart>, these options have no effect because
+applications are then not autostarted at all.
+
+=item B<--wait>, B<-w> | B<--nowait>
+
+Specifies whether (or not) to wait for a window manager to take control
+of the root window of the default screen of the display before starting
+further applications.  This option takes effect regardless of whether
+the B<--startwm> option has been specified.
 
 =item B<--pause>, B<-p> [I<PAUSE>]
 
-=item B<--splash>, B<-l> [I<IMAGE>]
+Specifies the interval of time, I<PAUSE>, in seconds to wait after the
+window manager initialization phase before starting the first
+applications.  If I<PAUSE> is not specified, it defaults to 2 seconds.
+The default when the option is not specified is not to pause at all.
+The pause can be explicitly disable by using a I<PAUSE> value of zero
+(0).
 
 =item B<--toolwait>, B<-W> [I<GUARD>][:I<DELAY>]
 
+When auto-starting tasks for which startup notification completion can be
+determined, serialize the startup in a similar fashion to
+L<xtoolwait(1)>, where the next autostart task is not launched until the
+previous task is complete, or the guard timeout period, I<GUARD>, in
+milliseconds, expires.  Where startup notification completion cannot be
+determined (such as for command executed from the B<--file> or B<--exec>
+options), the program will wait I<DELAY> milliseconds before starting the
+next task.  I<GUARD> defaults to 200 milliseconds.  I<DELAY> defaults to
+zero (0) milliseconds.  The default is to perform tool wait.  To disable
+tool wait, specify C<--toolwait 0:0>.
+
 =item B<--charset>, B<-c> I<CHARSET>
 
-=item B<--launguage>, B<-L> I<LANGUAGE>
+Specify the character set with which to output the XDG desktop file
+derived information.  Defaults to the character set (C<LC_CHARSET>) in
+use by the current locale.  Because the program is intended on running
+after login, use of this option is seldom necessary, and its use is
+deprecated.
 
-=item B<--vendor> I<VENDOR>
+=item B<--language>, B<-L> I<LANGUAGE>
 
-=item B<--splash>, B<-l> [I<IMAGE>]
+Specify the output language for XDG desktop file derived information.
+Defaults to the language (C<LC_MESSAGES>) of the current locale.
+Because the program is intended on running after login, use of this
+option is seldom necessary, and its use is deprecated.
+
+=item B<--vendor>, B<-O> I<VENDOR>
+
+Specifies the vendor name for branding and custom configuration.  The
+default when unspecified is C<unexicon>.  Use a null string to defeat
+branding.  Specifying or defaulting I<VENDOR> causes F</etc/xdg/$VENDOR>
+to be prefixed to C<$XDG_CONFIG_DIRS> and F</usr/share/$VENDOR> to be
+prefixed to C<$XDG_DATA_DIRS>.
+
+Also, if the C<$XDG_MENU_PREFIX> environment variable is not set up, it
+will be set to I<VENDOR> with a C<-> appended.
+
+(Note that, regardless of vendor setting, F</etc/xdg/xde> is always
+prefixed to C<$XDG_CONFIG_DIRS> and F</usr/share/xde> is always prefixed
+to C<$XDG_DATA_DIRS>.)
+
+=item B<--splash>, B<-l> [I<IMAGE>] | B<--nosplash>
+
+Specifies that a splash window is to be generated and optionally
+populated with an image from the file, I<IMAGE>, (that can be in XPM or
+PNG format).  The splash window will display the icons of the XDG
+compliant F<*.desktop> files, and restored session managed applications,
+as they are started.  The I<IMAGE> is for optional branding.
 
 =item B<--banner>, B<-b> I<BANNER>
 
+Specifies a custom splash login logo.  When unspecified, B<xde-xsession> 
+will use a branded logo that depends on environment variables.  This
+option is compatible with other tools (L<xde-chooser(1)> and
+L<xde-logout(1)>) and is an alternate way of specifying the I<IMAGE>
+argument to the B<--splash> option.
+
+=item B<--message>, B<-g> I<MESSAGE>
+
 =item B<--side>, B<-S> {B<left>|B<top>|B<right>|B<bottom>}
+
+Specifies the side of the window on which the logo will be placed.  This
+option is recognized for compatibility with L<lxsession-logout(1)>.
+B<xde-logout> always places the logo on the left and this option is
+ignored.
+
+=item B<--mkdirs>, B<--nomkdirs>
+
+Make (or not) missing user directories.  User directories that will be
+created are F<$HOME/Desktop>, F<$HOME/Downloads>, F<$HOME/Templates>,
+F<$HOME/Public>, F<$HOME/Documents>, F<$HOME/Documents/Music>,
+F<$HOME/Documents/Pictures>, F<$HOME/Documents/Videos>.
+
+(Note that, on Arch Linux, user directories are normally updated by the
+F<xdg-user-dirs-update> L<systemd(1)> service.)
 
 =item B<--icons>, B<-i> I<THEME>
 
+Specifies the icon theme to use.  Otherwise, the user's default GTK+
+icon theme will be used (i.e. from F<$HOME/.gtkrc-2.0>; but note the
+B<--xde-theme> option as well.)
+
 =item B<--theme>, B<-t> I<THEME>
+
+Specifes the GTK+ theme to use.  Otherwise, the user's default GTK+
+theme will be used (i.e. from F<$HOME/.gtkrc-2.0>); but note the
+B<--xde-theme> option as well.)
 
 =item B<--cursors>, B<-z> I<THEME>
 
+Specifies the cursor theme to use.  Otherwise, the user's default cursor
+theme will be used (i.e. from F<$HOME/.gtkrc-2.0>; but note the
+B<--xde-theme> option as well.)
+
 =item B<--xde-theme>, B<-X>
+
+Use the current XDE desktop theme for the splash window instead of the
+specified or default GTK+ theme.
+
+=back
+
+=head2 DEPRECATED OPTIONS
+
+=cut
+
+=item B<--noask, -N>
+
+=item B<--charset, -c> I<CHARSET>
+
+=item B<--language, -L> I<LANGUAGE>
+
+=back
+
+=head2 GENERAL OPTIONS
+
+=cut
 
 =item B<--foreground>, B<-F>
 
+The default is for the program to daemonize itself and continue
+monitoring auto-started tasks in the background.  This option causes the
+program to run in the foreground and prints debugging information to
+standard error.  Implies a debug level of 2.
+
 =item B<--dry-run>, B<-n>
 
-=item B<--debug>, B<-d> [I<LEVEL>]
+Do not do anything (do not execute or write out files), just print to
+standard error what would be done.  Implies a debug level of 2.  Useful
+with B<--foreground>.
+
+=item B<--debug>, B<-D> [I<LEVEL>]
+
+Increment or set the debug level to I<LEVEL>.  The default debugging
+level is 0 (meaning no debugging).  When set, the program will print
+debugging information to standard error during operation.
+
+(Note that because this option takes an optional argument, C<--> must be
+specified before any non-option argument.)
 
 =item B<--verbose>, B<-v> [I<LEVEL>]
+
+Increment or set the output verbosity level to I<LEVEL>.  THe default
+output verbosity level is 1.
+
+(Note that because this option takes an optional argument, C<--> must be
+specified before any non-option argument.)
 
 =back
 
 =head1 USAGE
+
+B<xde-xsession> replaces the functionality of a suite of XDE
+applications, as follows:
+
+=over
+
+=item L<xde-chooser(1)>
+
+B<xde-xsession> replaces L<xde-chooser(1)> by providing a similar choice
+of available XSession, but with consideration for save X11R6 Session
+Management sessions.
+
+=item L<xde-session(1)> and/or L<xdg-xsession(1)>
+
+=item L<xde-autostart(1)> and/or L<xdg-autostart(1)>
+
+=item L<xde-xlock(1)>
+
+=item L<xde-logout(1)>
+
+=back
 
 =head1 BEHAVIOR
 
 =head2 Session Management
 
 =head2 X11R6 Session Management
+
+=head2 Autostart
+
+Note that some key fields in the F<.desktop> file of an application can
+specify the autostart phase (e.g. C<AutostartPhase>,
+C<X-GNOME-Autostart-Phase>).  When the B<--no-autostart> option is not
+specified, the setting of these key fields may affect the default
+settings of the session options.  In particular:
+
+=over
+
+=item C<Initialization>
+
+When an autostart phase of C<Initialization> is specified,
+B<xde-xsession> will not wait for any desktop resource before running
+the application or command.
+
+=item C<WindowManager>
+
+When an autostart phase of C<WindowManager> is specified,
+B<xde-xsession> will not wait for any desktop resource before running
+the application or command.
+
+=item C<Panel>
+
+When an autostart phase of C<PaneL> is specified, B<xde-xsession> will
+wait for a window manager before continuing; however, it will not wait
+for a tray or pager.  It will only wait for a composite manager if one
+is expected.
+
+=item C<Desktop>
+
+When an autostart phase of C<Desktop> is specified, B<xde-xsession> will
+wait for a window manager before continuing.  It will only await other
+resources if they have been explicitly specified otherwise.
+
+=item C<Applications>
+
+When an autostart phase of C<Desktop> is specified, or when no autostart
+phase is specified, B<xde-xsession> will wait for a window manager
+before continuing; however, it will only await other resources if they
+have been explicitly specified otherwise.
+
+=back
+
+When the C<AutostartPhase> is not specified, B<xde-xsession> may use the
+category in the F<.desktop> file of an application to determine the
+autostart phase in whcih the application should be launched, as follows:
+
+=over
+
+=item C<DockApp>
+
+Applications in this category will be launched in the
+C<Applications> phase.  It might be a good idea to wait for a C<Dock> or
+a window manager supporting a dock before autostarting these
+applications.
+
+=item C<TrayIcon>
+
+Applications in this category will be launched in the
+C<Applications> phase, and will wait for a system tray to appear before
+launching.
+
+=item C<Audio>
+
+Applications in this category will wait for an audio server to appear.
+
+=item C<SystemTray>
+
+Applications in this category will not wait for a system tray: the
+application provides one.
+
+=item C<Pager>
+
+Applications in this category will not wait for a desktop pager: the
+application provides one.
+
+=item C<Panel>
+
+Applications in this category will not wait for a system tray nor a
+desktop pager: most panels provide these.
+
+=back
 
 =head2 Screen Locking (User Switch)
 
@@ -295,12 +655,12 @@ C<XSession> desktop entry file.
 
 =head2 AUTOSTART DESKTOP ENTRY FILE
 
-B<xde-session> reads the B<AutoStart> formatted F<.desktop> file in the
+B<xde-xsession> reads the B<AutoStart> formatted F<.desktop> file in the
 F<autostart> subdirectory of each use and system XDG configuration directory.
 Normal XDG precedence rules apply for F<.desktop> files in these
 directories.
 
-B<xde-session> recognizes the key-value pairs in the C<Desktop Entry>
+B<xde-xsession> recognizes the key-value pairs in the C<Desktop Entry>
 group in the file.  It also recognizes the following GNOME-defined keys:
 
 =over
@@ -400,14 +760,14 @@ F<xsessions> subdirectory of each user and system XDG data directory.
 Normal XDG precedence rules apply for F<.desktop> files in these
 directories.
 
-B<xde-session> recognizes the key-value pairs in the C<Desktop Entry>
+B<xde-xsession> recognizes the key-value pairs in the C<Desktop Entry>
 group in the file.  It also recognizes the GNOME-defined keys described
 under L</AUTOSTART DESKTOP ENTRY FILE>, above.
 
 It also recognizes key-value pairs in any C<XDE Session> group found in
 the file as described under L</CONFIGURATION FILE>, below.
 
-B<xde-session> also recognizes key-value pairs in any C<Window Manager>
+B<xde-xsession> also recognizes key-value pairs in any C<Window Manager>
 group found in the file roughly the same way as GNOME did as follows:
 
 =over
@@ -527,7 +887,7 @@ file.
 Specifies the language to use when looking up localized fields in
 desktop entry files.  Follows normal B<LC_ALL> environment variable
 formatting rules.  The character set is ignored.  Defaults to the
-currenr locale.  Can be overridden with the C<--language> option.  Not
+current locale.  Can be overridden with the B<--language> option.  Not
 useful in an XSession file.
 
 =item B<Vendor>=I<STRING>
@@ -541,7 +901,7 @@ C<--vendor> option.  Not useful in an XSession file.
 =item B<Splash>=I<BOOLEAN>
 
 Specifies whether or not a splash window is to be generated when
-performing initializations and starting applications.  The default when
+performing initialization and starting applications.  The default when
 unspecified is to display a splash window.  Will be overridden by the
 B<--splash> command line option.  Can be specified in an XSession file. 
 
@@ -665,7 +1025,7 @@ file.
 =item B<AutoStart>=I<BOOLEAN>
 
 Specifies whether or not to perform XDG autostart functions.  The
-default is C<true>.  Can be overridden with the B<--autostart> command
+default is C<true>.  Can be overridden with the B<--no-autostart> command
 line option.  Can be specified in an XSession file.
 
 =item B<StartupNotificationAssist>=I<BOOLEAN>
@@ -714,7 +1074,7 @@ specified in an XSession file.
 
 =head1 BUGS
 
-B<xde-session> is incomplete and actually does nothing at this point
+B<xde-xsession> is incomplete and actually does nothing at this point
 aside from parsing options and the configuration file.
 
 B<xde-xsession> had no known bugs at the time of release.
