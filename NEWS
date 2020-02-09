@@ -1,14 +1,5 @@
 xde-session -- history of user-visible changes.  2020-02-09
 
-Release xde-session-1.11.1 released 2020-02-09
-----------------------------------------------
-
-git shortlog -e -n -w80,6,8 1.11...HEAD
-
-Brian Bidulock <bidulock@openss7.org> (1):
-      update release files
-
-
 Release xde-session-1.11 released 2020-02-09
 --------------------------------------------
 
@@ -29,7 +20,7 @@ git tag -n100 -l 1.11
 
 git shortlog -e -n -w80,6,8 1.10...1.11
 
-Brian Bidulock <bidulock@openss7.org> (31):
+Brian Bidulock <bidulock@openss7.org> (33):
       post-release update
       add license to git repository
       gtk2 uses deprecated glib2 declarations
@@ -61,6 +52,8 @@ Brian Bidulock <bidulock@openss7.org> (31):
       update for -Wextra
       update for -Wextra
       update copyright headers
+      update release files
+      update release files again
 
 
 Release xde-session-1.10 released 2019-09-05

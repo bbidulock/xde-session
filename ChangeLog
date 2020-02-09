@@ -1,5 +1,17 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 3239675da9bef2923611242d87125ed29d58128a
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Feb 9 02:53:41 2020 -0700
+
+    update release files again
+
+ ChangeLog    | 23 ++++++++++++++---------
+ NEWS         |  9 +++++++++
+ README.md    | 18 +++++++++---------
+ configure.ac |  8 ++++----
+ 4 files changed, 36 insertions(+), 22 deletions(-)
+
 commit 05865e41f10e557edf01de4ee3cf84dd4b928212
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Sun Feb 9 02:51:24 2020 -0700
@@ -6246,25 +6258,3 @@ Date:   Tue Sep 9 12:40:27 2014 -0600
 
  data/xdg/xde/adwm/keysrc | 367 ++++++++++++++++++++++++++++++++-----------
  1 file changed, 273 insertions(+), 94 deletions(-)
-
-commit e8bc7a269c0366d49dd8199ef3c347c6f28169cf
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Tue Sep 2 05:59:28 2014 -0600
-
-    handle radix character issues
-
- src/test-login.c    |  2 ++
- src/test-root.c     |  2 ++
- src/xde-autostart.c |  2 ++
- src/xde-chooser.c   | 45 +++++++++++++++++++++++++++++----------------
- src/xde-input.c     |  2 ++
- src/xde-login.c     |  2 ++
- src/xde-logout.c    | 42 ++++++++++++++++++++++++++----------------
- src/xde-session.c   |  2 ++
- src/xde-smproxy.c   |  2 ++
- src/xde-wmproxy.c   |  2 ++
- src/xde-xchooser.c  | 42 ++++++++++++++++++++++++++----------------
- src/xde-xlock.c     | 42 ++++++++++++++++++++++++++----------------
- src/xde-xlogin.c    | 42 ++++++++++++++++++++++++++----------------
- src/xde-xsession.c  |  2 ++
- 14 files changed, 151 insertions(+), 80 deletions(-)
