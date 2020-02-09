@@ -1,14 +1,14 @@
-[xde-session -- release notes.  2019-09-05]: #
+[xde-session -- release notes.  2020-02-09]: #
 
-Pre-Release 1.10
+Pre-Release 1.11
 ================
 
 This is another pre-release of the xde-session package, which provide a
 full session manager for the XDE (X Desktop Environment).
 
-This release is only intended to update the build system, generate a
-better NEWS file, handle annotated tags, and converts the release
-archives to lzip compression.
+This release is only intended to update the build system and provide
+handling for extra warning flags under gcc 9.2.0.  Some improvements
+made to configuration files.
 
 As usual, included in the release is an autoconf tarball for building
 the package from source.  See the [NEWS](NEWS) and [TODO](TODO) file in
