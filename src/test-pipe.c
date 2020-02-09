@@ -114,6 +114,9 @@ main(int argc, char *argv[])
 	char *buf, *p;
 	int status;
 
+	(void) argc;
+	(void) argv;
+
 	buf = calloc(BUFSIZ + 1, sizeof(*buf));
 
 	if (!(pipe = popen("xde-greeter -D", "r"))) {
