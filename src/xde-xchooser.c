@@ -895,6 +895,9 @@ void
 on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
 			  GVariant *parameters, gpointer user_data)
 {
+	(void) proxy;
+	(void) sender_name;
+	(void) user_data;
 	DPRINTF("received manager proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
 
@@ -907,6 +910,9 @@ void
 on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
 			  GVariant *parameters, gpointer user_data)
 {
+	(void) proxy;
+	(void) sender_name;
+	(void) user_data;
 	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
 #ifdef DO_XLOCKING
@@ -927,6 +933,9 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 	GVariantIter iter;
 	GVariant *prop;
 
+	(void) proxy;
+	(void) invalidated_properties;
+	(void) user_data;
 	DPRINTF("received session proxy properties changed signal ( %s )\n",
 		g_variant_get_type_string(changed_properties));
 
@@ -1317,6 +1326,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
+	(void) event;
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
@@ -1390,6 +1400,8 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	XEvent *xev = (typeof(xev)) xevent;
 	Display *dpy = xev->xany.display;
 
+	(void) event;
+	(void) data;
 	DPRINT();
 	switch (xev->type) {
 	case ClientMessage:
@@ -1476,7 +1488,7 @@ GtkWidget *sess;
 #define XDE_ICON_SIZE GTK_ICON_SIZE_MENU
 
 void
-on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell,
+on_render_pixbuf(GtkCellLayout *sess, GtkCellRenderer *cell,
 		 GtkTreeModel *store, GtkTreeIter *iter, gpointer data)
 {
 	GValue iname_v = G_VALUE_INIT;
@@ -1485,6 +1497,8 @@ on_render_pixbuf(GtkCellLayout * sess, GtkCellRenderer *cell,
 	gboolean has;
 	GValue pixbuf_v = G_VALUE_INIT;
 
+	(void) sess;
+	(void) data;
 	gtk_tree_model_get_value(GTK_TREE_MODEL(store), iter, XSESS_COL_PIXBUF, &iname_v);
 	if ((iname = g_value_get_string(&iname_v))) {
 		name = g_strdup(iname);
@@ -1929,6 +1943,7 @@ xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, g
 	const gchar *bstr;
 	gint ret;
 
+	(void) data;
 	gtk_tree_model_get_value(GTK_TREE_MODEL(store), a, XSESS_COL_NAME, &a_v);
 	gtk_tree_model_get_value(GTK_TREE_MODEL(store), b, XSESS_COL_NAME, &b_v);
 	astr = g_value_get_string(&a_v);
@@ -1967,7 +1982,8 @@ CanConnect(struct sockaddr *sa)
 	if (options.debug) {
 		char *p, *e, *rawbuf;
 		unsigned char *b;
-		int i, len;
+		socklen_t i;
+		int len;
 
 		len = 2 * salen + 1;
 		rawbuf = calloc(len, sizeof(*rawbuf));
@@ -2102,6 +2118,7 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 	socklen_t len;
 	SocketScope scope;
 
+	(void) authname_a;
 	DPRINT();
 
 	scope = getaddrscope(sa);
@@ -2116,7 +2133,7 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 			DPRINTF("cannot use site/link local address without ifindex\n");
 			return False;
 		}
-		if (scope == options.clientScope && ifindex != options.clientIface) {
+		if (scope == options.clientScope && ifindex != (int) options.clientIface) {
 			DPRINTF("cannot use site/link local address with other ifindex\n");
 			return False;
 		}
@@ -2444,6 +2461,7 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 	struct sockaddr_storage addr;
 	int addrlen, sfd, ifindex;
 
+	(void) condition;
 	DPRINT();
 	sfd = g_io_channel_unix_get_fd(source);
 	addrlen = sizeof(addr);
@@ -2512,6 +2530,7 @@ PingHosts(gpointer data)
 {
 	HostAddr *ha;
 
+	(void) data;
 	DPRINT();
 	for (ha = hostAddrdb; ha; ha = ha->next) {
 		int sfd;
@@ -2787,6 +2806,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 	CARD8 rawaddr[20] = { 0, };
 	ARRAY8 hostAddress = { 0, rawaddr };
 
+	(void) name;
 	switch (sa->sa_family) {
 	case AF_INET:
 	{
@@ -2904,7 +2924,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 		XdmcpWriteARRAY8(&buffer, &options.clientAddress);
 		XdmcpWriteCARD16(&buffer, connectionType);
 		XdmcpWriteARRAY8(&buffer, &hostAddress);
-		if (write(fd, (char *) buffer.data, buffer.pointer)) ;
+		if (write(fd, (char *) buffer.data, buffer.pointer)) { }
 		close(fd);
 	}
 	if (!options.xdmAddress.data || options.debug) {
@@ -2937,6 +2957,8 @@ DoAccept(GtkButton *button, gpointer data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
+	(void) data;
 	GValue ctype = G_VALUE_INIT;
 	GValue ipaddr = G_VALUE_INIT;
 	GValue willing = G_VALUE_INIT;
@@ -3056,6 +3078,7 @@ DoCheckWilling(PingHost *host)
 void
 DoPing(GtkButton *button, gpointer data)
 {
+	(void) button;
 	if (pingTry == PING_TRIES) {
 		pingTry = 0;
 		PingHosts(data);
@@ -3066,6 +3089,10 @@ static void
 on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer
 		 user_data)
 {
+	(void) view;
+	(void) path;
+	(void) column;
+	(void) user_data;
 }
 #endif				/* DO_XCHOOSER */
 
@@ -3216,6 +3243,7 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 	const struct pam_message **m;
 	int i;
 
+	(void) appdata_ptr;
 	if (num_msg <= 0)
 		return PAM_SUCCESS;
 	if (!(rarray = calloc(num_msg, sizeof(*rarray))))
@@ -3313,6 +3341,7 @@ on_poweroff(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3331,6 +3360,7 @@ on_reboot(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3349,6 +3379,7 @@ on_suspend(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3367,6 +3398,7 @@ on_hibernate(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3385,6 +3417,7 @@ on_hybridsleep(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3403,6 +3436,7 @@ on_suspendhibernate(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3418,6 +3452,7 @@ on_suspendhibernate(GtkMenuItem *item, gpointer data)
 static void
 free_value(gpointer data, GClosure *unused)
 {
+	(void) unused;
 	if (data)
 		g_free(data);
 }
@@ -3545,6 +3580,7 @@ append_session_tasks(GtkMenu *menu)
 {
 	const char *env;
 
+	(void) menu;
 	if (!(env = getenv("SESSION_MANAGER")))
 		return;
 }
@@ -3686,6 +3722,7 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 
 	GVariant *result;
 
+	(void) item;
 	if (!sd_manager) {
 		EPRINTF("no manager DBUS proxy\n");
 		return;
@@ -3711,14 +3748,15 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 static void
 free_string(gpointer data, GClosure *unused)
 {
+	(void) unused;
 	free(data);
 }
 
 static int
 comparevts(const void *a, const void *b)
 {
-	const char * const *sa = a;
-	const char * const *sb = b;
+	const char *const *sa = a;
+	const char *const *sb = b;
 	unsigned int vta = 0;
 	unsigned int vtb = 0;
 
@@ -3822,7 +3860,7 @@ append_switch_users(GtkMenu *menu)
 
 				if (user)
 					label = g_strdup_printf("%u: %s", vtnr, user);
-				else if (uid != -1 && (pw = getpwuid(uid)))
+				else if (uid != -1U && (pw = getpwuid(uid)))
 					label = g_strdup_printf("%u: %s", vtnr, pw->pw_name);
 				else
 					label = g_strdup_printf("%u: %s", vtnr, "(unknown)");
@@ -4053,6 +4091,8 @@ at_pointer(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, gpointer user)
 {
 	GdkDisplay *disp = gdk_display_get_default();
 
+	(void) menu;
+	(void) user;
 	gdk_display_get_pointer(disp, NULL, x, y, NULL);
 	*push_in = TRUE;
 }
@@ -4064,6 +4104,7 @@ on_menu_popdown(GtkMenuShell *shell, gpointer data)
 {
 	GtkWidget *window = data;
 
+	(void) shell;
 	relax();
 	grabbed_window(window, NULL);
 }
@@ -4076,6 +4117,7 @@ on_action_clicked(GtkButton *button, gpointer user_data)
 	GtkMenu *menu;
 	GtkWidget *window;
 
+	(void) user_data;
 	if (!(menu = create_action_menu())) {
 		DPRINTF("No actions to perform\n");
 		return;
@@ -4095,6 +4137,7 @@ on_login_clicked(GtkButton *button, gpointer user_data)
 {
 	GtkWidget **buttons = (typeof(buttons)) user_data;
 
+	(void) button;
 	switch (state) {
 	case LoginStateInit:
 		if (!GTK_IS_WIDGET(user))
@@ -4126,6 +4169,7 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 
 	(void) buttons;
 
+	(void) button;
 	login_result = LoginResultLogout;
 	gtk_main_quit();
 #ifndef DO_XLOCKING
@@ -4138,6 +4182,7 @@ on_user_activate(GtkEntry *user, gpointer data)
 {
 	const gchar *username;
 
+	(void) data;
 	free(options.username);
 	options.username = NULL;
 	free(options.password);
@@ -4164,6 +4209,7 @@ on_pass_activate(GtkEntry *pass, gpointer data)
 {
 	const gchar *password;
 
+	(void) data;
 	free(options.password);
 	options.password = NULL;
 
@@ -4186,12 +4232,17 @@ on_pass_activate(GtkEntry *pass, gpointer data)
 static gboolean
 on_destroy(GtkWidget *widget, gpointer user_data)
 {
+	(void) widget;
+	(void) user_data;
 	return FALSE;
 }
 
 gboolean
 on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
+	(void) widget;
+	(void) event;
+	(void) data;
 	login_result = LoginResultLogout;
 	gtk_main_quit();
 	return TRUE;		/* propagate */
@@ -4206,6 +4257,7 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	cairo_t *cr;
 	GdkEventExpose *ev;
 
+	(void) widget;
 	w = gtk_widget_get_window(xscr->wind);
 	r = gdk_screen_get_root_window(xscr->scrn);
 	ev = (typeof(ev)) event;
@@ -4235,6 +4287,8 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 gboolean
 on_grab_broken(GtkWidget *window, GdkEvent *event, gpointer data)
 {
+	(void) window;
+	(void) data;
 	GdkEventGrabBroken *ev = (typeof(ev)) event;
 	DPRINTF("Grab broken!\n");
 	DPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
@@ -4259,6 +4313,7 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	GdkWindow *win = gtk_widget_get_window(window);
 	GdkEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
 
+	(void) user_data;
 	gdk_window_set_override_redirect(win, TRUE);
 	gdk_window_set_focus_on_map(win, TRUE);
 	gdk_window_set_accept_focus(win, TRUE);
@@ -4308,7 +4363,7 @@ ungrabbed_window(GtkWidget *window)
 /** @brief render a pixbuf into a pixmap for a monitor
   */
 void
-render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, XdeMonitor *xmon)
+render_pixbuf_for_mon(cairo_t *cr, GdkPixbuf *pixbuf, double wp, double hp, XdeMonitor *xmon)
 {
 	double wm = xmon->geom.width;
 	double hm = xmon->geom.height;
@@ -4995,6 +5050,7 @@ on_combo_popdown(GtkComboBox *combo, gpointer data)
 {
 	GtkWidget *window;
 
+	(void) data;
 	window = gtk_widget_get_toplevel(GTK_WIDGET(combo));
 
 	relax();
@@ -6232,6 +6288,10 @@ setup_pam(pam_handle_t *pamh)
 static int
 pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp, void *data)
 {
+	(void) len;
+	(void) msg;
+	(void) resp;
+	(void) data;
 	return PAM_SUCCESS;	/* we don't do auth */
 }
 
@@ -6246,7 +6306,7 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 	struct pam_conv conv = { pam_conv_cb, NULL };
 	int result;
 	const char *env;
-	char * const *var;
+	char *const *var;
 	static char *vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
 		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
 	};
@@ -6685,6 +6745,10 @@ add_xauth_data(pam_handle_t *pamh)
 int
 xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **resp, void *appdata_ptr)
 {
+	(void) num_msg;
+	(void) msg;
+	(void) resp;
+	(void) appdata_ptr;
 	return PAM_SUCCESS;	/* we don't do auth here */
 }
 
@@ -6702,6 +6766,8 @@ run_login(int argc, char *argv[])
 void
 run_chooser(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 #endif				/* DO_XCHOOSER */
 
@@ -6709,6 +6775,8 @@ run_chooser(int argc, char *argv[])
 void
 run_greeter(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	/* When the greeter is successful, it writes the authenticated user name to
 	   standard output and exits. */
 	fprintf(stdout, "%s\n", options.username);
@@ -7249,6 +7317,8 @@ do_unlock(int argc, char *argv[])
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -7293,6 +7363,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -7315,6 +7387,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -7353,6 +7426,7 @@ show_bool(Bool val)
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 /* *INDENT-OFF* */
@@ -7631,6 +7705,8 @@ get_resources(int argc, char *argv[])
 	Window root;
 	Atom atom;
 
+	(void) argc;
+	(void) argv;
 	DPRINT();
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
@@ -8166,6 +8242,8 @@ set_default_xdgdirs(int argc, char *argv[])
 	char *conf, *data;
 	int len;
 
+	(void) argc;
+	(void) argv;
 	here = strdup(argv[0]);
 	if (here[0] != '/') {
 		char *cwd = calloc(PATH_MAX + 1, sizeof(*cwd));
@@ -8228,7 +8306,8 @@ set_default_banner(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	free(defaults.banner);
 	defaults.banner = NULL;
@@ -8272,7 +8351,8 @@ set_default_splash(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	free(defaults.backdrop);
 	defaults.backdrop = NULL;
@@ -8613,7 +8693,8 @@ get_default_banner(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	if (options.banner)
 		return;
@@ -8665,7 +8746,8 @@ get_default_splash(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	if (options.backdrop)
 		return;
@@ -9049,6 +9131,8 @@ get_default_desktops(void)
 void
 get_defaults(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	get_default_display();
 	get_default_x11();
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
