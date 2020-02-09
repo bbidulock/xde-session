@@ -640,6 +640,7 @@ intern_atoms()
 static int
 handler(Display *display, XErrorEvent *xev)
 {
+	(void) display;
 	if (options.debug) {
 		char msg[80], req[80], num[80], def[80];
 
@@ -1187,6 +1188,8 @@ handle_wmchange()
 static void
 pc_handle_WINDOWMAKER_NOTICEBOARD(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -1194,6 +1197,8 @@ pc_handle_WINDOWMAKER_NOTICEBOARD(XPropertyEvent *e, Client *c)
 static void
 pc_handle_MOTIF_WM_INFO(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -1325,7 +1330,7 @@ struct {
 };
 
 static void
-add_field(Sequence * seq, char **p, char *label, FieldOffset offset)
+add_field(Sequence *seq, char **p, char *label, FieldOffset offset)
 {
 	char *value;
 
@@ -1336,7 +1341,7 @@ add_field(Sequence * seq, char **p, char *label, FieldOffset offset)
 }
 
 static void
-add_fields(Sequence * seq, char *msg)
+add_fields(Sequence *seq, char *msg)
 {
 	int i;
 
@@ -1350,7 +1355,7 @@ add_fields(Sequence * seq, char *msg)
   * We do not really use this in this program...
   */
 void
-send_new(Sequence * seq)
+send_new(Sequence *seq)
 {
 	char *msg, *p;
 
@@ -1371,7 +1376,7 @@ send_new(Sequence * seq)
   * before closing or waiting for the closure of the sequence.
   */
 void
-send_change(Sequence * seq)
+send_change(Sequence *seq)
 {
 	char *msg, *p;
 
@@ -1391,7 +1396,7 @@ send_change(Sequence * seq)
   * sequence that is awaiting the mapping of a window.
   */
 static void
-send_remove(Sequence * seq)
+send_remove(Sequence *seq)
 {
 	char *msg, *p;
 
@@ -1418,7 +1423,8 @@ get_proc_file(pid_t pid, char *name, size_t *size)
 	struct stat st;
 	char *file, *buf;
 	FILE *f;
-	size_t read, total;
+	size_t read;
+	ssize_t total;
 
 	file = calloc(64, sizeof(*file));
 	snprintf(file, 64, "/proc/%d/%s", pid, name);
@@ -1563,7 +1569,7 @@ get_proc_argv0(pid_t pid)
   * @return Bool - True if the client matches the sequence, False otherwise
   */
 Bool
-test_client(Client *c, Sequence * seq)
+test_client(Client *c, Sequence *seq)
 {
 	pid_t pid;
 	char *str;
@@ -1682,7 +1688,7 @@ setup_client(Client *c)
 	}
 }
 
-static Sequence *ref_sequence(Sequence * seq);
+static Sequence *ref_sequence(Sequence *seq);
 
 /** @brief find the startup sequence for a client
   * @param c - client to lookup startup sequence for
@@ -1959,7 +1965,7 @@ add_client(Window win)
 	return (c);
 }
 
-static Sequence *unref_sequence(Sequence * seq);
+static Sequence *unref_sequence(Sequence *seq);
 
 static void
 remove_client(Client *c)
@@ -2047,7 +2053,7 @@ del_client(Client *r)
   * Update the client associated with a startup notification sequence.
   */
 static void
-update_startup_client(Sequence * seq)
+update_startup_client(Sequence *seq)
 {
 	Client *c;
 
@@ -2064,7 +2070,7 @@ update_startup_client(Sequence * seq)
 }
 
 static void
-convert_sequence_fields(Sequence * seq)
+convert_sequence_fields(Sequence *seq)
 {
 	if (seq->f.screen)
 		seq->n.screen = atoi(seq->f.screen);
@@ -2083,9 +2089,9 @@ convert_sequence_fields(Sequence * seq)
 }
 
 static void
-free_sequence_fields(Sequence * seq)
+free_sequence_fields(Sequence *seq)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < sizeof(seq->f) / sizeof(char *); i++) {
 		free(seq->fields[i]);
@@ -2094,7 +2100,7 @@ free_sequence_fields(Sequence * seq)
 }
 
 static void
-show_sequence(Sequence * seq)
+show_sequence(Sequence *seq)
 {
 	char **label, **field;
 
@@ -2109,9 +2115,9 @@ show_sequence(Sequence * seq)
 }
 
 static void
-copy_sequence_fields(Sequence * old, Sequence * new)
+copy_sequence_fields(Sequence *old, Sequence *new)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < sizeof(old->f) / sizeof(char *); i++) {
 		if (new->fields[i]) {
@@ -2136,8 +2142,9 @@ find_seq_by_id(char *id)
 }
 
 static void
-close_sequence(Sequence * seq)
+close_sequence(Sequence *seq)
 {
+	(void) seq;
 #ifdef HAVE_GLIB_EVENT_LOOP
 	if (seq->timer) {
 		DPRINTF("removing timer\n");
@@ -2162,7 +2169,7 @@ close_sequence(Sequence * seq)
 }
 
 static Sequence *
-unref_sequence(Sequence * seq)
+unref_sequence(Sequence *seq)
 {
 	if (seq) {
 		if (--seq->refs <= 0) {
@@ -2187,7 +2194,7 @@ unref_sequence(Sequence * seq)
 }
 
 static Sequence *
-ref_sequence(Sequence * seq)
+ref_sequence(Sequence *seq)
 {
 	if (seq)
 		++seq->refs;
@@ -2195,7 +2202,7 @@ ref_sequence(Sequence * seq)
 }
 
 static Sequence *
-remove_sequence(Sequence * del)
+remove_sequence(Sequence *del)
 {
 	Sequence *seq, **prev;
 
@@ -2242,7 +2249,7 @@ sequence_timeout_callback(gpointer data)
   * sequence will always be removed at some point.
   */
 static void
-add_sequence(Sequence * seq)
+add_sequence(Sequence *seq)
 {
 	seq->refs = 1;
 	seq->client = NULL;
@@ -2257,7 +2264,7 @@ add_sequence(Sequence * seq)
 }
 
 static void
-process_startup_msg(Message * m)
+process_startup_msg(Message *m)
 {
 	Sequence cmd = { NULL, }, *seq;
 	char *p = m->data, *k, *v, *q, *copy, *b;
@@ -2462,12 +2469,13 @@ process_startup_msg(Message * m)
 }
 
 static void
-cm_handle_NET_STARTUP_INFO_BEGIN(XClientMessageEvent * e, Client *c)
+cm_handle_NET_STARTUP_INFO_BEGIN(XClientMessageEvent *e, Client *c)
 {
 	Window from;
 	Message *m = NULL;
 	int len;
 
+	(void) c;
 	DPRINT();
 	if (!e || e->type != ClientMessage)
 		return;
@@ -2491,12 +2499,13 @@ cm_handle_NET_STARTUP_INFO_BEGIN(XClientMessageEvent * e, Client *c)
 }
 
 static void
-cm_handle_NET_STARTUP_INFO(XClientMessageEvent * e, Client *c)
+cm_handle_NET_STARTUP_INFO(XClientMessageEvent *e, Client *c)
 {
 	Window from;
 	Message *m = NULL;
 	int len;
 
+	(void) c;
 	DPRINT();
 	if (!e || e->type != ClientMessage)
 		return;
@@ -2648,7 +2657,7 @@ pc_handle_NET_ACTIVE_WINDOW(XPropertyEvent *e, Client *c)
 }
 
 static void
-cm_handle_NET_ACTIVE_WINDOW(XClientMessageEvent * e, Client *c)
+cm_handle_NET_ACTIVE_WINDOW(XClientMessageEvent *e, Client *c)
 {
 	DPRINT();
 	if (!c)
@@ -2664,6 +2673,7 @@ cm_handle_NET_ACTIVE_WINDOW(XClientMessageEvent * e, Client *c)
 static void
 pc_handle_NET_CLIENT_LIST(XPropertyEvent *e, Client *c)
 {
+	(void) c;
 	DPRINT();
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
@@ -2673,6 +2683,7 @@ pc_handle_NET_CLIENT_LIST(XPropertyEvent *e, Client *c)
 static void
 pc_handle_NET_CLIENT_LIST_STACKING(XPropertyEvent *e, Client *c)
 {
+	(void) c;
 	DPRINT();
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
@@ -2680,7 +2691,7 @@ pc_handle_NET_CLIENT_LIST_STACKING(XPropertyEvent *e, Client *c)
 }
 
 static void
-cm_handle_NET_CLOSE_WINDOW(XClientMessageEvent * e, Client *c)
+cm_handle_NET_CLOSE_WINDOW(XClientMessageEvent *e, Client *c)
 {
 	Time time;
 
@@ -2698,7 +2709,7 @@ cm_handle_NET_CLOSE_WINDOW(XClientMessageEvent * e, Client *c)
 }
 
 static void
-cm_handle_NET_MOVERESIZE_WINDOW(XClientMessageEvent * e, Client *c)
+cm_handle_NET_MOVERESIZE_WINDOW(XClientMessageEvent *e, Client *c)
 {
 	DPRINT();
 	if (!c || c->managed)
@@ -2708,7 +2719,7 @@ cm_handle_NET_MOVERESIZE_WINDOW(XClientMessageEvent * e, Client *c)
 }
 
 static void
-cm_handle_NET_REQUEST_FRAME_EXTENTS(XClientMessageEvent * e, Client *c)
+cm_handle_NET_REQUEST_FRAME_EXTENTS(XClientMessageEvent *e, Client *c)
 {
 	DPRINT();
 	/* This message, unlike others, is sent before a window is initially
@@ -2719,7 +2730,7 @@ cm_handle_NET_REQUEST_FRAME_EXTENTS(XClientMessageEvent * e, Client *c)
 }
 
 static void
-cm_handle_NET_RESTACK_WINDOW(XClientMessageEvent * e, Client *c)
+cm_handle_NET_RESTACK_WINDOW(XClientMessageEvent *e, Client *c)
 {
 	DPRINT();
 	if (!c || c->managed)
@@ -2747,6 +2758,8 @@ pc_handle_NET_STARTUP_ID(XPropertyEvent *e, Client *c)
 static void
 pc_handle_NET_SUPPORTED(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -2754,6 +2767,8 @@ pc_handle_NET_SUPPORTED(XPropertyEvent *e, Client *c)
 static void
 pc_handle_NET_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -2761,41 +2776,53 @@ pc_handle_NET_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 static void
 pc_handle_NET_WM_ALLOWED_ACTIONS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
-cm_handle_NET_WM_ALLOWED_ACTIONS(XClientMessageEvent * e, Client *c)
+cm_handle_NET_WM_ALLOWED_ACTIONS(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_NET_WM_FULLSCREEN_MONITORS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
-cm_handle_NET_WM_FULLSCREEN_MONITORS(XClientMessageEvent * e, Client *c)
+cm_handle_NET_WM_FULLSCREEN_MONITORS(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_NET_WM_ICON_GEOMETRY(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_NET_WM_ICON_NAME(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
-cm_handle_NET_WM_MOVERESIZE(XClientMessageEvent * e, Client *c)
+cm_handle_NET_WM_MOVERESIZE(XClientMessageEvent *e, Client *c)
 {
 	DPRINT();
 	if (!c)
@@ -2807,12 +2834,16 @@ cm_handle_NET_WM_MOVERESIZE(XClientMessageEvent * e, Client *c)
 static void
 pc_handle_NET_WM_NAME(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_NET_WM_PID(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -2873,7 +2904,7 @@ pc_handle_NET_WM_STATE(XPropertyEvent *e, Client *c)
   * window is mapped, so mark window managed if it is not already.
   */
 static void
-cm_handle_NET_WM_STATE(XClientMessageEvent * e, Client *c)
+cm_handle_NET_WM_STATE(XClientMessageEvent *e, Client *c)
 {
 	DPRINT();
 	if (!c || c->managed)
@@ -2969,12 +3000,15 @@ pc_handle_NET_WM_VISIBLE_NAME(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WIN_APP_STATE(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_CLIENT_LIST(XPropertyEvent *e, Client *c)
 {
+	(void) c;
 	DPRINT();
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
@@ -2984,36 +3018,48 @@ pc_handle_WIN_CLIENT_LIST(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WIN_CLIENT_MOVING(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_FOCUS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_HINTS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_LAYER(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
-cm_handle_WIN_LAYER(XClientMessageEvent * e, Client *c)
+cm_handle_WIN_LAYER(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_PROTOCOLS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -3030,14 +3076,18 @@ pc_handle_WIN_STATE(XPropertyEvent *e, Client *c)
 }
 
 static void
-cm_handle_WIN_STATE(XClientMessageEvent * e, Client *c)
+cm_handle_WIN_STATE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -3045,12 +3095,16 @@ pc_handle_WIN_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WIN_WORKSPACE(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
-cm_handle_WIN_WORKSPACE(XClientMessageEvent * e, Client *c)
+cm_handle_WIN_WORKSPACE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -3094,8 +3148,10 @@ pc_handle_WM_CLASS(XPropertyEvent *e, Client *c)
 }
 
 static void
-cm_handle_WM_CHANGE_STATE(XClientMessageEvent * e, Client *c)
+cm_handle_WM_CHANGE_STATE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -3232,8 +3288,10 @@ pc_handle_WM_PROTOCOLS(XPropertyEvent *e, Client *c)
 }
 
 static void
-cm_handle_WM_PROTOCOLS(XClientMessageEvent * e, Client *c)
+cm_handle_WM_PROTOCOLS(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -3246,8 +3304,10 @@ pc_handle_WM_SIZE_HINTS(XPropertyEvent *e, Client *c)
 }
 
 static void
-cm_handle_KDE_WM_CHANGE_STATE(XClientMessageEvent * e, Client *c)
+cm_handle_KDE_WM_CHANGE_STATE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -3314,8 +3374,10 @@ pc_handle_WM_STATE(XPropertyEvent *e, Client *c)
 }
 
 static void
-cm_handle_WM_STATE(XClientMessageEvent * e, Client *c)
+cm_handle_WM_STATE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -3424,7 +3486,7 @@ enum {
  */
 
 static void
-cm_handle_XEMBED(XClientMessageEvent * e, Client *c)
+cm_handle_XEMBED(XClientMessageEvent *e, Client *c)
 {
 	DPRINT();
 	if (!c || !e || e->type != ClientMessage)
@@ -3490,12 +3552,13 @@ cm_handle_XEMBED(XClientMessageEvent * e, Client *c)
   * respectively.
   */
 static void
-cm_handle_MANAGER(XClientMessageEvent * e, Client *c)
+cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 {
 	Window owner;
 	Atom selection;
 	Time time;
 
+	(void) c;
 	DPRINT();
 	if (!e || e->format != 32)
 		return;
@@ -3528,6 +3591,8 @@ cm_handle_MANAGER(XClientMessageEvent * e, Client *c)
 static void
 pc_handle_TIMESTAMP_PROP(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -3543,7 +3608,7 @@ pc_handle_atom(XPropertyEvent *e, Client *c)
 }
 
 static void
-cm_handle_atom(XClientMessageEvent * e, Client *c)
+cm_handle_atom(XClientMessageEvent *e, Client *c)
 {
 	cm_handler_t handle = NULL;
 
@@ -3774,6 +3839,7 @@ static void proxySaveYourselfPhase2CB(SmcConn smcConn, SmPointer data);
 static void
 proxyRequestSaveYourselfPhase2(SmcConn smcConn, SmPointer data)
 {
+	(void) data;
 	if (!SmcRequestSaveYourselfPhase2(smcConn, proxySaveYourselfPhase2CB, NULL)) {
 		SmcSaveYourselfDone(smcConn, False);
 		sent_save_done = True;
@@ -3811,6 +3877,7 @@ sendSaveYourself(Client *c)
 static void
 proxySaveYourselfPhase2CB(SmcConn smcConn, SmPointer data)
 {
+	(void) data;
 	SmcSaveYourselfDone(smcConn, True);
 }
 
@@ -3868,6 +3935,11 @@ proxySaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown
 	Client *c;
 	int i;
 
+	(void) data;
+	(void) saveType;
+	(void) shutdown;
+	(void) interactStyle;
+	(void) fast;
 	saving_clients = 0;
 
 	for (i = 0, s = screens; i < nscr; i++, s++) {
@@ -3907,6 +3979,7 @@ proxySaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown
 static void
 proxyDieCB(SmcConn smcConn, SmPointer data)
 {
+	(void) data;
 	SmcCloseConnection(smcConn, 0, NULL);
 	exit(EXIT_SUCCESS);
 }
@@ -3914,6 +3987,8 @@ proxyDieCB(SmcConn smcConn, SmPointer data)
 static void
 proxySaveCompleteCB(SmcConn smcConn, SmPointer data)
 {
+	(void) smcConn;
+	(void) data;
 	/* doesn't really do anything */
 }
 
@@ -3930,6 +4005,7 @@ proxySaveCompleteCB(SmcConn smcConn, SmPointer data)
 static void
 proxyShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 {
+	(void) data;
 	if (sent_save_done)
 		return;
 	SmcSaveYourselfDone(smcConn, False);
@@ -3947,6 +4023,7 @@ proxyShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 void
 clientSetProperties(Client *c)
 {
+	(void) c;
 }
 
 /** @brief set properties for the proxy
@@ -3991,6 +4068,7 @@ proxySetProperties(SmcConn smcConn, SmPointer data)
 		[10] = &prop[10],
 	};
 
+	(void) data;
 	/* CloneCommand: This is like the RestartCommand except it restarts a
 	   copy of the application.  The only difference is that the
 	   application doesn't supply its client id at register time.  On POSIX 
@@ -4010,7 +4088,7 @@ proxySetProperties(SmcConn smcConn, SmPointer data)
 	   current directory that needs to be set up prior to starting the
 	   program and should be of type ARRAY8. */
 	propval[1].value = calloc(PATH_MAX + 1, sizeof(*propval[1].value));
-	if (getcwd(propval[1].value, PATH_MAX)) ;
+	if (getcwd(propval[1].value, PATH_MAX)) { }
 	propval[1].length = strlen(propval[1].value);
 
 	/* DiscardCommand: The discard command contains a command that when
@@ -4289,6 +4367,8 @@ main_loop(void)
 static void
 start_proxy(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	init_display();
 	init_smclient();
 	main_loop();
@@ -4426,6 +4506,8 @@ run_quit(int argc, char *argv[])
 	int s, selcount = 0;
 	XEvent ev;
 
+	(void) argc;
+	(void) argv;
 	init_display();
 
 	for (s = 0; s < nscr; s++) {
@@ -4448,6 +4530,8 @@ run_quit(int argc, char *argv[])
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -4492,6 +4576,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -4514,6 +4600,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -4528,6 +4615,7 @@ Usage:\n\
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
         /* *INDENT-OFF* */
