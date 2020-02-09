@@ -1674,8 +1674,10 @@ enum {
 };
 
 UniqueResponse
-message_received(UniqueApp * app, gint cmd_id, UniqueMessageData * umd, guint time_)
+message_received(UniqueApp *app, gint cmd_id, UniqueMessageData *umd, guint time_)
 {
+	(void) app;
+	(void) time_;
 	switch (cmd_id) {
 	case COMMAND_SESSION:
 		break;
@@ -2304,6 +2306,7 @@ intern_atoms(void)
 static int
 handler(Display *display, XErrorEvent *xev)
 {
+	(void) display;
 	if (options.debug) {
 		char msg[80], req[80], num[80], def[80];
 
@@ -2817,6 +2820,8 @@ handle_wmchange(void)
 static void
 pc_handle_WINDOWMAKER_NOTICEBOARD(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -2824,6 +2829,8 @@ pc_handle_WINDOWMAKER_NOTICEBOARD(XPropertyEvent *e, Client *c)
 static void
 pc_handle_MOTIF_WM_INFO(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -3049,7 +3056,8 @@ get_proc_file(pid_t pid, char *name, size_t *size)
 	struct stat st;
 	char *file, *buf;
 	FILE *f;
-	size_t read, total;
+	size_t read;
+	ssize_t total;
 
 	file = calloc(64, sizeof(*file));
 	snprintf(file, 64, "/proc/%d/%s", pid, name);
@@ -3711,7 +3719,7 @@ convert_sequence_fields(Sequence *seq)
 static void
 free_sequence_fields(Sequence *seq)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < sizeof(seq->f) / sizeof(char *); i++) {
 		free(seq->fields[i]);
@@ -3737,7 +3745,7 @@ show_sequence(Sequence *seq)
 static void
 copy_sequence_fields(Sequence *old, Sequence *new)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < sizeof(old->f) / sizeof(char *); i++) {
 		if (new->fields[i]) {
@@ -3764,6 +3772,7 @@ find_seq_by_id(char *id)
 static void
 close_sequence(Sequence *seq)
 {
+	(void) seq;
 #ifdef HAVE_GLIB_EVENT_LOOP
 	if (seq->timer) {
 		DPRINTF("removing timer\n");
@@ -4093,6 +4102,7 @@ cm_handle_NET_STARTUP_INFO_BEGIN(XClientMessageEvent *e, Client *c)
 	Message *m = NULL;
 	int len;
 
+	(void) c;
 	DPRINT();
 	if (!e || e->type != ClientMessage)
 		return;
@@ -4122,6 +4132,7 @@ cm_handle_NET_STARTUP_INFO(XClientMessageEvent *e, Client *c)
 	Message *m = NULL;
 	int len;
 
+	(void) c;
 	DPRINT();
 	if (!e || e->type != ClientMessage)
 		return;
@@ -4286,6 +4297,7 @@ cm_handle_NET_ACTIVE_WINDOW(XClientMessageEvent *e, Client *c)
 static void
 pc_handle_NET_CLIENT_LIST(XPropertyEvent *e, Client *c)
 {
+	(void) c;
 	DPRINT();
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
@@ -4295,6 +4307,7 @@ pc_handle_NET_CLIENT_LIST(XPropertyEvent *e, Client *c)
 static void
 pc_handle_NET_CLIENT_LIST_STACKING(XPropertyEvent *e, Client *c)
 {
+	(void) c;
 	DPRINT();
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
@@ -4369,6 +4382,8 @@ pc_handle_NET_STARTUP_ID(XPropertyEvent *e, Client *c)
 static void
 pc_handle_NET_SUPPORTED(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -4376,6 +4391,8 @@ pc_handle_NET_SUPPORTED(XPropertyEvent *e, Client *c)
 static void
 pc_handle_NET_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -4383,36 +4400,48 @@ pc_handle_NET_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 static void
 pc_handle_NET_WM_ALLOWED_ACTIONS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 cm_handle_NET_WM_ALLOWED_ACTIONS(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_NET_WM_FULLSCREEN_MONITORS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 cm_handle_NET_WM_FULLSCREEN_MONITORS(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_NET_WM_ICON_GEOMETRY(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_NET_WM_ICON_NAME(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -4429,12 +4458,16 @@ cm_handle_NET_WM_MOVERESIZE(XClientMessageEvent *e, Client *c)
 static void
 pc_handle_NET_WM_NAME(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_NET_WM_PID(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -4591,12 +4624,15 @@ pc_handle_NET_WM_VISIBLE_NAME(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WIN_APP_STATE(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_CLIENT_LIST(XPropertyEvent *e, Client *c)
 {
+	(void) c;
 	DPRINT();
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
@@ -4606,36 +4642,48 @@ pc_handle_WIN_CLIENT_LIST(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WIN_CLIENT_MOVING(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_FOCUS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_HINTS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_LAYER(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 cm_handle_WIN_LAYER(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_PROTOCOLS(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -4654,12 +4702,16 @@ pc_handle_WIN_STATE(XPropertyEvent *e, Client *c)
 static void
 cm_handle_WIN_STATE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 pc_handle_WIN_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 	handle_wmchange();
 }
@@ -4667,12 +4719,16 @@ pc_handle_WIN_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WIN_WORKSPACE(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
 static void
 cm_handle_WIN_WORKSPACE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -4718,6 +4774,8 @@ pc_handle_WM_CLASS(XPropertyEvent *e, Client *c)
 static void
 cm_handle_WM_CHANGE_STATE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -4846,6 +4904,8 @@ pc_handle_WM_PROTOCOLS(XPropertyEvent *e, Client *c)
 static void
 cm_handle_WM_PROTOCOLS(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -4860,6 +4920,8 @@ pc_handle_WM_SIZE_HINTS(XPropertyEvent *e, Client *c)
 static void
 cm_handle_KDE_WM_CHANGE_STATE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -4926,6 +4988,8 @@ pc_handle_WM_STATE(XPropertyEvent *e, Client *c)
 static void
 cm_handle_WM_STATE(XClientMessageEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -5104,6 +5168,7 @@ cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 	Atom selection;
 	Time time;
 
+	(void) c;
 	DPRINT();
 	if (!e || e->format != 32)
 		return;
@@ -5159,6 +5224,8 @@ cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 static void
 pc_handle_TIMESTAMP_PROP(XPropertyEvent *e, Client *c)
 {
+	(void) e;
+	(void) c;
 	DPRINT();
 }
 
@@ -5750,11 +5817,18 @@ sighandler(int sig)
 static void
 autoSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown, int interactStyle, Bool fast)
 {
+	(void) smcConn;
+	(void) data;
+	(void) saveType;
+	(void) shutdown;
+	(void) interactStyle;
+	(void) fast;
 }
 
 static void
 autoDieCB(SmcConn smcConn, SmPointer data)
 {
+	(void) data;
 	SmcCloseConnection(smcConn, 0, NULL);
 	exit(EXIT_SUCCESS);
 }
@@ -5762,11 +5836,15 @@ autoDieCB(SmcConn smcConn, SmPointer data)
 static void
 autoSaveCompleteCB(SmcConn smcConn, SmPointer data)
 {
+	(void) smcConn;
+	(void) data;
 }
 
 static void
 autoShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 {
+	(void) smcConn;
+	(void) data;
 	/* nothing to do really */
 }
 
@@ -5801,6 +5879,7 @@ on_proxy_ifd_watch(GIOChannel *chan, GIOCondition cond, pointer data)
 	SmcConn smcConn = (typeof(smcConn)) data;
 	IceConn iceConn = SmcGetIceConnection(smcConn);
 
+	(void) chan;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		EPRINTF("poll failed: %s %s %s\n", (cond & G_IO_NVAL) ? "NVAL" : "",
 			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
@@ -6110,6 +6189,7 @@ wait_for_resources(int need)
 static gboolean
 pause_done(gpointer user_data)
 {
+	(void) user_data;
 	gtk_main_quit();
 	return FALSE;		/* remove source */
 }
@@ -6138,6 +6218,7 @@ run_autostart(void)
 static gboolean
 hidesplash(gpointer user_data)
 {
+	(void) user_data;
 	return FALSE; /* remove source */
 }
 
@@ -6152,11 +6233,15 @@ do_loop(void)
 void
 do_startwm(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 void
 do_session(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 const char *
@@ -6309,6 +6394,9 @@ void
 on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
 			  GVariant *parameters, gpointer user_data)
 {
+	(void) proxy;
+	(void) sender_name;
+	(void) user_data;
 	DPRINTF("received manager proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
 
@@ -6321,6 +6409,9 @@ void
 on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_name,
 			  GVariant *parameters, gpointer user_data)
 {
+	(void) proxy;
+	(void) sender_name;
+	(void) user_data;
 	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
 #ifdef DO_XLOCKING
@@ -6341,6 +6432,9 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 	GVariantIter iter;
 	GVariant *prop;
 
+	(void) proxy;
+	(void) invalidated_properties;
+	(void) user_data;
 	DPRINTF("received session proxy properties changed signal ( %s )\n",
 		g_variant_get_type_string(changed_properties));
 
@@ -6730,6 +6824,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
+	(void) event;
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
@@ -6803,6 +6898,8 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	XEvent *xev = (typeof(xev)) xevent;
 	Display *dpy = xev->xany.display;
 
+	(void) event;
+	(void) data;
 	DPRINT();
 	switch (xev->type) {
 	case ClientMessage:
@@ -6828,6 +6925,8 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	gboolean has;
 	GValue pixbuf_v = G_VALUE_INIT;
 
+	(void) col;
+	(void) data;
 	gtk_tree_model_get_value(GTK_TREE_MODEL(store), iter, XSESS_COL_PIXBUF, &iname_v);
 	if ((iname = g_value_get_string(&iname_v))) {
 		name = g_strdup(iname);
@@ -7265,6 +7364,7 @@ xsession_compare_function(GtkTreeModel *store, GtkTreeIter *a, GtkTreeIter *b, g
 	const gchar *bstr;
 	gint ret;
 
+	(void) data;
 	gtk_tree_model_get_value(GTK_TREE_MODEL(store), a, XSESS_COL_NAME, &a_v);
 	gtk_tree_model_get_value(GTK_TREE_MODEL(store), b, XSESS_COL_NAME, &b_v);
 	astr = g_value_get_string(&a_v);
@@ -7370,6 +7470,7 @@ on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer data)
 	GtkListStore *store = GTK_LIST_STORE(data);
 	GtkTreeIter iter;
 
+	(void) rend;
 	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter, path)) {
 		GValue user_v = G_VALUE_INIT;
 		GValue orig_v = G_VALUE_INIT;
@@ -7399,6 +7500,7 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
@@ -7424,6 +7526,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
@@ -7493,6 +7596,7 @@ on_select_clicked(GtkButton *button, gpointer data)
 	GtkTreeSelection *selection;
 	GtkListStore *store = GTK_LIST_STORE(data);
 
+	(void) button;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (options.session) {
 		GtkTreeIter iter;
@@ -7540,6 +7644,8 @@ on_launch_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
+	(void) user_data;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
@@ -7597,6 +7703,9 @@ on_row_activated(GtkTreeView *sess, GtkTreePath *path, GtkTreeViewColumn *col, g
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) path;
+	(void) col;
+	(void) user_data;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
@@ -7628,6 +7737,7 @@ on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) user_data;
 	if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(sess),
 					  event->button.x,
 					  event->button.y, &path, &col, NULL, NULL)) {
@@ -7649,12 +7759,17 @@ on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 static gboolean
 on_destroy(GtkWidget *widget, gpointer user_data)
 {
+	(void) widget;
+	(void) user_data;
 	return FALSE;
 }
 
 gboolean
 on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
+	(void) widget;
+	(void) event;
+	(void) data;
 	free(options.current);
 	options.current = strdup("logout");
 	options.managed = False;
@@ -7672,6 +7787,7 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	cairo_t *cr;
 	GdkEventExpose *ev;
 
+	(void) widget;
 	w = gtk_widget_get_window(xscr->wind);
 	r = gdk_screen_get_root_window(xscr->scrn);
 	ev = (typeof(ev)) event;
@@ -7701,6 +7817,8 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 gboolean
 on_grab_broken(GtkWidget *window, GdkEvent *event, gpointer data)
 {
+	(void) window;
+	(void) data;
 	GdkEventGrabBroken *ev = (typeof(ev)) event;
 	DPRINTF("Grab broken!\n");
 	DPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
@@ -7725,6 +7843,7 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	GdkWindow *win = gtk_widget_get_window(window);
 	GdkEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
 
+	(void) user_data;
 	gdk_window_set_override_redirect(win, TRUE);
 	gdk_window_set_focus_on_map(win, TRUE);
 	gdk_window_set_accept_focus(win, TRUE);
@@ -7774,7 +7893,7 @@ ungrabbed_window(GtkWidget *window)
 /** @brief render a pixbuf into a pixmap for a monitor
   */
 void
-render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, XdeMonitor *xmon)
+render_pixbuf_for_mon(cairo_t *cr, GdkPixbuf *pixbuf, double wp, double hp, XdeMonitor *xmon)
 {
 	double wm = xmon->geom.width;
 	double hm = xmon->geom.height;
@@ -8027,6 +8146,8 @@ create_session(const char *label, const char *filename)
 	int len, dlen, flen;
 	FILE *f;
 
+	(void) label;
+	(void) filename;
 	len = xhome ? strlen(xhome) : strlen(home) + strlen("/.config");
 	dlen = len + strlen("/xde");
 	flen = dlen + strlen("/default");
@@ -8461,6 +8582,7 @@ on_combo_popdown(GtkComboBox *combo, gpointer data)
 {
 	GtkWidget *window;
 
+	(void) data;
 	window = gtk_widget_get_toplevel(GTK_WIDGET(combo));
 
 	relax();
@@ -9115,6 +9237,7 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 		&prop[10]
 	};
 
+	(void) data;
 	j = 0;
 
 	/* CloneCommand: This is like the RestartCommand except it restarts a
@@ -9384,6 +9507,9 @@ static void
 xdeSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
 		     int interactStyle, Bool fast)
 {
+	(void) saveType;
+	(void) interactStyle;
+	(void) fast;
 	if (!(sm_shutting_down = shutdown)) {
 		if (!SmcRequestSaveYourselfPhase2(smcConn, xdeSaveYourselfPhase2CB, data))
 			SmcSaveYourselfDone(smcConn, False);
@@ -9403,6 +9529,7 @@ xdeSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
 static void
 xdeDieCB(SmcConn smcConn, SmPointer data)
 {
+	(void) data;
 	SmcCloseConnection(smcConn, 0, NULL);
 	sm_shutting_down = False;
 	gtk_main_quit();
@@ -9411,6 +9538,8 @@ xdeDieCB(SmcConn smcConn, SmPointer data)
 static void
 xdeSaveCompleteCB(SmcConn smcConn, SmPointer data)
 {
+	(void) smcConn;
+	(void) data;
 	if (saving_yourself) {
 		saving_yourself = False;
 		gtk_main_quit();
@@ -9431,6 +9560,8 @@ xdeSaveCompleteCB(SmcConn smcConn, SmPointer data)
 static void
 xdeShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 {
+	(void) smcConn;
+	(void) data;
 	sm_shutting_down = False;
 	gtk_main_quit();
 }
@@ -9464,6 +9595,7 @@ on_ifd_watch(GIOChannel *chan, GIOCondition cond, pointer data)
 	SmcConn smcConn = (typeof(smcConn)) data;
 	IceConn iceConn = SmcGetIceConnection(smcConn);
 
+	(void) chan;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		EPRINTF("poll failed: %s %s %s\n", (cond & G_IO_NVAL) ? "NVAL" : "",
 			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
@@ -9581,7 +9713,7 @@ do_chooser(int argc, char *argv[])
 	DPRINTF("Launching session %s...\n", options.current);
 	if (!options.filename) {
 		char *out = strdup(options.current);
-		int i;
+		size_t i;
 
 		for (i = 0; i < strlen(out); i++)
 			out[i] = tolower(out[i]);
@@ -9774,6 +9906,8 @@ do_unlock(int argc, char *argv[])
 gboolean
 on_xfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
+	(void) chan;
+	(void) data;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		EPRINTF("poll failed: %s %s %s\n", (cond & G_IO_NVAL) ? "NVAL" : "",
 			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
@@ -9851,6 +9985,8 @@ setup_main_loop(int argc, char *argv[])
 	gint mask = G_IO_IN | G_IO_ERR | G_IO_HUP | G_IO_PRI;
 	guint srce;
 
+	(void) argc;
+	(void) argv;
 	gtk_init(NULL, NULL);
 	// gtk_init(argc, argv);
 
@@ -9953,6 +10089,8 @@ do_replace(int argc, char *argv[])
 	int s, selcount = 0;
 	XEvent ev;
 
+	(void) argc;
+	(void) argv;
 	for (s = 0; s < nscr; s++) {
 		scr = xscreens + s;
 		scr->selwin =
@@ -9993,6 +10131,8 @@ do_quit(int argc, char *argv[])
 	int s, selcount = 0;
 	XEvent ev;
 
+	(void) argc;
+	(void) argv;
 	for (s = 0; s < nscr; s++) {
 		scr = xscreens + s;
 		XGrabServer(dpy);
@@ -10167,6 +10307,7 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 	gchar *name, *exec, *tryexec, *binary;
 	gchar **item, **list, **desktop;
 
+	(void) user_data;
 	if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
 		DPRINTF("%s: no Name\n", appid);
 		return TRUE;
@@ -10345,7 +10486,7 @@ get_autostarts(void)
 }
 
 void
-create_splashscreen(TableContext * c)
+create_splashscreen(TableContext *c)
 {
 	splash = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_wmclass(GTK_WINDOW(splash), "xde-autostart", "XDE-Autostart");
@@ -10620,6 +10761,8 @@ run_program(int argc, char *argv[])
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -10664,6 +10807,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -10686,6 +10831,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -10724,6 +10870,7 @@ show_bool(Bool val)
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 /* *INDENT-OFF* */
@@ -10954,6 +11101,8 @@ get_resources(int argc, char *argv[])
 	Window root;
 	Atom atom;
 
+	(void) argc;
+	(void) argv;
 	DPRINT();
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
@@ -11485,6 +11634,8 @@ set_default_xdgdirs(int argc, char *argv[])
 	char *conf, *data;
 	int len;
 
+	(void) argc;
+	(void) argv;
 	here = strdup(argv[0]);
 	if (here[0] != '/') {
 		char *cwd = calloc(PATH_MAX + 1, sizeof(*cwd));
@@ -11547,7 +11698,8 @@ set_default_banner(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	free(defaults.banner);
 	defaults.banner = NULL;
@@ -11591,7 +11743,8 @@ set_default_splash(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	free(defaults.backdrop);
 	defaults.backdrop = NULL;
@@ -11932,7 +12085,8 @@ get_default_banner(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	if (options.banner)
 		return;
@@ -11984,7 +12138,8 @@ get_default_splash(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	if (options.backdrop)
 		return;
@@ -12368,6 +12523,8 @@ get_default_desktops(void)
 void
 get_defaults(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	get_default_display();
 	get_default_x11();
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
