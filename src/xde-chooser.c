@@ -589,6 +589,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
+	(void) event;
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
@@ -608,6 +609,8 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	XEvent *xev = (typeof(xev)) xevent;
 	Display *dpy = xev->xany.display;
 
+	(void) event;
+	(void) data;
 	DPRINT();
 	switch (xev->type) {
 	case ClientMessage:
@@ -633,6 +636,8 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	gboolean has;
 	GValue pixbuf_v = G_VALUE_INIT;
 
+	(void) col;
+	(void) data;
 	gtk_tree_model_get_value(GTK_TREE_MODEL(store), iter, XSESS_COL_PIXBUF, &iname_v);
 	if ((iname = g_value_get_string(&iname_v))) {
 		name = g_strdup(iname);
@@ -702,6 +707,8 @@ on_render_combo(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	GtkListStore *model = NULL;
 	GtkTreeIter m_iter;
 
+	(void) col;
+	(void) data;
 	gtk_tree_model_get(GTK_TREE_MODEL(store), iter,
 			XSESS_COL_ACTION, &action,
 			XSESS_COL_ACTIONS, &actions,
@@ -1081,6 +1088,7 @@ on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer data)
 	GtkListStore *store = GTK_LIST_STORE(data);
 	GtkTreeIter iter;
 
+	(void) rend;
 	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter, path)) {
 		gboolean user, orig;
 
@@ -1096,6 +1104,10 @@ on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer data)
 void
 on_action_change(GtkCellRendererCombo *rend, gchar *path, GtkTreeIter *combo_iter, gpointer data)
 {
+	(void) rend;
+	(void) path;
+	(void) combo_iter;
+	(void) data;
 	DPRINTF("Editing action change\n");
 }
 
@@ -1105,6 +1117,7 @@ on_action_edited(GtkCellRenderer *rend, gchar *path, gchar *new_text, gpointer d
 	GtkListStore *store = GTK_LIST_STORE(data);
 	GtkTreeIter iter;
 
+	(void) rend;
 	if (!new_text || !new_text[0])
 		new_text = NULL;
 
@@ -1115,12 +1128,15 @@ on_action_edited(GtkCellRenderer *rend, gchar *path, gchar *new_text, gpointer d
 void
 on_action_editing(GtkCellRenderer *rend, GtkCellEditable *editable, gchar *path, gpointer data)
 {
+	(void) data;
 	DPRINTF("Started editing rend=%p, editable=%p, path=%s\n", rend, editable, path);
 }
 
 void
 on_action_cancel(GtkCellRenderer *rend, gpointer data)
 {
+	(void) rend;
+	(void) data;
 	DPRINTF("Editing action cancelled\n");
 }
 
@@ -1133,6 +1149,7 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		gchar *label = NULL;
@@ -1157,6 +1174,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		gchar *label = NULL;
@@ -1225,6 +1243,8 @@ on_launch_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
+	(void) user_data;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		gchar *label = NULL;
@@ -1277,6 +1297,9 @@ on_row_activated(GtkTreeView *sess, GtkTreePath *path, GtkTreeViewColumn *col, g
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) path;
+	(void) col;
+	(void) user_data;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sess));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		gchar *label = NULL;
@@ -1303,6 +1326,7 @@ on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) user_data;
 	if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(sess),
 					  event->button.x,
 					  event->button.y, &path, &col, NULL, NULL)) {
@@ -1323,12 +1347,17 @@ on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 static gboolean
 on_destroy(GtkWidget *widget, gpointer user_data)
 {
+	(void) widget;
+	(void) user_data;
 	return FALSE;
 }
 
 static gboolean
 on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
+	(void) widget;
+	(void) event;
+	(void) data;
 	free(options.current);
 	options.current = strdup("logout");
 	options.managed = False;
@@ -1346,6 +1375,7 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	cairo_t *cr;
 	GdkEventExpose *ev;
 
+	(void) widget;
 	w = gtk_widget_get_window(xscr->wind);
 	r = gdk_screen_get_root_window(xscr->scrn);
 	ev = (typeof(ev)) event;
@@ -1388,6 +1418,7 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	GdkWindow *win = gtk_widget_get_window(window);
 	GdkEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
 
+	(void) user_data;
 	gdk_window_set_override_redirect(win, TRUE);
 	gdk_window_set_focus_on_map(win, TRUE);
 	gdk_window_set_accept_focus(win, TRUE);
@@ -1662,6 +1693,8 @@ create_session(const char *label, const char *filename)
 	int len, dlen, flen;
 	FILE *f;
 
+	(void) label;
+	(void) filename;
 	len = xhome ? strlen(xhome) : strlen(home) + strlen("/.config");
 	dlen = len + strlen("/xde");
 	flen = dlen + strlen("/default");
@@ -2425,7 +2458,7 @@ do_chooser(int argc, char *argv[])
 	DPRINTF("Launching session %s...\n", options.current);
 	if (!options.filename) {
 		char *out = strdup(options.current);
-		int i;
+		size_t i;
 
 		for (i = 0; i < strlen(out); i++)
 			out[i] = tolower(out[i]);
@@ -2514,6 +2547,8 @@ run_program(int argc, char *argv[])
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -2558,6 +2593,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -2580,6 +2617,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -2618,6 +2656,7 @@ show_bool(Bool val)
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 /* *INDENT-OFF* */
@@ -2861,6 +2900,8 @@ get_resources(int argc, char *argv[])
 	Window root;
 	Atom atom;
 
+	(void) argc;
+	(void) argv;
 	DPRINT();
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
@@ -3230,6 +3271,8 @@ set_default_xdgdirs(int argc, char *argv[])
 	char *conf, *data;
 	int len;
 
+	(void) argc;
+	(void) argv;
 	here = strdup(argv[0]);
 	if (here[0] != '/') {
 		char *cwd = calloc(PATH_MAX + 1, sizeof(*cwd));
@@ -3292,7 +3335,8 @@ set_default_banner(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	free(defaults.banner);
 	defaults.banner = NULL;
@@ -3336,7 +3380,8 @@ set_default_splash(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	free(defaults.backdrop);
 	defaults.backdrop = NULL;
@@ -3603,7 +3648,8 @@ get_default_banner(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	if (options.banner)
 		return;
@@ -3655,7 +3701,8 @@ get_default_splash(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char **xdg_dirs, **dirs, *file, *pfx, *suffix;
-	int i, j, n = 0;
+	int i, n = 0;
+	size_t j;
 
 	if (options.backdrop)
 		return;
@@ -3759,6 +3806,8 @@ get_default_choice(void)
 static void
 get_defaults(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	get_default_x11();
 	get_default_vendor();
 	get_default_banner();
