@@ -269,6 +269,7 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 	GdkWindow *window = gtk_widget_get_window(GTK_WIDGET(widget));
 	cairo_t *cr = gdk_cairo_create(GDK_DRAWABLE(window));
 
+	(void) event;
 	gdk_cairo_set_source_pixbuf(cr, pixbuf, 0, 0);
 	cairo_paint(cr);
 	GdkColor color = {.red = 0,.green = 0,.blue = 0,.pixel = 0 };
@@ -280,6 +281,9 @@ on_expose_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 static gboolean
 on_delete_event(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
+	(void) widget;
+	(void) event;
+	(void) data;
 	free(options.current);
 	options.current = strdup("logout");
 	options.managed = False;
@@ -292,6 +296,8 @@ on_managed_toggle(GtkCellRendererToggle *rend, gchar *path, gpointer user_data)
 {
 	GtkTreeIter iter;
 
+	(void) rend;
+	(void) user_data;
 	if (gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(model), &iter, path)) {
 		GValue user_v = G_VALUE_INIT;
 		GValue orig_v = G_VALUE_INIT;
@@ -323,6 +329,8 @@ on_render_pixbuf(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 	gboolean has;
 	GValue pixbuf_v = G_VALUE_INIT;
 
+	(void) col;
+	(void) data;
 	gtk_tree_model_get_value(GTK_TREE_MODEL(model), iter, COLUMN_PIXBUF, &iname_v);
 	if ((iname = g_value_get_string(&iname_v))) {
 		name = g_strdup(iname);
@@ -391,6 +399,7 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
@@ -415,6 +424,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
@@ -470,6 +480,8 @@ on_select_clicked(GtkButton *button, gpointer user_data)
 {
 	GtkTreeSelection *selection;
 
+	(void) button;
+	(void) user_data;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 	if (options.session) {
 		GtkTreeIter iter;
@@ -515,6 +527,8 @@ on_launch_clicked(GtkButton *button, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
+	(void) user_data;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
@@ -571,6 +585,9 @@ on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col, g
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) path;
+	(void) col;
+	(void) user_data;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 	if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
 		GValue label_v = G_VALUE_INIT;
@@ -601,6 +618,7 @@ on_button_press(GtkWidget *view, GdkEvent *event, gpointer user_data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) user_data;
 	if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(view),
 					  event->button.x,
 					  event->button.y, &path, &col, NULL, NULL)) {
@@ -638,6 +656,7 @@ grabbed_window(GtkWindow *window, gpointer user_data)
 	GdkWindow *win = gtk_widget_get_window(GTK_WIDGET(window));
 	GdkEventMask mask = GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK;
 
+	(void) user_data;
 	gdk_window_set_override_redirect(win, TRUE);
 	gdk_window_set_focus_on_map(win, TRUE);
 	gdk_window_set_accept_focus(win, TRUE);
@@ -668,6 +687,8 @@ make_login_choice(int argc, char *argv[])
 {
         GtkWidget *w = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
+	(void) argc;
+	(void) argv;
         gtk_window_set_wmclass(GTK_WINDOW(w), "xde-session", "XDE-Session");
         gtk_window_set_role(GTK_WINDOW(w), "choose");
 	gtk_window_set_title(GTK_WINDOW(w), "Window Manager Selection");
