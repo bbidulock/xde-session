@@ -274,7 +274,7 @@ set_config_defaults(GKeyFile *config)
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_string(config, group, key, defaults.desktop);
 	key = "StartupFile";
-	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	if (!g_key_file_has_key(config, group, key, NULL)) { }
 	key = "Wait";
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_boolean(config, group, key, FALSE);
@@ -291,14 +291,14 @@ set_config_defaults(GKeyFile *config)
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_uint64(config, group, key, 0);
 	key = "Language";
-	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	if (!g_key_file_has_key(config, group, key, NULL)) { }
 	key = "Vendor";
-	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	if (!g_key_file_has_key(config, group, key, NULL)) { }
 	key = "Splash";
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_boolean(config, group, key, TRUE);
 	key = "SplashImage";
-	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	if (!g_key_file_has_key(config, group, key, NULL)) { }
 	key = "ChooserPromptText";
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_string(config, group, key, "");
@@ -321,11 +321,11 @@ set_config_defaults(GKeyFile *config)
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_string(config, group, key, "left");
 	key = "IconTheme";
-	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	if (!g_key_file_has_key(config, group, key, NULL)) { }
 	key = "Theme";
-	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	if (!g_key_file_has_key(config, group, key, NULL)) { }
 	key = "CursorTheme";
-	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	if (!g_key_file_has_key(config, group, key, NULL)) { }
 	key = "UseXDETheme";
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_boolean(config, group, key, FALSE);
@@ -345,7 +345,7 @@ set_config_defaults(GKeyFile *config)
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_boolean(config, group, key, TRUE);
 	key = "ScreenLockProgram";
-	if (!g_key_file_has_key(config, group, key, NULL)) ;
+	if (!g_key_file_has_key(config, group, key, NULL)) { }
 	key = "AutoStart";
 	if (!g_key_file_has_key(config, group, key, NULL))
 		g_key_file_set_boolean(config, group, key, TRUE);
@@ -492,7 +492,7 @@ set_default_splash(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char *dirs, *dir, *end, *pfx, *suffix, *file;
-	int i;
+	size_t i;
 
 	dirs = strdup(xdg_dirs.data.both);
 	end = dirs + strlen(dirs);
@@ -536,7 +536,7 @@ set_default_banner(void)
 {
 	static const char *exts[] = { ".xpm", ".png", ".jpg", ".svg" };
 	char *dirs, *dir, *end, *pfx, *suffix, *file;
-	int i;
+	size_t i;
 
 	dirs = strdup(xdg_dirs.data.both);
 	end = dirs + strlen(dirs);
@@ -1042,26 +1042,36 @@ get_defaults(void)
 void
 run_launch(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 void
 run_choose(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 void
 run_logout(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 void
 run_manage(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -1106,6 +1116,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -1128,6 +1140,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -1142,6 +1155,7 @@ Usage:\n\
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
         /* *INDENT-OFF* */
