@@ -12,6 +12,8 @@ main(int argc, char *argv[])
 	char **p;
 	int i, n;
 
+	(void) argc;
+	(void) argv;
 	setlocale(LC_ALL, "");
 
 	sd_get_seats(&seats);
