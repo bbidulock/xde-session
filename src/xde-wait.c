@@ -306,6 +306,7 @@ intern_atoms()
 int
 handler(Display *display, XErrorEvent *xev)
 {
+	(void) display;
 	if (options.debug) {
 		char msg[80], req[80], num[80], def[80];
 
@@ -327,6 +328,7 @@ iohandler(Display *display)
 	char **strings;
 	int i;
 
+	(void) display;
 	if ((nptr = backtrace(buffer, 1023)) && (strings = backtrace_symbols(buffer, nptr)))
 		for (i = 0; i < nptr; i++)
 			fprintf(stderr, "backtrace> %s\n", strings[i]);
@@ -1063,6 +1065,7 @@ check_stray()
 static Bool
 handle_NET_SYSTEM_TRAY_ORIENTATION(XEvent *e)
 {
+	(void) e;
 	PTRACE();
 	check_stray();
 	return True;
@@ -1071,6 +1074,7 @@ handle_NET_SYSTEM_TRAY_ORIENTATION(XEvent *e)
 static Bool
 handle_NET_SYSTEM_TRAY_VISUAL(XEvent *e)
 {
+	(void) e;
 	PTRACE();
 	check_stray();
 	return True;
@@ -1124,6 +1128,7 @@ check_pager()
 static Bool
 handle_NET_DESKTOP_LAYOUT(XEvent *e)
 {
+	(void) e;
 	PTRACE();
 	check_pager();
 	return True;
@@ -1229,6 +1234,7 @@ wait_for_audio_server()
 static Bool
 handle_PULSE_COOKIE(XEvent *e)
 {
+	(void) e;
 	check_audio();
 	return True;
 }
@@ -1236,6 +1242,7 @@ handle_PULSE_COOKIE(XEvent *e)
 static Bool
 handle_PULSE_SERVER(XEvent *e)
 {
+	(void) e;
 	check_audio();
 	return True;
 }
@@ -1243,6 +1250,7 @@ handle_PULSE_SERVER(XEvent *e)
 static Bool
 handle_PULSE_ID(XEvent *e)
 {
+	(void) e;
 	check_audio();
 	return True;
 }
@@ -1250,6 +1258,7 @@ handle_PULSE_ID(XEvent *e)
 static Bool
 handle_MANAGER(XEvent *e)
 {
+	(void) e;
 	PTRACE();
 	check_compm();
 	check_pager();
@@ -1280,6 +1289,8 @@ wait_for_resource()
 static void
 do_wait(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!get_display()) {
 		EPRINTF("cannot obtain DISPLAY\n");
 		exit(EXIT_FAILURE);
@@ -1304,6 +1315,8 @@ do_wait(int argc, char *argv[])
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -1349,6 +1362,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -1371,6 +1386,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -1413,6 +1429,7 @@ show_bool(Bool flag)
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	/* *INDENT-OFF* */
