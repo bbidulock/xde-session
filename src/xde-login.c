@@ -233,11 +233,15 @@ signal_child(int signum)
 static int
 pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp, void *data)
 {
+	(void) len;
+	(void) msg;
+	(void) resp;
+	(void) data;
 	return PAM_SUCCESS;	/* we don't do auth */
 }
 
 void
-run_login(int argc, char * const *argv)
+run_login(int argc, char *const *argv)
 {
 	pam_handle_t *pamh = NULL;
 	const char *env;
@@ -249,6 +253,8 @@ run_login(int argc, char * const *argv)
 	const char **var, *vars[] =
 	    { "PATH", "LANG", "USER", "LOGNAME", "HOME", "SHELL", "XDG_SEAT", "XDG_VNTR", "MAIL", "TERM", "HOME", "PWD", NULL };
 
+	(void) argc;
+	(void) argv;
 	uid = getuid();
 #if 0
 	if (setresuid(0, 0, 0)) {
@@ -499,6 +505,8 @@ run_login(int argc, char * const *argv)
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -543,6 +551,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -565,6 +575,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -583,6 +594,7 @@ show_cmd(int argc, char **argv)
 	char **arg;
 	int len;
 
+	(void) argc;
 	cmd[0] = '\0';
 	for (arg = argv; arg && *arg; arg++) {
 		strcat(cmd, *arg);
@@ -596,6 +608,7 @@ show_cmd(int argc, char **argv)
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	/* *INDENT-OFF* */
