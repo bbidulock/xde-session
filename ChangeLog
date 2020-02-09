@@ -1,5 +1,19 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 05865e41f10e557edf01de4ee3cf84dd4b928212
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Sun Feb 9 02:51:24 2020 -0700
+
+    update release files
+
+ AUTHORS      |   2 +-
+ ChangeLog    | 698 +++++++++++++++++++++++++------------------------------
+ NEWS         |  80 +++++--
+ README.md    |  20 +-
+ RELEASE.md   |  10 +-
+ configure.ac |  10 +-
+ 6 files changed, 396 insertions(+), 424 deletions(-)
+
 commit 2e7a80f4dd9a88d3d9f4a28f13a9b812148acfbc
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Sun Feb 9 02:44:09 2020 -0700
@@ -6254,12 +6268,3 @@ Date:   Tue Sep 2 05:59:28 2014 -0600
  src/xde-xlogin.c    | 42 ++++++++++++++++++++++++++----------------
  src/xde-xsession.c  |  2 ++
  14 files changed, 151 insertions(+), 80 deletions(-)
-
-commit 39198a4da7234f28568dc7eda4b889028153fe68
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Thu Aug 28 12:13:14 2014 -0600
-
-    more indentation
-
- .indent.pro | 449 +++++++++++++++++++++++++++++---------------------------
- 1 file changed, 230 insertions(+), 219 deletions(-)
