@@ -592,6 +592,7 @@ wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
 	/* WindowMaker Dock Apps */
 	/* System tray icons */
 
+	(void) clientData;
 	SmcSaveYourselfDone(smcConn, True);
 }
 
@@ -637,6 +638,11 @@ void
 wmpSaveYourselfCB(SmcConn smcConn, SmPointer clientData, int saveType, Bool shutdown,
 		  int interactStyle, Bool fast)
 {
+	(void) clientData;
+	(void) saveType;
+	(void) shutdown;
+	(void) interactStyle;
+	(void) fast;
 	if (!SmcRequestSaveYourselfPhase2(smcConn, wmpSaveYourselfPhase2CB, NULL)) {
 		SmcSaveYourselfDone(smcConn, False);
 		sent_save_done = 1;
@@ -653,6 +659,7 @@ wmpSaveYourselfCB(SmcConn smcConn, SmPointer clientData, int saveType, Bool shut
 void
 wmpDieCB(SmcConn smcConn, SmPointer clientData)
 {
+	(void) clientData;
 	SmcCloseConnection(smcConn, 0, NULL);
 	exit(EXIT_SUCCESS);
 }
@@ -660,6 +667,8 @@ wmpDieCB(SmcConn smcConn, SmPointer clientData)
 void
 wmpSaveCompleteCB(SmcConn smcConn, SmPointer clientData)
 {
+	(void) smcConn;
+	(void) clientData;
 	/* doesn't do anything */
 }
 
@@ -676,6 +685,7 @@ wmpSaveCompleteCB(SmcConn smcConn, SmPointer clientData)
 void
 wmpShutdownCancelledCB(SmcConn smcConn, SmPointer clientData)
 {
+	(void) clientData;
 	if (sent_save_done)
 		return;
 	SmcSaveYourselfDone(smcConn, False);
@@ -790,6 +800,14 @@ remote_start(const char *restart_protocol, const char *restart_machine, const ch
 	     char **args, const char *cwd, char **env, const char *non_local_display_env,
 	     const char *non_local_session_env)
 {
+	(void) restart_protocol;
+	(void) restart_machine;
+	(void) program;
+	(void) args;
+	(void) cwd;
+	(void) env;
+	(void) non_local_display_env;
+	(void) non_local_session_env;
 	/* FIXME: port this function */
 }
 
@@ -936,7 +954,7 @@ cloneClient(SmClient *c, Bool useSavedState)
 				EPRINTF("cannot fork(): %s\n", strerror(errno));
 				break;
 			case 0:	/* the child */
-				if (chdir(cwd)) ;
+				if (chdir(cwd)) { }
 				execvpe(program, args, env);
 				EPRINTF("cannot execvpe %s\n", program);
 				_exit(255);
@@ -1336,6 +1354,7 @@ interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 {
 	SmClient *c = (typeof(c)) data;
 
+	(void) smsConn;
 	CPRINTF(c, "received INTERACT REQUEST [Dialog Type %s]\n", dialogType == SmDialogNormal ? "normal" : "errors");
 
 	if (c->state != SMC_SaveYourself) {
@@ -1375,6 +1394,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 {
 	SmClient *c = (typeof(c)) data;
 
+	(void) smsConn;
 	CPRINTF(c, "received INTERACT DONE [Cancel Shutdown = %s]\n", cancelShutdown ? "true" : "false");
 
 	if (cancelShutdown) {
@@ -1506,6 +1526,7 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 	SmClient *c = (typeof(c)) data;
 	GList *link;
 
+	(void) smsConn;
 	CPRINTF(c, "received SAVE YOURSELF DONE [Success = %s]\n", success ? "true" : "false");
 
 	if ((link = g_queue_find(savselfClients, c))) {
@@ -1550,6 +1571,7 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 	GList *link;
 	int i;
 
+	(void) smsConn;
 	CPRINTF(c, "received CONNECTION CLOSED\n");
 	for (i = 0; i < count; i++)
 		OPRINTF("   Reason string %d: %s\n", i, reasons[i]);
@@ -1623,6 +1645,7 @@ setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp *props[])
 	SmClient *c = (typeof(c)) data;
 	int i;
 
+	(void) smsConn;
 	CPRINTF(c, "receive SET PROPERTIES [Numb props = %d]\n", num);
 
 	for (i = 0; i < num; i++) {
@@ -1675,6 +1698,7 @@ deletePropertiesCB(SmsConn smsConn, SmPointer data, int num, char *names[])
 	SmClient *c = (typeof(c)) data;
 	int i;
 
+	(void) smsConn;
 	CPRINTF(c, "received DELETE PROPERTIES [Num props = %d]\n", num);
 
 	for (i = 0; i < num; i++) {
@@ -1725,6 +1749,8 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 {
 	SmClient *c;
 
+	(void) data;
+	(void) reason;
 	if (!(c = calloc(1, sizeof(*c)))) {
 		EPRINTF("%s\n", strerror(errno));
 		return (0);
@@ -1801,6 +1827,7 @@ on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 	IceConnectStatus cstatus;
 	IceListenObj obj = (typeof(obj)) data;
 
+	(void) chan;
 	/* IceIOErrorHandler should handle this ... */
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		EPRINTF("poll failed: %s %s %s\n",
@@ -1841,6 +1868,7 @@ on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 Bool
 hostBasedAuthCB(char *hostname)
 {
+	(void) hostname;
 	return (False);		/* refuse host based authentication */
 }
 
@@ -1887,6 +1915,7 @@ unique_filename(const char *path, const char *prefix, int *pFd)
 Bool
 HostBasedAuthProc(char *hostname)
 {
+	(void) hostname;
 	return False;
 }
 
@@ -1947,7 +1976,7 @@ SetAuthentication(int count, IceListenObj *listenObjs, IceAuthDataEntry **authDa
 	fclose(removefp);
 	umask(original_umask);
 	snprintf(command, sizeof(command), "iceauth source %s", addAuthFile);
-	if (system(command)) ;
+	if (system(command)) { }
 	remove(addAuthFile);
 	return (1);
       bad:
@@ -1978,7 +2007,7 @@ FreeAuthenticationData(int count, IceAuthDataEntry *authDataEntries)
 	}
 	free(authDataEntries);
 	snprintf(command, sizeof(command), "iceauth source %s", remAuthFile);
-	if (system(command)) ;
+	if (system(command)) { }
 	remove(remAuthFile);
 	free(addAuthFile);
 	free(remAuthFile);
@@ -2057,6 +2086,7 @@ smpInitSessionManager(void)
 void
 unlockSession(char *session_name)
 {
+	(void) session_name;
 }
 
 void
@@ -2095,6 +2125,8 @@ handle_events(void)
 gboolean
 on_xfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
+	(void) chan;
+	(void) data;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		fprintf(stderr, "ERROR: poll failed: %s %s %s\n",
 			(cond & G_IO_NVAL) ? "NVAL" : "",
@@ -2109,6 +2141,7 @@ on_xfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 gboolean
 on_ifd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
+	(void) chan;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		fprintf(stderr, "ERROR: poll failed: %s %s %s\n",
 			(cond & G_IO_NVAL) ? "NVAL" : "",
@@ -2125,42 +2158,49 @@ on_ifd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 void
 on_int_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_hup_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_term_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_quit_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_usr1_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_usr2_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_alrm_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
@@ -2230,21 +2270,29 @@ do_startup(int argc, char *argv[])
 static void
 do_checkpoint(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 static void
 do_shutdown(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 static void
 do_editor(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -2289,6 +2337,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -2311,6 +2361,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -2334,6 +2385,7 @@ show_bool(Bool flag)
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	/* *INDENT-OFF* */
