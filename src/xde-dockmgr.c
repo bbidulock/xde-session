@@ -142,6 +142,8 @@ Options options = {
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -186,6 +188,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -208,6 +212,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -222,6 +227,7 @@ Usage:\n\
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	/* *INDENT-OFF* */
