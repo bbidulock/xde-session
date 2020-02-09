@@ -292,6 +292,7 @@ wmpSaveYourselfPhase2CB(SmcConn smcConn, SmPointer clientData)
 	/* WindowMaker Dock Apps */
 	/* System tray icons */
 
+	(void) clientData;
 	SmcSaveYourselfDone(smcConn, True);
 }
 
@@ -337,6 +338,11 @@ void
 wmpSaveYourselfCB(SmcConn smcConn, SmPointer clientData, int saveType, Bool shutdown,
 		  int interactStyle, Bool fast)
 {
+	(void) clientData;
+	(void) saveType;
+	(void) shutdown;
+	(void) interactStyle;
+	(void) fast;
 	if (!SmcRequestSaveYourselfPhase2(smcConn, wmpSaveYourselfPhase2CB, NULL)) {
 		SmcSaveYourselfDone(smcConn, False);
 		sent_save_done = 1;
@@ -353,6 +359,7 @@ wmpSaveYourselfCB(SmcConn smcConn, SmPointer clientData, int saveType, Bool shut
 void
 wmpDieCB(SmcConn smcConn, SmPointer clientData)
 {
+	(void) clientData;
 	SmcCloseConnection(smcConn, 0, NULL);
 	exit(EXIT_SUCCESS);
 }
@@ -360,6 +367,8 @@ wmpDieCB(SmcConn smcConn, SmPointer clientData)
 void
 wmpSaveCompleteCB(SmcConn smcConn, SmPointer clientData)
 {
+	(void) smcConn;
+	(void) clientData;
 	/* doesn't do anything */
 }
 
@@ -376,6 +385,7 @@ wmpSaveCompleteCB(SmcConn smcConn, SmPointer clientData)
 void
 wmpShutdownCancelledCB(SmcConn smcConn, SmPointer clientData)
 {
+	(void) clientData;
 	if (sent_save_done)
 		return;
 	SmcSaveYourselfDone(smcConn, False);
@@ -516,12 +526,15 @@ relax()
 void
 setInitialProperties(SmClient *c, SmProp *props[])
 {
+	(void) c;
+	(void) props;
 	/* FIXME !!!! */
 }
 
 void
 freeClient(SmClient *c)
 {
+	(void) c;
 	/* FIXME !!!! */
 }
 
@@ -623,6 +636,10 @@ void
 interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 {
 	SmClient *c = (typeof(c)) data;
+
+	(void) smsConn;
+	(void) c;
+	(void) dialogType;
 }
 
 void
@@ -678,6 +695,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 
 	SmClient *c = (typeof(c)) data, *p;
 
+	(void) cancelShutdown;
 	if ((p = g_hash_table_lookup(savselfClients, c->id))) {
 		g_hash_table_remove(savselfClients, c->id);
 		SmsSaveComplete(smsConn);
@@ -707,6 +725,14 @@ saveYourselfReqCB(SmsConn smsConn, SmPointer data, int type, Bool shutdown,
 		  int style, Bool fast, Bool global)
 {
 	SmClient *c = (typeof(c)) data;
+
+	(void) c;
+	(void) smsConn;
+	(void) type;
+	(void) shutdown;
+	(void) style;
+	(void) fast;
+	(void) global;
 }
 
 /** @brief save yourself phase 2 request callback
@@ -720,6 +746,10 @@ void
 saveYourselfP2ReqCB(SmsConn smsConn, SmPointer data)
 {
 	SmClient *c = (typeof(c)) data;
+
+	(void) c;
+	(void) smsConn;
+	(void) data;
 }
 
 /** @brief save yourself done callback
@@ -733,6 +763,11 @@ void
 saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 {
 	SmClient *c = (typeof(c)) data;
+
+	(void) c;
+	(void) smsConn;
+	(void) data;
+	(void) success;
 }
 
 /** @brief close connection callback
@@ -748,6 +783,12 @@ void
 closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reason)
 {
 	SmClient *c = (typeof(c)) data;
+
+	(void) c;
+	(void) smsConn;
+	(void) data;
+	(void) count;
+	(void) reason;
 }
 
 /** @brief set properties callback
@@ -760,9 +801,15 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reason)
   * actual array of pointers with free().
   */
 void
-setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp * props[])
+setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp *props[])
 {
 	SmClient *c = (typeof(c)) data;
+
+	(void) c;
+	(void) smsConn;
+	(void) data;
+	(void) num;
+	(void) props;
 }
 
 /** @brief delete properties callback
@@ -774,6 +821,12 @@ void
 deletePropertiesCB(SmsConn smsConn, SmPointer data, int num, char *names[])
 {
 	SmClient *c = (typeof(c)) data;
+
+	(void) c;
+	(void) smsConn;
+	(void) data;
+	(void) num;
+	(void) names;
 }
 
 /** @brief get properties callback
@@ -786,6 +839,10 @@ void
 getPropertiesCB(SmsConn smsConn, SmPointer data)
 {
 	SmClient *c = (typeof(c)) data;
+
+	(void) c;
+	(void) smsConn;
+	(void) data;
 }
 
 static Status
@@ -793,6 +850,8 @@ newClientCB(SmsConn smsConn, SmPointer data, unsigned long *mask, SmsCallbacks *
 {
 	SmClient *c;
 
+	(void) data;
+	(void) reason;
 	if (!(c = calloc(1, sizeof(*c)))) {
 		fprintf(stderr, "Memory allocation failed\n");
 		return (0);
@@ -866,6 +925,7 @@ on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 	IceConnectStatus cstatus;
 	IceListenObj obj = (typeof(obj)) data;
 
+	(void) chan;
 	/* IceIOErrorHandler should handle this ... */
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		EPRINTF("poll failed: %s %s %s\n",
@@ -906,6 +966,7 @@ on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 Bool
 hostBasedAuthCB(char *hostname)
 {
+	(void) hostname;
 	return (False);		/* refuse host based authentication */
 }
 
@@ -947,6 +1008,7 @@ unique_filename(const char *path, const char *prefix, int *pFd)
 Bool
 HostBasedAuthProc(char *hostname)
 {
+	(void) hostname;
 	return False;
 }
 
@@ -1091,8 +1153,10 @@ handle_events(void)
 }
 
 gboolean
-on_xfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
+on_xfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
+	(void) chan;
+	(void) data;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		fprintf(stderr, "ERROR: poll failed: %s %s %s\n",
 			(cond & G_IO_NVAL) ? "NVAL" : "",
@@ -1105,8 +1169,10 @@ on_xfd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 }
 
 gboolean
-on_ifd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
+on_ifd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
+	(void) chan;
+	(void) data;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		fprintf(stderr, "ERROR: poll failed: %s %s %s\n",
 			(cond & G_IO_NVAL) ? "NVAL" : "",
@@ -1123,42 +1189,49 @@ on_ifd_watch(GIOChannel * chan, GIOCondition cond, gpointer data)
 void
 on_int_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_hup_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_term_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_quit_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_usr1_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_usr2_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
 void
 on_alrm_signal(int signum)
 {
+	(void) signum;
 	/* FIXME */
 }
 
@@ -1244,6 +1317,8 @@ startup(int argc, char *argv[])
 static void
 copying(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -1288,6 +1363,8 @@ regulations).\n\
 static void
 version(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stdout, "\
@@ -1310,6 +1387,7 @@ See `%1$s --copying' for copying permissions.\n\
 static void
 usage(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	(void) fprintf(stderr, "\
@@ -1324,6 +1402,7 @@ Usage:\n\
 static void
 help(int argc, char *argv[])
 {
+	(void) argc;
 	if (!options.output && !options.debug)
 		return;
 	/* *INDENT-OFF* */
