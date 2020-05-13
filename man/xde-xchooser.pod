@@ -218,6 +218,11 @@ is automatically determined using desktop and toolkit files.
 Specifies the GTK+ theme name to use.  When unspecified, the GTK2 theme
 is automatically determined using desktop and toolkit files.
 
+=item B<-o>, B<--sound> I<SOUND-THEME>
+
+Specifies the XDG sound theme name to use.  When unspecified, the XDG
+sound theme is automatically determined using desktop and toolkit files.
+
 =item B<-u>, B<--xde-theme>
 
 Specifies that the GTK+ icon theme and theme name to be used are those
@@ -399,6 +404,11 @@ Specifies the value of the B<--icons> option.
 
 Provides the XDG theme name (for GTK+).
 Specifies the value of the B<--theme> option.
+
+=item B<xde-xchooser>.B<theme.sound>: I<NAME>
+
+Provides the XDG sound theme name.
+Specifies the value of the B<--sound> option.
 
 =item B<xde-xchooser>.B<theme.cursor>: I<NAME>
 
