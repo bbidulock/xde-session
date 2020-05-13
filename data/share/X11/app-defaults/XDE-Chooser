@@ -9,6 +9,7 @@ XDE-Chooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
 !XDE-Chooser*welcome:			Welcome to CLIENTHOST!
 XDE-Chooser*theme.icon:			gnome-brave
 !XDE-Chooser*theme.name:		Squared-blue
+!XDE-Chooser*theme.sound:		unexicon
 XDE-Chooser*theme.xde:			false
 XDE-Chooser*side:			left
 XDE-Chooser*user.default:		unexicon

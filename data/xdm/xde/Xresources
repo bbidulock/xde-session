@@ -278,6 +278,7 @@ XDE-XChooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-XChooser*welcome:			Welcome to CLIENTHOST!
 XDE-XChooser*theme.icon:		gnome-brave
 XDE-XChooser*theme.name:		Squared-blue
+XDE-XChooser*theme.sound:		unexicon
 XDE-XChooser*theme.xde:			false
 XDE-XChooser*side:			left
 XDE-XChooser*user.default:		unexicon
@@ -311,6 +312,7 @@ XDE-XLogin*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-XLogin*welcome:			Welcome to CLIENTHOST!
 XDE-XLogin*theme.icon:			gnome-brave
 XDE-XLogin*theme.name:			Squared-blue
+XDE-XLogin*theme.sound:			unexicon
 XDE-XLogin*theme.xde:			false
 XDE-XLogin*side:			top
 XDE-XLogin*user.default:		unexicon

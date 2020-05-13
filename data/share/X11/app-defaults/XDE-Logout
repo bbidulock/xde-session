@@ -9,6 +9,7 @@ XDE-Logout*splash:			/usr/share/xde/images/unexicon-splash.jpg
 !XDE-Logout*welcome:			Welcome to CLIENTHOST!
 XDE-Logout*theme.icon:			gnome-brave
 !XDE-Logout*theme.name:			Squared-blue
+!XDE-Logout*theme.sound:		unexicon
 XDE-Logout*theme.xde:			false
 XDE-Logout*side:			left
 XDE-Logout*user.default:		unexicon
