@@ -42,12 +42,12 @@
 
  *****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "autoconf.h"
-#endif
-
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
 #endif
 
 #include <stddef.h>
@@ -113,15 +113,16 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#define GTK_EVENT_STOP		TRUE
-#define GTK_EVENT_PROPAGATE	FALSE
-
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
 #include <fontconfig/fontconfig.h>
 #include <pango/pangofc-fontmap.h>
+
+#ifdef CANBERRA_SOUND
+#include <canberra-gtk.h>
+#endif
 
 #include <ctype.h>
 #include <sys/socket.h>
@@ -173,6 +174,9 @@ timestamp(void)
 #define EXIT_SUCCESS		0
 #define EXIT_FAILURE		1
 #define EXIT_SYNTAXERR		2
+
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
 
 static int saveArgc;
 static char **saveArgv;
@@ -262,6 +266,16 @@ enum {
 #undef EXIT_SYNTAXERR
 #define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
 
+#define CA_CONTEXT_ID	55
+
+typedef enum {
+	CaEventWindowManager = CA_CONTEXT_ID,
+	CaEventWorkspaceChange,
+	CaEventDesktopChange,
+	CaEventWindowChange,
+	CaEventLockScreen,
+} CaEventId;
+
 typedef enum {
 	CommandDefault,
 	CommandHelp,			/* command argument help */
@@ -320,6 +334,7 @@ typedef struct {
 	char *desktop;
 	char *icon_theme;
 	char *gtk2_theme;
+	char *soundtheme;
 	char *curs_theme;
 	LogoSide side;
 	Bool prompt;
@@ -401,6 +416,7 @@ Options options = {
 	.desktop = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.soundtheme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
 	.prompt = False,
@@ -481,6 +497,7 @@ Options defaults = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.soundtheme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
 	.prompt = False,
@@ -885,7 +902,7 @@ GDBusProxy *sd_display = NULL;
 
 #ifdef DO_XLOCKING
 static void LockScreen(gboolean hard);
-static void UnlockScreen(void);
+static void UnlockScreen(gboolean play);
 static void AbortLockScreen(void);
 static void AutoLockScreen(void);
 static void SystemLockScreen(void);
@@ -921,7 +938,7 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 		SystemLockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
 		DPRINTF("unlocking screen due to systemd request\n");
-		UnlockScreen();
+		UnlockScreen(TRUE);
 	}
 #endif
 }
@@ -1072,6 +1089,7 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 {
 	XScreenSaverNotifyEvent *ev = (typeof(ev)) xev;
 
+	(void) dpy;
 	DPRINT();
 
 	if (options.debug > 1) {
@@ -1306,7 +1324,7 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 			return GDK_FILTER_REMOVE;
 		case LockCommandUnlock:
 			DPRINTF("unlocking screen due to xclient message\n");
-			UnlockScreen();
+			UnlockScreen(TRUE);
 			return GDK_FILTER_REMOVE;
 		case LockCommandQuit:
 			exit(EXIT_SUCCESS);
@@ -1327,6 +1345,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
 	(void) event;
+	(void) data;
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
@@ -1376,6 +1395,7 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
+	(void) event;
 	DPRINT();
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
@@ -5677,6 +5697,8 @@ handle_events(void)
 gboolean
 on_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
+	(void) chan;
+	(void) data;
 	if (cond & (G_IO_NVAL|G_IO_HUP|G_IO_ERR)) {
 		EPRINTF("poll failed: %s %s %s\n",
 				(cond & G_IO_NVAL) ? "NVAL" : "",
@@ -5848,6 +5870,7 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 		&prop[10]
 	};
 
+	(void) data;
 	j = 0;
 
 	/* CloneCommand: This is like the RestartCommand except it restarts a
@@ -6117,6 +6140,9 @@ static void
 xdeSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
 		     int interactStyle, Bool fast)
 {
+	(void) saveType;
+	(void) interactStyle;
+	(void) fast;
 	if (!(sm_shutting_down = shutdown)) {
 		if (!SmcRequestSaveYourselfPhase2(smcConn, xdeSaveYourselfPhase2CB, data))
 			SmcSaveYourselfDone(smcConn, False);
@@ -6136,6 +6162,7 @@ xdeSaveYourselfCB(SmcConn smcConn, SmPointer data, int saveType, Bool shutdown,
 static void
 xdeDieCB(SmcConn smcConn, SmPointer data)
 {
+	(void) data;
 	SmcCloseConnection(smcConn, 0, NULL);
 	sm_shutting_down = False;
 	gtk_main_quit();
@@ -6144,6 +6171,8 @@ xdeDieCB(SmcConn smcConn, SmPointer data)
 static void
 xdeSaveCompleteCB(SmcConn smcConn, SmPointer data)
 {
+	(void) smcConn;
+	(void) data;
 	if (saving_yourself) {
 		saving_yourself = False;
 		gtk_main_quit();
@@ -6164,6 +6193,8 @@ xdeSaveCompleteCB(SmcConn smcConn, SmPointer data)
 static void
 xdeShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 {
+	(void) smcConn;
+	(void) data;
 	sm_shutting_down = False;
 	gtk_main_quit();
 }
@@ -6197,6 +6228,7 @@ on_ifd_watch(GIOChannel *chan, GIOCondition cond, pointer data)
 	SmcConn smcConn = (typeof(smcConn)) data;
 	IceConn iceConn = SmcGetIceConnection(smcConn);
 
+	(void) chan;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
 		EPRINTF("poll failed: %s %s %s\n", (cond & G_IO_NVAL) ? "NVAL" : "",
 			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
@@ -6285,6 +6317,7 @@ setup_pam(pam_handle_t *pamh)
 	}
 }
 
+#if defined(DO_XCHOOSER) || defined(DO_GREETER)
 static int
 pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp, void *data)
 {
@@ -6303,9 +6336,9 @@ void
 xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, const char *type)
 {
 	pam_handle_t *pamh = NULL;
+	const char *env;
 	struct pam_conv conv = { pam_conv_cb, NULL };
 	int result;
-	const char *env;
 	char *const *var;
 	static char *vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
 		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
@@ -6323,54 +6356,69 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 	if (options.display) {
 		DPRINTF("setting DISPLAY=%s\n", options.display);
 		setenv("DISPLAY", options.display, 1);
-		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+		result = pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		if (options.display[0] != ':') {
+			char *rhost;
+
+			if ((rhost = strdup(options.display))) {
+				*strchrnul(rhost, ':') = '\0';
+				result = pam_misc_setenv(pamh, "REMOTEHOST", rhost, 1);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				free(rhost);
+			}
+		}
 	}
 	if (options.authfile) {
 		DPRINTF("setting XAUTHORITY=%s\n", options.authfile);
 		setenv("XAUTHORITY", options.authfile, 1);
-		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+		result = pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 	}
 	if (class) { /* user or greeter */
 		DPRINTF("setting XDG_SESSION_CLASS=%s\n", class);
 		setenv("XDG_SESSION_CLASS", class, 1);
-		pam_misc_setenv(pamh, "XDG_SESSION_CLASS", class, 1);
+		result = pam_misc_setenv(pamh, "XDG_SESSION_CLASS", class, 1);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 	} else {
 		DPRINTF("unsetting XDG_SESSION_CLASS\n");
 		unsetenv("XDG_SESSION_CLASS");
-		pam_putenv(pamh, "XDG_SESSION_CLASS");
+		result = pam_putenv(pamh, "XDG_SESSION_CLASS");
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_putenv: %s\n", pam_strerror(pamh, result));
 	}
 	if (type) { /* x11 */
 		DPRINTF("setting XDG_SESSION_TYPE=%s\n", type);
 		setenv("XDG_SESSION_TYPE", type, 1);
-		pam_misc_setenv(pamh, "XDG_SESSION_TYPE", type, 1);
+		result = pam_misc_setenv(pamh, "XDG_SESSION_TYPE", type, 1);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 	} else {
 		DPRINTF("unsetting XDG_SESSION_TYPE\n");
 		unsetenv("XDG_SESSION_TYPE");
-		pam_putenv(pamh, "XDG_SESSION_TYPE");
+		result = pam_putenv(pamh, "XDG_SESSION_TYPE");
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_putenv: %s\n", pam_strerror(pamh, result));
 	}
 	if (options.seat) {
 		DPRINTF("setting XDG_SEAT=%s\n", options.seat);
 		setenv("XDG_SEAT", options.seat, 1);
-		pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
+		result = pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 	}
 	if (options.vtnr) {
 		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
 		setenv("XDG_VTNR", options.vtnr, 1);
-		pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
+		result = pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		DPRINTF("setting WINDOWPATH=%s\n", options.vtnr);
+		result = pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 1);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 	}
@@ -6413,31 +6461,42 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 	add_xauth_data(pamh);
 #endif
 	DPRINTF("copying PAM environment variables\n");
-	for (var = vars; *var; var++)
-		if ((env = getenv(*var)))
-			if ((result = pam_misc_setenv(pamh, *var, env, 1)) != PAM_SUCCESS)
+	for (var = vars; *var; var++) {
+		if ((env = getenv(*var))) {
+			DPRINTF("exporting %s=%s\n", *var, env);
+			if ((result = pam_misc_setenv(pamh, *var, env, 0)) != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		}
+	}
 	DPRINTF("copying XDM export list environment variables\n");
-	for (var = resources.exportList; var && *var; var++)
-		if ((env = getenv(*var)))
-			if ((result = pam_misc_setenv(pamh, *var, env, 1)) != PAM_SUCCESS)
+	for (var = resources.exportList; var && *var; var++) {
+		if ((env = getenv(*var))) {
+			DPRINTF("exporting %s=%s\n", *var, env);
+			if ((result = pam_misc_setenv(pamh, *var, env, 0)) != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		}
+	}
 	if (!(env = getenv("PATH")) || !env[0]) {
-		if (resources.systemPath)
-			result = pam_misc_setenv(pamh, "PATH", resources.systemPath, 1);
-		else
-			result = pam_misc_setenv(pamh, "PATH", "/sbin:/bin:/usr/sbin:/usr/bin", 1);
+		if (resources.systemPath) {
+			DPRINTF("setting PATH=%s\n", resources.systemPath);
+			result = pam_misc_setenv(pamh, "PATH", resources.systemPath, 0);
+		} else {
+			DPRINTF("setting PATH=%s\n", "/sbin:/bin:/usr/sbin:/usr/bin");
+			result = pam_misc_setenv(pamh, "PATH", "/sbin:/bin:/usr/sbin:/usr/bin", 0);
+		}
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 	}
-	DPRINTF("setting PAM environment variables\n");
+	DPRINTF("setting user PAM environment variables\n");
 	if (options.username) {
 		struct passwd *pw;
 
-		result = pam_misc_setenv(pamh, "USER", options.username, 1);
+		DPRINTF("setting USER=%s\n", options.username);
+		result = pam_misc_setenv(pamh, "USER", options.username, 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
-		result = pam_misc_setenv(pamh, "LOGNAME", options.username, 1);
+		DPRINTF("setting LOGNAME=%s\n", options.username);
+		result = pam_misc_setenv(pamh, "LOGNAME", options.username, 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 		if ((pw = getpwnam(options.username)) != NULL) {
@@ -6447,17 +6506,20 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 				if ((mail = calloc(PATH_MAX + 1, sizeof(*mail)))) {
 					strncpy(mail, "/var/mail/", PATH_MAX);
 					strncat(mail, pw->pw_name, PATH_MAX);
-					result = pam_misc_setenv(pamh, "MAIL", mail, 1);
+					DPRINTF("setting MAIL=%s\n", mail);
+					result = pam_misc_setenv(pamh, "MAIL", mail, 0);
 					if (result != PAM_SUCCESS)
 						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 					free(mail);
 				}
 			}
 			if (pw->pw_dir) {
-				result = pam_misc_setenv(pamh, "HOME", pw->pw_dir, 1);
+				DPRINTF("setting HOME=%s\n", pw->pw_dir);
+				result = pam_misc_setenv(pamh, "HOME", pw->pw_dir, 0);
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
-				result = pam_misc_setenv(pamh, "PWD", pw->pw_dir, 1);
+				DPRINTF("setting PWD=%s\n", pw->pw_dir);
+				result = pam_misc_setenv(pamh, "PWD", pw->pw_dir, 0);
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 
@@ -6467,7 +6529,8 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 				if (xauth != NULL) {
 					strncpy(xauth, pw->pw_dir, PATH_MAX);
 					strncat(xauth, "/.Xauthority", PATH_MAX);
-					result = pam_misc_setenv(pamh, "XAUTHORITY", xauth);
+					DPRINTF("setting XAUTHORITY=%s\n", xauth);
+					result = pam_misc_setenv(pamh, "XAUTHORITY", xauth, 0);
 					if (result != PAM_SUCCESS)
 						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 					free(xauth);
@@ -6477,14 +6540,18 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 			if (pw->pw_shell && pw->pw_shell[0] != '\0') {
 				/* should probably use * DisplayManager*systemShell for
 				   this */
-				result = pam_misc_setenv(pamh, "SHELL", pw->pw_shell, 1);
+				DPRINTF("setting SHELL=%s\n", pw->pw_shell);
+				result = pam_misc_setenv(pamh, "SHELL", pw->pw_shell, 0);
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 			} else {
 				setusershell();
-				result = pam_misc_setenv(pamh, "SHELL", getusershell(), 1);
-				if (result != PAM_SUCCESS)
-					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				if ((env = getusershell())) {
+					DPRINTF("setting SHELL=%s\n", env);
+					result = pam_misc_setenv(pamh, "SHELL", env, 0);
+					if (result != PAM_SUCCESS)
+						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				}
 				endusershell();
 			}
 		} else
@@ -6549,6 +6616,7 @@ xde_close_session(pam_handle_t *pamh)
 		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
 	pam_end(pamh, result);
 }
+#endif				/* defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 static int
 authenticate(void)
@@ -6753,10 +6821,291 @@ xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **r
 }
 
 #ifdef DO_XLOGIN
+#if 0
+int
+greet_child(int pipefd[])
+{
+	/* The child needs to set up its signal mask and open a pam x11/greeter session,
+	   perform the authentication, close the pam session and return the result.  When 
+	   the result is successful, it should write the authenticated user name to the
+	   pipe before exiting. */
+}
+
+int
+greet_parent(int pipefd[], pid_t pid)
+{
+	/* The parent needs to wait for the child to exit and if the exit status is
+	   success read the authenticated user name from the pipe and set
+	   options.username to the value and return the exit status.  The parent should
+	   likely not clode the writing end of the pipe so that the child can write and
+	   exit and the parent read later without generating a SIGPIPE, or the SIGPIPE
+	   should be blocked. */
+}
+
+int
+run_greeter(void)
+{
+	/* systemd has the problem that it does not allow the role of a process to be
+	   changed; therefore, when acting as a greeter, we fork a process and have the
+	   child open a PAM session as the greeter.  It shares a pipe with the parent so
+	   that it can pass the authenticated user name back to the parent. */
+	int pipefd[2];
+	pid_t pid;
+	int status;
+
+	if (pipe(pipefd) == -1) {
+		EPRINTF("pipe: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	switch ((pid = fork())) {
+	case 0:
+		/* the child */
+		status = greet_child(pipefd);
+		exit(status);
+	default:
+		/* the parent (pid is the pid of the child) */
+		status = greet_parent(pipefd, pid);
+		return (status);
+	case -1:
+		/* error */
+		EPRINTF("Fork: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+}
+#endif
+
 void
 run_login(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 #if 0
+	/* Although the greeter is run as a forked child, the login is performed from the 
+	   main process without forking.  But first, run the greeter to determine an
+	   authenticated user name.  */
+	int status;
+
+	status = run_greeter();
+	if (status != OBEYSESS_DISPLAY) {
+		EPRINTF("greeter failed with status %d\n", status);
+		exit(status);
+	}
+	/* At this point, options.username is set to the authenticated user name.  The
+	   process should establish a pam x11/user session and execute the
+	   DisplayManager*startup and DisplayManager*session scripts.  Note that
+	   DisplayManager*session might not exactly be what we are looking for, and
+	   should be adjusted accordingly.  */
+#if 0
+	pam_handle_t *pamh = NULL;
+	const char *env;
+	pid_t pid;
+	int result, status;
+	struct pam_conv conv = { xde_conv_cb, NULL };
+	FILE *dummy;
+	const char **var;
+
+	/* should probably use DisplayManager*exportList for this */
+	static const char **vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
+		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
+	};
+
+	DPRINTF("starting PAM\n");
+	result = pam_start("xde", options.username, &conv, &pamh);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_start: %s\n", pam_strerror(pamh, result));
+		exit(EXIT_FAILURE);
+	}
+	setup_pam(pamh);
+	if (options.display) {
+		DPRINTF("setting DISPLAY=%s\n", options.display);
+		setenv("DISPLAY", options.display, 1);
+		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+	}
+	if (options.authfile) {
+		DPRINTF("setting XAUTHORITY=%s\n", options.authfile);
+		setenv("XAUTHORITY", options.authfile, 1);
+		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+	}
+	{
+		static const char *class = "user";
+
+		DPRINTF("setting XDG_SESSION_CLASS=%s\n", class);
+		setenv("XDG_SESSION_CLASS", class, 1);
+		pam_misc_setenv(pamh, "XDG_SESSION_CLASS", class, 1);
+	}
+	{
+		static const char *type = "x11";
+
+		DPRINTF("setting XDG_SESSION_TYPE=%s\n", type);
+		setenv("XDG_SESSION_TYPE", type, 1);
+		pam_misc_setenv(pamh, "XDG_SESSION_TYPE", type, 1);
+	}
+	if (options.seat) {
+		DPRINTF("setting XDG_SEAT=%s\n", options.seat);
+		setenv("XDG_SEAT", options.seat, 1);
+		pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
+	}
+	if (options.vtnr) {
+		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
+		setenv("XDG_VTNR", options.vtnr, 1);
+		pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
+	}
+
+	DPRINTF("setting PAM items\n");
+	if (options.display && options.display[0] != ':' && options.username) {
+		char *rhost;
+
+		result = pam_set_item(pamh, PAM_RUSER, options.username);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_RUSER,\"%s\"): %s\n", options.username,
+				pam_strerror(pamh, result));
+		if ((rhost = strdup(options.display))) {
+			*strchrnul(rhost, ':') = '\0';
+			result = pam_set_item(pamh, PAM_RHOST, rhost);
+			if (result != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost, pam_strerror(pamh, result));
+			free(rhost);
+		}
+	}
+	if (options.tty) {
+		result = pam_set_item(pamh, PAM_TTY, options.tty);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_TTY,\"%s\"): %s\n", options.tty, pam_strerror(pamh, result));
+	}
+#ifdef PAM_XDISPLAY
+	if (options.display) {
+		result = pam_set_item(pamh, PAM_XDISPLAY, options.display);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_XDISPLAY,\"%s\"): %s\n", options.display,
+				pam_strerror(pamh, result));
+	}
+#endif
+#ifdef PAM_XAUTHDATA
+	add_xauth_data(pamh);
+#endif
+	DPRINTF("copying PAM environment variables\n");
+	for (var = vars; *var; var++)
+		if ((env = getenv(*var)))
+			if ((result = pam_misc_setenv(pamh, *var, env, 1)) != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	DPRINTF("copying XDM export list environment variables\n");
+	for (var = resources.exportList; var && *var; var++)
+		if ((env = getenv(*var)))
+			if ((result = pam_misc_setenv(pamh, *var, env, 1)) != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	if (!(env = getenv("PATH")) || !env[0]) {
+		if (resources.systemPath)
+			result = pam_misc_setenv(pamh, "PATH", resources.systemPath, 1);
+		else
+			result = pam_misc_setenv(pamh, "PATH", "/sbin:/bin:/usr/sbin:/usr/bin", 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+	DPRINTF("setting PAM environment variables\n");
+	if (options.username) {
+		struct passwd *pw;
+
+		result = pam_misc_setenv(pamh, "USER", options.username, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		result = pam_misc_setenv(pamh, "LOGNAME", options.username, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		if ((pw = getpwnam(options.username)) != NULL) {
+			if (pw->pw_name) {
+				char *mail;
+
+				if ((mail = calloc(PATH_MAX + 1, sizeof(*mail)))) {
+					strncpy(mail, "/var/mail/", PATH_MAX);
+					strncat(mail, pw->pw_name, PATH_MAX);
+					result = pam_misc_setenv(pamh, "MAIL", mail);
+					if (result != PAM_SUCCESS)
+						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+					free(mail);
+				}
+			}
+			if (pw->pw_dir) {
+				result = pam_misc_setenv(pamh, "HOME", pw->pw_dir);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				result = pam_misc_setenv(pamh, "PWD", pw->pw_dir);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+
+#if 0
+				char *xauth = calloc(PATH_MAX + 1, sizeof(*xauth));
+
+				if (xauth != NULL) {
+					strncpy(xauth, pw->pw_dir, PATH_MAX);
+					strncat(xauth, "/.Xauthority", PATH_MAX);
+					result = pam_misc_setenv(pamh, "XAUTHORITY", xauth);
+					if (result != PAM_SUCCESS)
+						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+					free(xauth);
+				}
+#endif
+			}
+			if (pw->pw_shell && pw->pw_shell != '\0') {
+				/* should probably use * DisplayManager*systemShell for
+				   this */
+				result = pam_misc_setenv(pamh, "SHELL", pw->pw_shell);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			} else {
+				setusershell();
+				result = pam_misc_setenv(pamh, "SHELL", getusershell());
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				endusershell();
+			}
+		} else
+			EPRINTF("getpwnam: %s\n", strerror(errno));
+		endpwent();
+	}
+	if (options.display) {
+		result = pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+#if 1
+	/* probably the wrong authfile but xdm does this */
+	if (options.authfile) {
+		result = pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+#endif
+	if (options.vtnr) {
+		result = pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+	if (options.display && options.display[0] != ':') {
+		char *rhost;
+
+		if ((rhost = strdup(options.display))) {
+			*strchrnul(rhost, ':') = '\0';
+			result = pam_misc_setenv(pamh, "REMOTEHOST", rhost, 1);
+			if (result != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			free(rhost);
+		}
+	}
+	DPRINTF("establishing credentials\n");
+	result = pam_setcred(pamh, PAM_ESTABLISH_CRED);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_setcred: %s\n", pam_strerror(pamh, result));
+		pam_end(pamh, result);
+		exit(EXIT_FAILURE);
+	}
+	DPRINTF("opening session\n");
+	result = pam_open_session(pamh, 0);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_open_session: %s\n", pam_strerror(pamh, result));
+		pam_end(pamh, result);
+		exit(EXIT_FAILURE);
+	}
+#endif
 #endif
 
 }
@@ -6795,6 +7144,15 @@ LockScreen(gboolean hard)
 	if (lock_state == LockStateLocked) {
 		DPRINTF("already locked!\n");
 		return;
+	} else {
+#ifdef CANBERRA_SOUND
+		GdkDisplay *disp = gdk_display_get_default();
+		GdkScreen *scrn = gdk_display_get_default_screen(disp);
+		ca_context *ca = ca_gtk_context_get_for_screen(scrn);
+
+		ca_context_cancel(ca, CaEventLockScreen);
+		ca_context_play(ca, CaEventLockScreen, CA_PROP_EVENT_ID, "desktop-screen-lock", NULL);
+#endif				/* CANBERRA_SOUND */
 	}
 	ShowWindow();
 	lock_state = LockStateLocked;
@@ -6822,13 +7180,22 @@ RelockScreen(void)
 }
 
 static void
-UnlockScreen(void)
+UnlockScreen(gboolean play)
 {
 	DPRINT();
 
 	if (lock_state == LockStateUnlocked) {
 		EPRINTF("already unlocked!\n");
 		return;
+	} else if (play) {
+#ifdef CANBERRA_SOUND
+		GdkDisplay *disp = gdk_display_get_default();
+		GdkScreen *scrn = gdk_display_get_default_screen(disp);
+		ca_context *ca = ca_gtk_context_get_for_screen(scrn);
+
+		ca_context_cancel(ca, CaEventLockScreen);
+		ca_context_play(ca, CaEventLockScreen, CA_PROP_EVENT_ID, "desktop-screen-unlock", NULL);
+#endif				/* CANBERRA_SOUND */
 	}
 	HideWindow();
 	lock_state = LockStateUnlocked;
@@ -6851,6 +7218,13 @@ AbortLockScreen(void)
 		if (lock_time.tv_sec) {
 			gettimeofday(&tv, NULL);
 			if (tv.tv_sec < lock_time.tv_sec + options.protect) {
+#ifdef CANBERRA_SOUND
+				GdkDisplay *disp = gdk_display_get_default();
+				GdkScreen *scrn = gdk_display_get_default_screen(disp);
+				ca_context *ca = ca_gtk_context_get_for_screen(scrn);
+
+				ca_context_cancel(ca, CaEventLockScreen);
+#endif				/* CANBERRA_SOUND */
 				DPRINTF("Screen saver interrupted: unlocking screen\n");
 				lock_state = LockStateAborted;
 				gtk_main_quit();
@@ -6888,6 +7262,8 @@ on_button_press(GtkStatusIcon *icon, GdkEvent *event, gpointer user_data)
 {
 	GdkEventButton *ev;
 
+	(void) icon;
+	(void) user_data;
 	ev = (typeof(ev)) event;
 	if (ev->button != 1)
 		return GTK_EVENT_PROPAGATE;
@@ -6899,6 +7275,8 @@ on_button_press(GtkStatusIcon *icon, GdkEvent *event, gpointer user_data)
 static void
 on_refresh_selected(GtkMenuItem *item, gpointer user_data)
 {
+	(void) item;
+	(void) user_data;
 	DPRINTF("locking screen due to refresh selected\n");
 	LockScreen(TRUE);
 }
@@ -6907,6 +7285,8 @@ static void
 on_about_selected(GtkMenuItem *item, gpointer user_data)
 {
 	gchar *authors[] = { "Brian F. G. Bidulock <bidulock@openss7.org>", NULL };
+	(void) item;
+	(void) user_data;
 	gtk_show_about_dialog(NULL,
 			      "authors", authors,
 			      "comments", "A systemd compliant screen locker.",
@@ -6927,6 +7307,8 @@ on_redo_selected(GtkMenuItem *item, gpointer user_data)
 	char **argv;
 	int i;
 
+	(void) item;
+	(void) user_data;
 #if 0
 	if (smcConn) {
 		/* When running under a session manager, simply exit and the session
@@ -6947,12 +7329,16 @@ on_redo_selected(GtkMenuItem *item, gpointer user_data)
 static void
 on_prefs_selected(GtkMenuItem *item, gpointer user_data)
 {
+	(void) item;
+	(void) user_data;
 	/* TODO */
 }
 
 static void
 on_quit_selected(GtkMenuItem *item, gpointer user_data)
 {
+	(void) item;
+	(void) user_data;
 	/* FIXME: tell session manager we are shutting down. */
 	exit(EXIT_SUCCESS);
 }
@@ -6961,6 +7347,7 @@ static void
 on_item_toggled(GtkCheckMenuItem *item, gpointer user_data)
 {
 	Bool *value = user_data;
+	(void) item;
 	*value = !*value;
 }
 
@@ -6969,6 +7356,7 @@ on_popup_menu(GtkStatusIcon *icon, guint button, guint time, gpointer user_data)
 {
 	GtkWidget *menu, *item;
 
+	(void) user_data;
 	menu = gtk_menu_new();
 
 	append_power_actions(GTK_MENU(menu));
@@ -7072,7 +7460,7 @@ do_run(int argc, char *argv[])
 #ifdef DO_XLOCKING
 	if (options.command != CommandLock) {
 		DPRINTF("unlocking screen due to program request\n");
-		UnlockScreen();
+		UnlockScreen(FALSE);
 	}
 #endif
 	for (;;) {
@@ -7086,7 +7474,7 @@ do_run(int argc, char *argv[])
 		DPRINT();
 		if (lock_state == LockStateAborted) {
 			DPRINTF("unlocking screen due to lock state abort\n");
-			UnlockScreen();
+			UnlockScreen(FALSE);
 			continue;
 		}
 #endif
@@ -7096,6 +7484,9 @@ do_run(int argc, char *argv[])
 			DPRINTF("relocking screen due to logout button\n");
 			RelockScreen();
 #else
+#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+			xde_close_session(pamh);
+#endif
 			exit(EXIT_FAILURE);
 #endif
 			continue;
@@ -7111,6 +7502,9 @@ do_run(int argc, char *argv[])
 			DPRINTF("relocking screen due to pam error\n");
 			RelockScreen();
 #else
+#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+			xde_close_session(pamh);
+#endif
 			exit(EXIT_FAILURE);
 #endif
 			continue;
@@ -7118,14 +7512,16 @@ do_run(int argc, char *argv[])
 			DPRINT();
 #ifdef DO_XLOCKING
 			DPRINTF("unlocking screen due to successful login\n");
-			UnlockScreen();
+			UnlockScreen(TRUE);
 #else
 #if defined(DO_XLOGIN)
 			run_login(argc, argv);
 #elif defined(DO_GREETER)
 			run_greeter(argc, argv);
-#elif defined(DO_CHOOSER)
+			xde_close_session(pamh);
+#elif defined(DO_XCHOOSER)
 			run_chooser(argc, argv);
+			xde_close_session(pamh);
 #endif
 			exit(EXIT_SUCCESS);
 #endif
@@ -7244,6 +7640,8 @@ do_unlock(int argc, char *argv[])
 	char selection[32] = { 0, };
 	Bool found = False;
 
+	(void) argc;
+	(void) argv;
 #if 0
 	/* unfortunately, these are privileged */
 	setup_systemd();
@@ -7471,18 +7869,20 @@ General options:\n\
         language to use (%7$s)\n\
     -i, --icons THEME\n\
         icon theme name to use for icons (%8$s)\n\
-    -T, --theme THEME\n\
+    -e, --theme THEME\n\
         GTK2 theme name to use for widgets (%9$s)\n\
+    -o, --sound THEME\n\
+        sound theme name to use for events (%10$s)\n\
     -u, --xde-theme\n\
-        use the XDE theme (%10$s)\n\
+        use the XDE theme (%11$s)\n\
     -v, --vendor VENDOR\n\
-        vendor identifier for branding (%11$s)\n\
+        vendor identifier for branding (%12$s)\n\
     -n, --dry-run\n\
-        do not act: only print intentions (%12$s)\n\
+        do not act: only print intentions (%13$s)\n\
     -D, --debug [LEVEL]\n\
-        increment or set debug LEVEL (%13$d)\n\
+        increment or set debug LEVEL (%14$d)\n\
     -v, --verbose [LEVEL]\n\
-        increment or set output verbosity LEVEL (%14$d)\n\
+        increment or set output verbosity LEVEL (%15$d)\n\
         this option may be repeated.\n\
 "	,argv[0]
 	,options.welcome
@@ -7491,8 +7891,9 @@ General options:\n\
 	,show_side(options.side)
 	,options.charset
 	,options.language
-	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
 	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
+	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
+	,options.usexde ? "xde" : (options.soundtheme ? : "auto")
 	,show_bool(options.usexde)
 	,options.vendor
 	,show_bool(options.dryrun)
@@ -7966,6 +8367,9 @@ get_resources(int argc, char *argv[])
 	}
 	if ((val = get_resource(rdb, "theme.name", NULL))) {
 		getXrmString(val, &options.gtk2_theme);
+	}
+	if ((val = get_resource(rdb, "theme.sound", NULL))) {
+		getXrmString(val, &options.soundtheme);
 	}
 	if ((val = get_resource(rdb, "theme.cursor", NULL))) {
 		getXrmString(val, &options.curs_theme);
@@ -9231,6 +9635,7 @@ main(int argc, char *argv[])
 			{"language",	    required_argument,	NULL, '2'},
 			{"icons",	    required_argument,	NULL, 'i'},
 			{"theme",	    required_argument,	NULL, 'e'},
+			{"sound",	    required_argument,	NULL, 'o'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
 			{"timeout",	    required_argument,	NULL, 'T'},
 			{"filename",	    no_argument,	NULL, 'f'},
@@ -9259,10 +9664,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:unD::v::hVCH?",
+		c = getopt_long_only(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:e:o:unD::v::hVCH?",
 				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:unDvhVCH?");
+		c = getopt(argc, argv, "d:a:rlUqx:c:t:w:b:S:s:p:i:T:e:o:unDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -9400,6 +9805,10 @@ main(int argc, char *argv[])
 		case 'e':	/* -e, --theme THEME */
 			free(options.gtk2_theme);
 			options.gtk2_theme = strdup(optarg);
+			break;
+		case 'o':	/* -o, --sound THEME */
+			free(options.soundtheme);
+			options.soundtheme = strdup(optarg);
 			break;
 		case 'u':	/* -u, --xde-theme */
 			options.usexde = True;

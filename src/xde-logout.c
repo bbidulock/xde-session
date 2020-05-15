@@ -42,12 +42,12 @@
 
  *****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "autoconf.h"
-#endif
-
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
 #endif
 
 #include <stddef.h>
@@ -113,15 +113,16 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#define GTK_EVENT_STOP		TRUE
-#define GTK_EVENT_PROPAGATE	FALSE
-
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
 #include <fontconfig/fontconfig.h>
 #include <pango/pangofc-fontmap.h>
+
+#ifdef CANBERRA_SOUND
+#include <canberra-gtk.h>
+#endif
 
 #include <ctype.h>
 #include <sys/socket.h>
@@ -173,6 +174,9 @@ timestamp(void)
 #define EXIT_SUCCESS		0
 #define EXIT_FAILURE		1
 #define EXIT_SYNTAXERR		2
+
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
 
 static int saveArgc;
 static char **saveArgv;
@@ -261,6 +265,16 @@ enum {
 #define EXIT_FAILURE	REMANAGE_DISPLAY
 #undef EXIT_SYNTAXERR
 #define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
+
+#define CA_CONTEXT_ID	55
+
+typedef enum {
+	CaEventWindowManager = CA_CONTEXT_ID,
+	CaEventWorkspaceChange,
+	CaEventDesktopChange,
+	CaEventWindowChange,
+	CaEventLockScreen,
+} CaEventId;
 
 typedef enum {
 	CommandDefault,
@@ -885,7 +899,7 @@ GDBusProxy *sd_display = NULL;
 
 #ifdef DO_XLOCKING
 static void LockScreen(gboolean hard);
-static void UnlockScreen(void);
+static void UnlockScreen(gboolean play);
 static void AbortLockScreen(void);
 static void AutoLockScreen(void);
 static void SystemLockScreen(void);
@@ -921,7 +935,7 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 		SystemLockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
 		DPRINTF("unlocking screen due to systemd request\n");
-		UnlockScreen();
+		UnlockScreen(TRUE);
 	}
 #endif
 }
@@ -1072,6 +1086,7 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 {
 	XScreenSaverNotifyEvent *ev = (typeof(ev)) xev;
 
+	(void) dpy;
 	DPRINT();
 
 	if (options.debug > 1) {
@@ -1306,7 +1321,7 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 			return GDK_FILTER_REMOVE;
 		case LockCommandUnlock:
 			DPRINTF("unlocking screen due to xclient message\n");
-			UnlockScreen();
+			UnlockScreen(TRUE);
 			return GDK_FILTER_REMOVE;
 		case LockCommandQuit:
 			exit(EXIT_SUCCESS);
@@ -1327,6 +1342,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
 	(void) event;
+	(void) data;
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
@@ -1376,6 +1392,7 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
+	(void) event;
 	DPRINT();
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
@@ -1982,7 +1999,8 @@ CanConnect(struct sockaddr *sa)
 	if (options.debug) {
 		char *p, *e, *rawbuf;
 		unsigned char *b;
-		int i, len;
+		socklen_t i;
+		int len;
 
 		len = 2 * salen + 1;
 		rawbuf = calloc(len, sizeof(*rawbuf));
@@ -2117,6 +2135,7 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 	socklen_t len;
 	SocketScope scope;
 
+	(void) authname_a;
 	DPRINT();
 
 	scope = getaddrscope(sa);
@@ -2459,6 +2478,7 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 	struct sockaddr_storage addr;
 	int addrlen, sfd, ifindex;
 
+	(void) condition;
 	DPRINT();
 	sfd = g_io_channel_unix_get_fd(source);
 	addrlen = sizeof(addr);
@@ -2527,6 +2547,7 @@ PingHosts(gpointer data)
 {
 	HostAddr *ha;
 
+	(void) data;
 	DPRINT();
 	for (ha = hostAddrdb; ha; ha = ha->next) {
 		int sfd;
@@ -2802,6 +2823,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 	CARD8 rawaddr[20] = { 0, };
 	ARRAY8 hostAddress = { 0, rawaddr };
 
+	(void) name;
 	switch (sa->sa_family) {
 	case AF_INET:
 	{
@@ -2919,7 +2941,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 		XdmcpWriteARRAY8(&buffer, &options.clientAddress);
 		XdmcpWriteCARD16(&buffer, connectionType);
 		XdmcpWriteARRAY8(&buffer, &hostAddress);
-		if (write(fd, (char *) buffer.data, buffer.pointer)) ;
+		if (write(fd, (char *) buffer.data, buffer.pointer)) { }
 		close(fd);
 	}
 	if (!options.xdmAddress.data || options.debug) {
@@ -2952,6 +2974,8 @@ DoAccept(GtkButton *button, gpointer data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
+	(void) data;
 	GValue ctype = G_VALUE_INIT;
 	GValue ipaddr = G_VALUE_INIT;
 	GValue willing = G_VALUE_INIT;
@@ -3071,6 +3095,7 @@ DoCheckWilling(PingHost *host)
 void
 DoPing(GtkButton *button, gpointer data)
 {
+	(void) button;
 	if (pingTry == PING_TRIES) {
 		pingTry = 0;
 		PingHosts(data);
@@ -3081,6 +3106,10 @@ static void
 on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer
 		 user_data)
 {
+	(void) view;
+	(void) path;
+	(void) column;
+	(void) user_data;
 }
 #endif				/* DO_XCHOOSER */
 
@@ -3231,6 +3260,7 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 	const struct pam_message **m;
 	int i;
 
+	(void) appdata_ptr;
 	if (num_msg <= 0)
 		return PAM_SUCCESS;
 	if (!(rarray = calloc(num_msg, sizeof(*rarray))))
@@ -3328,6 +3358,7 @@ on_poweroff(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3346,6 +3377,7 @@ on_reboot(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3364,6 +3396,7 @@ on_suspend(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3382,6 +3415,7 @@ on_hibernate(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3415,6 +3449,7 @@ on_hybridsleep(GtkMenuItem *item, gpointer data)
 static void
 free_value(gpointer data, GClosure *unused)
 {
+	(void) unused;
 	if (data)
 		g_free(data);
 }
@@ -3542,6 +3577,7 @@ append_session_tasks(GtkMenu *menu)
 {
 	const char *env;
 
+	(void) menu;
 	if (!(env = getenv("SESSION_MANAGER")))
 		return;
 }
@@ -4393,7 +4429,7 @@ ungrabbed_window(GtkWidget *window)
 /** @brief render a pixbuf into a pixmap for a monitor
   */
 void
-render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, XdeMonitor *xmon)
+render_pixbuf_for_mon(cairo_t *cr, GdkPixbuf *pixbuf, double wp, double hp, XdeMonitor *xmon)
 {
 	double wm = xmon->geom.width;
 	double hm = xmon->geom.height;
@@ -6504,6 +6540,8 @@ do_unlock(int argc, char *argv[])
 	char selection[32] = { 0, };
 	Bool found = False;
 
+	(void) argc;
+	(void) argv;
 #if 0
 	/* unfortunately, these are privileged */
 	setup_systemd();

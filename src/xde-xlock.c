@@ -334,6 +334,7 @@ typedef struct {
 	char *desktop;
 	char *icon_theme;
 	char *gtk2_theme;
+	char *soundtheme;
 	char *curs_theme;
 	LogoSide side;
 	Bool prompt;
@@ -415,6 +416,7 @@ Options options = {
 	.desktop = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.soundtheme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
 	.prompt = False,
@@ -495,6 +497,7 @@ Options defaults = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.soundtheme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
 	.prompt = False,
@@ -696,7 +699,7 @@ typedef enum {
 	LOGOUT_ACTION_SUSPEND,		/* suspend the computer */
 	LOGOUT_ACTION_HIBERNATE,	/* hibernate the computer */
 	LOGOUT_ACTION_HYBRIDSLEEP,	/* hybrid sleep the computer */
-	LOGOUT_ACTION_SUSPENDHIBERNATE,	/* hybrid sleep the computer */
+	LOGOUT_ACTION_SUSPENDHIBERNATE,	/* suspend then hibernate the computer */
 	LOGOUT_ACTION_SWITCHUSER,	/* switch users */
 	LOGOUT_ACTION_SWITCHDESK,	/* switch desktops */
 	LOGOUT_ACTION_LOCKSCREEN,	/* lock screen */
@@ -1342,6 +1345,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
 	(void) event;
+	(void) data;
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
@@ -1998,7 +2002,8 @@ CanConnect(struct sockaddr *sa)
 	if (options.debug) {
 		char *p, *e, *rawbuf;
 		unsigned char *b;
-		int i, len;
+		socklen_t i;
+		int len;
 
 		len = 2 * salen + 1;
 		rawbuf = calloc(len, sizeof(*rawbuf));
@@ -2133,6 +2138,7 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 	socklen_t len;
 	SocketScope scope;
 
+	(void) authname_a;
 	DPRINT();
 
 	scope = getaddrscope(sa);
@@ -2147,7 +2153,7 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 			DPRINTF("cannot use site/link local address without ifindex\n");
 			return False;
 		}
-		if (scope == options.clientScope && ifindex != options.clientIface) {
+		if (scope == options.clientScope && ifindex != (int) options.clientIface) {
 			DPRINTF("cannot use site/link local address with other ifindex\n");
 			return False;
 		}
@@ -2475,6 +2481,7 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 	struct sockaddr_storage addr;
 	int addrlen, sfd, ifindex;
 
+	(void) condition;
 	DPRINT();
 	sfd = g_io_channel_unix_get_fd(source);
 	addrlen = sizeof(addr);
@@ -2543,6 +2550,7 @@ PingHosts(gpointer data)
 {
 	HostAddr *ha;
 
+	(void) data;
 	DPRINT();
 	for (ha = hostAddrdb; ha; ha = ha->next) {
 		int sfd;
@@ -2818,6 +2826,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 	CARD8 rawaddr[20] = { 0, };
 	ARRAY8 hostAddress = { 0, rawaddr };
 
+	(void) name;
 	switch (sa->sa_family) {
 	case AF_INET:
 	{
@@ -2935,7 +2944,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 		XdmcpWriteARRAY8(&buffer, &options.clientAddress);
 		XdmcpWriteCARD16(&buffer, connectionType);
 		XdmcpWriteARRAY8(&buffer, &hostAddress);
-		if (write(fd, (char *) buffer.data, buffer.pointer)) ;
+		if (write(fd, (char *) buffer.data, buffer.pointer)) { }
 		close(fd);
 	}
 	if (!options.xdmAddress.data || options.debug) {
@@ -2968,6 +2977,8 @@ DoAccept(GtkButton *button, gpointer data)
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
+	(void) button;
+	(void) data;
 	GValue ctype = G_VALUE_INIT;
 	GValue ipaddr = G_VALUE_INIT;
 	GValue willing = G_VALUE_INIT;
@@ -3087,6 +3098,7 @@ DoCheckWilling(PingHost *host)
 void
 DoPing(GtkButton *button, gpointer data)
 {
+	(void) button;
 	if (pingTry == PING_TRIES) {
 		pingTry = 0;
 		PingHosts(data);
@@ -3097,6 +3109,10 @@ static void
 on_row_activated(GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer
 		 user_data)
 {
+	(void) view;
+	(void) path;
+	(void) column;
+	(void) user_data;
 }
 #endif				/* DO_XCHOOSER */
 
@@ -3564,7 +3580,7 @@ append_power_actions(GtkMenu *menu)
 	if (append_power_action(submenu, islocal, "CanHybridSleep", "Hybrid Sleep",
 				"system-sleep", G_CALLBACK(on_hybridsleep)))
 		gotone = TRUE;
-	if (append_power_action(submenu, islocal, "CanSuspendHibernate", "Suspend Hibernate",
+	if (append_power_action(submenu, islocal, "CanSuspendThenHibernate", "Suspend Hibernate",
 				"system-suspend-hibernate", G_CALLBACK(on_suspendhibernate)))
 		gotone = TRUE;
 
@@ -4024,21 +4040,21 @@ test_power_functions()
 		g_clear_error(&err);
 	}
 
-	result = g_dbus_proxy_call_sync(sd_manager, "CanSuspendHibernate",
+	result = g_dbus_proxy_call_sync(sd_manager, "CanSuspendThenHibernate",
 					NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
 	ok = (result != NULL);
 	if (ok && !err) {
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanSuspendHibernate status is %s\n", value);
+		DPRINTF("CanSuspendThenHibernate status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_SUSPENDHIBERNATE] = status_of_string(value);
 		g_variant_unref(var);
 		g_variant_unref(result);
 		value = NULL;
 	} else {
-		EPRINTF("CanSuspendHibernate call failed: %s\n", err ? err->message : NULL);
+		EPRINTF("CanSuspendThenHibernate call failed: %s\n", err ? err->message : NULL);
 		g_clear_error(&err);
 	}
 }
@@ -6255,19 +6271,366 @@ init_smclient(void)
 
 #endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
+static void
+setup_pam(pam_handle_t *pamh)
+{
+	int err;
+
+	if (!options.display) {
+		EPRINTF("DISPLAY is null!\n");
+		exit(EXIT_FAILURE);
+	}
+	/* pam_set_item(3) says this item is Linux-specific */
+	if ((err = pam_set_item(pamh, PAM_XDISPLAY, options.display)) != PAM_SUCCESS)
+		EPRINTF("pam_set_item(PAM_XDISPLAY, \"%s\"): %s\n", options.display, pam_strerror(pamh, err));
+	if (options.display[0] == ':') {
+		char *tty = NULL;
+
+#if 0
+		if (options.tty) {
+			tty = strdup(options.tty);
+		} else if (options.vtnr) {
+			tty = calloc(16, sizeof(*tty));
+			snprintf(tty, 16, "tty%s", options.vtnr);
+		} else
+#endif
+		if (options.display) {
+			/* xdm just sets PAM_TTY to the display string: also in
+			   pam_set_item(3) */
+			tty = strdup(options.display);
+		}
+		if (tty) {
+			if ((err = pam_set_item(pamh, PAM_TTY, tty)) != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_TTY, \"%s\"): %s\n", tty, pam_strerror(pamh, err));
+			free(tty);
+		}
+	} else {
+		char *rhost;
+
+		if ((rhost = strdup(options.display))) {
+			if (strrchr(rhost, ':'))
+				*strrchr(rhost, ':') = '\0';
+			if ((err = pam_set_item(pamh, PAM_RHOST, rhost)) != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost, pam_strerror(pamh, err));
+			free(rhost);
+		}
+	}
+}
+
+#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+static int
+pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp, void *data)
+{
+	(void) len;
+	(void) msg;
+	(void) resp;
+	(void) data;
+	return PAM_SUCCESS;	/* we don't do auth */
+}
+
+#ifdef PAM_XAUTHDATA
+void add_xauth_data(pam_handle_t *pamh);
+#endif
+
+void
+xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, const char *type)
+{
+	pam_handle_t *pamh = NULL;
+	const char *env;
+	struct pam_conv conv = { pam_conv_cb, NULL };
+	int result;
+	char *const *var;
+	static char *vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
+		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
+	};
+
+	DPRINTF("starting PAM\n");
+	result = pam_start(service, NULL, &conv, &pamh);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_start: %s\n", pam_strerror(pamh, result));
+		exit(EXIT_FAILURE);
+	}
+	setup_pam(pamh);
+
+	DPRINTF("adjusting environment variables\n");
+	if (options.display) {
+		DPRINTF("setting DISPLAY=%s\n", options.display);
+		setenv("DISPLAY", options.display, 1);
+		result = pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		if (options.display[0] != ':') {
+			char *rhost;
+
+			if ((rhost = strdup(options.display))) {
+				*strchrnul(rhost, ':') = '\0';
+				result = pam_misc_setenv(pamh, "REMOTEHOST", rhost, 1);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				free(rhost);
+			}
+		}
+	}
+	if (options.authfile) {
+		DPRINTF("setting XAUTHORITY=%s\n", options.authfile);
+		setenv("XAUTHORITY", options.authfile, 1);
+		result = pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+	if (class) { /* user or greeter */
+		DPRINTF("setting XDG_SESSION_CLASS=%s\n", class);
+		setenv("XDG_SESSION_CLASS", class, 1);
+		result = pam_misc_setenv(pamh, "XDG_SESSION_CLASS", class, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	} else {
+		DPRINTF("unsetting XDG_SESSION_CLASS\n");
+		unsetenv("XDG_SESSION_CLASS");
+		result = pam_putenv(pamh, "XDG_SESSION_CLASS");
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_putenv: %s\n", pam_strerror(pamh, result));
+	}
+	if (type) { /* x11 */
+		DPRINTF("setting XDG_SESSION_TYPE=%s\n", type);
+		setenv("XDG_SESSION_TYPE", type, 1);
+		result = pam_misc_setenv(pamh, "XDG_SESSION_TYPE", type, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	} else {
+		DPRINTF("unsetting XDG_SESSION_TYPE\n");
+		unsetenv("XDG_SESSION_TYPE");
+		result = pam_putenv(pamh, "XDG_SESSION_TYPE");
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_putenv: %s\n", pam_strerror(pamh, result));
+	}
+	if (options.seat) {
+		DPRINTF("setting XDG_SEAT=%s\n", options.seat);
+		setenv("XDG_SEAT", options.seat, 1);
+		result = pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+	if (options.vtnr) {
+		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
+		setenv("XDG_VTNR", options.vtnr, 1);
+		result = pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		DPRINTF("setting WINDOWPATH=%s\n", options.vtnr);
+		result = pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+
+	DPRINTF("setting PAM items\n");
+	if (service) {
+		result = pam_set_item(pamh, PAM_SERVICE, service);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_SERVICE,\"%s\"): %s\n", service, pam_strerror(pamh, result));
+	}
+	if (options.display && options.display[0] != ':' && options.username) {
+		char *rhost;
+
+		result = pam_set_item(pamh, PAM_RUSER, options.username);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_RUSER,\"%s\"): %s\n", options.username,
+				pam_strerror(pamh, result));
+		if ((rhost = strdup(options.display))) {
+			*strchrnul(rhost, ':') = '\0';
+			result = pam_set_item(pamh, PAM_RHOST, rhost);
+			if (result != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost, pam_strerror(pamh, result));
+			free(rhost);
+		}
+	}
+	if (options.tty) {
+		result = pam_set_item(pamh, PAM_TTY, options.tty);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_TTY,\"%s\"): %s\n", options.tty, pam_strerror(pamh, result));
+	}
+#ifdef PAM_XDISPLAY
+	if (options.display) {
+		result = pam_set_item(pamh, PAM_XDISPLAY, options.display);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_XDISPLAY,\"%s\"): %s\n", options.display,
+				pam_strerror(pamh, result));
+	}
+#endif
+#ifdef PAM_XAUTHDATA
+	add_xauth_data(pamh);
+#endif
+	DPRINTF("copying PAM environment variables\n");
+	for (var = vars; *var; var++) {
+		if ((env = getenv(*var))) {
+			DPRINTF("exporting %s=%s\n", *var, env);
+			if ((result = pam_misc_setenv(pamh, *var, env, 0)) != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		}
+	}
+	DPRINTF("copying XDM export list environment variables\n");
+	for (var = resources.exportList; var && *var; var++) {
+		if ((env = getenv(*var))) {
+			DPRINTF("exporting %s=%s\n", *var, env);
+			if ((result = pam_misc_setenv(pamh, *var, env, 0)) != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		}
+	}
+	if (!(env = getenv("PATH")) || !env[0]) {
+		if (resources.systemPath) {
+			DPRINTF("setting PATH=%s\n", resources.systemPath);
+			result = pam_misc_setenv(pamh, "PATH", resources.systemPath, 0);
+		} else {
+			DPRINTF("setting PATH=%s\n", "/sbin:/bin:/usr/sbin:/usr/bin");
+			result = pam_misc_setenv(pamh, "PATH", "/sbin:/bin:/usr/sbin:/usr/bin", 0);
+		}
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+	DPRINTF("setting user PAM environment variables\n");
+	if (options.username) {
+		struct passwd *pw;
+
+		DPRINTF("setting USER=%s\n", options.username);
+		result = pam_misc_setenv(pamh, "USER", options.username, 0);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		DPRINTF("setting LOGNAME=%s\n", options.username);
+		result = pam_misc_setenv(pamh, "LOGNAME", options.username, 0);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		if ((pw = getpwnam(options.username)) != NULL) {
+			if (pw->pw_name) {
+				char *mail;
+
+				if ((mail = calloc(PATH_MAX + 1, sizeof(*mail)))) {
+					strncpy(mail, "/var/mail/", PATH_MAX);
+					strncat(mail, pw->pw_name, PATH_MAX);
+					DPRINTF("setting MAIL=%s\n", mail);
+					result = pam_misc_setenv(pamh, "MAIL", mail, 0);
+					if (result != PAM_SUCCESS)
+						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+					free(mail);
+				}
+			}
+			if (pw->pw_dir) {
+				DPRINTF("setting HOME=%s\n", pw->pw_dir);
+				result = pam_misc_setenv(pamh, "HOME", pw->pw_dir, 0);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				DPRINTF("setting PWD=%s\n", pw->pw_dir);
+				result = pam_misc_setenv(pamh, "PWD", pw->pw_dir, 0);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+
+#if 0
+				char *xauth = calloc(PATH_MAX + 1, sizeof(*xauth));
+
+				if (xauth != NULL) {
+					strncpy(xauth, pw->pw_dir, PATH_MAX);
+					strncat(xauth, "/.Xauthority", PATH_MAX);
+					DPRINTF("setting XAUTHORITY=%s\n", xauth);
+					result = pam_misc_setenv(pamh, "XAUTHORITY", xauth, 0);
+					if (result != PAM_SUCCESS)
+						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+					free(xauth);
+				}
+#endif
+			}
+			if (pw->pw_shell && pw->pw_shell[0] != '\0') {
+				/* should probably use * DisplayManager*systemShell for
+				   this */
+				DPRINTF("setting SHELL=%s\n", pw->pw_shell);
+				result = pam_misc_setenv(pamh, "SHELL", pw->pw_shell, 0);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			} else {
+				setusershell();
+				if ((env = getusershell())) {
+					DPRINTF("setting SHELL=%s\n", env);
+					result = pam_misc_setenv(pamh, "SHELL", env, 0);
+					if (result != PAM_SUCCESS)
+						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				}
+				endusershell();
+			}
+		} else
+			EPRINTF("getpwnam: %s\n", strerror(errno));
+		endpwent();
+	}
+	if (options.display) {
+		result = pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+#if 1
+	/* probably the wrong authfile but xdm does this */
+	if (options.authfile) {
+		result = pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+#endif
+	if (options.vtnr) {
+		result = pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+	if (options.display && options.display[0] != ':') {
+		char *rhost;
+
+		if ((rhost = strdup(options.display))) {
+			*strchrnul(rhost, ':') = '\0';
+			result = pam_misc_setenv(pamh, "REMOTEHOST", rhost, 1);
+			if (result != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			free(rhost);
+		}
+	}
+	DPRINTF("establishing credentials\n");
+	result = pam_setcred(pamh, PAM_ESTABLISH_CRED);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_setcred: %s\n", pam_strerror(pamh, result));
+		pam_end(pamh, result);
+		exit(EXIT_FAILURE);
+	}
+	DPRINTF("opening session\n");
+	result = pam_open_session(pamh, 0);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_open_session: %s\n", pam_strerror(pamh, result));
+		if (getuid() == 0) {
+			pam_end(pamh, result);
+			exit(EXIT_FAILURE);
+		}
+	}
+	*pamhp = pamh;
+}
+
+void
+xde_close_session(pam_handle_t *pamh)
+{
+	int result;
+
+	result = pam_close_session(pamh, PAM_SILENT);
+	if (result != PAM_SUCCESS)
+		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
+	pam_end(pamh, result);
+}
+#endif				/* defined(DO_XCHOOSER) || defined(DO_GREETER) */
+
 static int
 authenticate(void)
 {
 	pam_handle_t *pamh = NULL;
 	const char *uname = NULL;
 	int err, status = PAM_ABORT, flags = 0;
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	const char *service = options.autologin ? "xde-autologin" : "xde";
 #else
 	const char *service = "system-login";
 #endif
 
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	if (!options.display || (options.display[0] != ':' && !options.remotelogin)) {
 		EPRINTF("remote login not permitted\n");
 		return (status);
@@ -6283,46 +6646,7 @@ authenticate(void)
 		if (getuid() != 0)
 			uname = strdup(options.username);
 	}
-	if (options.display) {
-		/* pam_set_item(3) says this item is Linux-specific */
-		if ((err = pam_set_item(pamh, PAM_XDISPLAY, options.display)) != PAM_SUCCESS)
-			EPRINTF("pam_set_item(PAM_XDISPLAY, \"%s\"): %s\n", options.display,
-				pam_strerror(pamh, err));
-		if (options.display[0] == ':') {
-			char *tty = NULL;
-
-#if 0
-			if (options.tty) {
-				tty = strdup(options.tty);
-			} else if (options.vtnr) {
-				tty = calloc(16, sizeof(*tty));
-				snprintf(tty, 16, "tty%s", options.vtnr);
-			} else
-#endif
-			if (options.display) {
-				/* xdm just sets PAM_TTY to the display string: also in
-				   pam_set_item(3) */
-				tty = strdup(options.display);
-			}
-			if (tty) {
-				if ((err = pam_set_item(pamh, PAM_TTY, tty)) != PAM_SUCCESS)
-					EPRINTF("pam_set_item(PAM_TTY, \"%s\"): %s\n", tty,
-						pam_strerror(pamh, err));
-				free(tty);
-			}
-		} else {
-			char *rhost;
-
-			if ((rhost = strdup(options.display))) {
-				if (strrchr(rhost, ':'))
-					*strrchr(rhost, ':') = '\0';
-				if ((err = pam_set_item(pamh, PAM_RHOST, rhost)) != PAM_SUCCESS)
-					EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost,
-						pam_strerror(pamh, err));
-				free(rhost);
-			}
-		}
-	}
+	setup_pam(pamh);
 	if (!resources.allowNullPasswd)
 		flags |= PAM_DISALLOW_NULL_AUTHTOK;
 	for (;;) {
@@ -6392,6 +6716,424 @@ authenticate(void)
 		return (PAM_ABORT);
 	return (status);
 }
+
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+
+#ifdef PAM_XAUTHDATA
+void
+add_xauth_data(pam_handle_t *pamh)
+{
+	char *file, *nam, *p, num[12] = { 0, };
+	Xauth *xau;
+	int namlen, numlen, result;
+	char *typ = "MIT-MAGIC-COOKIE-1";
+	int typlen = strlen(typ);
+	struct pam_xauth_data data;
+	unsigned short family;
+
+#if 0
+	DPRINTF("strapped out for now\n");
+	return;
+#endif
+	DPRINTF("determining X auth data\n");
+	if (!(nam = calloc(HOST_NAME_MAX + 1, sizeof(*nam))))
+		return;
+	if (!options.display) {
+		EPRINTF("need display name for function\n");
+		free(nam);
+		return;
+	}
+	strncpy(nam, options.display, HOST_NAME_MAX);
+	if (!(p = strchr(nam, ':'))) {
+		EPRINTF("no colon (:) in display name %s\n", nam);
+		free(nam);
+		return;
+	}
+	*p = '\0';
+	namlen = strnlen(nam, HOST_NAME_MAX);
+	p = nam + namlen + 1;
+	*strchrnul(p, '.') = '\0';
+	strcpy(num, p);
+	numlen = strlen(num);
+	if (namlen == 0) {
+		family = FamilyLocal;
+		gethostname(nam, HOST_NAME_MAX);
+		namlen = strlen(nam);
+	} else {
+		family = FamilyNetname;
+	}
+
+	DPRINTF("nam is %s (%d chars); num is %s (%d chars)\n",
+			nam, namlen, num, numlen);
+
+	if (!(file = options.authfile))
+		file = XauFileName();
+	if (!file) {
+		EPRINTF("cannot determine Xauthority file name\n");
+		free(nam);
+		return;
+	}
+#if 0
+	DPRINTF("locking auth file\n");
+	if ((result = XauLockAuth(file, 1, 5, 0)) != LOCK_SUCCESS) {
+		EPRINTF("could not lock auth file %s\n", file);
+		if (result == LOCK_ERROR)
+			EPRINTF("lock error %s\n", strerror(errno));
+		if (result == LOCK_TIMEOUT)
+			EPRINTF("could not lock within timeout\n");
+		return;
+	}
+#endif
+	DPRINTF("determining X auth data\n");
+	xau = XauGetBestAuthByAddr(family, namlen, nam, numlen, num, 1, &typ, &typlen);
+	if (!xau) {
+		EPRINTF("cannot obtain useable Xauth entry\n");
+		free(nam);
+		return;
+	}
+#if 0
+	XauUnlockAuth(file);
+#endif
+
+	data.namelen = xau->name_length;
+	data.name = xau->name;
+	data.datalen = xau->data_length;
+	data.data = xau->data;
+
+	DPRINTF("setting X auth data for %s\n", data.name);
+	result = pam_set_item(pamh, PAM_XAUTHDATA, &data);
+	if (result != PAM_SUCCESS)
+		EPRINTF("pam_set_item(PAM_XAUTHDATA,\"%p\"): %s\n", &data, pam_strerror(pamh, result));
+	XauDisposeAuth(xau);
+	free(nam);
+	return;
+}
+#endif
+
+int
+xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **resp, void *appdata_ptr)
+{
+	(void) num_msg;
+	(void) msg;
+	(void) resp;
+	(void) appdata_ptr;
+	return PAM_SUCCESS;	/* we don't do auth here */
+}
+
+#ifdef DO_XLOGIN
+#if 0
+int
+greet_child(int pipefd[])
+{
+	/* The child needs to set up its signal mask and open a pam x11/greeter session,
+	   perform the authentication, close the pam session and return the result.  When 
+	   the result is successful, it should write the authenticated user name to the
+	   pipe before exiting. */
+}
+
+int
+greet_parent(int pipefd[], pid_t pid)
+{
+	/* The parent needs to wait for the child to exit and if the exit status is
+	   success read the authenticated user name from the pipe and set
+	   options.username to the value and return the exit status.  The parent should
+	   likely not clode the writing end of the pipe so that the child can write and
+	   exit and the parent read later without generating a SIGPIPE, or the SIGPIPE
+	   should be blocked. */
+}
+
+int
+run_greeter(void)
+{
+	/* systemd has the problem that it does not allow the role of a process to be
+	   changed; therefore, when acting as a greeter, we fork a process and have the
+	   child open a PAM session as the greeter.  It shares a pipe with the parent so
+	   that it can pass the authenticated user name back to the parent. */
+	int pipefd[2];
+	pid_t pid;
+	int status;
+
+	if (pipe(pipefd) == -1) {
+		EPRINTF("pipe: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	switch ((pid = fork())) {
+	case 0:
+		/* the child */
+		status = greet_child(pipefd);
+		exit(status);
+	default:
+		/* the parent (pid is the pid of the child) */
+		status = greet_parent(pipefd, pid);
+		return (status);
+	case -1:
+		/* error */
+		EPRINTF("Fork: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+}
+#endif
+
+void
+run_login(int argc, char *argv[])
+{
+	(void) argc;
+	(void) argv;
+#if 0
+	/* Although the greeter is run as a forked child, the login is performed from the 
+	   main process without forking.  But first, run the greeter to determine an
+	   authenticated user name.  */
+	int status;
+
+	status = run_greeter();
+	if (status != OBEYSESS_DISPLAY) {
+		EPRINTF("greeter failed with status %d\n", status);
+		exit(status);
+	}
+	/* At this point, options.username is set to the authenticated user name.  The
+	   process should establish a pam x11/user session and execute the
+	   DisplayManager*startup and DisplayManager*session scripts.  Note that
+	   DisplayManager*session might not exactly be what we are looking for, and
+	   should be adjusted accordingly.  */
+#if 0
+	pam_handle_t *pamh = NULL;
+	const char *env;
+	pid_t pid;
+	int result, status;
+	struct pam_conv conv = { xde_conv_cb, NULL };
+	FILE *dummy;
+	const char **var;
+
+	/* should probably use DisplayManager*exportList for this */
+	static const char **vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
+		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
+	};
+
+	DPRINTF("starting PAM\n");
+	result = pam_start("xde", options.username, &conv, &pamh);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_start: %s\n", pam_strerror(pamh, result));
+		exit(EXIT_FAILURE);
+	}
+	setup_pam(pamh);
+	if (options.display) {
+		DPRINTF("setting DISPLAY=%s\n", options.display);
+		setenv("DISPLAY", options.display, 1);
+		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+	}
+	if (options.authfile) {
+		DPRINTF("setting XAUTHORITY=%s\n", options.authfile);
+		setenv("XAUTHORITY", options.authfile, 1);
+		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+	}
+	{
+		static const char *class = "user";
+
+		DPRINTF("setting XDG_SESSION_CLASS=%s\n", class);
+		setenv("XDG_SESSION_CLASS", class, 1);
+		pam_misc_setenv(pamh, "XDG_SESSION_CLASS", class, 1);
+	}
+	{
+		static const char *type = "x11";
+
+		DPRINTF("setting XDG_SESSION_TYPE=%s\n", type);
+		setenv("XDG_SESSION_TYPE", type, 1);
+		pam_misc_setenv(pamh, "XDG_SESSION_TYPE", type, 1);
+	}
+	if (options.seat) {
+		DPRINTF("setting XDG_SEAT=%s\n", options.seat);
+		setenv("XDG_SEAT", options.seat, 1);
+		pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
+	}
+	if (options.vtnr) {
+		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
+		setenv("XDG_VTNR", options.vtnr, 1);
+		pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
+	}
+
+	DPRINTF("setting PAM items\n");
+	if (options.display && options.display[0] != ':' && options.username) {
+		char *rhost;
+
+		result = pam_set_item(pamh, PAM_RUSER, options.username);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_RUSER,\"%s\"): %s\n", options.username,
+				pam_strerror(pamh, result));
+		if ((rhost = strdup(options.display))) {
+			*strchrnul(rhost, ':') = '\0';
+			result = pam_set_item(pamh, PAM_RHOST, rhost);
+			if (result != PAM_SUCCESS)
+				EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost, pam_strerror(pamh, result));
+			free(rhost);
+		}
+	}
+	if (options.tty) {
+		result = pam_set_item(pamh, PAM_TTY, options.tty);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_TTY,\"%s\"): %s\n", options.tty, pam_strerror(pamh, result));
+	}
+#ifdef PAM_XDISPLAY
+	if (options.display) {
+		result = pam_set_item(pamh, PAM_XDISPLAY, options.display);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_set_item(PAM_XDISPLAY,\"%s\"): %s\n", options.display,
+				pam_strerror(pamh, result));
+	}
+#endif
+#ifdef PAM_XAUTHDATA
+	add_xauth_data(pamh);
+#endif
+	DPRINTF("copying PAM environment variables\n");
+	for (var = vars; *var; var++)
+		if ((env = getenv(*var)))
+			if ((result = pam_misc_setenv(pamh, *var, env, 1)) != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	DPRINTF("copying XDM export list environment variables\n");
+	for (var = resources.exportList; var && *var; var++)
+		if ((env = getenv(*var)))
+			if ((result = pam_misc_setenv(pamh, *var, env, 1)) != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	if (!(env = getenv("PATH")) || !env[0]) {
+		if (resources.systemPath)
+			result = pam_misc_setenv(pamh, "PATH", resources.systemPath, 1);
+		else
+			result = pam_misc_setenv(pamh, "PATH", "/sbin:/bin:/usr/sbin:/usr/bin", 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+	DPRINTF("setting PAM environment variables\n");
+	if (options.username) {
+		struct passwd *pw;
+
+		result = pam_misc_setenv(pamh, "USER", options.username, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		result = pam_misc_setenv(pamh, "LOGNAME", options.username, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		if ((pw = getpwnam(options.username)) != NULL) {
+			if (pw->pw_name) {
+				char *mail;
+
+				if ((mail = calloc(PATH_MAX + 1, sizeof(*mail)))) {
+					strncpy(mail, "/var/mail/", PATH_MAX);
+					strncat(mail, pw->pw_name, PATH_MAX);
+					result = pam_misc_setenv(pamh, "MAIL", mail);
+					if (result != PAM_SUCCESS)
+						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+					free(mail);
+				}
+			}
+			if (pw->pw_dir) {
+				result = pam_misc_setenv(pamh, "HOME", pw->pw_dir);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				result = pam_misc_setenv(pamh, "PWD", pw->pw_dir);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+
+#if 0
+				char *xauth = calloc(PATH_MAX + 1, sizeof(*xauth));
+
+				if (xauth != NULL) {
+					strncpy(xauth, pw->pw_dir, PATH_MAX);
+					strncat(xauth, "/.Xauthority", PATH_MAX);
+					result = pam_misc_setenv(pamh, "XAUTHORITY", xauth);
+					if (result != PAM_SUCCESS)
+						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+					free(xauth);
+				}
+#endif
+			}
+			if (pw->pw_shell && pw->pw_shell != '\0') {
+				/* should probably use * DisplayManager*systemShell for
+				   this */
+				result = pam_misc_setenv(pamh, "SHELL", pw->pw_shell);
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			} else {
+				setusershell();
+				result = pam_misc_setenv(pamh, "SHELL", getusershell());
+				if (result != PAM_SUCCESS)
+					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+				endusershell();
+			}
+		} else
+			EPRINTF("getpwnam: %s\n", strerror(errno));
+		endpwent();
+	}
+	if (options.display) {
+		result = pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+#if 1
+	/* probably the wrong authfile but xdm does this */
+	if (options.authfile) {
+		result = pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+#endif
+	if (options.vtnr) {
+		result = pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 1);
+		if (result != PAM_SUCCESS)
+			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	}
+	if (options.display && options.display[0] != ':') {
+		char *rhost;
+
+		if ((rhost = strdup(options.display))) {
+			*strchrnul(rhost, ':') = '\0';
+			result = pam_misc_setenv(pamh, "REMOTEHOST", rhost, 1);
+			if (result != PAM_SUCCESS)
+				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			free(rhost);
+		}
+	}
+	DPRINTF("establishing credentials\n");
+	result = pam_setcred(pamh, PAM_ESTABLISH_CRED);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_setcred: %s\n", pam_strerror(pamh, result));
+		pam_end(pamh, result);
+		exit(EXIT_FAILURE);
+	}
+	DPRINTF("opening session\n");
+	result = pam_open_session(pamh, 0);
+	if (result != PAM_SUCCESS) {
+		EPRINTF("pam_open_session: %s\n", pam_strerror(pamh, result));
+		pam_end(pamh, result);
+		exit(EXIT_FAILURE);
+	}
+#endif
+#endif
+
+}
+#endif				/* DO_XLOGIN */
+
+#ifdef DO_XCHOOSER
+void
+run_chooser(int argc, char *argv[])
+{
+	(void) argc;
+	(void) argv;
+}
+#endif				/* DO_XCHOOSER */
+
+#ifdef DO_GREETER
+void
+run_greeter(int argc, char *argv[])
+{
+	(void) argc;
+	(void) argv;
+	/* When the greeter is successful, it writes the authenticated user name to
+	   standard output and exits. */
+	fprintf(stdout, "%s\n", options.username);
+	fflush(stdout);
+	return;
+}
+#endif				/* DO_GREETER */
+#endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 #ifdef DO_XLOCKING
 static void
@@ -6690,10 +7432,15 @@ do_run(int argc, char *argv[])
 {
 	int status;
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER)
+#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
 	/* initialize session managerment functions */
 	init_smclient();
 #endif
+
+#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+	pam_handle_t *pamh = NULL;
+	xde_open_session(&pamh, "xde", "greeter", "x11");
+#endif				/* defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 	startup_x11(argc, argv);
 	setup_systemd();
@@ -6737,6 +7484,9 @@ do_run(int argc, char *argv[])
 			DPRINTF("relocking screen due to logout button\n");
 			RelockScreen();
 #else
+#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+			xde_close_session(pamh);
+#endif
 			exit(EXIT_FAILURE);
 #endif
 			continue;
@@ -6752,6 +7502,9 @@ do_run(int argc, char *argv[])
 			DPRINTF("relocking screen due to pam error\n");
 			RelockScreen();
 #else
+#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+			xde_close_session(pamh);
+#endif
 			exit(EXIT_FAILURE);
 #endif
 			continue;
@@ -6765,8 +7518,10 @@ do_run(int argc, char *argv[])
 			run_login(argc, argv);
 #elif defined(DO_GREETER)
 			run_greeter(argc, argv);
-#elif defined(DO_CHOOSER)
+			xde_close_session(pamh);
+#elif defined(DO_XCHOOSER)
 			run_chooser(argc, argv);
+			xde_close_session(pamh);
 #endif
 			exit(EXIT_SUCCESS);
 #endif
@@ -7121,18 +7876,20 @@ General options:\n\
         language to use (%7$s)\n\
     -i, --icons THEME\n\
         icon theme name to use for icons (%8$s)\n\
-    -T, --theme THEME\n\
+    -e, --theme THEME\n\
         GTK2 theme name to use for widgets (%9$s)\n\
+    -o, --sound THEME\n\
+        sound theme name to use for events (%10$s)\n\
     -u, --xde-theme\n\
-        use the XDE theme (%10$s)\n\
+        use the XDE theme (%11$s)\n\
     -v, --vendor VENDOR\n\
-        vendor identifier for branding (%11$s)\n\
+        vendor identifier for branding (%12$s)\n\
     -n, --dry-run\n\
-        do not act: only print intentions (%12$s)\n\
+        do not act: only print intentions (%13$s)\n\
     -D, --debug [LEVEL]\n\
-        increment or set debug LEVEL (%13$d)\n\
+        increment or set debug LEVEL (%14$d)\n\
     -v, --verbose [LEVEL]\n\
-        increment or set output verbosity LEVEL (%14$d)\n\
+        increment or set output verbosity LEVEL (%15$d)\n\
         this option may be repeated.\n\
 "	,argv[0]
 	,options.welcome
@@ -7141,8 +7898,9 @@ General options:\n\
 	,show_side(options.side)
 	,options.charset
 	,options.language
-	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
 	,options.usexde ? "xde" : (options.icon_theme ? : "auto")
+	,options.usexde ? "xde" : (options.gtk2_theme ? : "auto")
+	,options.usexde ? "xde" : (options.soundtheme ? : "auto")
 	,show_bool(options.usexde)
 	,options.vendor
 	,show_bool(options.dryrun)
@@ -7617,6 +8375,9 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "theme.name", NULL))) {
 		getXrmString(val, &options.gtk2_theme);
 	}
+	if ((val = get_resource(rdb, "theme.sound", NULL))) {
+		getXrmString(val, &options.soundtheme);
+	}
 	if ((val = get_resource(rdb, "theme.cursor", NULL))) {
 		getXrmString(val, &options.curs_theme);
 	}
@@ -7893,6 +8654,7 @@ set_default_xdgdirs(int argc, char *argv[])
 	int len;
 
 	(void) argc;
+	(void) argv;
 	here = strdup(argv[0]);
 	if (here[0] != '/') {
 		char *cwd = calloc(PATH_MAX + 1, sizeof(*cwd));
@@ -8880,6 +9642,7 @@ main(int argc, char *argv[])
 			{"language",	    required_argument,	NULL, '2'},
 			{"icons",	    required_argument,	NULL, 'i'},
 			{"theme",	    required_argument,	NULL, 'e'},
+			{"sound",	    required_argument,	NULL, 'o'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
 			{"timeout",	    required_argument,	NULL, 'T'},
 			{"filename",	    no_argument,	NULL, 'f'},
@@ -8908,10 +9671,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "d:LrlUqp:b:S:s:ni:e:uT:Xg:yND::v::hVCH?",
+		c = getopt_long_only(argc, argv, "d:LrlUqp:b:S:s:ni:e:o:uT:Xg:yND::v::hVCH?",
 				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "d:LrlUqp:b:S:s:ni:e:uT:Xg:yNDvhVCH?");
+		c = getopt(argc, argv, "d:LrlUqp:b:S:s:ni:e:o:uT:Xg:yNDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -9048,6 +9811,10 @@ main(int argc, char *argv[])
 		case 'e':	/* -e, --theme THEME */
 			free(options.gtk2_theme);
 			options.gtk2_theme = strdup(optarg);
+			break;
+		case 'o':	/* -o, --sound THEME */
+			free(options.soundtheme);
+			options.soundtheme = strdup(optarg);
 			break;
 		case 'u':	/* -u, --xde-theme */
 			options.usexde = True;
