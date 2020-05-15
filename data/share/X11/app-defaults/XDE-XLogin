@@ -1,0 +1,36 @@
+!!!!
+! XDE-XLogin: Class resource for xde-xlogin
+!!!!
+XDE-XLogin*x:				0.35
+XDE-XLogin*y:				0.12
+XDE-XLogin*debug:			2
+XDE-XLogin*banner:			/usr/share/xde/images/unexicon-banner.png
+XDE-XLogin*splash:			/usr/share/xde/images/unexicon-splash.jpg
+XDE-XLogin*welcome:			Welcome to CLIENTHOST!
+XDE-XLogin*theme.icon:			gnome-brave
+XDE-XLogin*theme.name:			Squared-blue
+XDE-XLogin*theme.sound:			unexicon
+XDE-XLogin*theme.xde:			false
+XDE-XLogin*side:			top
+XDE-XLogin*user.default:		unexicon
+XDE-XLogin*autologin:			false
+XDE-XLogin*vendor:			unexicon
+XDE-XLogin*prefix:			unexicon-
+XDE-XLogin*login.permit:		true
+XDE-XLogin*login.remote:		false
+XDE-XLogin*xsession.chooser:		true
+XDE-XLogin*xsession.execute:		false
+XDE-XLogin*xsession.default:		adwm
+XDE-XLogin*setbg:			true
+XDE-XLogin*transparent:			true
+
+XDE-XLogin.greetFace:			Liberation Sans:size=16:bold
+XDE-XLogin.greetColor:			#ffffff
+XDE-XLogin.promptFace:			Liberation Sans:size=16:bold
+XDE-XLogin.promptColor:			#f5f4fd
+XDE-XLogin.inputFace:			Liberation Sans:size=12
+XDE-XLogin.inputColor:			#000404
+XDE-XLogin.inputFgColor:		#000000
+XDE-XLogin.inputBgColor:		#ffffff
+XDE-XLogin.failFace:			Liberation Sans:size=16
+XDE-XLogin.failColor:			red

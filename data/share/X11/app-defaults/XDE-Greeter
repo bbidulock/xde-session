@@ -1,0 +1,36 @@
+!!!!
+! XDE-Greeter: Class resource for xde-greeter
+!!!!
+XDE-Greeter*x:				0.35
+XDE-Greeter*y:				0.12
+XDE-Greeter*debug:			2
+XDE-Greeter*banner:			/usr/share/xde/images/unexicon-banner.png
+XDE-Greeter*splash:			/usr/share/xde/images/unexicon-splash.jpg
+XDE-Greeter*welcome:			Welcome to CLIENTHOST!
+XDE-Greeter*theme.icon:			gnome-brave
+XDE-Greeter*theme.name:			Squared-blue
+XDE-Greeter*theme.sound:		unexicon
+XDE-Greeter*theme.xde:			false
+XDE-Greeter*side:			top
+XDE-Greeter*user.default:		unexicon
+XDE-Greeter*autologin:			false
+XDE-Greeter*vendor:			unexicon
+XDE-Greeter*prefix:			unexicon-
+XDE-Greeter*login.permit:		true
+XDE-Greeter*login.remote:		false
+XDE-Greeter*xsession.chooser:		true
+XDE-Greeter*xsession.execute:		false
+XDE-Greeter*xsession.default:		adwm
+XDE-Greeter*setbg:			true
+XDE-Greeter*transparent:		true
+
+XDE-Greeter.greetFace:			Liberation Sans:size=16:bold
+XDE-Greeter.greetColor:			#ffffff
+XDE-Greeter.promptFace:			Liberation Sans:size=16:bold
+XDE-Greeter.promptColor:		#f5f4fd
+XDE-Greeter.inputFace:			Liberation Sans:size=12
+XDE-Greeter.inputColor:			#000404
+XDE-Greeter.inputFgColor:		#000000
+XDE-Greeter.inputBgColor:		#ffffff
+XDE-Greeter.failFace:			Liberation Sans:size=16
+XDE-Greeter.failColor:			red
