@@ -130,7 +130,7 @@ typedef struct {
 	int len;			/* number of message bytes */
 } Message;
 
-Sequence *sequences;			/* sequences for this display */
+extern Sequence *sequences;		/* sequences for this display */
 
 typedef struct _Client Client;
 

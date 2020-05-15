@@ -305,6 +305,8 @@ XContext ScreenContext;			/* window to screen context */
 XContext ClientContext;			/* window to client context */
 XContext MessageContext;		/* window to message context */
 
+Sequence *sequences;
+
 static void
 intern_atoms()
 {
