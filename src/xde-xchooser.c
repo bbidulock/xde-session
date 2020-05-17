@@ -274,7 +274,23 @@ typedef enum {
 	CaEventDesktopChange,
 	CaEventWindowChange,
 	CaEventLockScreen,
+	CaEventPowerChanged,
+	CaEventSleepSuspend,
+	CaEventBatteryLevel,
+	CaEventThermalEvent,
+	CaEventBatteryState,
+	CaEventSystemChange,
+	CaEventMaximumContextId
 } CaEventId;
+
+struct EventQueue {
+	uint32_t context_id;
+	int efd;
+	GIOChannel *channel;
+	guint source_id;
+	GQueue *queue;
+	gboolean enabled;
+} CaEventQueues[CaEventMaximumContextId-CA_CONTEXT_ID] = { {0, }, };
 
 typedef enum {
 	CommandDefault,
@@ -580,8 +596,10 @@ typedef struct {
 	Bool echoPasswd;
 	char *echoPasswdChar;
 	unsigned int borderWidth;
+#ifdef DO_XLOCKING
 	Bool autoLock;
 	Bool systemLock;
+#endif
 	char *authDir;
 	char **exportList;
 	Bool grabServer;
@@ -635,8 +653,10 @@ Resources resources  = {
 	.echoPasswd = False,
 	.echoPasswdChar = NULL,
 	.borderWidth = 0,
+#ifdef DO_XLOCKING
 	.autoLock = True,
 	.systemLock = True,
+#endif
 	.authDir = NULL,
 	.exportList = NULL,
 	.authFile = NULL,
@@ -715,7 +735,7 @@ LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
 static SmcConn smcConn;
 #endif
 
@@ -5849,7 +5869,7 @@ HideWindow(void)
 	HideScreens();
 }
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
 
 static void
 xdeSetProperties(SmcConn smcConn, SmPointer data)
@@ -6269,7 +6289,7 @@ init_smclient(void)
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
 }
 
-#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER) */
+#endif				/* !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER) */
 
 static void
 setup_pam(pam_handle_t *pamh)
@@ -6318,6 +6338,7 @@ setup_pam(pam_handle_t *pamh)
 }
 
 #if defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if 0
 static int
 pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp, void *data)
 {
@@ -6337,12 +6358,36 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 {
 	pam_handle_t *pamh = NULL;
 	const char *env;
+#ifdef DO_GREETER
+	pid_t pid;
+	int status = 0;
+#endif
 	struct pam_conv conv = { pam_conv_cb, NULL };
 	int result;
 	char *const *var;
 	static char *vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
 		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
 	};
+
+#ifdef DO_GREETER
+	switch((pid = fork())) {
+	case 0:	    /* the child */
+		DPRINTF("setting session leader\n");
+		if (setsid() < 0) {
+			EPRINTF("setsid: %s\n", strerror(errno));
+			exit(errno);
+		}
+		break;
+	case -1:
+		EPRINTF("fork: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	default:    /* the parent */
+		waitpid(pid, &status, 0);
+		if (WIFEXITED(status) && !WEXITSTATUS(status))
+			exit(EXIT_SUCCESS);
+		exit(EXIT_FAILURE);
+	}
+#endif
 
 	DPRINTF("starting PAM\n");
 	result = pam_start(service, NULL, &conv, &pamh);
@@ -6358,7 +6403,7 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 		setenv("DISPLAY", options.display, 1);
 		result = pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
 		if (result != PAM_SUCCESS)
-			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			EPRINTF("pam_misc_setenv(\"DISPLAY\",\"%s\"): %s\n", options.display, pam_strerror(pamh, result));
 		if (options.display[0] != ':') {
 			char *rhost;
 
@@ -6366,7 +6411,7 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 				*strchrnul(rhost, ':') = '\0';
 				result = pam_misc_setenv(pamh, "REMOTEHOST", rhost, 1);
 				if (result != PAM_SUCCESS)
-					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+					EPRINTF("pam_misc_setenv(\"REMOTEHOST\",\"%s\"): %s\n", rhost, pam_strerror(pamh, result));
 				free(rhost);
 			}
 		}
@@ -6376,14 +6421,14 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 		setenv("XAUTHORITY", options.authfile, 1);
 		result = pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
 		if (result != PAM_SUCCESS)
-			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			EPRINTF("pam_misc_setenv(\"XAUTHORITY\",\"%s\"): %s\n", options.authfile, pam_strerror(pamh, result));
 	}
 	if (class) { /* user or greeter */
 		DPRINTF("setting XDG_SESSION_CLASS=%s\n", class);
 		setenv("XDG_SESSION_CLASS", class, 1);
 		result = pam_misc_setenv(pamh, "XDG_SESSION_CLASS", class, 1);
 		if (result != PAM_SUCCESS)
-			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			EPRINTF("pam_misc_setenv(\"XDG_SESSION_CLASS\",\"%s\"): %s\n", class, pam_strerror(pamh, result));
 	} else {
 		DPRINTF("unsetting XDG_SESSION_CLASS\n");
 		unsetenv("XDG_SESSION_CLASS");
@@ -6396,7 +6441,7 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 		setenv("XDG_SESSION_TYPE", type, 1);
 		result = pam_misc_setenv(pamh, "XDG_SESSION_TYPE", type, 1);
 		if (result != PAM_SUCCESS)
-			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			EPRINTF("pam_misc_setenv(\"XDG_SESSION_TYPE\",\"%s\"): %s\n", type, pam_strerror(pamh, result));
 	} else {
 		DPRINTF("unsetting XDG_SESSION_TYPE\n");
 		unsetenv("XDG_SESSION_TYPE");
@@ -6409,22 +6454,23 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 		setenv("XDG_SEAT", options.seat, 1);
 		result = pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
 		if (result != PAM_SUCCESS)
-			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			EPRINTF("pam_misc_setenv(\"XDG_SEAT\",\"%s\"): %s\n", pam_strerror(pamh, result));
 	}
 	if (options.vtnr) {
 		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
 		setenv("XDG_VTNR", options.vtnr, 1);
 		result = pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
 		if (result != PAM_SUCCESS)
-			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			EPRINTF("pam_misc_setenv(\"XDG_VTNR\",\"%s\"): %s\n", options.vtnr, pam_strerror(pamh, result));
 		DPRINTF("setting WINDOWPATH=%s\n", options.vtnr);
 		result = pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 1);
 		if (result != PAM_SUCCESS)
-			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+			EPRINTF("pam_misc_setenv(\"WINDOWPATH\",\"%s\"): %s\n", options.vtnr, pam_strerror(pamh, result));
 	}
 
 	DPRINTF("setting PAM items\n");
 	if (service) {
+		DPRINTF("setting PAM_SERVICE=%s\n", service);
 		result = pam_set_item(pamh, PAM_SERVICE, service);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_set_item(PAM_SERVICE,\"%s\"): %s\n", service, pam_strerror(pamh, result));
@@ -6432,12 +6478,14 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 	if (options.display && options.display[0] != ':' && options.username) {
 		char *rhost;
 
+		DPRINTF("setting PAM_RUSER=%s\n", options.username);
 		result = pam_set_item(pamh, PAM_RUSER, options.username);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_set_item(PAM_RUSER,\"%s\"): %s\n", options.username,
 				pam_strerror(pamh, result));
 		if ((rhost = strdup(options.display))) {
 			*strchrnul(rhost, ':') = '\0';
+			DPRINTF("setting PAM_RHOST=%s\n", rhost);
 			result = pam_set_item(pamh, PAM_RHOST, rhost);
 			if (result != PAM_SUCCESS)
 				EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost, pam_strerror(pamh, result));
@@ -6445,12 +6493,14 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 		}
 	}
 	if (options.tty) {
+		DPRINTF("setting PAM_TTY=%s\n", options.tty);
 		result = pam_set_item(pamh, PAM_TTY, options.tty);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_set_item(PAM_TTY,\"%s\"): %s\n", options.tty, pam_strerror(pamh, result));
 	}
 #ifdef PAM_XDISPLAY
 	if (options.display) {
+		DPRINTF("setting PAM_DISPLAY=%s\n", options.display);
 		result = pam_set_item(pamh, PAM_XDISPLAY, options.display);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_set_item(PAM_XDISPLAY,\"%s\"): %s\n", options.display,
@@ -6523,7 +6573,7 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 
-#if 0
+#ifdef DO_GREETER
 				char *xauth = calloc(PATH_MAX + 1, sizeof(*xauth));
 
 				if (xauth != NULL) {
@@ -6617,6 +6667,7 @@ xde_close_session(pam_handle_t *pamh)
 	pam_end(pamh, result);
 }
 #endif				/* defined(DO_XCHOOSER) || defined(DO_GREETER) */
+#endif
 
 static int
 authenticate(void)
@@ -7432,14 +7483,16 @@ do_run(int argc, char *argv[])
 {
 	int status;
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
 	/* initialize session managerment functions */
 	init_smclient();
 #endif
 
 #if defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if 0
 	pam_handle_t *pamh = NULL;
 	xde_open_session(&pamh, "xde", "greeter", "x11");
+#endif
 #endif				/* defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 	startup_x11(argc, argv);
@@ -7485,9 +7538,12 @@ do_run(int argc, char *argv[])
 			RelockScreen();
 #else
 #if defined(DO_XCHOOSER) || defined(DO_GREETER)
+			DPRINTF("closing session due to logout button\n");
+#if 0
 			xde_close_session(pamh);
 #endif
 			exit(EXIT_FAILURE);
+#endif
 #endif
 			continue;
 		}
@@ -7503,7 +7559,10 @@ do_run(int argc, char *argv[])
 			RelockScreen();
 #else
 #if defined(DO_XCHOOSER) || defined(DO_GREETER)
+			DPRINTF("closing session due to pam error\n");
+#if 0
 			xde_close_session(pamh);
+#endif
 #endif
 			exit(EXIT_FAILURE);
 #endif
@@ -7515,13 +7574,22 @@ do_run(int argc, char *argv[])
 			UnlockScreen(TRUE);
 #else
 #if defined(DO_XLOGIN)
+			DPRINTF("running login procedure due to successful login\n");
 			run_login(argc, argv);
 #elif defined(DO_GREETER)
+			DPRINTF("running greeter procedure due to successful login\n");
 			run_greeter(argc, argv);
+			DPRINTF("closing session: greeter finished\n");
+#if 0
 			xde_close_session(pamh);
+#endif
 #elif defined(DO_XCHOOSER)
+			DPRINTF("running chooser procedure due to successful login\n");
 			run_chooser(argc, argv);
+			DPRINTF("closing session: chooser finished\n");
+#if 0
 			xde_close_session(pamh);
+#endif
 #endif
 			exit(EXIT_SUCCESS);
 #endif
@@ -8322,12 +8390,14 @@ get_resources(int argc, char *argv[])
 	if ((val = get_xlogin_resource(rdb, "borderWidth", "3"))) {
 		getXrmUint(val, &resources.borderWidth);
 	}
-	if ((val = get_xlogin_resource(rdb, "autoLock", "true"))) {
+#ifdef DO_XLOCKING
+	if ((val = get_resource(rdb, "autoLock", "false"))) {
 		getXrmBool(val, &resources.autoLock);
 	}
-	if ((val = get_xlogin_resource(rdb, "systemLock", "true"))) {
+	if ((val = get_resource(rdb, "systemLock", "false"))) {
 		getXrmBool(val, &resources.systemLock);
 	}
+#endif
 
 	// xlogin.login.translations
 
