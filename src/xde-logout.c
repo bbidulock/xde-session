@@ -78,6 +78,7 @@
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <setjmp.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -274,7 +275,23 @@ typedef enum {
 	CaEventDesktopChange,
 	CaEventWindowChange,
 	CaEventLockScreen,
+	CaEventPowerChanged,
+	CaEventSleepSuspend,
+	CaEventBatteryLevel,
+	CaEventThermalEvent,
+	CaEventBatteryState,
+	CaEventSystemChange,
+	CaEventMaximumContextId
 } CaEventId;
+
+struct EventQueue {
+	uint32_t context_id;
+	int efd;
+	GIOChannel *channel;
+	guint source_id;
+	GQueue *queue;
+	gboolean enabled;
+} CaEventQueues[CaEventMaximumContextId-CA_CONTEXT_ID] = { {0, }, };
 
 typedef enum {
 	CommandDefault,
@@ -334,6 +351,7 @@ typedef struct {
 	char *desktop;
 	char *icon_theme;
 	char *gtk2_theme;
+	char *soundtheme;
 	char *curs_theme;
 	LogoSide side;
 	Bool prompt;
@@ -415,6 +433,7 @@ Options options = {
 	.desktop = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.soundtheme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
 	.prompt = False,
@@ -495,6 +514,7 @@ Options defaults = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.soundtheme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
 	.prompt = False,
@@ -577,8 +597,10 @@ typedef struct {
 	Bool echoPasswd;
 	char *echoPasswdChar;
 	unsigned int borderWidth;
+#ifdef DO_XLOCKING
 	Bool autoLock;
 	Bool systemLock;
+#endif
 	char *authDir;
 	char **exportList;
 	Bool grabServer;
@@ -632,8 +654,10 @@ Resources resources  = {
 	.echoPasswd = False,
 	.echoPasswdChar = NULL,
 	.borderWidth = 0,
+#ifdef DO_XLOCKING
 	.autoLock = True,
 	.systemLock = True,
+#endif
 	.authDir = NULL,
 	.exportList = NULL,
 	.authFile = NULL,
@@ -712,7 +736,7 @@ LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
 static SmcConn smcConn;
 #endif
 
@@ -2150,7 +2174,7 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 			DPRINTF("cannot use site/link local address without ifindex\n");
 			return False;
 		}
-		if (scope == options.clientScope && ifindex != options.clientIface) {
+		if (scope == options.clientScope && ifindex != (int) options.clientIface) {
 			DPRINTF("cannot use site/link local address with other ifindex\n");
 			return False;
 		}
@@ -3434,6 +3458,26 @@ on_hybridsleep(GtkMenuItem *item, gpointer data)
 	gchar *status = data;
 	gboolean challenge;
 
+	(void) item;
+	if (!status)
+		return;
+	if (!strcmp(status, "yes")) {
+		challenge = FALSE;
+	} else if (!strcmp(status, "challenge")) {
+		challenge = TRUE;
+	} else
+		return;
+	if (challenge) {
+	}
+}
+
+static void
+on_suspendhibernate(GtkMenuItem *item, gpointer data)
+{
+	gchar *status = data;
+	gboolean challenge;
+
+	(void) item;
 	if (!status)
 		return;
 	if (!strcmp(status, "yes")) {
@@ -3779,6 +3823,8 @@ get_user_menu(void)
 
 	islocal = isLocal();
 
+	menu = gtk_menu_new();
+
 	seat = getenv("XDG_SEAT") ? : "seat0";
 	if (getenv("XDG_SESSION_ID"))
 		sess = strdup(getenv("XDG_SESSION_ID"));
@@ -3792,7 +3838,7 @@ get_user_menu(void)
 		EPRINTF("%s: cannot get sessions\n", seat);
 		return (NULL);
 	}
-	menu = gtk_menu_new();
+	/* sort by VT number */
 	for (s = sessions, count = 0; s && *s; s++, count++) ;
 	if (count) {
 		DPRINTF("sorting vts\n");
@@ -5520,6 +5566,8 @@ handle_events(void)
 gboolean
 on_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
+	(void) chan;
+	(void) data;
 	if (cond & (G_IO_NVAL|G_IO_HUP|G_IO_ERR)) {
 		EPRINTF("poll failed: %s %s %s\n",
 				(cond & G_IO_NVAL) ? "NVAL" : "",
@@ -5670,7 +5718,7 @@ HideWindow(void)
 	HideScreens();
 }
 
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
 
 static void
 xdeSetProperties(SmcConn smcConn, SmPointer data)
@@ -6090,7 +6138,7 @@ init_smclient(void)
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
 }
 
-#endif				/* !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER) */
+#endif				/* !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER) */
 
 static void
 do_run(int argc, char *argv[])
@@ -7201,12 +7249,14 @@ get_resources(int argc, char *argv[])
 	if ((val = get_xlogin_resource(rdb, "borderWidth", "3"))) {
 		getXrmUint(val, &resources.borderWidth);
 	}
-	if ((val = get_xlogin_resource(rdb, "autoLock", "true"))) {
+#ifdef DO_XLOCKING
+	if ((val = get_resource(rdb, "autoLock", "false"))) {
 		getXrmBool(val, &resources.autoLock);
 	}
-	if ((val = get_xlogin_resource(rdb, "systemLock", "true"))) {
+	if ((val = get_resource(rdb, "systemLock", "false"))) {
 		getXrmBool(val, &resources.systemLock);
 	}
+#endif
 
 	// xlogin.login.translations
 
@@ -7246,6 +7296,9 @@ get_resources(int argc, char *argv[])
 	}
 	if ((val = get_resource(rdb, "theme.name", NULL))) {
 		getXrmString(val, &options.gtk2_theme);
+	}
+	if ((val = get_resource(rdb, "theme.sound", NULL))) {
+		getXrmString(val, &options.soundtheme);
 	}
 	if ((val = get_resource(rdb, "theme.cursor", NULL))) {
 		getXrmString(val, &options.curs_theme);
@@ -8511,6 +8564,7 @@ main(int argc, char *argv[])
 			{"language",	    required_argument,	NULL, '2'},
 			{"icons",	    required_argument,	NULL, 'i'},
 			{"theme",	    required_argument,	NULL, 'e'},
+			{"sound",	    required_argument,	NULL, 'o'},
 			{"xde-theme",	    no_argument,	NULL, 'u'},
 			{"timeout",	    required_argument,	NULL, 'T'},
 			{"filename",	    no_argument,	NULL, 'f'},
@@ -8539,10 +8593,10 @@ main(int argc, char *argv[])
 		};
 		/* *INDENT-ON* */
 
-		c = getopt_long_only(argc, argv, "d:p:b:S:s:ni:t:xT:ND::v::hVCH?",
+		c = getopt_long_only(argc, argv, "d:p:b:S:s:ni:t:xT:o:ND::v::hVCH?",
 				     long_options, &option_index);
 #else				/* defined _GNU_SOURCE */
-		c = getopt(argc, argv, "d:p:b:S:s:ni:t:xT:NDvhVC?");
+		c = getopt(argc, argv, "d:p:b:S:s:ni:t:xT:o:NDvhVC?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
 			DPRINTF("%s: done options processing\n", argv[0]);
@@ -8555,6 +8609,7 @@ main(int argc, char *argv[])
 		case 'd':	/* -d, --display DISPLAY */
 			free(options.display);
 			options.display = strndup(optarg, 256);
+			setenv("DISPLAY", optarg, 1);
 			break;
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 		case 'a':	/* -a, --authfile */
@@ -8679,6 +8734,10 @@ main(int argc, char *argv[])
 		case 'e':	/* -e, --theme THEME */
 			free(options.gtk2_theme);
 			options.gtk2_theme = strdup(optarg);
+			break;
+		case 'o':	/* -o, --sound THEME */
+			free(options.soundtheme);
+			options.soundtheme = strdup(optarg);
 			break;
 		case 'u':	/* -u, --xde-theme */
 			options.usexde = True;
