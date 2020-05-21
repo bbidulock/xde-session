@@ -78,6 +78,7 @@
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <setjmp.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -6337,8 +6338,7 @@ setup_pam(pam_handle_t *pamh)
 	}
 }
 
-#if 0
-#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 static int
 pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp, void *data)
 {
@@ -6353,15 +6353,181 @@ pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp,
 void add_xauth_data(pam_handle_t *pamh);
 #endif
 
+/*
+ * A greeter is started in a child process that stops immediately and waits to
+ * be restarted to continue and exit.  The purpose of this child process is just
+ * to tell systemd that there is an X11 greeter running on the a specific tty
+ * (console).  libsystemd can then be used by other programs to determine
+ * whether a user or greeter is running on a specific display and virtual
+ * console.  Aside from that, it serves no purpose.
+ *
+ * Note that we do not really need a greeter process when the X display is
+ * remote (chooser is running and XDCMP is being used): this is because there is
+ * no local virtual terminal with which to associate the greeter.
+ */
+pid_t
+start_greeter(void)
+{
+	pid_t pid;
+	int result;
+	sigset_t set;
+	pam_handle_t *pamh = NULL;
+	struct pam_conv conv = { pam_conv_cb, NULL };
+
+	switch ((pid = fork())) {
+	case 0:		/* the child */
+		sigemptyset(&set);
+		sigaddset(&set, SIGTTIN);
+		sigaddset(&set, SIGTTOU);
+		sigprocmask(SIG_SETMASK, &set, NULL);
+		setpgid(0, getpid());
+		if ((result = pam_start("xde-greeter", NULL, &conv, &pamh)) != PAM_SUCCESS) {
+			EPRINTF("pam_start(\"xde-greeter\"): %s\n", pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_set_item(pamh, PAM_TTY, options.display)) != PAM_SUCCESS) {
+			EPRINTF("pam_set_item(PAM_TTY, \"%s\"): %s\n", options.display,
+				pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_set_item(pamh, PAM_RUSER, "root")) != PAM_SUCCESS) {
+			EPRINTF("pam_set_item(PAM_RUSER, \"%s\"): %s\n", "root",
+				pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		/* FIXME: should set PAM_RHOST to local hostname if REMOTEHOST not set. */
+		if (getenv("REMOTEHOST") && (result = pam_set_item(pamh, PAM_RHOST, getenv("REMOTEHOST"))) != PAM_SUCCESS) {
+			EPRINTF("pam_set_item(PAM_RHOST, \"%s\"): %s\n", getenv("REMOTEHOST"),
+				pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_set_item(pamh, PAM_USER, "root")) != PAM_SUCCESS) {
+			EPRINTF("pam_set_item(PAM_USER, \"%s\"): %s\n", "root",
+				pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_putenv(pamh, "XDG_SESSION_CLASS=greeter")) != PAM_SUCCESS) {
+			EPRINTF("pam_putenv(\"XDG_SESSION_CLASS=greeter\"): %s\n",
+				pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_putenv(pamh, "XDG_SESSION_TYPE=x11")) != PAM_SUCCESS) {
+			EPRINTF("pam_putenv(\"XDG_SESSION_TYPE=x11\"): %s\n",
+				pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_setcred(pamh, PAM_ESTABLISH_CRED)) != PAM_SUCCESS) {
+			pam_end(pamh, result);
+			EPRINTF("pam_setcred(PAM_ESTABLISH_CRED): %s\n",
+				pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_open_session(pamh, 0)) != PAM_SUCCESS) {
+			EPRINTF("pam_open_session(): %s\n", pam_strerror(pamh, result));
+			pam_setcred(pamh, PAM_DELETE_CRED);
+			if ((result = pam_end(pamh, result)) != PAM_SUCCESS)
+				EPRINTF("pam_end(): %s\n", pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+
+		}
+		kill(getpid(), SIGSTOP);	/* stop ourselves and wait */
+		if ((result = pam_close_session(pamh, 0)) != PAM_SUCCESS) {
+			pam_setcred(pamh, PAM_DELETE_CRED);
+			if ((result = pam_end(pamh, result)) != PAM_SUCCESS)
+				EPRINTF("pam_end(): %s\n", pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_setcred(pamh, PAM_DELETE_CRED)) != PAM_SUCCESS) {
+			if ((result = pam_end(pamh, result)) != PAM_SUCCESS)
+				EPRINTF("pam_end(): %s\n", pam_strerror(pamh, result));
+			exit(OPENFAILED_DISPLAY);
+		}
+		if ((result = pam_end(pamh, result)) != PAM_SUCCESS) {
+			exit(OPENFAILED_DISPLAY);
+		}
+		exit(EXIT_SUCCESS);
+	case -1:
+		EPRINTF("fork(): %s\n", strerror(errno));
+		exit(OPENFAILED_DISPLAY);
+	default:		/* the parent */
+		setpgid(pid, pid);
+		break;
+	}
+	return (pid);
+}
+
+static jmp_buf catch_greeter;
+
+void
+wait_child(int sig)
+{
+	(void) sig;
+	siglongjmp(catch_greeter, 1);
+}
+
+pid_t
+wait_greeter(pid_t pid, int timeout)
+{
+	struct sigaction sigact;
+	int status = 0;
+
+	if (!sigsetjmp(catch_greeter, 1)) {
+		sigact.sa_handler = &wait_child;
+		sigemptyset(&sigact.sa_mask);
+		sigact.sa_flags = 0;
+		sigaction(SIGALRM, &sigact, NULL);
+		alarm(timeout); /* set alarm */
+		waitpid(pid, &status, 0);
+		alarm(0);	/* cancel alarm */
+	}
+	sigact.sa_handler = SIG_DFL;
+	sigemptyset(&sigact.sa_mask);
+	sigact.sa_flags = 0;
+	sigaction(SIGALRM, &sigact, NULL);
+	if (status && WIFEXITED(status)) {
+		status = WEXITSTATUS(status);
+		if (status != EXIT_SUCCESS)
+			EPRINTF("child exited abnormally %d\n", status);
+		return (pid);
+	}
+	return (0);
+}
+
+/*
+ * Stop the greeter process.  Tell the greeter process to continue (in which
+ * case it will release itself from the virtual console and exit).  But maybe
+ * send it SIGTERM and SIGKILL as well in case it hangs.  Well, instead, as it
+ * is our child, we should wait for it to exit (with a guard timer), and then
+ * terminate or kill it.  This is so that we can ensure that the x11/greeter
+ * session has been released from the virtual console associated with the X
+ * display before attempting to associate an x11/user session with the same
+ * virtual console.
+ */
+void
+stop_greeter(pid_t pid)
+{
+	if (!pid)
+		return;
+	kill(pid, SIGCONT);
+	if (wait_greeter(pid, 2))	/* wait 2 seconds for child to exit */
+		return;
+	killpg(pid, SIGTERM);
+	if (wait_greeter(pid, 2))	/* wait 2 seconds for child to exit */
+		return;
+	killpg(pid, SIGKILL);
+	if (wait_greeter(pid, 2))	/* wait 2 seconds for child to exit */
+		return;
+	EPRINTF("Could not kill child %d (continuing anyway)!\n", (int) pid);
+	return;
+}
+
 void
 xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, const char *type)
 {
 	pam_handle_t *pamh = NULL;
 	const char *env;
-#ifdef DO_GREETER
 	pid_t pid;
 	int status = 0;
-#endif
 	struct pam_conv conv = { pam_conv_cb, NULL };
 	int result;
 	char *const *var;
@@ -6369,7 +6535,6 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
 	};
 
-#ifdef DO_GREETER
 	switch((pid = fork())) {
 	case 0:	    /* the child */
 		DPRINTF("setting session leader\n");
@@ -6387,7 +6552,6 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 			exit(EXIT_SUCCESS);
 		exit(EXIT_FAILURE);
 	}
-#endif
 
 	DPRINTF("starting PAM\n");
 	result = pam_start(service, NULL, &conv, &pamh);
@@ -6454,7 +6618,7 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 		setenv("XDG_SEAT", options.seat, 1);
 		result = pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
 		if (result != PAM_SUCCESS)
-			EPRINTF("pam_misc_setenv(\"XDG_SEAT\",\"%s\"): %s\n", pam_strerror(pamh, result));
+			EPRINTF("pam_misc_setenv(\"XDG_SEAT\",\"%s\"): %s\n", options.seat, pam_strerror(pamh, result));
 	}
 	if (options.vtnr) {
 		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
@@ -6573,7 +6737,6 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 
-#ifdef DO_GREETER
 				char *xauth = calloc(PATH_MAX + 1, sizeof(*xauth));
 
 				if (xauth != NULL) {
@@ -6585,7 +6748,6 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 					free(xauth);
 				}
-#endif
 			}
 			if (pw->pw_shell && pw->pw_shell[0] != '\0') {
 				/* should probably use * DisplayManager*systemShell for
@@ -6666,8 +6828,7 @@ xde_close_session(pam_handle_t *pamh)
 		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
 	pam_end(pamh, result);
 }
-#endif				/* defined(DO_XCHOOSER) || defined(DO_GREETER) */
-#endif
+#endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 static int
 authenticate(void)
@@ -6695,7 +6856,7 @@ authenticate(void)
 	if (options.username) {
 		state = LoginStateUsername;
 		if (getuid() != 0)
-			uname = strdup(options.username);
+			uname = strdup(options.username); /* XXX: memory leak */
 	}
 	setup_pam(pamh);
 	if (!resources.allowNullPasswd)
@@ -6737,6 +6898,12 @@ authenticate(void)
 			goto done;
 		case PAM_SUCCESS:
 			/* The user was successfully authenticated. */
+			free(options.username);
+			options.username = NULL;
+			if ((err = pam_get_item(pamh, PAM_USER, (const void **)&uname)) != PAM_SUCCESS)
+				EPRINTF("pam_get_item(PAM_USER): %s\n", pam_strerror(pamh, err));
+			if (uname)
+				options.username = strdup(uname);
 			DPRINTF("PAM_SUCCESS\n");
 			goto done;
 		case PAM_USER_UNKNOWN:
@@ -6872,91 +7039,29 @@ xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **r
 }
 
 #ifdef DO_XLOGIN
-#if 0
-int
-greet_child(int pipefd[])
-{
-	/* The child needs to set up its signal mask and open a pam x11/greeter session,
-	   perform the authentication, close the pam session and return the result.  When 
-	   the result is successful, it should write the authenticated user name to the
-	   pipe before exiting. */
-}
-
-int
-greet_parent(int pipefd[], pid_t pid)
-{
-	/* The parent needs to wait for the child to exit and if the exit status is
-	   success read the authenticated user name from the pipe and set
-	   options.username to the value and return the exit status.  The parent should
-	   likely not clode the writing end of the pipe so that the child can write and
-	   exit and the parent read later without generating a SIGPIPE, or the SIGPIPE
-	   should be blocked. */
-}
-
-int
-run_greeter(void)
-{
-	/* systemd has the problem that it does not allow the role of a process to be
-	   changed; therefore, when acting as a greeter, we fork a process and have the
-	   child open a PAM session as the greeter.  It shares a pipe with the parent so
-	   that it can pass the authenticated user name back to the parent. */
-	int pipefd[2];
-	pid_t pid;
-	int status;
-
-	if (pipe(pipefd) == -1) {
-		EPRINTF("pipe: %s\n", strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-	switch ((pid = fork())) {
-	case 0:
-		/* the child */
-		status = greet_child(pipefd);
-		exit(status);
-	default:
-		/* the parent (pid is the pid of the child) */
-		status = greet_parent(pipefd, pid);
-		return (status);
-	case -1:
-		/* error */
-		EPRINTF("Fork: %s\n", strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-}
-#endif
-
 void
 run_login(int argc, char *argv[])
 {
-	(void) argc;
-	(void) argv;
-#if 0
-	/* Although the greeter is run as a forked child, the login is performed from the 
-	   main process without forking.  But first, run the greeter to determine an
-	   authenticated user name.  */
-	int status;
-
-	status = run_greeter();
-	if (status != OBEYSESS_DISPLAY) {
-		EPRINTF("greeter failed with status %d\n", status);
-		exit(status);
-	}
+#if 1
+	pam_handle_t *pamh = NULL;
+	const char *env;
+	// pid_t pid;
+	int result;
+	// int status;
+	struct pam_conv conv = { xde_conv_cb, NULL };
+	// FILE *dummy;
+	const char **var;
+#endif
 	/* At this point, options.username is set to the authenticated user name.  The
 	   process should establish a pam x11/user session and execute the
 	   DisplayManager*startup and DisplayManager*session scripts.  Note that
 	   DisplayManager*session might not exactly be what we are looking for, and
 	   should be adjusted accordingly.  */
-#if 0
-	pam_handle_t *pamh = NULL;
-	const char *env;
-	pid_t pid;
-	int result, status;
-	struct pam_conv conv = { xde_conv_cb, NULL };
-	FILE *dummy;
-	const char **var;
-
+	(void) argc;
+	(void) argv;
+#if 1
 	/* should probably use DisplayManager*exportList for this */
-	static const char **vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
+	static const char *vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
 		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
 	};
 
@@ -7040,7 +7145,7 @@ run_login(int argc, char *argv[])
 			if ((result = pam_misc_setenv(pamh, *var, env, 1)) != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 	DPRINTF("copying XDM export list environment variables\n");
-	for (var = resources.exportList; var && *var; var++)
+	for (var = (const char **)resources.exportList; var && *var; var++)
 		if ((env = getenv(*var)))
 			if ((result = pam_misc_setenv(pamh, *var, env, 1)) != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
@@ -7069,17 +7174,17 @@ run_login(int argc, char *argv[])
 				if ((mail = calloc(PATH_MAX + 1, sizeof(*mail)))) {
 					strncpy(mail, "/var/mail/", PATH_MAX);
 					strncat(mail, pw->pw_name, PATH_MAX);
-					result = pam_misc_setenv(pamh, "MAIL", mail);
+					result = pam_misc_setenv(pamh, "MAIL", mail, 1);
 					if (result != PAM_SUCCESS)
 						EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 					free(mail);
 				}
 			}
 			if (pw->pw_dir) {
-				result = pam_misc_setenv(pamh, "HOME", pw->pw_dir);
+				result = pam_misc_setenv(pamh, "HOME", pw->pw_dir, 1);
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
-				result = pam_misc_setenv(pamh, "PWD", pw->pw_dir);
+				result = pam_misc_setenv(pamh, "PWD", pw->pw_dir, 1);
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 
@@ -7096,15 +7201,15 @@ run_login(int argc, char *argv[])
 				}
 #endif
 			}
-			if (pw->pw_shell && pw->pw_shell != '\0') {
+			if (pw->pw_shell && pw->pw_shell[0] != '\0') {
 				/* should probably use * DisplayManager*systemShell for
 				   this */
-				result = pam_misc_setenv(pamh, "SHELL", pw->pw_shell);
+				result = pam_misc_setenv(pamh, "SHELL", pw->pw_shell, 1);
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 			} else {
 				setusershell();
-				result = pam_misc_setenv(pamh, "SHELL", getusershell());
+				result = pam_misc_setenv(pamh, "SHELL", getusershell(), 1);
 				if (result != PAM_SUCCESS)
 					EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 				endusershell();
@@ -7153,10 +7258,10 @@ run_login(int argc, char *argv[])
 	result = pam_open_session(pamh, 0);
 	if (result != PAM_SUCCESS) {
 		EPRINTF("pam_open_session: %s\n", pam_strerror(pamh, result));
-		pam_end(pamh, result);
+		if ((result = pam_end(pamh, result)) != PAM_SUCCESS)
+			EPRINTF("pam_end(): %s\n", pam_strerror(pamh, result));
 		exit(EXIT_FAILURE);
 	}
-#endif
 #endif
 
 }
@@ -7488,12 +7593,14 @@ do_run(int argc, char *argv[])
 	init_smclient();
 #endif
 
-#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 #if 0
 	pam_handle_t *pamh = NULL;
 	xde_open_session(&pamh, "xde", "greeter", "x11");
+#else
+	pid_t pid = start_greeter();
 #endif
-#endif				/* defined(DO_XCHOOSER) || defined(DO_GREETER) */
+#endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER) */
 
 	startup_x11(argc, argv);
 	setup_systemd();
@@ -7541,6 +7648,8 @@ do_run(int argc, char *argv[])
 			DPRINTF("closing session due to logout button\n");
 #if 0
 			xde_close_session(pamh);
+#else
+			stop_greeter(pid);
 #endif
 			exit(EXIT_FAILURE);
 #endif
@@ -7558,10 +7667,12 @@ do_run(int argc, char *argv[])
 			DPRINTF("relocking screen due to pam error\n");
 			RelockScreen();
 #else
-#if defined(DO_XCHOOSER) || defined(DO_GREETER)
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			DPRINTF("closing session due to pam error\n");
 #if 0
 			xde_close_session(pamh);
+#else
+			stop_greeter(pid);
 #endif
 #endif
 			exit(EXIT_FAILURE);
@@ -7574,9 +7685,19 @@ do_run(int argc, char *argv[])
 			UnlockScreen(TRUE);
 #else
 #if defined(DO_XLOGIN)
+#if 1
+			stop_greeter(pid);
+#endif
 			DPRINTF("running login procedure due to successful login\n");
 			run_login(argc, argv);
+			DPRINTF("closing session: xlogin finished\n");
+#if 0
+			xde_close_session(pamh);
+#endif
 #elif defined(DO_GREETER)
+#if 1
+			stop_greeter(pid);
+#endif
 			DPRINTF("running greeter procedure due to successful login\n");
 			run_greeter(argc, argv);
 			DPRINTF("closing session: greeter finished\n");
@@ -7584,6 +7705,9 @@ do_run(int argc, char *argv[])
 			xde_close_session(pamh);
 #endif
 #elif defined(DO_XCHOOSER)
+#if 1
+			stop_greeter(pid);
+#endif
 			DPRINTF("running chooser procedure due to successful login\n");
 			run_chooser(argc, argv);
 			DPRINTF("closing session: chooser finished\n");
