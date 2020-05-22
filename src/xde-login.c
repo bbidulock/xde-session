@@ -42,6 +42,9 @@
 
  *****************************************************************************/
 
+/** @section Headers
+  * @{ */
+
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
@@ -63,6 +66,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/timerfd.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <sys/poll.h>
@@ -75,9 +79,16 @@
 
 #include <assert.h>
 #include <locale.h>
+#include <langinfo.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <wordexp.h>
+#include <execinfo.h>
+#include <math.h>
+#include <dlfcn.h>
+#include <setjmp.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -95,36 +106,82 @@
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
+#include <X11/Xauth.h>
+#include <X11/SM/SMlib.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
-#include <X11/SM/SMlib.h>
-
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stderr, "I: "); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %s +%d %s(): ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %s +%d %s()\n", __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
 
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
-#include <X11/Xauth.h>
 
 #ifdef _GNU_SOURCE
 #include <getopt.h>
 #endif
+
+/** @} */
+
+/** @section Preamble
+  * @{ */
+
+static const char *
+_timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
+
+#define XPRINTF(_args...) do { } while (0)
+
+#define OPRINTF(_num, _args...) do { if (options.debug >= _num || options.output > _num) { \
+	fprintf(stdout, NAME ": I: "); \
+	fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define DPRINTF(_num, _args...) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": D: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr); } } while (0)
+
+#define EPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": E: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define WPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": W: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define PTRACE(_num) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": T: [%s] %12s +%4d %s()\n", _timestamp(), __FILE__, __LINE__, __func__); \
+	fflush(stderr); } } while (0)
+
+void
+dumpstack(const char *file, const int line, const char *func)
+{
+	void *buffer[32];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 32)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
+}
+
+#undef EXIT_SUCCESS
+#undef EXIT_FAILURE
+#undef EXIT_SYNTAXERR
+
+#define EXIT_SUCCESS		0
+#define EXIT_FAILURE		1
+#define EXIT_SYNTAXERR		2
+
+/** @} */
 
 typedef enum {
 	CommandDefault,
@@ -190,9 +247,9 @@ add_xauth_data(pam_handle_t *pamh)
 	int typlen = strlen(typ);
 	struct pam_xauth_data data;
 
-	DPRINTF("strapped out for now\n");
+	DPRINTF(1, "strapped out for now\n");
 	return;
-	DPRINTF("determining X auth data\n");
+	DPRINTF(1, "determining X auth data\n");
 	nam = options.display;
 	namlen = strchr(nam, ':') - nam;
 	num = nam + namlen + 1;
@@ -215,7 +272,7 @@ add_xauth_data(pam_handle_t *pamh)
 	data.datalen = xau->data_length;
 	data.data = xau->data;
 
-	DPRINTF("setting X auth data\n");
+	DPRINTF(1, "setting X auth data\n");
 	pam_set_item(pamh, PAM_XAUTHDATA, &data);
 	XauDisposeAuth(xau);
 	return;
@@ -281,64 +338,64 @@ run_login(int argc, char *const *argv)
 			exit(EXIT_SUCCESS);
 		exit(EXIT_FAILURE);
 	}
-	DPRINTF("starting PAM\n");
+	DPRINTF(1, "starting PAM\n");
 	result = pam_start(options.service, options.user, &conv, &pamh);
 	if (result != PAM_SUCCESS) {
 		EPRINTF("pam_start: %s\n", pam_strerror(pamh, result));
 		exit(EXIT_FAILURE);
 	}
-	DPRINTF("adjusting environment variables\n");
+	DPRINTF(1, "adjusting environment variables\n");
 	unsetenv("XDG_SESSION_ID");
 	pam_putenv(pamh, "XDG_SESSION_ID");
 
 	if (options.display) {
-		DPRINTF("setting DISPLAY=%s\n", options.display);
+		DPRINTF(1, "setting DISPLAY=%s\n", options.display);
 		setenv("DISPLAY", options.display, 1);
 		pam_misc_setenv(pamh, "DISPLAY", options.display, 1);
 	}
 	if (options.authfile) {
-		DPRINTF("setting XAUTHORITY=%s\n", options.authfile);
+		DPRINTF(1, "setting XAUTHORITY=%s\n", options.authfile);
 		setenv("XAUTHORITY", options.authfile, 1);
 		pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 1);
 	}
 	if (options.class) {
-		DPRINTF("setting XDG_SESSION_CLASS=%s\n", options.class);
+		DPRINTF(1, "setting XDG_SESSION_CLASS=%s\n", options.class);
 		setenv("XDG_SESSION_CLASS", options.class, 1);
 		pam_misc_setenv(pamh, "XDG_SESSION_CLASS", options.class, 1);
 	} else {
-		DPRINTF("unsetting XDG_SESSION_CLASS\n");
+		DPRINTF(1, "unsetting XDG_SESSION_CLASS\n");
 		unsetenv("XDG_SESSION_CLASS");
 		pam_putenv(pamh, "XDG_SESSION_CLASS");
 	}
 	if (options.type) {
-		DPRINTF("setting XDG_SESSION_TYPE=%s\n", options.type);
+		DPRINTF(1, "setting XDG_SESSION_TYPE=%s\n", options.type);
 		setenv("XDG_SESSION_TYPE", options.type, 1);
 		pam_misc_setenv(pamh, "XDG_SESSION_TYPE", options.type, 1);
 	} else {
-		DPRINTF("unsetting XDG_SESSION_TYPE\n");
+		DPRINTF(1, "unsetting XDG_SESSION_TYPE\n");
 		unsetenv("XDG_SESSION_TYPE");
 		pam_putenv(pamh, "XDG_SESSION_TYPE");
 	}
 	if (options.seat) {
-		DPRINTF("setting XDG_SEAT=%s\n", options.seat);
+		DPRINTF(1, "setting XDG_SEAT=%s\n", options.seat);
 		setenv("XDG_SEAT", options.seat, 1);
 		pam_misc_setenv(pamh, "XDG_SEAT", options.seat, 1);
 	} else {
-		DPRINTF("unsetting XDG_SEAT\n");
+		DPRINTF(1, "unsetting XDG_SEAT\n");
 		unsetenv("XDG_SEAT");
 		pam_putenv(pamh, "XDG_SEAT");
 	}
 	if (options.vtnr) {
-		DPRINTF("setting XDG_VTNR=%s\n", options.vtnr);
+		DPRINTF(1, "setting XDG_VTNR=%s\n", options.vtnr);
 		setenv("XDG_VTNR", options.vtnr, 1);
 		pam_misc_setenv(pamh, "XDG_VTNR", options.vtnr, 1);
 	} else {
-		DPRINTF("unsetting XDG_VTNR\n");
+		DPRINTF(1, "unsetting XDG_VTNR\n");
 		unsetenv("XDG_VTNR");
 		pam_putenv(pamh, "XDG_VTNR");
 	}
 	if (options.desktop) {
-		DPRINTF("setting XDG_SESSION_DESKTOP=%s\n", options.desktop);
+		DPRINTF(1, "setting XDG_SESSION_DESKTOP=%s\n", options.desktop);
 		setenv("XDG_SESSION_DESKTOP", options.desktop, 1);
 		pam_misc_setenv(pamh, "XDG_SESSION_DESKTOP", options.desktop, 1);
 	} else {
@@ -346,7 +403,7 @@ run_login(int argc, char *const *argv)
 		pam_putenv(pamh, "XDG_SESSION_DESKTOP");
 	}
 
-	DPRINTF("setting PAM items\n");
+	DPRINTF(1, "setting PAM items\n");
 	if (options.user)
 		pam_set_item(pamh, PAM_RUSER, options.user);
 	if (options.host)
@@ -362,7 +419,7 @@ run_login(int argc, char *const *argv)
 #ifdef PAM_XAUTHDATA
 	add_xauth_data(pamh);
 #endif
-	DPRINTF("setting PAM environment variables\n");
+	DPRINTF(1, "setting PAM environment variables\n");
 	if (options.user) {
 		pam_misc_setenv(pamh, "USER", options.user, 1);
 		pam_misc_setenv(pamh, "LOGNAME", options.user, 1);
@@ -384,21 +441,21 @@ run_login(int argc, char *const *argv)
 		if ((env = getenv(*var)))
 			pam_misc_setenv(pamh, *var, env, 1);
 
-	DPRINTF("establishing credentials\n");
+	DPRINTF(1, "establishing credentials\n");
 	result = pam_setcred(pamh, PAM_ESTABLISH_CRED);
 	if (result != PAM_SUCCESS) {
 		EPRINTF("pam_setcred: %s\n", pam_strerror(pamh, result));
 		pam_end(pamh, result);
 		exit(EXIT_FAILURE);
 	}
-	DPRINTF("trying to close previous session\n");
+	DPRINTF(1, "trying to close previous session\n");
 	result = pam_close_session(pamh, 0);
 	if (result != PAM_SUCCESS) {
 		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
 		pam_end(pamh, result);
 		exit(EXIT_FAILURE);
 	}
-	DPRINTF("opening session\n");
+	DPRINTF(1, "opening session\n");
 	result = pam_open_session(pamh, 0);
 	if (result != PAM_SUCCESS) {
 		EPRINTF("pam_open_session: %s\n", pam_strerror(pamh, result));
@@ -412,7 +469,7 @@ run_login(int argc, char *const *argv)
 	signal(SIGQUIT, signal_child);
 	signal(SIGHUP, signal_child);
 
-	DPRINTF("forking child\n");
+	DPRINTF(1, "forking child\n");
 	switch ((pid = fork())) {
 	case 0:		/* the child */
 		/* drop privileges */
@@ -427,7 +484,7 @@ run_login(int argc, char *const *argv)
 		if (options.debug) {
 			char **arg;
 
-			DPRINTF("command is:");
+			DPRINTF(1, "command is:");
 			for (arg = options.cmd_argv; arg && *arg; arg++)
 				fprintf(stderr, " '%s'", *arg);
 			fprintf(stderr, "\n");
@@ -446,7 +503,7 @@ run_login(int argc, char *const *argv)
 	caught_signal = 0;
 
 	for (;;) {
-		DPRINTF("waiting for child\n");
+		DPRINTF(1, "waiting for child\n");
 		if (waitpid(pid, &status, WUNTRACED | WCONTINUED) == -1) {
 			if (errno != EINTR) {
 				EPRINTF("waitpid: %s\n", strerror(errno));
@@ -464,24 +521,24 @@ run_login(int argc, char *const *argv)
 		if (WIFEXITED(status)) {
 			int rc = WEXITSTATUS(status);
 
-			DPRINTF("child returned with exit status %d\n", rc);
+			DPRINTF(1, "child returned with exit status %d\n", rc);
 			break;
 		} else if (WIFSIGNALED(status)) {
 			int signum, dump;
 
 			signum = WTERMSIG(status);
 			dump = WCOREDUMP(status);
-			DPRINTF("child exited on signal %d%s\n", signum,
+			DPRINTF(1, "child exited on signal %d%s\n", signum,
 				dump ? " (dumped core)" : "");
 			break;
 		} else if (WIFSTOPPED(status)) {
 			int signum;
 
 			signum = WSTOPSIG(status);
-			DPRINTF("child stoppped on signal %d\n", signum);
+			DPRINTF(1, "child stoppped on signal %d\n", signum);
 			continue;
 		} else if (WIFCONTINUED(status)) {
-			DPRINTF("child continued\n");
+			DPRINTF(1, "child continued\n");
 			continue;
 		} else {
 			EPRINTF("invalid status %d\n", status);
@@ -490,16 +547,16 @@ run_login(int argc, char *const *argv)
 			exit(EXIT_FAILURE);
 		}
 	}
-	DPRINTF("closing PAM session\n");
+	DPRINTF(1, "closing PAM session\n");
 	result = pam_close_session(pamh, 0);
 	if (result != PAM_SUCCESS) {
 		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
 		pam_end(pamh, result);
 		exit(EXIT_FAILURE);
 	}
-	DPRINTF("ending PAM\n");
+	DPRINTF(1, "ending PAM\n");
 	pam_end(pamh, result);
-	DPRINTF("done\n");
+	DPRINTF(1, "done\n");
 }
 
 static void
@@ -819,6 +876,7 @@ main(int argc, char *argv[])
 
 	while (1) {
 		int c, val;
+		char *endptr = NULL;
 		long num;
 		char *p;
 
@@ -867,7 +925,7 @@ main(int argc, char *argv[])
 
 		case 'A':	/* -A, --authfile FILE */
 			free(options.authfile);
-			options.authfile = strdup(optarg);
+			options.authfile = strndup(optarg, PATH_MAX);
 			break;
 		case 'l':	/* -l, --shell SHELL */
 			free(options.shell);
@@ -900,8 +958,8 @@ main(int argc, char *argv[])
 			options.service = strdup(optarg);
 			break;
 		case 'T':	/* -T, --vt VTNR */
-			num = strtol(optarg, &p, 0);
-			if (*p || num < 1 || num > 12)
+			num = strtol(optarg, &endptr, 0);
+			if (*endptr || num < 1 || num > 12)
 				goto bad_option;
 			free(options.vtnr);
 			options.vtnr = strdup(optarg);
@@ -926,23 +984,25 @@ main(int argc, char *argv[])
 			options.dryrun = True;
 			break;
 		case 'D':	/* -D, --debug [level] */
-			DPRINTF("%s: increasing debug verbosity\n", argv[0]);
 			if (optarg == NULL) {
+				DPRINTF(1, "%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
-			} else {
-				if ((val = strtol(optarg, NULL, 0)) < 0)
-					goto bad_option;
-				options.debug = val;
+				break;
 			}
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
+				goto bad_option;
+			DPRINTF(1, "%s: setting debug verbosity to %d\n", argv[0], val);
+			options.debug = val;
 			break;
 		case 'v':	/* -v, --verbose [level] */
-			DPRINTF("%s: increasing output verbosity\n", argv[0]);
 			if (optarg == NULL) {
+				DPRINTF(1, "%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
-			if ((val = strtol(optarg, NULL, 0)) < 0)
+			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			DPRINTF(1, "%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -950,18 +1010,12 @@ main(int argc, char *argv[])
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandVersion;
-			options.command = CommandVersion;
+			DPRINTF(1, "Setting command to CommandVersion\n");
+			command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandCopying;
-			options.command = CommandCopying;
+			DPRINTF(1, "Setting command to CommandCopying\n");
+			command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -971,25 +1025,25 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					EPRINTF("%s: syntax error near '", argv[0]);
 					while (optind < argc) {
 						fprintf(stderr, "%s", argv[optind++]);
 						fprintf(stderr, "%s", (optind < argc) ? " " : "");
 					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument", argv[0]);
+					EPRINTF("%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
 			      bad_usage:
 				usage(argc, argv);
 			}
-			exit(2);
+			exit(EXIT_SYNTAXERR);
 		}
 	}
-	DPRINTF("%s: option index = %d\n", argv[0], optind);
-	DPRINTF("%s: option count = %d\n", argv[0], argc);
+	DPRINTF(1, "%s: option index = %d\n", argv[0], optind);
+	DPRINTF(1, "%s: option count = %d\n", argv[0], argc);
 	if (optind >= argc) {
 		char *init = calloc(PATH_MAX + 1, sizeof(*init));
 
@@ -1022,27 +1076,28 @@ main(int argc, char *argv[])
 		options.cmd_argv = argv + optind;
 	}
 	get_defaults();
+
 	switch (command) {
 	default:
 	case CommandDefault:
 	case CommandLogin:
-		DPRINTF("%s: running login\n", argv[0]);
+		DPRINTF(1, "%s: running login\n", argv[0]);
 		run_login(options.cmd_argc, options.cmd_argv);
 		break;
 	case CommandHelp:
-		DPRINTF("%s: printing help message\n", argv[0]);
+		DPRINTF(1, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
-		DPRINTF("%s: printing version message\n", argv[0]);
+		DPRINTF(1, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
-		DPRINTF("%s: printing copying message\n", argv[0]);
+		DPRINTF(1, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
 	exit(EXIT_SUCCESS);
 }
 
-// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
+// vim: set sw=8 tw=88 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
