@@ -42,6 +42,9 @@
 
  *****************************************************************************/
 
+/** @section Headers
+  * @{ */
+
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
@@ -60,14 +63,14 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
+#include <sys/select.h>
 #include <sys/time.h>
+#include <sys/timerfd.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
+#include <sys/poll.h>
 #include <fcntl.h>
-#ifdef _GNU_SOURCE
-#include <getopt.h>
-#endif
 #include <dirent.h>
 #include <time.h>
 #include <signal.h>
@@ -76,11 +79,16 @@
 
 #include <assert.h>
 #include <locale.h>
+#include <langinfo.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
 #include <wordexp.h>
 #include <execinfo.h>
+#include <math.h>
+#include <dlfcn.h>
+#include <setjmp.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -88,26 +96,62 @@
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stdout, "I: "); \
-	fprintf(stdout, args); \
-	fflush(stdout); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
-#define PTRACE() do { if (options.debug > 0 || options.output > 2) { \
-	fprintf(stderr, "T: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
+
+/** @} */
+
+/** @section Preamble
+  * @{ */
+
+static const char *
+_timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
+
+#define XPRINTF(_args...) do { } while (0)
+
+#define OPRINTF(_num, _args...) do { if (options.debug >= _num || options.output > _num) { \
+	fprintf(stdout, NAME ": I: "); \
+	fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define DPRINTF(_num, _args...) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": D: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr); } } while (0)
+
+#define EPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": E: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define WPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": W: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define PTRACE(_num) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": T: [%s] %12s +%4d %s()\n", _timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
+void
+dumpstack(const char *file, const int line, const char *func)
+{
+	void *buffer[32];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 32)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
+}
 
 #undef EXIT_SUCCESS
 #undef EXIT_FAILURE
@@ -117,17 +161,20 @@
 #define EXIT_FAILURE	1
 #define EXIT_SYNTAXERR	2
 
+
+/** @} */
+
 typedef enum {
 	CommandDefault,
 	CommandHelp,
 	CommandVersion,
 	CommandCopying,
-} Command;
+} CommandType;
 
 typedef struct {
 	int output;
 	int debug;
-	Command command;
+	CommandType command;
 	char *display;
 	int screen;
 } Options;
@@ -266,19 +313,21 @@ Options:\n\
 }
 
 static void
-set_defaults(void)
+set_defaults(int argc, char *argv[])
 {
+	(void) argc;
+	(void) argv;
 }
 
 int
 main(int argc, char *argv[])
 {
-	Command command = CommandDefault;
+	CommandType command = CommandDefault;
 	Bool exec_mode = False;
 
 	setlocale(LC_ALL, "");
 
-	set_defaults();
+	set_defaults(argc, argv);
 
 	while (1) {
 		int c, val;
@@ -307,7 +356,7 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "d:s:DvhVCH?");
 #endif				/* _GNU_SOURCE */
 		if (c == -1 || exec_mode) {
-			DPRINTF("done options processing\n");
+			DPRINTF(1, "%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
@@ -315,9 +364,9 @@ main(int argc, char *argv[])
 			goto bad_usage;
 
 		case 'd':	/* -d, --display DISPLAY */
-			setenv("DISPLAY", optarg, True);
 			free(options.display);
-			options.display = strdup(optarg);
+			options.display = strndup(optarg, 256);
+			setenv("DISPLAY", optarg, 1);
 			break;
 		case 's':	/* -s, --screen SCREEN */
 			if ((val = strtoul(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
@@ -325,26 +374,26 @@ main(int argc, char *argv[])
 			options.screen = val;
 			break;
 
-		case 'D':	/* -D, --debug [LEVEL] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
+		case 'D':	/* -D, --debug [level] */
 			if (optarg == NULL) {
+				DPRINTF(1, "%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			DPRINTF(1, "%s: setting debug verbosity to %d\n", argv[0], val);
 			options.debug = val;
 			break;
-		case 'v':	/* -v, --verbose [LEVEL] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
+		case 'v':	/* -v, --verbose [level] */
 			if (optarg == NULL) {
+				DPRINTF(1, "%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			DPRINTF(1, "%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -352,18 +401,12 @@ main(int argc, char *argv[])
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandVersion;
-			options.command = CommandVersion;
+			DPRINTF(1, "Setting command to CommandVersion\n");
+			command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandCopying;
-			options.command = CommandCopying;
+			DPRINTF(1, "Setting command to CommandCopying\n");
+			command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -373,14 +416,14 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					EPRINTF("%s: syntax error near '", argv[0]);
 					while (optind < argc) {
 						fprintf(stderr, "%s", argv[optind++]);
 						fprintf(stderr, "%s", (optind < argc) ? " " : "");
 					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument", argv[0]);
+					EPRINTF("%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
@@ -390,21 +433,30 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
+	DPRINTF(1, "%s: option index = %d\n", argv[0], optind);
+	DPRINTF(1, "%s: option count = %d\n", argv[0], argc);
+	if (optind < argc) {
+		EPRINTF("%s: excess non-option arguments\n", argv[0]);
+		goto bad_nonopt;
+	}
 	switch (command) {
 	default:
 	case CommandDefault:
 		break;
 	case CommandHelp:
+		DPRINTF(1, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
+		DPRINTF(1, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
+		DPRINTF(1, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
 	exit(EXIT_SUCCESS);
 }
 
-// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
+// vim: set sw=8 tw=88 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
