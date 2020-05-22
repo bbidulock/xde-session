@@ -42,12 +42,15 @@
 
  *****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "autoconf.h"
-#endif
+/** @section Headers
+  * @{ */
 
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
 #endif
 
 #include <stddef.h>
@@ -63,6 +66,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/timerfd.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <sys/poll.h>
@@ -75,9 +79,16 @@
 
 #include <assert.h>
 #include <locale.h>
+#include <langinfo.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <wordexp.h>
+#include <execinfo.h>
+#include <math.h>
+#include <dlfcn.h>
+#include <setjmp.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -114,15 +125,16 @@
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#define GTK_EVENT_STOP		TRUE
-#define GTK_EVENT_PROPAGATE	FALSE
-
 #include <pwd.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
 #include <fontconfig/fontconfig.h>
 #include <pango/pangofc-fontmap.h>
+
+#ifdef CANBERRA_SOUND
+#include <canberra-gtk.h>
+#endif
 
 #include <ctype.h>
 #include <sys/socket.h>
@@ -138,11 +150,13 @@
 #include <getopt.h>
 #endif
 
-#include <langinfo.h>
-#include <locale.h>
+/** @} */
+
+/** @section Preamble
+  * @{ */
 
 static const char *
-timestamp(void)
+_timestamp(void)
 {
 	static struct timeval tv = { 0, 0 };
 	static char buf[BUFSIZ];
@@ -154,26 +168,51 @@ timestamp(void)
 	return buf;
 }
 
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stderr, "I: "); \
-	fprintf(stderr, args); \
+#define XPRINTF(_args...) do { } while (0)
+
+#define OPRINTF(_num, _args...) do { if (options.debug >= _num || options.output > _num) { \
+	fprintf(stdout, NAME ": I: "); \
+	fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define DPRINTF(_num, _args...) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": D: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr); } } while (0)
+
+#define EPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": E: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define WPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": W: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define PTRACE(_num) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": T: [%s] %12s +%4d %s()\n", _timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
+
+void
+dumpstack(const char *file, const int line, const char *func)
+{
+	void *buffer[32];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 32)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
+}
+
+#undef EXIT_SUCCESS
+#undef EXIT_FAILURE
+#undef EXIT_SYNTAXERR
 
 #define EXIT_SUCCESS		0
 #define EXIT_FAILURE		1
 #define EXIT_SYNTAXERR		2
+
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
 
 static int saveArgc;
 static char **saveArgv;
@@ -183,6 +222,9 @@ static char **saveArgv;
 #define RESTITL "XDE X11 Session Chooser"
 #define SELECTION_ATOM "_XDE_CHOOSER_S%d"
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
+
+
+/** @} */
 
 typedef enum _LogoSide {
 	LogoSideLeft,
@@ -516,7 +558,7 @@ static void redo_source(XdeScreen *xscr);
 static GdkFilterReturn
 event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 {
-	DPRINT();
+	PTRACE(1);
 	if (options.debug > 2) {
 		fprintf(stderr, "==> PropertyNotify:\n");
 		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xproperty.window);
@@ -527,12 +569,12 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 		fprintf(stderr, "<== PropertyNotify:\n");
 	}
 	if (xev->xproperty.atom == _XA_XDE_THEME_NAME && xev->xproperty.state == PropertyNewValue) {
-		DPRINT();
+		PTRACE(1);
 		reparse(dpy, xev->xproperty.window);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
 	if (xev->xproperty.atom == _XA_XROOTPMAP_ID && xev->xproperty.state == PropertyNewValue) {
-		DPRINT();
+		PTRACE(1);
 		if (options.source & BackgroundSourcePixmap)
 			redo_source(xscr);
 		return GDK_FILTER_REMOVE;	/* event handled */
@@ -543,7 +585,7 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 static GdkFilterReturn
 event_handler_ClientMessage(Display *dpy, XEvent *xev)
 {
-	DPRINT();
+	PTRACE(1);
 	if (options.debug > 1) {
 		fprintf(stderr, "==> ClientMessage:\n");
 		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xclient.window);
@@ -611,7 +653,7 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 
 	(void) event;
 	(void) data;
-	DPRINT();
+	PTRACE(1);
 	switch (xev->type) {
 	case ClientMessage:
 		return event_handler_ClientMessage(dpy, xev);
@@ -719,12 +761,12 @@ on_render_combo(GtkTreeViewColumn *col, GtkCellRenderer *cell,
 		return;
 	model = gtk_list_store_new(1, G_TYPE_STRING);
 	gtk_list_store_append(model, &m_iter);
-	DPRINTF("Adding action '%s'\n","");
+	DPRINTF(1, "Adding action '%s'\n","");
 	gtk_list_store_set(model, &m_iter, 0, "", -1);
 
 	for (a = acts; (act = *a); a++) {
 		gtk_list_store_append(model, &m_iter);
-		DPRINTF("Adding action '%s'\n",act);
+		DPRINTF(1, "Adding action '%s'\n",act);
 		gtk_list_store_set(model, &m_iter, 0, act, -1);
 	}
 	g_strfreev(acts);
@@ -799,7 +841,7 @@ get_xsession_entry(const char *key, const char *file)
 		g_key_file_free(entry);
 		return (NULL);
 	}
-	DPRINTF("got xsession file: %s (%s)\n", key, file);
+	DPRINTF(1, "got xsession file: %s (%s)\n", key, file);
 	return (entry);
 }
 
@@ -811,16 +853,16 @@ bad_xaction(const char *appid, GKeyFile *entry, const char *group)
 	gchar *name, *exec, *tryexec, *binary;
 
 	if (!(name = g_key_file_get_string(entry, group, G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
-		DPRINTF("%s: %s: no Name\n", appid, group);
+		DPRINTF(1, "%s: %s: no Name\n", appid, group);
 		return TRUE;
 	}
 	g_free(name);
 	if (!(exec = g_key_file_get_string(entry, group, G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
-		DPRINTF("%s: %s: no Exec\n", appid, group);
+		DPRINTF(1, "%s: %s: no Exec\n", appid, group);
 		return TRUE;
 	}
 	if (g_key_file_get_boolean(entry, group, G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
-		DPRINTF("%s: %s: is Hidden\n", appid, group);
+		DPRINTF(1, "%s: %s: is Hidden\n", appid, group);
 		return TRUE;
 	}
 	if ((tryexec = g_key_file_get_string(entry, group, G_KEY_FILE_DESKTOP_KEY_TRY_EXEC, NULL))) {
@@ -839,7 +881,7 @@ bad_xaction(const char *appid, GKeyFile *entry, const char *group)
 	g_free(exec);
 	if (binary[0] == '/') {
 		if (access(binary, X_OK)) {
-			DPRINTF("%s: %s: %s: %s\n", appid, group, binary, strerror(errno));
+			DPRINTF(1, "%s: %s: %s: %s\n", appid, group, binary, strerror(errno));
 			g_free(binary);
 			return TRUE;
 		}
@@ -864,12 +906,12 @@ bad_xaction(const char *appid, GKeyFile *entry, const char *group)
 				break;
 			}
 			// to much noise
-			// DPRINTF("%s: %s: %s\n", appid, file,
+			// DPRINTF(1, "%s: %s: %s\n", appid, file,
 			// strerror(errno));
 		}
 		free(path);
 		if (!execok) {
-			DPRINTF("%s: %s: %s: not executable\n", appid, group, binary);
+			DPRINTF(1, "%s: %s: %s: not executable\n", appid, group, binary);
 			g_free(binary);
 			return TRUE;
 		}
@@ -928,14 +970,14 @@ get_xsessions(void)
 		char *key;
 
 		if (!(dir = opendir(*dirs))) {
-			DPRINTF("%s: %s\n", *dirs, strerror(errno));
+			DPRINTF(1, "%s: %s\n", *dirs, strerror(errno));
 			continue;
 		}
 		while ((d = readdir(dir))) {
 			if (d->d_name[0] == '.')
 				continue;
 			if (!(p = strstr(d->d_name, suffix)) || p[suflen]) {
-				DPRINTF("%s: no %s suffix\n", d->d_name, suffix);
+				DPRINTF(1, "%s: no %s suffix\n", d->d_name, suffix);
 				continue;
 			}
 			len = strlen(*dirs) + strlen(d->d_name) + 2;
@@ -1108,7 +1150,7 @@ on_action_change(GtkCellRendererCombo *rend, gchar *path, GtkTreeIter *combo_ite
 	(void) path;
 	(void) combo_iter;
 	(void) data;
-	DPRINTF("Editing action change\n");
+	DPRINTF(1, "Editing action change\n");
 }
 
 void
@@ -1129,7 +1171,7 @@ void
 on_action_editing(GtkCellRenderer *rend, GtkCellEditable *editable, gchar *path, gpointer data)
 {
 	(void) data;
-	DPRINTF("Started editing rend=%p, editable=%p, path=%s\n", rend, editable, path);
+	DPRINTF(1, "Started editing rend=%p, editable=%p, path=%s\n", rend, editable, path);
 }
 
 void
@@ -1137,7 +1179,7 @@ on_action_cancel(GtkCellRenderer *rend, gpointer data)
 {
 	(void) rend;
 	(void) data;
-	DPRINTF("Editing action cancelled\n");
+	DPRINTF(1, "Editing action cancelled\n");
 }
 
 
@@ -1156,7 +1198,7 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 
 		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, -1);
 		if (label)
-			DPRINTF("Label selected %s\n", label);
+			DPRINTF(1, "Label selected %s\n", label);
 		g_free(label);
 	}
 	free(options.current);
@@ -1206,7 +1248,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 
 		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, -1);
 		if (label)
-			DPRINTF("Label selected %s\n", label);
+			DPRINTF(1, "Label selected %s\n", label);
 
 		if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
 			if ((f = fopen(file, "w"))) {
@@ -1272,7 +1314,7 @@ on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 
 		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, -1);
 		if (label)
-			DPRINTF("Label selected %s\n", label);
+			DPRINTF(1, "Label selected %s\n", label);
 		if (label && !strcmp(label, options.session)) {
 			gtk_widget_set_sensitive(buttons[1], FALSE);
 			// gtk_widget_set_sensitive(buttons[2], FALSE);
@@ -1307,7 +1349,7 @@ on_row_activated(GtkTreeView *sess, GtkTreePath *path, GtkTreeViewColumn *col, g
 
 		gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label , XSESS_COL_MANAGED, &manage, -1);
 		if (label)
-			DPRINTF("Label selected %s\n", label);
+			DPRINTF(1, "Label selected %s\n", label);
 		free(options.current);
 		options.current = strdup(label);
 		options.managed = manage;
@@ -1337,7 +1379,7 @@ on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 
 			gtk_tree_model_get(model, &iter, XSESS_COL_LABEL, &label, -1);
 			if (label)
-				DPRINTF("Label clicked was: %s\n", label);
+				DPRINTF(1, "Label clicked was: %s\n", label);
 			g_free(label);
 		}
 	}
@@ -1431,11 +1473,11 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	if (gdk_keyboard_grab(win, TRUE, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab keyboard!\n");
 	else
-		DPRINTF("Grabbed keyboard\n");
+		DPRINTF(1, "Grabbed keyboard\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
 	else
-		DPRINTF("Grabbed pointer\n");
+		DPRINTF(1, "Grabbed pointer\n");
 }
 
 /** @brief render a pixbuf into a pixmap for a monitor
@@ -1447,12 +1489,12 @@ render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, Xde
 	double hm = xmon->geom.height;
 	GdkPixbuf *scaled = NULL;
 
-	DPRINT();
+	PTRACE(1);
 	gdk_cairo_rectangle(cr, &xmon->geom);
 	if (wp >= 0.8 * wm && hp >= 0.8 * hm) {
 		/* good size for filling or scaling */
 		/* TODO: check aspect ratio before scaling */
-		DPRINTF("scaling pixbuf from %dx%d to %dx%d\n",
+		DPRINTF(1, "scaling pixbuf from %dx%d to %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width,
@@ -1460,13 +1502,13 @@ render_pixbuf_for_mon(cairo_t * cr, GdkPixbuf *pixbuf, double wp, double hp, Xde
 		gdk_cairo_set_source_pixbuf(cr, scaled, xmon->geom.x, xmon->geom.y);
 	} else if (wp <= 0.5 * wm && hp <= 0.5 * hm) {
 		/* good size for tiling */
-		DPRINTF("tiling pixbuf at %dx%d into %dx%d\n",
+		DPRINTF(1, "tiling pixbuf at %dx%d into %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		gdk_cairo_set_source_pixbuf(cr, pixbuf, xmon->geom.x, xmon->geom.y);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
 	} else {
 		/* somewhere in between: scale down for integer tile */
-		DPRINTF("scaling and tiling pixbuf at %dx%d into %dx%d\n",
+		DPRINTF(1, "scaling and tiling pixbuf at %dx%d into %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width / 2,
@@ -1488,7 +1530,7 @@ render_pixbuf_for_scr(GdkPixbuf *pixbuf, GdkPixmap *pixmap, XdeScreen *xscr)
 	cairo_t *cr;
 	int m;
 
-	DPRINT();
+	PTRACE(1);
 	cr = gdk_cairo_create(GDK_DRAWABLE(pixmap));
 	for (m = 0; m < xscr->nmon; m++) {
 		XdeMonitor *xmon = xscr->mons + m;
@@ -1764,13 +1806,13 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	}
 
 	if (xscr->scrn != scrn) {
-		DPRINTF("Arrrghhh! screen pointer changed from %p to %p\n", xscr->scrn, scrn);
+		DPRINTF(1, "Arrrghhh! screen pointer changed from %p to %p\n", xscr->scrn, scrn);
 		xscr->scrn = scrn;
 	}
 	width = gdk_screen_get_width(scrn);
 	height = gdk_screen_get_height(scrn);
 	if (xscr->width != width || xscr->height != height) {
-		DPRINTF("Screen %d dimensions changed %dx%d -> %dx%d\n", index,
+		DPRINTF(1, "Screen %d dimensions changed %dx%d -> %dx%d\n", index,
 			xscr->width, xscr->height, width, height);
 		gtk_window_set_default_size(w, width, height);
 		geom = g_strdup_printf("%dx%d+0+0", width, height);
@@ -1785,7 +1827,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	}
 	nmon = gdk_screen_get_n_monitors(scrn);
 	if (nmon > xscr->nmon) {
-		DPRINTF("Screen %d number of monitors increased from %d to %d\n",
+		DPRINTF(1, "Screen %d number of monitors increased from %d to %d\n",
 			index, xscr->nmon, nmon);
 		xscr->mons = realloc(xscr->mons, nmon * sizeof(*xscr->mons));
 		for (m = xscr->nmon; m <= nmon; m++) {
@@ -1793,7 +1835,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 			memset(mon, 0, sizeof(*mon));
 		}
 	} else if (nmon < xscr->nmon) {
-		DPRINTF("Screen %d number of monitors decreased from %d to %d\n",
+		DPRINTF(1, "Screen %d number of monitors decreased from %d to %d\n",
 			index, xscr->nmon, nmon);
 		for (m = xscr->nmon; m > nmon; m--) {
 			mon = xscr->mons + m - 1;
@@ -1832,7 +1874,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		XdeScreen *_xscr;
 		XdeMonitor *_xmon;
 
-		DPRINTF("Reassigning event box to new container\n");
+		DPRINTF(1, "Reassigning event box to new container\n");
 		gdk_display_get_pointer(disp, &screen, &x, &y, NULL);
 		if (!screen)
 			screen = scrn;
@@ -1967,7 +2009,7 @@ reparse(Display *dpy, Window root)
 	char **list = NULL;
 	int strings = 0;
 
-	DPRINT();
+	PTRACE(1);
 	gtk_rc_reparse_all();
 	if (!options.usexde)
 		return;
@@ -1990,11 +2032,11 @@ reparse(Display *dpy, Window root)
 			if (list)
 				XFreeStringList(list);
 		} else
-			DPRINTF("could not get text list for property\n");
+			DPRINTF(1, "could not get text list for property\n");
 		if (xtp.value)
 			XFree(xtp.value);
 	} else
-		DPRINTF("could not get _XDE_THEME_NAME for root 0x%lx\n", root);
+		DPRINTF(1, "could not get _XDE_THEME_NAME for root 0x%lx\n", root);
 }
 
 /** @brief get a covering window for each screen
@@ -2243,7 +2285,7 @@ GetPane(GtkWidget *cont)
 					// style->color_flags[i] |= GTK_RC_BASE;
 				}
 			} else
-				DPRINTF("No resources.greetColor!\n");
+				DPRINTF(1, "No resources.greetColor!\n");
 		}
 		gtk_widget_modify_style(l_greet, style);
 	}
@@ -2412,28 +2454,28 @@ choose(int argc, char *argv[])
 	}
 
 	if (options.session && !g_hash_table_contains(xsessions, options.session)) {
-		DPRINTF("Default %s is not available!\n", options.session);
+		DPRINTF(1, "Default %s is not available!\n", options.session);
 		if (!strcasecmp(options.choice, options.session)) {
 			free(options.choice);
 			options.choice = strdup("choose");
 		}
 	}
 	if (!strcasecmp(options.choice, "default") && !options.session) {
-		DPRINTF("Default is chosen but there is no default\n");
+		DPRINTF(1, "Default is chosen but there is no default\n");
 		free(options.choice);
 		options.choice = strdup("choose");
 	}
 	if (strcasecmp(options.choice, "choose") &&
 	    !g_hash_table_contains(xsessions, options.choice)) {
-		DPRINTF("Choice %s is not available.\n", options.choice);
+		DPRINTF(1, "Choice %s is not available.\n", options.choice);
 		free(options.choice);
 		options.choice = strdup("choose");
 	}
 	if (!strcasecmp(options.choice, "choose"))
 		options.prompt = True;
 
-	DPRINTF("The default was: %s\n", options.session);
-	DPRINTF("Choosing %s...\n", options.choice);
+	DPRINTF(1, "The default was: %s\n", options.session);
+	DPRINTF(1, "Choosing %s...\n", options.choice);
 	if (options.prompt)
 		do_run(argc, argv);
 	if (strcmp(options.current, "logout")) {
@@ -2451,11 +2493,11 @@ do_chooser(int argc, char *argv[])
 	const char *file;
 
 	if (!(file = choose(argc, argv))) {
-		DPRINTF("Logging out...\n");
+		DPRINTF(1, "Logging out...\n");
 		fputs("logout", stdout);
 		return;
 	}
-	DPRINTF("Launching session %s...\n", options.current);
+	DPRINTF(1, "Launching session %s...\n", options.current);
 	if (!options.filename) {
 		char *out = strdup(options.current);
 		size_t i;
@@ -2758,12 +2800,12 @@ get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
 	if (XrmGetResource(xrdb, name, clas, &type, &value)) {
 		if (value.addr && *(char *) value.addr) {
-			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			DPRINTF(1, "%s:\t\t%s\n", clas, value.addr);
 			return (const char *) value.addr;
 		} else
-			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			DPRINTF(1, "%s:\t\t%s\n", clas, value.addr);
 	} else
-		DPRINTF("%s:\t\t%s\n", clas, "ERROR!");
+		DPRINTF(1, "%s:\t\t%s\n", clas, "ERROR!");
 	return (NULL);
 }
 
@@ -2823,7 +2865,7 @@ getXrmFont(const char *val, PangoFontDescription **face)
 		if ((font = pango_fc_font_description_from_pattern(pattern, TRUE))) {
 			pango_font_description_free(*face);
 			*face = font;
-			DPRINTF("Font description is: %s\n",
+			DPRINTF(1, "Font description is: %s\n",
 					pango_font_description_to_string(font));
 			return TRUE;
 		}
@@ -2857,7 +2899,7 @@ getXrmDouble(const char *val, double *floating)
 		*strchr(copy, '.') = radix;
 
 	*floating = strtod(copy, NULL);
-	DPRINTF("Got decimal value %s, translates to %f\n", val, *floating);
+	DPRINTF(1, "Got decimal value %s, translates to %f\n", val, *floating);
 	free(copy);
 	return TRUE;
 }
@@ -2902,7 +2944,7 @@ get_resources(int argc, char *argv[])
 
 	(void) argc;
 	(void) argv;
-	DPRINT();
+	PTRACE(1);
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
 		exit(EXIT_FAILURE);
@@ -2910,7 +2952,7 @@ get_resources(int argc, char *argv[])
 	root = DefaultRootWindow(dpy);
 	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
 		XCloseDisplay(dpy);
-		DPRINTF("no resource manager database allocated\n");
+		DPRINTF(1, "no resource manager database allocated\n");
 		return;
 	}
 	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
@@ -2919,15 +2961,15 @@ get_resources(int argc, char *argv[])
 		return;
 	}
 	XrmInitialize();
-	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
+	// DPRINTF(1, "RESOURCE_MANAGER = %s\n", xtp.value);
 	rdb = XrmGetStringDatabase((char *) xtp.value);
 	XFree(xtp.value);
 	if (!rdb) {
-		DPRINTF("no resource manager database allocated\n");
+		DPRINTF(1, "no resource manager database allocated\n");
 		XCloseDisplay(dpy);
 		return;
 	}
-	DPRINTF("combining database from %s\n", APPDFLT);
+	DPRINTF(1, "combining database from %s\n", APPDFLT);
 	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	if ((val = get_resource(rdb, "debug", "0"))) {
 		getXrmInt(val, &options.debug);
@@ -2937,7 +2979,7 @@ get_resources(int argc, char *argv[])
 			char *endptr = NULL;
 			double width = strtod(val, &endptr);
 
-			DPRINTF("Got decimal value %s, translates to %f\n", val, width);
+			DPRINTF(1, "Got decimal value %s, translates to %f\n", val, width);
 			if (endptr != val && *endptr == '%' && width > 0) {
 				options.width =
 				    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
@@ -2955,7 +2997,7 @@ get_resources(int argc, char *argv[])
 			char *endptr = NULL;
 			double height = strtod(val, &endptr);
 
-			DPRINTF("Got decimal value %s, translates to %f\n", val, height);
+			DPRINTF(1, "Got decimal value %s, translates to %f\n", val, height);
 			if (endptr != val && *endptr == '%' && height > 0) {
 				options.height =
 				    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
@@ -3324,8 +3366,8 @@ set_default_xdgdirs(int argc, char *argv[])
 	}
 	setenv("XDG_CONFIG_DIRS", conf, 1);
 	setenv("XDG_DATA_DIRS", data, 1);
-	DPRINTF("setting XDG_CONFIG_DIRS to '%s'\n", conf);
-	DPRINTF("setting XDG_DATA_DIRS   to '%s'\n", data);
+	DPRINTF(1, "setting XDG_CONFIG_DIRS to '%s'\n", conf);
+	DPRINTF(1, "setting XDG_DATA_DIRS   to '%s'\n", data);
 	free(conf);
 	free(data);
 }
@@ -3804,10 +3846,8 @@ get_default_choice(void)
 }
 
 static void
-get_defaults(int argc, char *argv[])
+get_defaults(void)
 {
-	(void) argc;
-	(void) argv;
 	get_default_x11();
 	get_default_vendor();
 	get_default_banner();
@@ -3887,7 +3927,7 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "pb:s:nc:l:di:t:exT:fNDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
-			DPRINTF("%s: done options processing\n", argv[0]);
+			DPRINTF(1, "%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
@@ -3997,24 +4037,24 @@ main(int argc, char *argv[])
 			break;
 		case 'D':	/* -D, --debug [level] */
 			if (optarg == NULL) {
-				DPRINTF("%s: increasing debug verbosity\n", argv[0]);
+				DPRINTF(1, "%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
-			DPRINTF("%s: setting debug verbosity to %d\n", argv[0], val);
+			DPRINTF(1, "%s: setting debug verbosity to %d\n", argv[0], val);
 			options.debug = val;
 			break;
 		case 'v':	/* -v, --verbose [level] */
 			if (optarg == NULL) {
-				DPRINTF("%s: increasing output verbosity\n", argv[0]);
+				DPRINTF(1, "%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
-			DPRINTF("%s: setting output verbosity to %d\n", argv[0], val);
+			DPRINTF(1, "%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -4043,14 +4083,14 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					EPRINTF("%s: syntax error near '", argv[0]);
 					while (optind < argc) {
 						fprintf(stderr, "%s", argv[optind++]);
 						fprintf(stderr, "%s", (optind < argc) ? " " : "");
 					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument", argv[0]);
+					EPRINTF("%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
@@ -4060,6 +4100,8 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
+	DPRINTF(1, "%s: option index = %d\n", argv[0], optind);
+	DPRINTF(1, "%s: option count = %d\n", argv[0], argc);
 	if (optind < argc) {
 		free(options.choice);
 		options.choice = strdup(argv[optind++]);
@@ -4068,29 +4110,28 @@ main(int argc, char *argv[])
 			goto bad_nonopt;
 		}
 	}
-	DPRINTF("%s: option index = %d\n", argv[0], optind);
-	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	get_defaults(argc, argv);
+	get_defaults();
+
 	switch (command) {
 	default:
 	case CommandDefault:
-		DPRINTF("%s: running program\n", argv[0]);
+		DPRINTF(1, "%s: running program\n", argv[0]);
 		run_program(argc, argv);
 		break;
 	case CommandHelp:
-		DPRINTF("%s: printing help message\n", argv[0]);
+		DPRINTF(1, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
-		DPRINTF("%s: printing version message\n", argv[0]);
+		DPRINTF(1, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
-		DPRINTF("%s: printing copying message\n", argv[0]);
+		DPRINTF(1, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
 	exit(EXIT_SUCCESS);
 }
 
-// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
+// vim: set sw=8 tw=88 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
