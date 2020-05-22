@@ -42,6 +42,9 @@
 
  *****************************************************************************/
 
+/** @section Headers
+  * @{ */
+
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
@@ -63,13 +66,11 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/timerfd.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <sys/poll.h>
 #include <fcntl.h>
-#ifdef _GNU_SOURCE
-#include <getopt.h>
-#endif
 #include <dirent.h>
 #include <time.h>
 #include <signal.h>
@@ -78,11 +79,16 @@
 
 #include <assert.h>
 #include <locale.h>
+#include <langinfo.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
 #include <wordexp.h>
 #include <execinfo.h>
+#include <math.h>
+#include <dlfcn.h>
+#include <setjmp.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -100,35 +106,73 @@
 #define SN_API_NOT_YET_FROZEN
 #include <libsn/sn.h>
 #endif
+#include <X11/ICE/ICEutil.h>
+#include <X11/SM/SMlib.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
 
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stdout, "I: "); \
-	fprintf(stdout, args); \
-	fflush(stdout); } } while (0)
-#define CPRINTF(c, args...) do { if (options.output > 1) { \
-	fprintf(stdout, "I: Client Id = %s, ", c->id); \
-	fprintf(stdout, args); \
-	fflush(stdout); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
-#define PTRACE() do { if (options.debug > 0 || options.output > 2) { \
-	fprintf(stderr, "T: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
+
+
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
+
+/** @} */
+
+/** @section Preamble
+  * @{ */
+
+static const char *
+_timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
+
+#define XPRINTF(_args...) do { } while (0)
+
+#define OPRINTF(_num, _args...) do { if (options.debug >= _num || options.output > _num) { \
+	fprintf(stdout, NAME ": I: "); \
+	fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define CPRINTF(_num, _c, _args...) do { if (options.output > 1) { \
+	fprintf(stdout, NAME ": I: Client Id = %s, ", _c->id); \
+	fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define DPRINTF(_num, _args...) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": D: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr); } } while (0)
+
+#define EPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": E: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define WPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": W: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define PTRACE(_num) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": T: [%s] %12s +%4d %s()\n", _timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
-#include <X11/ICE/ICEutil.h>
-#include <X11/SM/SMlib.h>
+void
+dumpstack(const char *file, const int line, const char *func)
+{
+	void *buffer[32];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 32)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
+}
 
 #undef EXIT_SUCCESS
 #undef EXIT_FAILURE
@@ -138,6 +182,8 @@
 #define EXIT_FAILURE	1
 #define EXIT_SYNTAXERR	2
 
+
+/** @} */
 typedef enum {
 	CommandDefault,
 	CommandStartup,
@@ -704,7 +750,7 @@ setInitialProperties(SmClient *c, int num, SmProp *props[])
 {
 	int i;
 
-	CPRINTF(c, "setting initial properties\n");
+	CPRINTF(1, c, "setting initial properties\n");
 	c->props = props;
 	c->num_props = num;
 
@@ -938,7 +984,7 @@ cloneClient(SmClient *c, Bool useSavedState)
 	}
 	if (program && args) {
 		if (options.output > 1) {
-			OPRINTF("\t%s\n", program);
+			OPRINTF(1, "\t%s\n", program);
 			fprintf(stdout, "I:\t");
 			for (pp = args; *pp; pp++)
 				fprintf(stdout, "%s ", *pp);
@@ -1006,7 +1052,7 @@ finishUpSave()
 {
 	GList *link;
 
-	OPRINTF("All clients isseud SAVE YOURSELF DONE\n");
+	OPRINTF(1, "All clients isseud SAVE YOURSELF DONE\n");
 
 	manager.saveInProgress = False;
 	manager.phase2InProgress = False;
@@ -1049,7 +1095,7 @@ finishUpSave()
 			SmClient *c = link->data;
 
 			SmsDie(c->sms);
-			CPRINTF(c, "sent DIE\n");
+			CPRINTF(1, c, "sent DIE\n");
 		}
 	} else {
 		SmClient *c;
@@ -1058,7 +1104,7 @@ finishUpSave()
 		   message so that they can continue to alter their internal state. */
 		while ((c = g_queue_pop_head(checkptClients))) {
 			SmsSaveComplete(c->sms);
-			CPRINTF(c, "sent SAVE COMPLETE\n");
+			CPRINTF(1, c, "sent SAVE COMPLETE\n");
 		}
 	}
 	/* If these were handled using a state variable, the logic would be more
@@ -1106,7 +1152,7 @@ startPhase2()
 	SmClient *c;
 
 	while ((c = g_queue_pop_head(wphase2Clients))) {
-		DPRINTF("Client %s sending SAVE YOURSELF PHASE 2\n", c->id);
+		DPRINTF(1, "Client %s sending SAVE YOURSELF PHASE 2\n", c->id);
 		SmsSaveYourselfPhase2(c->sms);
 	}
 	manager.state = SMS_Phase2;
@@ -1197,19 +1243,19 @@ doSave(int saveType, int interactStyle, Bool fast)
 		c->userIssuedCheckpoint = True;
 		c->receivedDiscardCommand = False;
 
-		CPRINTF(c, "send SAVE YOURSELF\n");
-		CPRINTF(c, "    Save Type = %s\n",
+		CPRINTF(1, c, "send SAVE YOURSELF\n");
+		CPRINTF(1, c, "    Save Type = %s\n",
 			saveType == SmSaveLocal ? "local" :
 			saveType == SmSaveGlobal ? "global" : "both");
-		CPRINTF(c, "    Shutdown = %s\n", manager.wantShutdown ? "true" : "false");
-		CPRINTF(c, "    Interact Style = %s\n",
+		CPRINTF(1, c, "    Shutdown = %s\n", manager.wantShutdown ? "true" : "false");
+		CPRINTF(1, c, "    Interact Style = %s\n",
 			interactStyle == SmInteractStyleNone ? "none" :
 			interactStyle == SmInteractStyleErrors ? "errors" : "any");
-		CPRINTF(c, "    Fast = %s\n", fast ? "true" : "false");
+		CPRINTF(1, c, "    Fast = %s\n", fast ? "true" : "false");
 	}
-	OPRINTF("Sent SAVE YOURSELF to all clients.  Wiating for\n");
-	OPRINTF("SAVE YOURSELF DONE, INTERACT REQUEST or\n");
-	OPRINTF("SAVE YOURSELF PHASE 2 REQUEST from each client\n");
+	OPRINTF(1, "Sent SAVE YOURSELF to all clients.  Wiating for\n");
+	OPRINTF(1, "SAVE YOURSELF DONE, INTERACT REQUEST or\n");
+	OPRINTF(1, "SAVE YOURSELF PHASE 2 REQUEST from each client\n");
 }
 
 /** @section client callbacks
@@ -1355,7 +1401,7 @@ interactRequestCB(SmsConn smsConn, SmPointer data, int dialogType)
 	SmClient *c = (typeof(c)) data;
 
 	(void) smsConn;
-	CPRINTF(c, "received INTERACT REQUEST [Dialog Type %s]\n", dialogType == SmDialogNormal ? "normal" : "errors");
+	CPRINTF(1, c, "received INTERACT REQUEST [Dialog Type %s]\n", dialogType == SmDialogNormal ? "normal" : "errors");
 
 	if (c->state != SMC_SaveYourself) {
 		EPRINTF("Client Id = %s, received INTERACT REQUEST out of state\n", c->id);
@@ -1395,7 +1441,7 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 	SmClient *c = (typeof(c)) data;
 
 	(void) smsConn;
-	CPRINTF(c, "received INTERACT DONE [Cancel Shutdown = %s]\n", cancelShutdown ? "true" : "false");
+	CPRINTF(1, c, "received INTERACT DONE [Cancel Shutdown = %s]\n", cancelShutdown ? "true" : "false");
 
 	if (cancelShutdown) {
 		g_queue_clear(interacClients);
@@ -1405,14 +1451,14 @@ interactDoneCB(SmsConn smsConn, SmPointer data, Bool cancelShutdown)
 		manager.shutdownCancelled = True;
 		while ((c = g_queue_pop_head(checkptClients))) {
 			SmsShutdownCancelled(c->sms);
-			CPRINTF(c, "sent SHUTDOWN CANCELLED\n");
+			CPRINTF(1, c, "sent SHUTDOWN CANCELLED\n");
 		}
 	} else {
 		g_queue_pop_head(interacClients);
 		if (!g_queue_is_empty(interacClients))
 			letClientInteract();
 		else {
-			OPRINTF("Done interacting with all clients.\n");
+			OPRINTF(1, "Done interacting with all clients.\n");
 			if (!g_queue_is_empty(wphase2Clients))
 				startPhase2();
 		}
@@ -1527,7 +1573,7 @@ saveYourselfDoneCB(SmsConn smsConn, SmPointer data, Bool success)
 	GList *link;
 
 	(void) smsConn;
-	CPRINTF(c, "received SAVE YOURSELF DONE [Success = %s]\n", success ? "true" : "false");
+	CPRINTF(1, c, "received SAVE YOURSELF DONE [Success = %s]\n", success ? "true" : "false");
 
 	if ((link = g_queue_find(savselfClients, c))) {
 		g_queue_delete_link(savselfClients, link);
@@ -1572,14 +1618,14 @@ closeConnectionCB(SmsConn smsConn, SmPointer data, int count, char **reasons)
 	int i;
 
 	(void) smsConn;
-	CPRINTF(c, "received CONNECTION CLOSED\n");
+	CPRINTF(1, c, "received CONNECTION CLOSED\n");
 	for (i = 0; i < count; i++)
-		OPRINTF("   Reason string %d: %s\n", i, reasons[i]);
+		OPRINTF(1, "   Reason string %d: %s\n", i, reasons[i]);
 
 	/* XXX: should save reason messages against closed client for display */
 	SmFreeReasons(count, reasons);
 
-	OPRINTF("ICE Connection closed, fd = %d\n", IceConnectionNumber(c->ice));
+	OPRINTF(1, "ICE Connection closed, fd = %d\n", IceConnectionNumber(c->ice));
 
 	SmsCleanUp(c->sms);
 	IceSetShutdownNegotiation(c->ice, False);
@@ -1646,7 +1692,7 @@ setPropertiesCB(SmsConn smsConn, SmPointer data, int num, SmProp *props[])
 	int i;
 
 	(void) smsConn;
-	CPRINTF(c, "receive SET PROPERTIES [Numb props = %d]\n", num);
+	CPRINTF(1, c, "receive SET PROPERTIES [Numb props = %d]\n", num);
 
 	for (i = 0; i < num; i++) {
 		SmProp *prop = props[i];
@@ -1699,13 +1745,13 @@ deletePropertiesCB(SmsConn smsConn, SmPointer data, int num, char *names[])
 	int i;
 
 	(void) smsConn;
-	CPRINTF(c, "received DELETE PROPERTIES [Num props = %d]\n", num);
+	CPRINTF(1, c, "received DELETE PROPERTIES [Num props = %d]\n", num);
 
 	for (i = 0; i < num; i++) {
 		char *name = names[i];
 		int j, k;
 
-		OPRINTF("    Property name: %s\n", name);
+		OPRINTF(1, "    Property name: %s\n", name);
 
 		for (j = 0; j < c->num_props; j++)
 			if (!strcmp(name, c->props[j]->name))
@@ -1738,7 +1784,7 @@ getPropertiesCB(SmsConn smsConn, SmPointer data)
 {
 	SmClient *c = (typeof(c)) data;
 
-	CPRINTF(c, "received GET PROPERTIES\n");
+	CPRINTF(1, c, "received GET PROPERTIES\n");
 	SmsReturnProperties(smsConn, c->num_props, c->props);
 }
 
@@ -1850,9 +1896,7 @@ on_lfd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 			int ifd = IceConnectionNumber(ice);
 			char *connstr = IceConnectionString(ice);
 
-			DPRINTF
-			    ("ICE connection opened by client, fd = %d, accepted at networkId %s\n",
-			     ifd, connstr);
+			DPRINTF(1, "ICE connection opened by client, fd = %d, accepted at networkId %s\n", ifd, connstr);
 			free(connstr);
 		}
 	} else {
@@ -2092,7 +2136,7 @@ unlockSession(char *session_name)
 void
 endSession(int status)
 {
-	OPRINTF("SESSION MANAGER EXITING [status = %d]\n", status);
+	OPRINTF(1, "SESSION MANAGER EXITING [status = %d]\n", status);
 
 	FreeAuthenticationData(numTransports, authDataEntries);
 
@@ -2484,7 +2528,7 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "d:s:S:bcqeDvhVCH?");
 #endif				/* _GNU_SOURCE */
 		if (c == -1 || exec_mode) {
-			DPRINTF("done options processing\n");
+			DPRINTF(1, "done options processing\n");
 			break;
 		}
 		switch (c) {
@@ -2538,26 +2582,26 @@ main(int argc, char *argv[])
 		case 'n':	/* -n, --dry-run */
 			options.dryrun = True;
 			break;
-		case 'D':	/* -D, --debug [LEVEL] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
+		case 'D':	/* -D, --debug [level] */
 			if (optarg == NULL) {
+				DPRINTF(1, "%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			DPRINTF(1, "%s: setting debug verbosity to %d\n", argv[0], val);
 			options.debug = val;
 			break;
-		case 'v':	/* -v, --verbose [LEVEL] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
+		case 'v':	/* -v, --verbose [level] */
 			if (optarg == NULL) {
+				DPRINTF(1, "%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			DPRINTF(1, "%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -2565,18 +2609,12 @@ main(int argc, char *argv[])
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandVersion;
-			options.command = CommandVersion;
+			DPRINTF(1, "Setting command to CommandVersion\n");
+			command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandCopying;
-			options.command = CommandCopying;
+			DPRINTF(1, "Setting command to CommandCopying\n");
+			command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -2586,14 +2624,14 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					EPRINTF("%s: syntax error near '", argv[0]);
 					while (optind < argc) {
 						fprintf(stderr, "%s", argv[optind++]);
 						fprintf(stderr, "%s", (optind < argc) ? " " : "");
 					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument", argv[0]);
+					EPRINTF("%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
@@ -2603,6 +2641,8 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
+	DPRINTF(1, "%s: option index = %d\n", argv[0], optind);
+	DPRINTF(1, "%s: option count = %d\n", argv[0], argc);
 	switch (command) {
 	default:
 	case CommandDefault:
@@ -2619,16 +2659,19 @@ main(int argc, char *argv[])
 		do_editor(argc, argv);
 		break;
 	case CommandHelp:
+		DPRINTF(1, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
+		DPRINTF(1, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
+		DPRINTF(1, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
 	exit(EXIT_SUCCESS);
 }
 
-// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
+// vim: set sw=8 tw=88 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
