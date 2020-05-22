@@ -42,6 +42,9 @@
 
  *****************************************************************************/
 
+/** @section Headers
+  * @{ */
+
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
@@ -63,6 +66,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/timerfd.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <sys/poll.h>
@@ -75,9 +79,15 @@
 
 #include <assert.h>
 #include <locale.h>
+#include <langinfo.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <wordexp.h>
+#include <execinfo.h>
+#include <math.h>
+#include <dlfcn.h>
 #include <setjmp.h>
 
 #include <X11/Xatom.h>
@@ -139,11 +149,13 @@
 #include <getopt.h>
 #endif
 
-#include <langinfo.h>
-#include <locale.h>
+/** @} */
 
-const char *
-timestamp(void)
+/** @section Preamble
+  * @{ */
+
+static const char *
+_timestamp(void)
 {
 	static struct timeval tv = { 0, 0 };
 	static char buf[BUFSIZ];
@@ -155,22 +167,44 @@ timestamp(void)
 	return buf;
 }
 
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stderr, "I: "); \
-	fprintf(stderr, args); \
+#define XPRINTF(_args...) do { } while (0)
+
+#define OPRINTF(_num, _args...) do { if (options.debug >= _num || options.output > _num) { \
+	fprintf(stdout, NAME ": I: "); \
+	fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define DPRINTF(_num, _args...) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": D: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr); } } while (0)
+
+#define EPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": E: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define WPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": W: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define PTRACE(_num) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": T: [%s] %12s +%4d %s()\n", _timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
+
+void
+dumpstack(const char *file, const int line, const char *func)
+{
+	void *buffer[32];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 32)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
+}
+
+#undef EXIT_SUCCESS
+#undef EXIT_FAILURE
+#undef EXIT_SYNTAXERR
 
 #define EXIT_SUCCESS		0
 #define EXIT_FAILURE		1
@@ -245,6 +279,12 @@ static char **saveArgv;
 
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
 
+#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
+static SmcConn smcConn;
+#endif
+
+/** @} */
+
 typedef enum _LogoSide {
 	LogoSideLeft,
 	LogoSideTop,
@@ -266,32 +306,6 @@ enum {
 #define EXIT_FAILURE	REMANAGE_DISPLAY
 #undef EXIT_SYNTAXERR
 #define EXIT_SYNTAXERR	UNMANAGE_DISPLAY
-
-#define CA_CONTEXT_ID	55
-
-typedef enum {
-	CaEventWindowManager = CA_CONTEXT_ID,
-	CaEventWorkspaceChange,
-	CaEventDesktopChange,
-	CaEventWindowChange,
-	CaEventLockScreen,
-	CaEventPowerChanged,
-	CaEventSleepSuspend,
-	CaEventBatteryLevel,
-	CaEventThermalEvent,
-	CaEventBatteryState,
-	CaEventSystemChange,
-	CaEventMaximumContextId
-} CaEventId;
-
-struct EventQueue {
-	uint32_t context_id;
-	int efd;
-	GIOChannel *channel;
-	guint source_id;
-	GQueue *queue;
-	gboolean enabled;
-} CaEventQueues[CaEventMaximumContextId-CA_CONTEXT_ID] = { {0, }, };
 
 typedef enum {
 	CommandDefault,
@@ -736,10 +750,6 @@ LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
 
-#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
-static SmcConn smcConn;
-#endif
-
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
 Atom _XA_XDE_XLOCK_COMMAND;
@@ -817,6 +827,281 @@ typedef struct {
 
 XdeScreen *screens;
 
+/** @section Queued Sound Functions
+  * @{ */
+
+#ifdef CANBERRA_SOUND
+
+#define CA_CONTEXT_ID	55
+
+typedef enum {
+	CaEventWindowManager = CA_CONTEXT_ID,
+	CaEventWorkspaceChange,
+	CaEventDesktopChange,
+	CaEventWindowChange,
+	CaEventLockScreen,
+	CaEventPowerChanged,
+	CaEventSleepSuspend,
+	CaEventBatteryLevel,
+	CaEventThermalEvent,
+	CaEventBatteryState,
+	CaEventSystemChange,
+	CaEventMaximumContextId
+} CaEventId;
+
+struct EventQueue {
+	uint32_t context_id;
+	int efd;
+	GIOChannel *channel;
+	guint source_id;
+	GQueue *queue;
+	gboolean enabled;
+} CaEventQueues[CaEventMaximumContextId-CA_CONTEXT_ID] = { {0, }, };
+
+ca_context *
+get_default_ca_context(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	GdkScreen *scrn = gdk_display_get_default_screen(disp);
+	ca_context *ca = ca_gtk_context_get_for_screen(scrn);
+
+	return (ca);
+}
+
+static int initializing = 0;
+
+int
+ca_context_cancel_norm(ca_context *ca, uint32_t id)
+{
+	if (id >= CA_CONTEXT_ID && id < CaEventMaximumContextId) {
+		struct EventQueue *q = &CaEventQueues[id - CA_CONTEXT_ID];
+
+		if (!q->enabled)
+			return CA_SUCCESS;
+	}
+	return ca_context_cancel(ca, id);
+}
+
+int
+ca_context_play_norm(ca_context *ca, uint32_t id, ca_proplist *pl, const char *event_id, const char *event_desc, ca_finish_callback_t cb, void *userdata)
+{
+	int r;
+
+	if (initializing) {
+		if (cb)
+			(*cb) (ca, id, CA_SUCCESS, userdata);
+		return CA_SUCCESS;
+	}
+	if (id >= CA_CONTEXT_ID && id < CaEventMaximumContextId) {
+		struct EventQueue *q = &CaEventQueues[id - CA_CONTEXT_ID];
+
+		if (!q->enabled) {
+			if (cb)
+				(*cb) (ca, id, CA_SUCCESS, userdata);
+			return CA_SUCCESS;
+		}
+	}
+	if (event_id)
+		ca_proplist_sets(pl, CA_PROP_EVENT_ID, event_id);
+	if (event_desc)
+		ca_proplist_sets(pl, CA_PROP_EVENT_DESCRIPTION, event_desc);
+	DPRINTF(1, "Playing %s\n", event_id);
+	if ((r = ca_context_play_full(ca, id, pl, cb, userdata)) < 0)
+		EPRINTF("Cannot play %s: %s\n", event_id, ca_strerror(r));
+	return (r);
+}
+
+void
+play_done(ca_context *ca, uint32_t id, int error_code, void *user_data)
+{
+	struct EventQueue *q = user_data;
+	uint64_t count = 1;
+
+	(void) ca;
+	(void) id;
+	(void) error_code;
+
+	DPRINTF(1, "Playing done for context id %u\n", id);
+	if (!g_queue_is_empty(q->queue)) {
+		DPRINTF(1, "Signalling next event to play for context id %u\n", id);
+		if (write(q->efd, &count, sizeof(count))) {}
+	}
+}
+
+void
+prop_free(gpointer data)
+{
+	ca_proplist *pl = data;
+
+	ca_proplist_destroy(pl);
+}
+
+int
+ca_context_cancel_queue(ca_context *ca, uint32_t id)
+{
+	if (id >= CA_CONTEXT_ID && id < CaEventMaximumContextId) {
+		struct EventQueue *q = &CaEventQueues[id - CA_CONTEXT_ID];
+
+		g_queue_clear_full(q->queue, prop_free);
+	}
+	return ca_context_cancel_norm(ca, id);
+}
+
+int
+ca_context_play_queue(ca_context *ca, uint32_t id, ca_proplist *pl)
+{
+	int r;
+
+	if (id >= CA_CONTEXT_ID && id < CaEventMaximumContextId) {
+		struct EventQueue *q = &CaEventQueues[id - CA_CONTEXT_ID];
+		int playing = 0;
+
+		if (!q->enabled) {
+			ca_proplist_destroy(pl);
+			return CA_SUCCESS;
+		}
+		ca_context_playing(ca, id, &playing);
+		if (playing || !g_queue_is_empty(q->queue)) {
+			g_queue_push_tail(q->queue, pl);
+			return CA_SUCCESS;
+		}
+		r = ca_context_play_full(ca, id, pl, play_done, q);
+		ca_proplist_destroy(pl);
+		return (r);
+	}
+	r = ca_context_play_full(ca, id, pl, NULL, NULL);
+	ca_proplist_destroy(pl);
+	return (r);
+}
+
+gboolean
+queue_call(GIOChannel *channel, GIOCondition condition, gpointer data)
+{
+	struct EventQueue *q = data;
+	uint64_t count = 0;
+
+	(void) channel;
+	(void) condition;
+
+	DPRINTF(1, "Reading event file descriptor context id %u\n", q->context_id);
+	if (read(q->efd, &count, sizeof(count)) >= 0) {
+		ca_context *ca = get_default_ca_context();
+		int playing = 0;
+
+		if (!q->enabled) {
+			ca_context_cancel_queue(ca, q->context_id);
+			return G_SOURCE_CONTINUE;
+		}
+		ca_context_playing(ca, q->context_id, &playing);
+		if (!playing) {
+			ca_proplist *pl;
+
+			DPRINTF(1, "Popping queue for context id %u\n", q->context_id);
+			while ((pl = g_queue_pop_head(q->queue))) {
+				int r;
+
+				DPRINTF(1, "Playing queued event for context id %u\n", q->context_id);
+				r = ca_context_play_full(ca, q->context_id, pl, play_done, q);
+				ca_proplist_destroy(pl);
+				if (r == CA_SUCCESS)
+					break;
+			}
+		}
+	} else {
+		EPRINTF("Did not get event!\n");
+	}
+	return G_SOURCE_CONTINUE;
+}
+
+void
+init_canberra(void)
+{
+	GdkDisplay *disp = gdk_display_get_default();
+	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+	ca_context *ca = get_default_ca_context();
+	ca_proplist *pl;
+	int theme_set = 0;
+	int i, s, nscr;
+	char selection[64] = { 0, };
+	Atom atom;
+	Window owner;
+
+	ca_proplist_create(&pl);
+	ca_proplist_sets(pl, CA_PROP_APPLICATION_ID, "com.unexicon." RESNAME);
+	ca_proplist_sets(pl, CA_PROP_APPLICATION_VERSION, VERSION);
+#ifdef LOGO_NAME
+	ca_proplist_sets(pl, CA_PROP_APPLICATION_ICON_NAME, LOGO_NAME);
+#endif
+	ca_proplist_sets(pl, CA_PROP_APPLICATION_LANGUAGE, "C");
+	ca_proplist_sets(pl, CA_PROP_CANBERRA_VOLUME, "0.0");
+	if (!theme_set) {
+		GdkScreen *scrn = gdk_display_get_default_screen(disp);
+		GtkSettings *set = gtk_settings_get_for_screen(scrn);
+		GValue theme_v = G_VALUE_INIT;
+		const char *stheme;
+
+		gtk_rc_reparse_all();
+
+		g_value_init(&theme_v, G_TYPE_STRING);
+		g_object_get_property(G_OBJECT(set), "gtk-sound-theme-name", &theme_v);
+		stheme = g_value_get_string(&theme_v);
+		if (stheme) {
+			DPRINTF(1, "Setting sound theme to %s\n", stheme);
+			ca_proplist_sets(pl, CA_PROP_CANBERRA_XDG_THEME_NAME, stheme);
+			theme_set = 1;
+		}
+		g_value_unset(&theme_v);
+	}
+	if (!theme_set) {
+		EPRINTF("Could not set theme!\n");
+		ca_proplist_sets(pl, CA_PROP_CANBERRA_XDG_THEME_NAME, "freedesktop");
+		theme_set = 1;
+	}
+	ca_proplist_sets(pl, CA_PROP_CANBERRA_XDG_THEME_OUTPUT_PROFILE, "stereo");
+	ca_proplist_sets(pl, CA_PROP_CANBERRA_ENABLE, "1");
+	{
+		char pidstring[64];
+
+		snprintf(pidstring, 64, "%d", getpid());
+		ca_proplist_sets(pl, CA_PROP_APPLICATION_PROCESS_ID, pidstring);
+	}
+	ca_proplist_sets(pl, CA_PROP_APPLICATION_PROCESS_USER, getenv("USER"));
+	{
+		char hostname[64];
+
+		gethostname(hostname, 64);
+		ca_proplist_sets(pl, CA_PROP_APPLICATION_PROCESS_HOST, hostname);
+	}
+	ca_context_change_props_full(ca, pl);
+	for (i = 0; i < CaEventMaximumContextId - CA_CONTEXT_ID; i++) {
+		struct EventQueue *q = &CaEventQueues[i];
+
+		q->context_id = i + CA_CONTEXT_ID;
+		if ((q->efd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK | EFD_SEMAPHORE)) >= 0) {
+			if ((q->channel = g_io_channel_unix_new(q->efd))) {
+				q->queue = g_queue_new();
+				q->source_id = g_io_add_watch(q->channel, G_IO_IN, queue_call, q);
+				q->enabled = TRUE;
+			}
+		}
+	}
+	nscr = gdk_display_get_n_screens(disp);
+	for (s = 0; s < nscr; s++) {
+		snprintf(selection, sizeof(selection), "_XDE_PAGER_S%d", s);
+		atom = XInternAtom(dpy, selection, False);
+		if ((owner = XGetSelectionOwner(dpy, atom))) {
+			DPRINTF(1, "Disabling Workspace Change Context\n");
+			CaEventQueues[CaEventWorkspaceChange - CA_CONTEXT_ID].enabled = FALSE;
+			DPRINTF(1, "Disabling Desktop Change Context\n");
+			CaEventQueues[CaEventDesktopChange - CA_CONTEXT_ID].enabled = FALSE;
+		}
+	}
+}
+
+#endif				/* CANBERRA_SOUND */
+
+/** @} */
+
 #ifdef DO_XLOCKING
 typedef struct {
 	int xfd;
@@ -872,22 +1157,22 @@ setup_screensaver(void)
 			if (!strcmp(*ext, "MIT-SCREEN-SAVER"))
 				gotext = True;
 	if (!gotext) {
-		DPRINTF("no MIT-SCREEN-SAVER extension\n");
+		DPRINTF(1, "no MIT-SCREEN-SAVER extension\n");
 		return;
 	}
 	if (!(present = XScreenSaverQueryExtension(dpy, &xssEventBase, &xssErrorBase))) {
-		DPRINTF("MIT-SCREEN-SAVER extension not present\n");
+		DPRINTF(1, "MIT-SCREEN-SAVER extension not present\n");
 		return;
 	} else {
-		DPRINTF("xssEventBase = %d\n", xssEventBase);
-		DPRINTF("xssErrorBase = %d\n", xssErrorBase);
+		DPRINTF(1, "xssEventBase = %d\n", xssEventBase);
+		DPRINTF(1, "xssErrorBase = %d\n", xssErrorBase);
 	}
 	if (!(status = XScreenSaverQueryVersion(dpy, &xssMajorVersion, &xssMinorVersion))) {
-		DPRINTF("cannot query MIT-SCREEN-SAVER version\n");
+		DPRINTF(1, "cannot query MIT-SCREEN-SAVER version\n");
 		return;
 	} else {
-		DPRINTF("xssMajorVersion = %d\n", xssMajorVersion);
-		DPRINTF("xssMinorVersion = %d\n", xssMinorVersion);
+		DPRINTF(1, "xssMajorVersion = %d\n", xssMajorVersion);
+		DPRINTF(1, "xssMinorVersion = %d\n", xssMinorVersion);
 	}
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
@@ -936,7 +1221,7 @@ on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 	(void) proxy;
 	(void) sender_name;
 	(void) user_data;
-	DPRINTF("received manager proxy signal %s( %s )\n", signal_name,
+	DPRINTF(1, "received manager proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
 
 	if (!strcmp(signal_name, "PrepareForSleep")) {
@@ -951,14 +1236,14 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 	(void) proxy;
 	(void) sender_name;
 	(void) user_data;
-	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
+	DPRINTF(1, "received session proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
 #ifdef DO_XLOCKING
 	if (!strcmp(signal_name, "Lock")) {
-		DPRINTF("locking screen due to systemd request\n");
+		DPRINTF(1, "locking screen due to systemd request\n");
 		SystemLockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
-		DPRINTF("unlocking screen due to systemd request\n");
+		DPRINTF(1, "unlocking screen due to systemd request\n");
 		UnlockScreen(TRUE);
 	}
 #endif
@@ -974,7 +1259,7 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 	(void) proxy;
 	(void) invalidated_properties;
 	(void) user_data;
-	DPRINTF("received session proxy properties changed signal ( %s )\n",
+	DPRINTF(1, "received session proxy properties changed signal ( %s )\n",
 		g_variant_get_type_string(changed_properties));
 
 	g_variant_iter_init(&iter, changed_properties);
@@ -997,7 +1282,7 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 				continue;
 			}
 			if (strcmp(name, "Active")) {
-				DPRINTF("not looking for %s\n", name);
+				DPRINTF(1, "not looking for %s\n", name);
 				g_variant_unref(key);
 				continue;
 			}
@@ -1014,8 +1299,8 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 			}
 			if (!g_variant_get_boolean(boxed)) {
 #ifdef DO_XLOCKING
-				DPRINTF("went inactive, locking screen\n");
-				DPRINTF("locking screen due to systemd active\n");
+				DPRINTF(1, "went inactive, locking screen\n");
+				DPRINTF(1, "locking screen due to systemd active\n");
 				SystemLockScreen();
 #endif
 			}
@@ -1035,7 +1320,7 @@ setup_systemd(void)
 	gchar *s;
 	const char *env;
 
-	DPRINT();
+	PTRACE(1);
 	if (!(sd_manager =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
 					    "/org/freedesktop/login1",
@@ -1111,7 +1396,7 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 	XScreenSaverNotifyEvent *ev = (typeof(ev)) xev;
 
 	(void) dpy;
-	DPRINT();
+	PTRACE(1);
 
 	if (options.debug > 1) {
 		fprintf(stderr, "==> XScreenSaverNotify:\n");
@@ -1138,12 +1423,12 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		AbortLockScreen();
 		break;
 	case ScreenSaverOn:
-		DPRINTF("auto locking screen to due to screen-saver on\n");
+		DPRINTF(1, "auto locking screen to due to screen-saver on\n");
 		setidlehint(TRUE);
 		AutoLockScreen();
 		break;
 	case ScreenSaverCycle:
-		DPRINTF("auto locking screen to due to screen-saver cycle\n");
+		DPRINTF(1, "auto locking screen to due to screen-saver cycle\n");
 		AutoLockScreen();
 		break;
 	}
@@ -1274,7 +1559,7 @@ static void redo_source(XdeScreen *xscr);
 static GdkFilterReturn
 event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 {
-	DPRINT();
+	PTRACE(1);
 	if (options.debug > 2) {
 		fprintf(stderr, "==> PropertyNotify:\n");
 		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xproperty.window);
@@ -1285,12 +1570,12 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 		fprintf(stderr, "<== PropertyNotify:\n");
 	}
 	if (xev->xproperty.atom == _XA_XDE_THEME_NAME && xev->xproperty.state == PropertyNewValue) {
-		DPRINT();
+		PTRACE(1);
 		reparse(dpy, xev->xproperty.window);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
 	if (xev->xproperty.atom == _XA_XROOTPMAP_ID && xev->xproperty.state == PropertyNewValue) {
-		DPRINT();
+		PTRACE(1);
 		if (options.source & BackgroundSourcePixmap)
 			redo_source(xscr);
 		return GDK_FILTER_REMOVE;	/* event handled */
@@ -1301,7 +1586,7 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 static GdkFilterReturn
 event_handler_ClientMessage(Display *dpy, XEvent *xev)
 {
-	DPRINT();
+	PTRACE(1);
 	if (options.debug > 1) {
 		fprintf(stderr, "==> ClientMessage:\n");
 		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xclient.window);
@@ -1340,11 +1625,11 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
 		switch (xev->xclient.data.l[0]) {
 		case LockCommandLock:
-			DPRINTF("locking screen due to xclient message\n");
+			DPRINTF(1, "locking screen due to xclient message\n");
 			LockScreen(TRUE);
 			return GDK_FILTER_REMOVE;
 		case LockCommandUnlock:
-			DPRINTF("unlocking screen due to xclient message\n");
+			DPRINTF(1, "unlocking screen due to xclient message\n");
 			UnlockScreen(TRUE);
 			return GDK_FILTER_REMOVE;
 		case LockCommandQuit:
@@ -1378,7 +1663,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 #ifdef DO_XLOCKING
 		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify)
 			return handle_XScreenSaverNotify(dpy, xev);
-		DPRINTF("unknown event type %d\n", xev->type);
+		DPRINTF(1, "unknown event type %d\n", xev->type);
 #endif				/* DO_XLOCKING */
 		break;
 	}
@@ -1389,7 +1674,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 static GdkFilterReturn
 event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
 {
-	DPRINT();
+	PTRACE(1);
 	if (options.debug > 1) {
 		fprintf(stderr, "==> SelectionClear: %p\n", xscr);
 		fprintf(stderr, "    --> send_event = %s\n",
@@ -1417,7 +1702,7 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
 	(void) event;
-	DPRINT();
+	PTRACE(1);
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
@@ -1443,7 +1728,7 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 
 	(void) event;
 	(void) data;
-	DPRINT();
+	PTRACE(1);
 	switch (xev->type) {
 	case ClientMessage:
 		return event_handler_ClientMessage(dpy, xev);
@@ -1660,7 +1945,7 @@ get_xsession_entry(const char *key, const char *file)
 		g_key_file_free(entry);
 		return (NULL);
 	}
-	DPRINTF("got xsession file: %s (%s)\n", key, file);
+	DPRINTF(1, "got xsession file: %s (%s)\n", key, file);
 	return (entry);
 }
 
@@ -1673,18 +1958,18 @@ bad_xsession(const char *appid, GKeyFile *entry)
 
 	if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
 					   G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
-		DPRINTF("%s: no Name\n", appid);
+		DPRINTF(1, "%s: no Name\n", appid);
 		return TRUE;
 	}
 	g_free(name);
 	if (!(exec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
 					   G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
-		DPRINTF("%s: no Exec\n", appid);
+		DPRINTF(1, "%s: no Exec\n", appid);
 		return TRUE;
 	}
 	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
 				   G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
-		DPRINTF("%s: is Hidden\n", appid);
+		DPRINTF(1, "%s: is Hidden\n", appid);
 		return TRUE;
 	}
 #if 0
@@ -1694,7 +1979,7 @@ bad_xsession(const char *appid, GKeyFile *entry)
 
 	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
 				   G_KEY_FILE_DESKTOP_KEY_NO_DISPLAY, NULL)) {
-		DPRINTF("%s: is NoDisplay\n", appid);
+		DPRINTF(1, "%s: is NoDisplay\n", appid);
 		return TRUE;
 	}
 #endif
@@ -1715,7 +2000,7 @@ bad_xsession(const char *appid, GKeyFile *entry)
 	g_free(exec);
 	if (binary[0] == '/') {
 		if (access(binary, X_OK)) {
-			DPRINTF("%s: %s: %s\n", appid, binary, strerror(errno));
+			DPRINTF(1, "%s: %s: %s\n", appid, binary, strerror(errno));
 			g_free(binary);
 			return TRUE;
 		}
@@ -1740,12 +2025,12 @@ bad_xsession(const char *appid, GKeyFile *entry)
 				break;
 			}
 			// to much noise
-			// DPRINTF("%s: %s: %s\n", appid, file,
+			// DPRINTF(1, "%s: %s: %s\n", appid, file,
 			// strerror(errno));
 		}
 		free(path);
 		if (!execok) {
-			DPRINTF("%s: %s: not executable\n", appid, binary);
+			DPRINTF(1, "%s: %s: not executable\n", appid, binary);
 			g_free(binary);
 			return TRUE;
 		}
@@ -1798,14 +2083,14 @@ get_xsessions(void)
 		char *key;
 
 		if (!(dir = opendir(*dirs))) {
-			DPRINTF("%s: %s\n", *dirs, strerror(errno));
+			DPRINTF(1, "%s: %s\n", *dirs, strerror(errno));
 			continue;
 		}
 		while ((d = readdir(dir))) {
 			if (d->d_name[0] == '.')
 				continue;
 			if (!(p = strstr(d->d_name, suffix)) || p[suflen]) {
-				DPRINTF("%s: no %s suffix\n", d->d_name, suffix);
+				DPRINTF(1, "%s: no %s suffix\n", d->d_name, suffix);
 				continue;
 			}
 			len = strlen(*dirs) + strlen(d->d_name) + 2;
@@ -2031,11 +2316,11 @@ CanConnect(struct sockaddr *sa)
 		for (i = 0, p = rawbuf, e = rawbuf + len, b = (typeof(b)) sa;
 		     i < salen; i++, p += 2, b++)
 			snprintf(p, e - p, "%02x", *b);
-		DPRINTF("raw socket address for connect: %s\n", rawbuf);
+		DPRINTF(1, "raw socket address for connect: %s\n", rawbuf);
 		free(rawbuf);
 	}
 	if (connect(sock, sa, salen) == -1) {
-		DPRINTF("connect: %s\n", strerror(errno));
+		DPRINTF(1, "connect: %s\n", strerror(errno));
 		close(sock);
 		return False;
 	}
@@ -2055,7 +2340,7 @@ CanConnect(struct sockaddr *sa)
 			int port = ntohs(sin->sin_port);
 
 			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
-			DPRINTF("address is %s port %d\n", ipaddr, port);
+			DPRINTF(1, "address is %s port %d\n", ipaddr, port);
 			break;
 		}
 		case AF_INET6:
@@ -2064,14 +2349,14 @@ CanConnect(struct sockaddr *sa)
 			int port = ntohs(sin6->sin6_port);
 
 			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-			DPRINTF("address is %s port %d\n", ipaddr, port);
+			DPRINTF(1, "address is %s port %d\n", ipaddr, port);
 			break;
 		}
 		case AF_UNIX:
 		{
 			struct sockaddr_un *sun = (typeof(sun)) & conn;
 
-			DPRINTF("family is AF_UNIX\n");
+			DPRINTF(1, "family is AF_UNIX\n");
 			break;
 		}
 		default:
@@ -2160,22 +2445,22 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 	SocketScope scope;
 
 	(void) authname_a;
-	DPRINT();
+	PTRACE(1);
 
 	scope = getaddrscope(sa);
 	if (scope < options.clientScope) {
-		DPRINTF("cannot use local scoped address for remote clients\n");
+		DPRINTF(1, "cannot use local scoped address for remote clients\n");
 		return False;
 	}
 	switch (scope) {
 	case SocketScopeLinklocal:
 	case SocketScopeSitelocal:
 		if (!ifindex) {
-			DPRINTF("cannot use site/link local address without ifindex\n");
+			DPRINTF(1, "cannot use site/link local address without ifindex\n");
 			return False;
 		}
 		if (scope == options.clientScope && ifindex != (int) options.clientIface) {
-			DPRINTF("cannot use site/link local address with other ifindex\n");
+			DPRINTF(1, "cannot use site/link local address with other ifindex\n");
 			return False;
 		}
 		break;
@@ -2187,13 +2472,13 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 	if (len > NI_MAXHOST)
 		len = NI_MAXHOST;
 	strncpy(hostname, (char *) hostname_a->data, len);
-	DPRINTF("hostname is %s\n", hostname);
+	DPRINTF(1, "hostname is %s\n", hostname);
 
 	len = status_a->length;
 	if (len > sizeof(status) - 1)
 		len = sizeof(status) - 1;
 	strncpy(status, (char *) status_a->data, len);
-	DPRINTF("status is %s\n", status);
+	DPRINTF(1, "status is %s\n", status);
 
 	switch ((family = sa->sa_family)) {
 	case AF_INET:
@@ -2202,11 +2487,11 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 
 		salen = sizeof(*sin);
 
-		DPRINTF("family is AF_INET\n");
+		DPRINTF(1, "family is AF_INET\n");
 		ctype = FamilyInternet;
 		port = ntohs(sin->sin_port);
 		inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
-		DPRINTF("address is %s port %hd\n", ipaddr, port);
+		DPRINTF(1, "address is %s port %hd\n", ipaddr, port);
 		break;
 	}
 	case AF_INET6:
@@ -2215,11 +2500,11 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 
 		salen = sizeof(*sin6);
 
-		DPRINTF("family is AF_INET6\n");
+		DPRINTF(1, "family is AF_INET6\n");
 		ctype = FamilyInternet6;
 		port = ntohs(sin6->sin6_port);
 		inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-		DPRINTF("address is %s port %hd\n", ipaddr, port);
+		DPRINTF(1, "address is %s port %hd\n", ipaddr, port);
 		break;
 	}
 	case AF_UNIX:
@@ -2228,7 +2513,7 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 
 		salen = sizeof(*sun);
 
-		DPRINTF("family is AF_UNIX\n");
+		DPRINTF(1, "family is AF_UNIX\n");
 		ctype = FamilyLocal;
 		port = 0;
 		/* FIXME: display address in debug mode */
@@ -2238,12 +2523,12 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 		return False;
 	}
 	if (options.isLocal && !CanConnect(sa)) {
-		DPRINTF("cannot connect\n");
+		DPRINTF(1, "cannot connect\n");
 		return False;
 	}
 	if (!options.isLocal && options.connectionType != FamilyInternet6
 	    && options.connectionType != ctype) {
-		DPRINTF("wrong connection type\n");
+		DPRINTF(1, "wrong connection type\n");
 		return False;
 	}
 	/* We really do not want to do this for IPv4LL addresses, beause they
@@ -2255,12 +2540,12 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 		if ((serv = getservbyport(port, "udp")))
 			strncpy(service, serv->s_name, NI_MAXSERV);
 	} else {
-		DPRINTF("beg calling getnameinfo ...\n");
+		DPRINTF(1, "beg calling getnameinfo ...\n");
 		if (getnameinfo(sa, salen, remotename, NI_MAXHOST, service, NI_MAXSERV, NI_DGRAM) == -1) {
-			DPRINTF("getnameinfo: %s\n", strerror(errno));
+			DPRINTF(1, "getnameinfo: %s\n", strerror(errno));
 			return False;
 		}
-		DPRINTF("... calling getnameinfo end\n");
+		DPRINTF(1, "... calling getnameinfo end\n");
 	}
 
 	GtkTreeIter iter;
@@ -2403,8 +2688,8 @@ AddHost(struct sockaddr *sa, socklen_t salen, int ifindex, xdmOpCode opc,
 	snprintf(tooltip + len, BUFSIZ - len, "%d", (int) port);
 	strncat(tooltip, "</small>", BUFSIZ);
 
-	DPRINTF("markup is:\n%s\n", markup);
-	DPRINTF("tooltip is:\n%s\n", tooltip);
+	DPRINTF(1, "markup is:\n%s\n", markup);
+	DPRINTF(1, "tooltip is:\n%s\n", tooltip);
 
 	gtk_list_store_set(model, &iter, XDM_COL_MARKUP, markup, XDM_COL_TOOLTIP, tooltip, -1);
 
@@ -2503,7 +2788,7 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 	int addrlen, sfd, ifindex;
 
 	(void) condition;
-	DPRINT();
+	PTRACE(1);
 	sfd = g_io_channel_unix_get_fd(source);
 	addrlen = sizeof(addr);
 	memset(&addr, 0, addrlen);
@@ -2521,7 +2806,7 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 	}
 	switch (header.opcode) {
 	case WILLING:
-		DPRINTF("host is WILLING\n");
+		DPRINTF(1, "host is WILLING\n");
 		if (XdmcpReadARRAY8(buffer, &authenticationName)
 		    && XdmcpReadARRAY8(buffer, &hostname)
 		    && XdmcpReadARRAY8(buffer, &status)) {
@@ -2535,7 +2820,7 @@ ReceivePacket(GIOChannel *source, GIOCondition condition, gpointer data)
 			EPRINTF("could not parse message\n");
 		break;
 	case UNWILLING:
-		DPRINTF("host is UNWILLING\n");
+		DPRINTF(1, "host is UNWILLING\n");
 		if (XdmcpReadARRAY8(buffer, &hostname) && XdmcpReadARRAY8(buffer, &status)) {
 			if (header.length == 4 + hostname.length + status.length)
 				AddHost((struct sockaddr *) &addr, addrlen, ifindex,
@@ -2572,7 +2857,7 @@ PingHosts(gpointer data)
 	HostAddr *ha;
 
 	(void) data;
-	DPRINT();
+	PTRACE(1);
 	for (ha = hostAddrdb; ha; ha = ha->next) {
 		int sfd;
 		struct sockaddr *addr;
@@ -2586,32 +2871,32 @@ PingHosts(gpointer data)
 		family = addr->sa_family;
 		switch (family) {
 		case AF_INET:
-			DPRINTF("ping address is AF_INET\n");
+			DPRINTF(1, "ping address is AF_INET\n");
 			break;
 		case AF_INET6:
-			DPRINTF("ping address is AF_INET6\n");
+			DPRINTF(1, "ping address is AF_INET6\n");
 			break;
 		}
 		if (options.debug) {
 			char *p;
 			int i;
 
-			DPRINTF("message is:");
+			DPRINTF(1, "message is:");
 			for (i = 0, p = (char *) &ha->addr; i < ha->addrlen; i++, p++)
 				fprintf(stderr, " %02X", (unsigned int) *p);
 
 		}
 		if (ha->type == QUERY) {
-			DPRINTF("ping type is QUERY\n");
+			DPRINTF(1, "ping type is QUERY\n");
 			XdmcpFlush(ha->sfd, &directBuffer, (XdmcpNetaddr) &ha->addr, ha->addrlen);
 		} else {
-			DPRINTF("ping type is BROADCAST_QUERY\n");
+			DPRINTF(1, "ping type is BROADCAST_QUERY\n");
 			XdmcpFlush(ha->sfd, &broadcastBuffer,
 				   (XdmcpNetaddr) &ha->addr, ha->addrlen);
 		}
 	}
 	if (++pingTry < PING_TRIES) {
-		DPRINTF("adding timer\n");
+		DPRINTF(1, "adding timer\n");
 		pingid = g_timeout_add_seconds(PING_INTERVAL, PingHosts, (gpointer) NULL);
 	}
 	return G_SOURCE_REMOVE;
@@ -2631,7 +2916,7 @@ InitXDMCP(char *argv[], int argc)
 	int i;
 	char **arg;
 
-	DPRINT();
+	PTRACE(1);
 
 	header.version = XDM_PROTOCOL_VERSION;
 	header.opcode = (CARD16) BROADCAST_QUERY;
@@ -2693,7 +2978,7 @@ InitXDMCP(char *argv[], int argc)
 
 					(void) index;
 					if (ifa->ifa_flags & IFF_LOOPBACK) {
-						DPRINTF("interface %s is a loopback interface\n",
+						DPRINTF(1, "interface %s is a loopback interface\n",
 							ifa->ifa_name);
 						continue;
 					}
@@ -2703,17 +2988,17 @@ InitXDMCP(char *argv[], int argc)
 						continue;
 					} else {
 						if (ifa_addr->sa_family == AF_INET)
-							DPRINTF("interface %s is AF_INET\n",
+							DPRINTF(1, "interface %s is AF_INET\n",
 								ifa->ifa_name);
 						else if (ifa_addr->sa_family == AF_INET6)
-							DPRINTF("interface %s is AF_INET6\n",
+							DPRINTF(1, "interface %s is AF_INET6\n",
 								ifa->ifa_name);
 						else if (ifa_addr->sa_family == AF_PACKET)
-							DPRINTF("interface %s is AF_PACKET\n",
+							DPRINTF(1, "interface %s is AF_PACKET\n",
 								ifa->ifa_name);
 					}
 					if (!(ifa->ifa_flags & IFF_BROADCAST)) {
-						DPRINTF("interface %s has no broadcast\n",
+						DPRINTF(1, "interface %s has no broadcast\n",
 							ifa->ifa_name);
 						continue;
 					}
@@ -2721,7 +3006,7 @@ InitXDMCP(char *argv[], int argc)
 					if (family == AF_INET)
 						addrlen = sizeof(struct sockaddr_in);
 					else {
-						DPRINTF("interface %s has wrong family %d\n",
+						DPRINTF(1, "interface %s has wrong family %d\n",
 							ifa->ifa_name, (int) family);
 						continue;
 					}
@@ -2730,7 +3015,7 @@ InitXDMCP(char *argv[], int argc)
 							ifa->ifa_name);
 						continue;
 					}
-					DPRINTF("interace %s is ok\n", ifa->ifa_name);
+					DPRINTF(1, "interace %s is ok\n", ifa->ifa_name);
 					ha = calloc(1, sizeof(*ha));
 					memcpy(&ha->addr, ifa_addr, addrlen);
 					sin = (typeof(sin)) & ha->addr;
@@ -2922,7 +3207,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 			memmove(&sin->sin_port, xdm + 2, 2);
 			memmove(&sin->sin_addr, xdm + 4, 4);
 			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
-			DPRINTF("AF_INET: %s port %hd\n", ipaddr, ntohs(sin->sin_port));
+			DPRINTF(1, "AF_INET: %s port %hd\n", ipaddr, ntohs(sin->sin_port));
 			xalen = sizeof(*sin);
 			break;
 		}
@@ -2942,7 +3227,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 			if (options.xdmAddress.length == 2 + 2 + 20)
 				sin6->sin6_scope_id = ntohl(*(uint32_t *) (xdm + 20));
 			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-			DPRINTF("AF_INET6: %s port %hd\n", ipaddr, ntohs(sin6->sin6_port));
+			DPRINTF(1, "AF_INET6: %s port %hd\n", ipaddr, ntohs(sin6->sin6_port));
 			xalen = sizeof(*sin6);
 			break;
 		}
@@ -2974,7 +3259,7 @@ Choose(short connectionType, char *name, struct sockaddr *sa, int scope, int ifi
 		FILE *where = options.xdmAddress.data ? stderr : stdout;
 
 		if (options.xdmAddress.data)
-			DPRINTF("choice: ");
+			DPRINTF(1, "choice: ");
 		len = options.clientAddress.length;
 		buf = options.clientAddress.data;
 		for (i = 0, b = buf; i < len; i++, b++)
@@ -3010,7 +3295,7 @@ DoAccept(GtkButton *button, gpointer data)
 	gchar *ipAddress;
 	struct sockaddr *sockAddress;
 
-	DPRINT();
+	PTRACE(1);
 	if (!view)
 		return;
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
@@ -3232,12 +3517,12 @@ isLocal(void)
 				if (!strncmp(*ext, "VNC-EXTENSION", strlen(*ext)))
 					present = True;
 		if (!present) {
-			DPRINTF("no VNC-EXTENSION extension\n");
+			DPRINTF(1, "no VNC-EXTENSION extension\n");
 			break;
 		}
 		present = XVncExtQueryExtension(dpy, &xvncEventBase, &xvncErrorBase);
 		if (!present) {
-			DPRINTF("VNC-EXTENSION not present\n");
+			DPRINTF(1, "VNC-EXTENSION not present\n");
 			break;
 		}
 		if (XVncExtGetParam(dpy, "DisconnectClients", &parm, &len) && parm) {
@@ -3299,7 +3584,7 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 		case PAM_PROMPT_ECHO_ON:	/* obtain a string whilst
 						   echoing */
 		{
-			DPRINTF("PAM_PROMPT_ECHO_ON: %s\n", (*m)->msg);
+			DPRINTF(1, "PAM_PROMPT_ECHO_ON: %s\n", (*m)->msg);
 			gtk_label_set_text(GTK_LABEL(l_uname), (*m)->msg);
 			gtk_entry_set_text(GTK_ENTRY(user), "");
 			gtk_entry_set_text(GTK_ENTRY(pass), "");
@@ -3312,22 +3597,22 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 				EPRINTF("user is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
-			DPRINTF("running main loop...\n");
+			DPRINTF(1, "running main loop...\n");
 			gtk_main();
-			DPRINTF("...running main loop\n");
+			DPRINTF(1, "...running main loop\n");
 			if (login_result == LoginResultLogout)
 				return (PAM_CONV_ERR);
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(user)));
-			DPRINTF("Response is: %s\n", r->resp);
+			DPRINTF(1, "Response is: %s\n", r->resp);
 			break;
 		}
 		case PAM_PROMPT_ECHO_OFF:	/* obtain a string without
 						   echoing */
 		{
-			DPRINTF("PAM_PROMPT_ECHO_OFF: %s\n", (*m)->msg);
+			DPRINTF(1, "PAM_PROMPT_ECHO_OFF: %s\n", (*m)->msg);
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			if (!options.permitlogin) {
-				DPRINTF("login not permitted\n");
+				DPRINTF(1, "login not permitted\n");
 				return (PAM_CONV_ERR);
 			}
 #endif
@@ -3342,25 +3627,25 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 				EPRINTF("pass is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
 			gtk_widget_grab_focus(GTK_WIDGET(pass));
-			DPRINTF("running main loop...\n");
+			DPRINTF(1, "running main loop...\n");
 			gtk_main();
-			DPRINTF("...running main loop\n");
+			DPRINTF(1, "...running main loop\n");
 			if (login_result == LoginResultLogout)
 				return (PAM_CONV_ERR);
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(pass)));
-			// DPRINTF("Response is: %s\n", r->resp);
+			// DPRINTF(1, "Response is: %s\n", r->resp);
 			break;
 		}
 		case PAM_ERROR_MSG:	/* display an error message */
 		{
-			DPRINTF("PAM_ERROR_MSG: %s\n", (*m)->msg);
+			DPRINTF(1, "PAM_ERROR_MSG: %s\n", (*m)->msg);
 			gtk_label_set_text(GTK_LABEL(l_lstat), (*m)->msg);
 			relax();
 			break;
 		}
 		case PAM_TEXT_INFO:	/* display some text */
 		{
-			DPRINTF("PAM_TEXT_INFO: %s\n", (*m)->msg);
+			DPRINTF(1, "PAM_TEXT_INFO: %s\n", (*m)->msg);
 			gtk_label_set_text(GTK_LABEL(l_lstat), (*m)->msg);
 			relax();
 			break;
@@ -3524,7 +3809,7 @@ append_power_action(GtkWidget *submenu, Bool islocal, const char *name, const ch
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_dup_string(var, NULL);
-		DPRINTF("%s status is %s\n", name, value);
+		DPRINTF(1, "%s status is %s\n", name, value);
 		item = gtk_image_menu_item_new_with_label(label);
 		imag = gtk_image_new_from_icon_name(icon, GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
@@ -3739,17 +4024,17 @@ test_login_functions()
 	ret = sd_seat_can_multi_session(NULL);
 	if (ret > 0) {
 		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusYes;
-		DPRINTF("%s: mutisession: true\n", seat);
+		DPRINTF(1, "%s: mutisession: true\n", seat);
 	} else if (ret == 0) {
 		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusNa;
-		DPRINTF("%s: mutisession: false\n", seat);
+		DPRINTF(1, "%s: mutisession: false\n", seat);
 	} else if (ret < 0) {
 		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusUnknown;
-		DPRINTF("%s: mutisession: unknown\n", seat);
+		DPRINTF(1, "%s: mutisession: unknown\n", seat);
 	}
 	if (action_can[LOGOUT_ACTION_SWITCHUSER] != AvailStatusNa && !isLocal()) {
 		action_can[LOGOUT_ACTION_SWITCHUSER] = AvailStatusNa;
-		DPRINTF("session not local\n");
+		DPRINTF(1, "session not local\n");
 	}
 }
 #endif				/* DO_LOGOUT */
@@ -3773,7 +4058,7 @@ on_switch_session(GtkMenuItem *item, gpointer data)
 					-1, NULL, &err);
 	ok = (result != NULL);
 	if (!ok || err) {
-		DPRINTF("ActivateSession: %s: call failed: %s\n", session,
+		DPRINTF(1, "ActivateSession: %s: call failed: %s\n", session,
 			err ? err->message : NULL);
 		g_clear_error(&err);
 	}
@@ -3803,7 +4088,7 @@ comparevts(const void *a, const void *b)
 
 	sd_session_get_vt(*sa, &vta);
 	sd_session_get_vt(*sb, &vtb);
-	DPRINTF("comparing session %s(vt%u) and %s(vt%u)", *sa, vta, *sb, vtb);
+	DPRINTF(1, "comparing session %s(vt%u) and %s(vt%u)", *sa, vta, *sb, vtb);
 	if (vta < vtb)
 		return -1;
 	if (vta > vtb)
@@ -3831,7 +4116,7 @@ get_user_menu(void)
 	else
 		sd_pid_get_session(getpid(), &sess);
 	if (sd_seat_can_multi_session(NULL) <= 0) {
-		DPRINTF("%s: cannot multi-session\n", seat);
+		DPRINTF(1, "%s: cannot multi-session\n", seat);
 		return (NULL);
 	}
 	if (sd_seat_get_sessions(seat, &sessions, NULL, NULL) < 0) {
@@ -3841,7 +4126,7 @@ get_user_menu(void)
 	/* sort by VT number */
 	for (s = sessions, count = 0; s && *s; s++, count++) ;
 	if (count) {
-		DPRINTF("sorting vts\n");
+		DPRINTF(1, "sorting vts\n");
 		qsort(sessions, count, sizeof(char *), comparevts);
 	}
 	for (s = sessions; s && *s; free(*s), s++) {
@@ -3851,18 +4136,18 @@ get_user_menu(void)
 		Bool isactive = False;
 		GCallback callback = G_CALLBACK(on_switch_session);
 
-		DPRINTF("%s(%s): considering session\n", seat, *s);
+		DPRINTF(1, "%s(%s): considering session\n", seat, *s);
 		if (sess && !strcmp(*s, sess)) {
-			DPRINTF("%s(%s): cannot switch to own session\n", seat, *s);
+			DPRINTF(1, "%s(%s): cannot switch to own session\n", seat, *s);
 			isactive = True;
 		}
 		if (sd_session_is_active(*s)) {
-			DPRINTF("%s(%s): cannot switch to active session\n", seat, *s);
+			DPRINTF(1, "%s(%s): cannot switch to active session\n", seat, *s);
 			isactive = True;
 		}
 		sd_session_get_vt(*s, &vtnr);
 		if (vtnr == 0) {
-			DPRINTF("%s(%s): cannot switch to non-vt session\n", seat, *s);
+			DPRINTF(1, "%s(%s): cannot switch to non-vt session\n", seat, *s);
 			continue;
 		}
 		sd_session_get_type(*s, &type);
@@ -3907,7 +4192,7 @@ get_user_menu(void)
 		item = gtk_image_menu_item_new_with_label(label);
 		imag = gtk_image_new_from_icon_name(iname, GTK_ICON_SIZE_MENU);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(item), imag);
-		DPRINTF("%s(%s): adding item to menu: %s\n", seat, *s, label);
+		DPRINTF(1, "%s(%s): adding item to menu: %s\n", seat, *s, label);
 		g_free(label);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		if (!callback)
@@ -3970,7 +4255,7 @@ test_power_functions()
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanPowerOff status is %s\n", value);
+		DPRINTF(1, "CanPowerOff status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_POWEROFF] = status_of_string(value);
 		g_variant_unref(var);
@@ -3988,7 +4273,7 @@ test_power_functions()
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanReboot status is %s\n", value);
+		DPRINTF(1, "CanReboot status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_REBOOT] = status_of_string(value);
 		g_variant_unref(var);
@@ -4006,7 +4291,7 @@ test_power_functions()
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanSuspend status is %s\n", value);
+		DPRINTF(1, "CanSuspend status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_SUSPEND] = status_of_string(value);
 		g_variant_unref(var);
@@ -4024,7 +4309,7 @@ test_power_functions()
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanHibernate status is %s\n", value);
+		DPRINTF(1, "CanHibernate status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_HIBERNATE] = status_of_string(value);
 		g_variant_unref(var);
@@ -4042,7 +4327,7 @@ test_power_functions()
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanHybridSleep status is %s\n", value);
+		DPRINTF(1, "CanHybridSleep status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_HYBRIDSLEEP] = status_of_string(value);
 		g_variant_unref(var);
@@ -4060,7 +4345,7 @@ test_power_functions()
 		g_variant_iter_init(&iter, result);
 		var = g_variant_iter_next_value(&iter);
 		value = g_variant_get_string(var, NULL);
-		DPRINTF("CanSuspendThenHibernate status is %s\n", value);
+		DPRINTF(1, "CanSuspendThenHibernate status is %s\n", value);
 		if (islocal)
 			action_can[LOGOUT_ACTION_SUSPENDHIBERNATE] = status_of_string(value);
 		g_variant_unref(var);
@@ -4334,7 +4619,7 @@ on_switchuser(GtkButton *button, gpointer data)
 		return;
 	}
 	if (!(menu = get_user_menu())) {
-		DPRINTF("No users to switch to!\n");
+		DPRINTF(1, "No users to switch to!\n");
 		return;
 	}
 	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, at_pointer, NULL, 1, GDK_CURRENT_TIME);
@@ -4402,10 +4687,10 @@ on_grab_broken(GtkWidget *window, GdkEvent *event, gpointer data)
 	(void) window;
 	(void) data;
 	GdkEventGrabBroken *ev = (typeof(ev)) event;
-	DPRINTF("Grab broken!\n");
-	DPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
-	DPRINTF("Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
-	DPRINTF("Grab broken by %s\n", ev->grab_window ? "this application" : "other");
+	DPRINTF(1, "Grab broken!\n");
+	DPRINTF(1, "Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
+	DPRINTF(1, "Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
+	DPRINTF(1, "Grab broken by %s\n", ev->grab_window ? "this application" : "other");
 	return TRUE; /* propagate */
 }
 
@@ -4438,11 +4723,11 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	if (gdk_keyboard_grab(win, TRUE, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab keyboard!\n");
 	else
-		DPRINTF("Grabbed keyboard\n");
+		DPRINTF(1, "Grabbed keyboard\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
 	else
-		DPRINTF("Grabbed pointer\n");
+		DPRINTF(1, "Grabbed pointer\n");
 #if !defined(DO_CHOOSER) && !defined(DO_LOGOUT)
 	if (!grab_broken_handler)
 		grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
@@ -4481,12 +4766,12 @@ render_pixbuf_for_mon(cairo_t *cr, GdkPixbuf *pixbuf, double wp, double hp, XdeM
 	double hm = xmon->geom.height;
 	GdkPixbuf *scaled = NULL;
 
-	DPRINT();
+	PTRACE(1);
 	gdk_cairo_rectangle(cr, &xmon->geom);
 	if (wp >= 0.8 * wm && hp >= 0.8 * hm) {
 		/* good size for filling or scaling */
 		/* TODO: check aspect ratio before scaling */
-		DPRINTF("scaling pixbuf from %dx%d to %dx%d\n",
+		DPRINTF(1, "scaling pixbuf from %dx%d to %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width,
@@ -4494,13 +4779,13 @@ render_pixbuf_for_mon(cairo_t *cr, GdkPixbuf *pixbuf, double wp, double hp, XdeM
 		gdk_cairo_set_source_pixbuf(cr, scaled, xmon->geom.x, xmon->geom.y);
 	} else if (wp <= 0.5 * wm && hp <= 0.5 * hm) {
 		/* good size for tiling */
-		DPRINTF("tiling pixbuf at %dx%d into %dx%d\n",
+		DPRINTF(1, "tiling pixbuf at %dx%d into %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		gdk_cairo_set_source_pixbuf(cr, pixbuf, xmon->geom.x, xmon->geom.y);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
 	} else {
 		/* somewhere in between: scale down for integer tile */
-		DPRINTF("scaling and tiling pixbuf at %dx%d into %dx%d\n",
+		DPRINTF(1, "scaling and tiling pixbuf at %dx%d into %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width / 2,
@@ -4522,7 +4807,7 @@ render_pixbuf_for_scr(GdkPixbuf *pixbuf, GdkPixmap *pixmap, XdeScreen *xscr)
 	cairo_t *cr;
 	int m;
 
-	DPRINT();
+	PTRACE(1);
 	cr = gdk_cairo_create(GDK_DRAWABLE(pixmap));
 	for (m = 0; m < xscr->nmon; m++) {
 		XdeMonitor *xmon = xscr->mons + m;
@@ -4791,9 +5076,9 @@ get_selection(Window selwin, char *selection, int s)
 	snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
 	atom = XInternAtom(dpy, selection, False);
 	if (!(owner = XGetSelectionOwner(dpy, atom)))
-		DPRINTF("No owner for %s\n", selection);
+		DPRINTF(1, "No owner for %s\n", selection);
 	if ((owner && options.replace) || (!owner && selwin)) {
-		DPRINTF("Setting owner of %s to 0x%lx from 0x%lx\n", selection, selwin, owner);
+		DPRINTF(1, "Setting owner of %s to 0x%lx from 0x%lx\n", selection, selwin, owner);
 		XSetSelectionOwner(dpy, atom, selwin, CurrentTime);
 		XSync(dpy, False);
 	}
@@ -4844,13 +5129,13 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	}
 
 	if (xscr->scrn != scrn) {
-		DPRINTF("Arrrghhh! screen pointer changed from %p to %p\n", xscr->scrn, scrn);
+		DPRINTF(1, "Arrrghhh! screen pointer changed from %p to %p\n", xscr->scrn, scrn);
 		xscr->scrn = scrn;
 	}
 	width = gdk_screen_get_width(scrn);
 	height = gdk_screen_get_height(scrn);
 	if (xscr->width != width || xscr->height != height) {
-		DPRINTF("Screen %d dimensions changed %dx%d -> %dx%d\n", index,
+		DPRINTF(1, "Screen %d dimensions changed %dx%d -> %dx%d\n", index,
 			xscr->width, xscr->height, width, height);
 		gtk_window_set_default_size(w, width, height);
 		geom = g_strdup_printf("%dx%d+0+0", width, height);
@@ -4865,7 +5150,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	}
 	nmon = gdk_screen_get_n_monitors(scrn);
 	if (nmon > xscr->nmon) {
-		DPRINTF("Screen %d number of monitors increased from %d to %d\n",
+		DPRINTF(1, "Screen %d number of monitors increased from %d to %d\n",
 			index, xscr->nmon, nmon);
 		xscr->mons = realloc(xscr->mons, nmon * sizeof(*xscr->mons));
 		for (m = xscr->nmon; m <= nmon; m++) {
@@ -4873,7 +5158,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 			memset(mon, 0, sizeof(*mon));
 		}
 	} else if (nmon < xscr->nmon) {
-		DPRINTF("Screen %d number of monitors decreased from %d to %d\n",
+		DPRINTF(1, "Screen %d number of monitors decreased from %d to %d\n",
 			index, xscr->nmon, nmon);
 		for (m = xscr->nmon; m > nmon; m--) {
 			mon = xscr->mons + m - 1;
@@ -4912,7 +5197,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		XdeScreen *_xscr;
 		XdeMonitor *_xmon;
 
-		DPRINTF("Reassigning event box to new container\n");
+		DPRINTF(1, "Reassigning event box to new container\n");
 		gdk_display_get_pointer(disp, &screen, &x, &y, NULL);
 		if (!screen)
 			screen = scrn;
@@ -5085,7 +5370,7 @@ reparse(Display *dpy, Window root)
 	char **list = NULL;
 	int strings = 0;
 
-	DPRINT();
+	PTRACE(1);
 	gtk_rc_reparse_all();
 	if (!options.usexde)
 		return;
@@ -5108,11 +5393,11 @@ reparse(Display *dpy, Window root)
 			if (list)
 				XFreeStringList(list);
 		} else
-			DPRINTF("could not get text list for property\n");
+			DPRINTF(1, "could not get text list for property\n");
 		if (xtp.value)
 			XFree(xtp.value);
 	} else
-		DPRINTF("could not get _XDE_THEME_NAME for root 0x%lx\n", root);
+		DPRINTF(1, "could not get _XDE_THEME_NAME for root 0x%lx\n", root);
 }
 
 /** @brief get a covering window for each screen
@@ -5359,7 +5644,7 @@ GetPane(GtkWidget *cont)
 					// style->color_flags[i] |= GTK_RC_BASE;
 				}
 			} else
-				DPRINTF("No resources.greetColor!\n");
+				DPRINTF(1, "No resources.greetColor!\n");
 		}
 		gtk_widget_modify_style(l_greet, style);
 	}
@@ -5503,7 +5788,7 @@ Bool shutting_down;
 void
 handle_event(Display *dpy, XEvent *xev)
 {
-	DPRINTF("got event %d\n", xev->type);
+	DPRINTF(1, "got event %d\n", xev->type);
 	switch (xev->type) {
 	case KeyPress:
 	case KeyRelease:
@@ -5646,7 +5931,7 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, TRUE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
-			DPRINTF("grabbing password entry widget\n");
+			DPRINTF(1, "grabbing password entry widget\n");
 			if (!GTK_IS_WIDGET(pass))
 				EPRINTF("pass is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
@@ -5658,7 +5943,7 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			if (!GTK_IS_WIDGET(user))
 				EPRINTF("user is not a widget\n");
-			DPRINTF("grabbing username entry widget\n");
+			DPRINTF(1, "grabbing username entry widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 		}
@@ -5713,7 +5998,7 @@ HideScreens(void)
 void
 HideWindow(void)
 {
-	DPRINT();
+	PTRACE(1);
 
 	HideScreens();
 }
@@ -5742,10 +6027,10 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 	(void) data;
 	j = 0;
 
-	/* CloneCommand: This is like the RestartCommand except it restarts a
-	   copy of the application.  The only difference is that the
-	   application doesn't supply its client id at register time.  On POSIX 
-	   systems the type should be a LISTofARRAY8. */
+	/* CloneCommand: This is like the RestartCommand except it restarts a copy of the
+	   application.  The only difference is that the application doesn't supply its
+	   client id at register time.  On POSIX systems the type should be a
+	   LISTofARRAY8. */
 	prop[j].name = SmCloneCommand;
 	prop[j].type = SmLISTofARRAY8;
 	prop[j].vals = pcln = calloc(argc, sizeof(*pcln));
@@ -5762,9 +6047,9 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 	j++;
 
 #if 0
-	/* CurrentDirectory: On POSIX-based systems, specifies the value of the 
-	   current directory that needs to be set up prior to starting the
-	   program and should be of type ARRAY8. */
+	/* CurrentDirectory: On POSIX-based systems, specifies the value of the current
+	   directory that needs to be set up prior to starting the program and should be
+	   of type ARRAY8. */
 	prop[j].name = SmCurrentDirectory;
 	prop[j].type = SmARRAY8;
 	prop[j].vals = &propval[j];
@@ -5784,12 +6069,12 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 #endif
 
 #if 0
-	/* DiscardCommand: The discard command contains a command that when
-	   delivered to the host that the client is running on (determined from 
-	   the connection), will cause it to discard any information about the
-	   current state.  If this command is not specified, the SM will assume 
-	   that all of the client's state is encoded in the RestartCommand [and 
-	   properties].  On POSIX systems the type should be LISTofARRAY8. */
+	/* DiscardCommand: The discard command contains a command that when delivered to
+	   the host that the client is running on (determined from the connection), will
+	   cause it to discard any information about the current state.  If this command
+	   is not specified, the SM will assume that all of the client's state is encoded
+	   in the RestartCommand [and properties].  On POSIX systems the type should be
+	   LISTofARRAY8. */
 	prop[j].name = SmDiscardCommand;
 	prop[j].type = SmLISTofARRAY8;
 	prop[j].vals = &propval[j];
@@ -5803,9 +6088,9 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 #if 0
 	char **env;
 
-	/* Environment: On POSIX based systems, this will be of type
-	   LISTofARRAY8 where the ARRAY8s alternate between environment
-	   variable name and environment variable value. */
+	/* Environment: On POSIX based systems, this will be of type LISTofARRAY8 where
+	   the ARRAY8s alternate between environment variable name and environment
+	   variable value. */
 	/* XXX: we might want to filter a few out */
 	for (i = 0, env = environ; *env; i += 2, env++) ;
 	prop[j].name = SmEnvironment;
@@ -5832,9 +6117,9 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 #if 0
 	char procID[20];
 
-	/* ProcessID: This specifies an OS-specific identifier for the process. 
-	   On POSIX systems this should be of type ARRAY8 and contain the
-	   return of getpid() turned into a Latin-1 (decimal) string. */
+	/* ProcessID: This specifies an OS-specific identifier for the process.  On
+	   POSIX systems this should be of type ARRAY8 and contain the return of
+	   getpid() turned into a Latin-1 (decimal) string. */
 	prop[j].name = SmProcessID;
 	prop[j].type = SmARRAY8;
 	prop[j].vals = &propval[j];
@@ -5846,9 +6131,9 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 	j++;
 #endif
 
-	/* Program: The name of the program that is running.  On POSIX systems, 
-	   this should eb the first parameter passed to execve(3) and should be 
-	   of type ARRAY8. */
+	/* Program: The name of the program that is running.  On POSIX systems, this
+	   should eb the first parameter passed to execve(3) and should be of type
+	   ARRAY8. */
 	prop[j].name = SmProgram;
 	prop[j].type = SmARRAY8;
 	prop[j].vals = &propval[j];
@@ -5858,13 +6143,12 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 	propval[j].length = strlen(argv[0]);
 	j++;
 
-	/* RestartCommand: The restart command contains a command that when
-	   delivered to the host that the client is running on (determined from
-	   the connection), will cause the client to restart in its current
-	   state.  On POSIX-based systems this if of type LISTofARRAY8 and each
-	   of the elements in the array represents an element in the argv[]
-	   array.  This restart command should ensure that the client restarts
-	   with the specified client-ID.  */
+	/* RestartCommand: The restart command contains a command that when delivered to
+	   the host that the client is running on (determined from the connection), will
+	   cause the client to restart in its current state.  On POSIX-based systems
+	   this if of type LISTofARRAY8 and each of the elements in the array represents
+	   an element in the argv[] array.  This restart command should ensure that the
+	   client restarts with the specified client-ID.  */
 	prop[j].name = SmRestartCommand;
 	prop[j].type = SmLISTofARRAY8;
 	prop[j].vals = prst = calloc(argc + 4, sizeof(*prst));
@@ -5890,39 +6174,39 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 	j++;
 
 #if 0
-	/* ResignCommand: A client that sets the RestartStyleHint to
-	   RestartAnyway uses this property to specify a command that undoes
-	   the effect of the client and removes any saved state. */
+	/* ResignCommand: A client that sets the RestartStyleHint to RestartAnyway uses
+	   this property to specify a command that undoes the effect of the client and
+	   removes any saved state. */
 	prop[j].name = SmResignCommand;
 	prop[j].type = SmLISTofARRAY8;
-	prop[j].vals = &propval[j];
-	prop[j].num_vals = 1;
+	prop[j].vals = calloc(2, sizeof(*prop[j].vals));
+	prop[j].num_vals = 2;
 	props[j] = &prop[j];
-	propval[j].value = "/bin/true";
-	propval[j].length = strlen("/bin/true");
+	prop[j].vals[0].value = "/usr/bin/" RESNAME;
+	prop[j].vals[0].length = strlen("/usr/bin/" RESNAME);
+	prop[j].vals[1].value = "-quit";
+	prop[j].vals[1].length = strlen("-quit");
 	j++;
 #endif
 
-	/* RestartStyleHint: If the RestartStyleHint property is present, it
-	   will contain the style of restarting the client prefers.  If this
-	   flag is not specified, RestartIfRunning is assumed.  The possible
-	   values are as follows: RestartIfRunning(0), RestartAnyway(1),
-	   RestartImmediately(2), RestartNever(3).  The RestartIfRunning(0)
-	   style is used in the usual case.  The client should be restarted in
-	   the next session if it is connected to the session manager at the
-	   end of the current session. The RestartAnyway(1) style is used to
-	   tell the SM that the application should be restarted in the next
-	   session even if it exits before the current session is terminated.
-	   It should be noted that this is only a hint and the SM will follow
-	   the policies specified by its users in determining what applications 
-	   to restart.  A client that uses RestartAnyway(1) should also set the
-	   ResignCommand and ShutdownCommand properties to the commands that
-	   undo the state of the client after it exits.  The
-	   RestartImmediately(2) style is like RestartAnyway(1) but in addition,
-	   the client is meant to run continuously.  If the client exits, the SM
-	   should try to restart it in the current session.  The RestartNever(3)
-	   style specifies that the client does not wish to be restarted in the
-	   next session. */
+	/* RestartStyleHint: If the RestartStyleHint property is present, it will
+	   contain the style of restarting the client prefers.  If this flag is not
+	   specified, RestartIfRunning is assumed.  The possible values are as follows:
+	   RestartIfRunning(0), RestartAnyway(1), RestartImmediately(2),
+	   RestartNever(3).  The RestartIfRunning(0) style is used in the usual case.
+	   The client should be restarted in the next session if it is connected to the
+	   session manager at the end of the current session. The RestartAnyway(1) style
+	   is used to tell the SM that the application should be restarted in the next
+	   session even if it exits before the current session is terminated.  It should
+	   be noted that this is only a hint and the SM will follow the policies
+	   specified by its users in determining what applications to restart.  A client
+	   that uses RestartAnyway(1) should also set the ResignCommand and
+	   ShutdownCommand properties to the commands that undo the state of the client
+	   after it exits.  The RestartImmediately(2) style is like RestartAnyway(1) but
+	   in addition, the client is meant to run continuously.  If the client exits,
+	   the SM should try to restart it in the current session.  The RestartNever(3)
+	   style specifies that the client does not wish to be restarted in the next
+	   session. */
 	prop[j].name = SmRestartStyleHint;
 	prop[j].type = SmARRAY8;
 	prop[j].vals = &propval[0];
@@ -5934,23 +6218,24 @@ xdeSetProperties(SmcConn smcConn, SmPointer data)
 	j++;
 
 #if 0
-	/* ShutdownCommand: This command is executed at shutdown time to clean
-	   up after a client that is no longer running but retained its state
-	   by setting RestartStyleHint to RestartAnyway(1).  The command must
-	   not remove any saved state as the client is still part of the
-	   session. */
+	/* ShutdownCommand: This command is executed at shutdown time to clean up after
+	   a client that is no longer running but retained its state by setting
+	   RestartStyleHint to RestartAnyway(1).  The command must not remove any saved
+	   state as the client is still part of the session. */
 	prop[j].name = SmShutdownCommand;
 	prop[j].type = SmLISTofARRAY8;
-	prop[j].vals = &propval[j];
-	prop[j].num_vals = 1;
+	prop[j].vals = calloc(2, sizeof(*prop[j].vals));
+	prop[j].num_vals = 2;
 	props[j] = &prop[j];
-	propval[j].value = "/bin/true";
-	propval[j].length = strlen("/bin/true");
+	prop[j].vals[0].value = "/usr/bin/" RESNAME;
+	prop[j].vals[0].length = strlen("/usr/bin/" RESNAME);
+	prop[j].vals[1].value = "-quit";
+	prop[j].vals[1].length = strlen("-quit");
 	j++;
 #endif
 
-	/* UserID: Specifies the user's ID.  On POSIX-based systems this will
-	   contain the user's name (the pw_name field of struct passwd).  */
+	/* UserID: Specifies the user's ID.  On POSIX-based systems this will contain
+	   the user's name (the pw_name field of struct passwd).  */
 	errno = 0;
 	prop[j].name = SmUserID;
 	prop[j].type = SmARRAY8;
@@ -6068,9 +6353,12 @@ xdeShutdownCancelledCB(SmcConn smcConn, SmPointer data)
 	gtk_main_quit();
 }
 
+/* *INDENT-OFF* */
 static unsigned long xdeCBMask =
-    SmcSaveYourselfProcMask | SmcDieProcMask |
-    SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
+	SmcSaveYourselfProcMask |
+	SmcDieProcMask |
+	SmcSaveCompleteProcMask |
+	SmcShutdownCancelledProcMask;
 
 static SmcCallbacks xdeCBs = {
 	.save_yourself = {
@@ -6090,18 +6378,20 @@ static SmcCallbacks xdeCBs = {
 			       .client_data = NULL,
 			       },
 };
+/* *INDENT-ON* */
 
 static gboolean
-on_ifd_watch(GIOChannel *chan, GIOCondition cond, pointer data)
+on_ifd_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 {
-	SmcConn smcConn = (typeof(smcConn)) data;
+	SmcConn smcConn = data;
 	IceConn iceConn = SmcGetIceConnection(smcConn);
 
 	(void) chan;
 	if (cond & (G_IO_NVAL | G_IO_HUP | G_IO_ERR)) {
-		EPRINTF("poll failed: %s %s %s\n", (cond & G_IO_NVAL) ? "NVAL" : "",
+		EPRINTF("poll failed: %s %s %s\n",
+			(cond & G_IO_NVAL) ? "NVAL" : "",
 			(cond & G_IO_HUP) ? "HUP" : "", (cond & G_IO_ERR) ? "ERR" : "");
-		return G_SOURCE_REMOVE;
+		return G_SOURCE_REMOVE; /* remove event source */
 	} else if (cond & (G_IO_IN | G_IO_PRI)) {
 		IceProcessMessages(iceConn, NULL, NULL);
 	}
@@ -6122,7 +6412,6 @@ init_smclient(void)
 			EPRINTF("clientId provided but no SESSION_MANAGER\n");
 		return;
 	}
-
 	smcConn = SmcOpenConnection(env, NULL, SmProtoMajor, SmProtoMinor,
 				    xdeCBMask, &xdeCBs, options.clientId,
 				    &options.clientId, sizeof(err), err);
@@ -6130,9 +6419,7 @@ init_smclient(void)
 		EPRINTF("SmcOpenConnection: %s\n", err);
 		return;
 	}
-
 	iceConn = SmcGetIceConnection(smcConn);
-
 	ifd = IceConnectionNumber(iceConn);
 	chan = g_io_channel_unix_new(ifd);
 	g_io_add_watch(chan, mask, on_ifd_watch, smcConn);
@@ -6149,6 +6436,9 @@ do_run(int argc, char *argv[])
 	init_smclient();
 
 	startup_x11(argc, argv);
+#ifdef CANBERRA_SOUND
+	init_canberra();
+#endif
 
 	setup_systemd();
 
@@ -6537,12 +6827,12 @@ do_lock(int argc, char *argv[])
 		snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
 		atom = XInternAtom(dpy, selection, True);
 		if (!atom) {
-			DPRINTF("No '%s' atom on display\n", selection);
+			DPRINTF(1, "No '%s' atom on display\n", selection);
 			continue;
 		}
 		owner = XGetSelectionOwner(dpy, atom);
 		if (!owner) {
-			DPRINTF("No '%s' owner on display\n", selection);
+			DPRINTF(1, "No '%s' owner on display\n", selection);
 			continue;
 		}
 		atom = XInternAtom(dpy, "_XDE_XLOCK_COMMAND", False);
@@ -6571,7 +6861,7 @@ do_lock(int argc, char *argv[])
 	XSync(dpy, True);
 	XCloseDisplay(dpy);
 	if (!found) {
-		DPRINTF("no background instance found\n");
+		DPRINTF(1, "no background instance found\n");
 		options.replace = True;
 		if (fork() == 0)
 			do_run(argc, argv);
@@ -6620,12 +6910,12 @@ do_unlock(int argc, char *argv[])
 		snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
 		atom = XInternAtom(dpy, selection, True);
 		if (!atom) {
-			DPRINTF("No '%s' atom on display\n", selection);
+			DPRINTF(1, "No '%s' atom on display\n", selection);
 			continue;
 		}
 		owner = XGetSelectionOwner(dpy, atom);
 		if (!owner) {
-			DPRINTF("No '%s' owner on display\n", selection);
+			DPRINTF(1, "No '%s' owner on display\n", selection);
 			continue;
 		}
 		atom = XInternAtom(dpy, "_XDE_XLOCK_COMMAND", False);
@@ -6843,12 +7133,12 @@ get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
 	if (XrmGetResource(xrdb, name, clas, &type, &value)) {
 		if (value.addr && *(char *) value.addr) {
-			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			DPRINTF(1, "%s:\t\t%s\n", clas, value.addr);
 			return (const char *) value.addr;
 		} else
-			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			DPRINTF(1, "%s:\t\t%s\n", clas, value.addr);
 	} else
-		DPRINTF("%s:\t\t%s\n", clas, "ERROR!");
+		DPRINTF(1, "%s:\t\t%s\n", clas, "ERROR!");
 	return (NULL);
 }
 
@@ -6943,7 +7233,7 @@ getXrmFont(const char *val, PangoFontDescription **face)
 		if ((font = pango_fc_font_description_from_pattern(pattern, TRUE))) {
 			pango_font_description_free(*face);
 			*face = font;
-			DPRINTF("Font description is: %s\n",
+			DPRINTF(1, "Font description is: %s\n",
 					pango_font_description_to_string(font));
 			return TRUE;
 		}
@@ -6977,7 +7267,7 @@ getXrmDouble(const char *val, double *floating)
 		*strchr(copy, '.') = radix;
 
 	*floating = strtod(copy, NULL);
-	DPRINTF("Got decimal value %s, translates to %f\n", val, *floating);
+	DPRINTF(1, "Got decimal value %s, translates to %f\n", val, *floating);
 	free(copy);
 	return TRUE;
 }
@@ -7035,7 +7325,7 @@ get_resources(int argc, char *argv[])
 
 	(void) argc;
 	(void) argv;
-	DPRINT();
+	PTRACE(1);
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
 		exit(EXIT_FAILURE);
@@ -7043,7 +7333,7 @@ get_resources(int argc, char *argv[])
 	root = DefaultRootWindow(dpy);
 	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
 		XCloseDisplay(dpy);
-		DPRINTF("no resource manager database allocated\n");
+		DPRINTF(1, "no resource manager database allocated\n");
 		return;
 	}
 	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
@@ -7052,15 +7342,15 @@ get_resources(int argc, char *argv[])
 		return;
 	}
 	XrmInitialize();
-	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
+	// DPRINTF(1, "RESOURCE_MANAGER = %s\n", xtp.value);
 	rdb = XrmGetStringDatabase((char *) xtp.value);
 	XFree(xtp.value);
 	if (!rdb) {
-		DPRINTF("no resource manager database allocated\n");
+		DPRINTF(1, "no resource manager database allocated\n");
 		XCloseDisplay(dpy);
 		return;
 	}
-	DPRINTF("combining database from %s\n", APPDFLT);
+	DPRINTF(1, "combining database from %s\n", APPDFLT);
 	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	if ((val = get_resource(rdb, "debug", "0"))) {
 		getXrmInt(val, &options.debug);
@@ -7070,7 +7360,7 @@ get_resources(int argc, char *argv[])
 			char *endptr = NULL;
 			double width = strtod(val, &endptr);
 
-			DPRINTF("Got decimal value %s, translates to %f\n", val, width);
+			DPRINTF(1, "Got decimal value %s, translates to %f\n", val, width);
 			if (endptr != val && *endptr == '%' && width > 0) {
 				options.width =
 				    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
@@ -7088,7 +7378,7 @@ get_resources(int argc, char *argv[])
 			char *endptr = NULL;
 			double height = strtod(val, &endptr);
 
-			DPRINTF("Got decimal value %s, translates to %f\n", val, height);
+			DPRINTF(1, "Got decimal value %s, translates to %f\n", val, height);
 			if (endptr != val && *endptr == '%' && height > 0) {
 				options.height =
 				    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
@@ -7628,8 +7918,8 @@ set_default_xdgdirs(int argc, char *argv[])
 	}
 	setenv("XDG_CONFIG_DIRS", conf, 1);
 	setenv("XDG_DATA_DIRS", data, 1);
-	DPRINTF("setting XDG_CONFIG_DIRS to '%s'\n", conf);
-	DPRINTF("setting XDG_DATA_DIRS   to '%s'\n", data);
+	DPRINTF(1, "setting XDG_CONFIG_DIRS to '%s'\n", conf);
+	DPRINTF(1, "setting XDG_DATA_DIRS   to '%s'\n", data);
 	free(conf);
 	free(data);
 }
@@ -8234,7 +8524,7 @@ TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
 				continue;
 			}
 			if (ifa_addr->sa_family != family) {
-				DPRINTF("interface %s has wrong family\n", ifa->ifa_name);
+				DPRINTF(1, "interface %s has wrong family\n", ifa->ifa_name);
 				continue;
 			}
 			switch (family) {
@@ -8243,7 +8533,7 @@ TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
 				struct sockaddr_in *sin = (typeof(sin)) ifa_addr;
 
 				if (!memcmp(&sin->sin_addr, clientAddress->data, 4)) {
-					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					DPRINTF(1, "interface %s matches\n", ifa->ifa_name);
 					freeifaddrs(ifas);
 					return True;
 				}
@@ -8255,7 +8545,7 @@ TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
 				struct sockaddr_in6 *sin6 = (typeof(sin6)) ifa_addr;
 
 				if (!memcmp(&sin6->sin6_addr, clientAddress->data, 16)) {
-					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					DPRINTF(1, "interface %s matches\n", ifa->ifa_name);
 					freeifaddrs(ifas);
 					return True;
 				}
@@ -8417,7 +8707,7 @@ get_default_file(void)
 		strncat(file, options.session, PATH_MAX);
 		strncat(file, "/autostart", PATH_MAX);
 		if (access(file, R_OK)) {
-			DPRINTF("%s: %s\n", file, strerror(errno));
+			DPRINTF(1, "%s: %s\n", file, strerror(errno));
 			continue;
 		}
 		size += strlen(file) + 1;
@@ -8462,10 +8752,8 @@ get_default_desktops(void)
 }
 
 void
-get_defaults(int argc, char *argv[])
+get_defaults(void)
 {
-	(void) argc;
-	(void) argv;
 	get_default_display();
 	get_default_x11();
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
@@ -8599,7 +8887,7 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "d:p:b:S:s:ni:t:xT:o:NDvhVC?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
-			DPRINTF("%s: done options processing\n", argv[0]);
+			DPRINTF(1, "%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
@@ -8795,24 +9083,24 @@ main(int argc, char *argv[])
 			break;
 		case 'D':	/* -D, --debug [level] */
 			if (optarg == NULL) {
-				DPRINTF("%s: increasing debug verbosity\n", argv[0]);
+				DPRINTF(1, "%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
-			DPRINTF("%s: setting debug verbosity to %d\n", argv[0], val);
+			DPRINTF(1, "%s: setting debug verbosity to %d\n", argv[0], val);
 			options.debug = val;
 			break;
 		case 'v':	/* -v, --verbose [level] */
 			if (optarg == NULL) {
-				DPRINTF("%s: increasing output verbosity\n", argv[0]);
+				DPRINTF(1, "%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
-			DPRINTF("%s: setting output verbosity to %d\n", argv[0], val);
+			DPRINTF(1, "%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -8820,18 +9108,12 @@ main(int argc, char *argv[])
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandVersion;
-			options.command = CommandVersion;
+			DPRINTF(1, "Setting command to CommandVersion\n");
+			command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandCopying;
-			options.command = CommandCopying;
+			DPRINTF(1, "Setting command to CommandCopying\n");
+			command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -8841,14 +9123,14 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					EPRINTF("%s: syntax error near '", argv[0]);
 					while (optind < argc) {
 						fprintf(stderr, "%s", argv[optind++]);
 						fprintf(stderr, "%s", (optind < argc) ? " " : "");
 					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument", argv[0]);
+					EPRINTF("%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
@@ -8858,6 +9140,8 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
+	DPRINTF(1, "%s: option index = %d\n", argv[0], optind);
+	DPRINTF(1, "%s: option count = %d\n", argv[0], argc);
 #ifndef DO_XCHOOSER
 #if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	if (optind < argc) {
@@ -8872,9 +9156,8 @@ main(int argc, char *argv[])
 	}
 #endif
 #endif
-	DPRINTF("%s: option index = %d\n", argv[0], optind);
-	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	get_defaults(argc, argv);
+	get_defaults();
+
 	switch (command) {
 	default:
 	case CommandDefault:
@@ -8885,45 +9168,49 @@ main(int argc, char *argv[])
 		}
 #endif
 #if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
-		DPRINTF("%s: running program\n", argv[0]);
+		DPRINTF(1, "%s: running program\n", argv[0]);
 		run_program(argc, argv);
 #else
-		DPRINTF("%s: running default\n", argv[0]);
+		DPRINTF(1, "%s: running default\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
 #endif
 		break;
 #ifdef DO_XLOCKING
 	case CommandReplace:
-		DPRINTF("%s: running replace\n", argv[0]);
+		DPRINTF(1, "%s: replacing existing instance\n", argv[0]);
 		do_run(argc, argv);
 		break;
 	case CommandQuit:
-		DPRINTF("%s: running quit\n", argv[0]);
+		if (!options.display) {
+			EPRINTF("%s: cannot ask instance to quit without DISPLAY\n", argv[0]);
+			exit(EXIT_FAILURE);
+		}
+		DPRINTF(1, "%s: asking existing instance to quit\n", argv[0]);
 		do_quit(argc, argv);
 		break;
 	case CommandLock:
-		DPRINTF("%s: running lock\n", argv[0]);
+		DPRINTF(1, "%s: running lock\n", argv[0]);
 		do_lock(argc, argv);
 		break;
 	case CommandUnlock:
-		DPRINTF("%s: running unlock\n", argv[0]);
+		DPRINTF(1, "%s: running unlock\n", argv[0]);
 		do_unlock(argc, argv);
 		break;
 #endif				/* DO_XLOCKING */
 	case CommandHelp:
-		DPRINTF("%s: printing help message\n", argv[0]);
+		DPRINTF(1, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
-		DPRINTF("%s: printing version message\n", argv[0]);
+		DPRINTF(1, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
-		DPRINTF("%s: printing copying message\n", argv[0]);
+		DPRINTF(1, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
 	exit(EXIT_SUCCESS);
 }
 
-// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
+// vim: set sw=8 tw=90 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
