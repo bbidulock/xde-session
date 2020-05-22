@@ -42,12 +42,15 @@
 
  *****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "autoconf.h"
-#endif
+/** @section Headers
+  * @{ */
 
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
 #endif
 
 #include <stddef.h>
@@ -63,6 +66,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/timerfd.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <sys/poll.h>
@@ -75,9 +79,16 @@
 
 #include <assert.h>
 #include <locale.h>
+#include <langinfo.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
+#include <wordexp.h>
+#include <execinfo.h>
+#include <math.h>
+#include <dlfcn.h>
+#include <setjmp.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -101,6 +112,7 @@
 #endif
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
+#include <X11/ICE/ICEutil.h>
 #include <X11/SM/SMlib.h>
 #include <unique/unique.h>
 #include <glib-unix.h>
@@ -113,9 +125,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
-
-#define GTK_EVENT_STOP		TRUE
-#define GTK_EVENT_PROPAGATE	FALSE
+#include <glib.h>
 
 #include <pwd.h>
 #include <systemd/sd-login.h>
@@ -123,6 +133,10 @@
 #include <security/pam_misc.h>
 #include <fontconfig/fontconfig.h>
 #include <pango/pangofc-fontmap.h>
+
+#ifdef CANBERRA_SOUND
+#include <canberra-gtk.h>
+#endif
 
 #include <ctype.h>
 #include <sys/socket.h>
@@ -138,11 +152,13 @@
 #include <getopt.h>
 #endif
 
-#include <langinfo.h>
-#include <locale.h>
+/** @} */
 
-const char *
-timestamp(void)
+/** @section Preamble
+  * @{ */
+
+static const char *
+_timestamp(void)
 {
 	static struct timeval tv = { 0, 0 };
 	static char buf[BUFSIZ];
@@ -154,26 +170,51 @@ timestamp(void)
 	return buf;
 }
 
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stderr, "I: "); \
-	fprintf(stderr, args); \
+#define XPRINTF(_args...) do { } while (0)
+
+#define OPRINTF(_num, _args...) do { if (options.debug >= _num || options.output > _num) { \
+	fprintf(stdout, NAME ": I: "); \
+	fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define DPRINTF(_num, _args...) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": D: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr); } } while (0)
+
+#define EPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": E: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define WPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": W: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define PTRACE(_num) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": T: [%s] %12s +%4d %s()\n", _timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: [%s] %s +%d %s(): ", timestamp(), __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: [%s] %s +%d %s()\n", timestamp(), __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
+
+void
+dumpstack(const char *file, const int line, const char *func)
+{
+	void *buffer[32];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 32)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
+}
+
+#undef EXIT_SUCCESS
+#undef EXIT_FAILURE
+#undef EXIT_SYNTAXERR
 
 #define EXIT_SUCCESS		0
 #define EXIT_FAILURE		1
 #define EXIT_SYNTAXERR		2
+
+#define GTK_EVENT_STOP		TRUE
+#define GTK_EVENT_PROPAGATE	FALSE
 
 static int saveArgc;
 static char **saveArgv;
@@ -240,6 +281,12 @@ static char **saveArgv;
 #endif
 
 #define APPDFLT "/usr/share/X11/app-defaults/" RESCLAS
+
+#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
+static SmcConn smcConn;
+#endif
+
+/** @} */
 
 typedef enum _LogoSide {
 	LogoSideLeft,
@@ -321,6 +368,7 @@ typedef struct {
 	char *desktop;
 	char *icon_theme;
 	char *gtk2_theme;
+	char *soundtheme;
 	char *curs_theme;
 	LogoSide side;
 	Bool prompt;
@@ -402,6 +450,7 @@ Options options = {
 	.desktop = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.soundtheme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideTop,
 	.prompt = False,
@@ -482,6 +531,7 @@ Options defaults = {
 	.language = NULL,
 	.icon_theme = NULL,
 	.gtk2_theme = NULL,
+	.soundtheme = NULL,
 	.curs_theme = NULL,
 	.side = LogoSideLeft,
 	.prompt = False,
@@ -564,8 +614,10 @@ typedef struct {
 	Bool echoPasswd;
 	char *echoPasswdChar;
 	unsigned int borderWidth;
+#ifdef DO_XLOCKING
 	Bool autoLock;
 	Bool systemLock;
+#endif
 	char *authDir;
 	char **exportList;
 	Bool grabServer;
@@ -619,8 +671,10 @@ Resources resources  = {
 	.echoPasswd = False,
 	.echoPasswdChar = NULL,
 	.borderWidth = 0,
+#ifdef DO_XLOCKING
 	.autoLock = True,
 	.systemLock = True,
+#endif
 	.authDir = NULL,
 	.exportList = NULL,
 	.authFile = NULL,
@@ -683,6 +737,7 @@ typedef enum {
 	LOGOUT_ACTION_SUSPEND,		/* suspend the computer */
 	LOGOUT_ACTION_HIBERNATE,	/* hibernate the computer */
 	LOGOUT_ACTION_HYBRIDSLEEP,	/* hybrid sleep the computer */
+	LOGOUT_ACTION_SUSPENDHIBERNATE,	/* suspend then hibernate the computer */
 	LOGOUT_ACTION_SWITCHUSER,	/* switch users */
 	LOGOUT_ACTION_SWITCHDESK,	/* switch desktops */
 	LOGOUT_ACTION_LOCKSCREEN,	/* lock screen */
@@ -697,10 +752,6 @@ typedef enum {
 LogoutActionResult action_result;
 LogoutActionResult logout_result = LOGOUT_ACTION_CANCEL;
 #endif				/* DO_LOGOUT */
-
-#if !defined(DO_XLOGIN) & !defined(DO_XCHOOSER) || defined(DO_GREETER)
-static SmcConn smcConn;
-#endif
 
 Atom _XA_XDE_THEME_NAME;
 Atom _XA_GTK_READ_RCFILES;
@@ -2550,7 +2601,7 @@ check_nonrecursive(Atom atom, Atom type)
 	unsigned long *data = NULL;
 	Window check = None;
 
-	DPRINTF("non-recursive check for atom 0x%lx\n", atom);
+	DPRINTF(1, "non-recursive check for atom 0x%lx\n", atom);
 
 	if (XGetWindowProperty(dpy, scr->root, atom, 0L, 1L, False, type, &real, &format,
 			       &nitems, &after, (unsigned char **) &data)
@@ -2579,7 +2630,7 @@ check_supported(Atom protocols, Atom supported)
 	unsigned long *data = NULL;
 	Bool result = False;
 
-	DPRINTF("check for non-compliant NetWM\n");
+	DPRINTF(1, "check for non-compliant NetWM\n");
 
       try_harder:
 	if (XGetWindowProperty(dpy, scr->root, protocols, 0L, num, False, XA_ATOM, &real, &format,
@@ -2753,7 +2804,7 @@ check_redir(void)
 {
 	XWindowAttributes wa;
 
-	DPRINTF("checking direction for screen %d\n", scr->screen);
+	DPRINTF(1, "checking direction for screen %d\n", scr->screen);
 
 	scr->redir_check = None;
 	if (XGetWindowAttributes(dpy, scr->root, &wa))
@@ -2769,50 +2820,50 @@ check_window_manager(void)
 {
 	Bool have_wm = False;
 
-	DPRINTF("checking wm compliance for screen %d\n", scr->screen);
+	DPRINTF(1, "checking wm compliance for screen %d\n", scr->screen);
 
-	DPRINTF("checking redirection\n");
+	DPRINTF(1, "checking redirection\n");
 	if (check_redir()) {
 		have_wm = True;
-		DPRINTF("redirection on window 0x%lx\n", scr->redir_check);
+		DPRINTF(1, "redirection on window 0x%lx\n", scr->redir_check);
 	}
-	DPRINTF("checking ICCCM 2.0 compliance\n");
+	DPRINTF(1, "checking ICCCM 2.0 compliance\n");
 	if (check_icccm()) {
 		have_wm = True;
-		DPRINTF("ICCCM 2.0 window 0x%lx\n", scr->icccm_check);
+		DPRINTF(1, "ICCCM 2.0 window 0x%lx\n", scr->icccm_check);
 	}
-	DPRINTF("checking OSF/Motif compliance\n");
+	DPRINTF(1, "checking OSF/Motif compliance\n");
 	if (check_motif()) {
 		have_wm = True;
-		DPRINTF("OSF/Motif window 0x%lx\n", scr->motif_check);
+		DPRINTF(1, "OSF/Motif window 0x%lx\n", scr->motif_check);
 	}
-	DPRINTF("checking WindowMaker compliance\n");
+	DPRINTF(1, "checking WindowMaker compliance\n");
 	if (check_maker()) {
 		have_wm = True;
-		DPRINTF("WindowMaker window 0x%lx\n", scr->maker_check);
+		DPRINTF(1, "WindowMaker window 0x%lx\n", scr->maker_check);
 	}
-	DPRINTF("checking GNOME/WMH compliance\n");
+	DPRINTF(1, "checking GNOME/WMH compliance\n");
 	if (check_winwm()) {
 		have_wm = True;
-		DPRINTF("GNOME/WMH window 0x%lx\n", scr->winwm_check);
+		DPRINTF(1, "GNOME/WMH window 0x%lx\n", scr->winwm_check);
 	}
 	scr->net_wm_user_time = False;
 	scr->net_startup_id = False;
 	scr->net_startup_info = False;
-	DPRINTF("checking NetWM/EWMH compliance\n");
+	DPRINTF(1, "checking NetWM/EWMH compliance\n");
 	if (check_netwm()) {
 		have_wm = True;
-		DPRINTF("NetWM/EWMH window 0x%lx\n", scr->netwm_check);
+		DPRINTF(1, "NetWM/EWMH window 0x%lx\n", scr->netwm_check);
 		if (check_supported(_XA_NET_SUPPORTED, _XA_NET_WM_USER_TIME)) {
-			DPRINTF("_NET_WM_USER_TIME supported\n");
+			DPRINTF(1, "_NET_WM_USER_TIME supported\n");
 			scr->net_wm_user_time = True;
 		}
 		if (check_supported(_XA_NET_SUPPORTED, _XA_NET_STARTUP_ID)) {
-			DPRINTF("_NET_STARTUP_ID supported\n");
+			DPRINTF(1, "_NET_STARTUP_ID supported\n");
 			scr->net_startup_id = True;
 		}
 		if (check_supported(_XA_NET_SUPPORTED, _XA_NET_STARTUP_INFO)) {
-			DPRINTF("_NET_STARTUP_INFO supported\n");
+			DPRINTF(1, "_NET_STARTUP_INFO supported\n");
 			scr->net_startup_info = True;
 		}
 	}
@@ -2831,7 +2882,7 @@ pc_handle_WINDOWMAKER_NOTICEBOARD(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	handle_wmchange();
 }
 
@@ -2840,7 +2891,7 @@ pc_handle_MOTIF_WM_INFO(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	handle_wmchange();
 }
 
@@ -2924,7 +2975,7 @@ send_msg(char *msg)
 	int l;
 	char *p;
 
-	DPRINTF("Message to 0x%lx is: '%s'\n", scr->root, msg);
+	DPRINTF(1, "Message to 0x%lx is: '%s'\n", scr->root, msg);
 
 	xev.type = ClientMessage;
 	xev.xclient.message_type = _XA_NET_STARTUP_INFO_BEGIN;
@@ -3353,10 +3404,10 @@ find_startup_seq(Client *c)
 				break;
 		}
 		if (!seq) {
-			DPRINTF("cannot find startup id '%s'!\n", c->startup_id);
+			DPRINTF(1, "cannot find startup id '%s'!\n", c->startup_id);
 			return (seq);
 		}
-		DPRINTF("Found sequence by _NET_STARTUP_ID\n");
+		DPRINTF(1, "Found sequence by _NET_STARTUP_ID\n");
 		goto found_it;
 	}
 
@@ -3377,7 +3428,7 @@ find_startup_seq(Client *c)
 			}
 		}
 		if (seq) {
-			DPRINTF("Found sequence by res_name or res_class\n");
+			DPRINTF(1, "Found sequence by res_name or res_class\n");
 			goto found_it;
 		}
 	}
@@ -3398,7 +3449,7 @@ find_startup_seq(Client *c)
 
 		}
 		if (seq) {
-			DPRINTF("Found sequence by command\n");
+			DPRINTF(1, "Found sequence by command\n");
 			goto found_it;
 		}
 	}
@@ -3420,7 +3471,7 @@ find_startup_seq(Client *c)
 			}
 		}
 		if (seq) {
-			DPRINTF("Found sequence by res_name or res_class\n");
+			DPRINTF(1, "Found sequence by res_name or res_class\n");
 			goto found_it;
 		}
 	}
@@ -3441,11 +3492,11 @@ find_startup_seq(Client *c)
 				break;
 		}
 		if (seq) {
-			DPRINTF("Found sequence by pid and hostname\n");
+			DPRINTF(1, "Found sequence by pid and hostname\n");
 			goto found_it;
 		}
 	}
-	DPRINTF("could not find startup ID for client\n");
+	DPRINTF(1, "could not find startup ID for client\n");
 	return NULL;
       found_it:
 	seq->client = c;
@@ -3611,7 +3662,7 @@ remove_client(Client *c)
 	Window *winp;
 	int i;
 
-	DPRINT();
+	PTRACE(1);
 	if (c->startup_id) {
 		XFree(c->startup_id);
 		c->startup_id = NULL;
@@ -3678,7 +3729,7 @@ del_client(Client *r)
 {
 	Client *c, **cp;
 
-	DPRINT();
+	PTRACE(1);
 	for (cp = &scr->clients, c = *cp; c && c != r; cp = &c->next, c = *cp) ;
 	if (c == r)
 		*cp = c->next;
@@ -3763,7 +3814,7 @@ copy_sequence_fields(Sequence *old, Sequence *new)
 		}
 	}
 	convert_sequence_fields(old);
-	DPRINTF("Updated sequence fields:\n");
+	DPRINTF(1, "Updated sequence fields:\n");
 	show_sequence(old);
 }
 
@@ -3784,21 +3835,21 @@ close_sequence(Sequence *seq)
 	(void) seq;
 #ifdef HAVE_GLIB_EVENT_LOOP
 	if (seq->timer) {
-		DPRINTF("removing timer\n");
+		DPRINTF(1, "removing timer\n");
 		g_source_remove(seq->timer);
 		seq->timer = 0;
 	}
 #endif				/* HAVE_GLIB_EVENT_LOOP */
 #ifdef SYSTEM_TRAY_STATUS_ICON
 	if (seq->status) {
-		DPRINTF("removing statusicon\n");
+		DPRINTF(1, "removing statusicon\n");
 		g_object_unref(G_OBJECT(seq->status));
 		seq->status = NULL;
 	}
 #endif				/* SYSTEM_TRAY_STATUS_ICON */
 #ifdef DESKTOP_NOTIFICATIONS
 	if (seq->notification) {
-		DPRINTF("removing notificiation\n");
+		DPRINTF(1, "removing notificiation\n");
 		g_object_unref(G_OBJECT(seq->notification));
 		seq->notification = NULL;
 	}
@@ -3812,7 +3863,7 @@ unref_sequence(Sequence *seq)
 		if (--seq->refs <= 0) {
 			Sequence *s, **prev;
 
-			DPRINTF("deleting sequence\n");
+			DPRINTF(1, "deleting sequence\n");
 			for (prev = &sequences, s = *prev; s && s != seq; prev = &s->next, s = *prev) ;
 			if (s) {
 				*prev = s->next;
@@ -3823,7 +3874,7 @@ unref_sequence(Sequence *seq)
 			free(seq);
 			return (NULL);
 		} else
-			DPRINTF("sequence still has %d references\n", seq->refs);
+			DPRINTF(1, "sequence still has %d references\n", seq->refs);
 	} else
 		EPRINTF("called with null pointer\n");
 	return (seq);
@@ -3842,7 +3893,7 @@ remove_sequence(Sequence *del)
 {
 	Sequence *seq, **prev;
 
-	DPRINTF("Removing sequence:\n");
+	DPRINTF(1, "Removing sequence:\n");
 	show_sequence(del);
 	for (prev = &sequences, seq = *prev; seq && seq != del; prev = &seq->next, seq = *prev) ;
 	if (seq) {
@@ -3895,7 +3946,7 @@ add_sequence(Sequence *seq)
 	if (seq->state == StartupNotifyNew) {
 	}
 	seq->timer = g_timeout_add(options.guard, sequence_timeout_callback, (gpointer) seq);
-	DPRINTF("Added sequence:\n");
+	DPRINTF(1, "Added sequence:\n");
 	show_sequence(seq);
 }
 
@@ -3908,7 +3959,7 @@ process_startup_msg(Message *m)
 	int i;
 	int escaped, quoted;
 
-	DPRINTF("Got message: %s\n", m->data);
+	DPRINTF(1, "Got message: %s\n", m->data);
 	if (!strncmp(p, "new:", 4)) {
 		cmd.state = StartupNotifyNew;
 	} else if (!strncmp(p, "change:", 7)) {
@@ -3927,7 +3978,7 @@ process_startup_msg(Message *m)
 		k = p;
 		if (!(v = strchr(k, '='))) {
 			free_sequence_fields(&cmd);
-			DPRINTF("mangled message\n");
+			DPRINTF(1, "mangled message\n");
 			return;
 		} else {
 			*v++ = '\0';
@@ -3946,7 +3997,7 @@ process_startup_msg(Message *m)
 					} else if (*p == '\0' || (*p == ' ' && !quoted)) {
 						if (quoted) {
 							free_sequence_fields(&cmd);
-							DPRINTF("mangled message\n");
+							DPRINTF(1, "mangled message\n");
 							return;
 						}
 						if (*p == ' ')
@@ -3969,7 +4020,7 @@ process_startup_msg(Message *m)
 	free(m);
 	if (!cmd.f.id) {
 		free_sequence_fields(&cmd);
-		DPRINTF("message with no ID= field\n");
+		DPRINTF(1, "message with no ID= field\n");
 		return;
 	}
 	/* get information from ID */
@@ -4021,7 +4072,7 @@ process_startup_msg(Message *m)
 		switch (cmd.state) {
 		default:
 			free_sequence_fields(&cmd);
-			DPRINTF("message out of sequence\n");
+			DPRINTF(1, "message out of sequence\n");
 			return;
 		case StartupNotifyNew:
 		case StartupNotifyComplete:
@@ -4029,7 +4080,7 @@ process_startup_msg(Message *m)
 		}
 		if (!(seq = calloc(1, sizeof(*seq)))) {
 			free_sequence_fields(&cmd);
-			DPRINTF("no memory\n");
+			DPRINTF(1, "no memory\n");
 			return;
 		}
 		*seq = cmd;
@@ -4040,7 +4091,7 @@ process_startup_msg(Message *m)
 	case StartupNotifyIdle:
 		switch (cmd.state) {
 		case StartupNotifyIdle:
-			DPRINTF("message state error\n");
+			DPRINTF(1, "message state error\n");
 			return;
 		case StartupNotifyComplete:
 			seq->state = StartupNotifyComplete;
@@ -4063,7 +4114,7 @@ process_startup_msg(Message *m)
 	case StartupNotifyNew:
 		switch (cmd.state) {
 		case StartupNotifyIdle:
-			DPRINTF("message state error\n");
+			DPRINTF(1, "message state error\n");
 			return;
 		case StartupNotifyComplete:
 			seq->state = StartupNotifyComplete;
@@ -4081,7 +4132,7 @@ process_startup_msg(Message *m)
 	case StartupNotifyChanged:
 		switch (cmd.state) {
 		case StartupNotifyIdle:
-			DPRINTF("message state error\n");
+			DPRINTF(1, "message state error\n");
 			return;
 		case StartupNotifyComplete:
 			seq->state = StartupNotifyComplete;
@@ -4112,7 +4163,7 @@ cm_handle_NET_STARTUP_INFO_BEGIN(XClientMessageEvent *e, Client *c)
 	int len;
 
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	if (!e || e->type != ClientMessage)
 		return;
 	from = e->window;
@@ -4142,7 +4193,7 @@ cm_handle_NET_STARTUP_INFO(XClientMessageEvent *e, Client *c)
 	int len;
 
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	if (!e || e->type != ClientMessage)
 		return;
 	from = e->window;
@@ -4244,7 +4295,7 @@ pc_handle_CLIENT_LIST(XPropertyEvent *e, Atom atom, Atom type)
 	long i, n;
 	Client *c, *cn;
 
-	DPRINT();
+	PTRACE(1);
 	if ((list = get_windows(scr->root, atom, type, &n))) {
 		for (c = scr->clients; c; c->breadcrumb = False, c->new = False, c = c->next) ;
 		for (i = 0; i < n; i++) {
@@ -4278,7 +4329,7 @@ pc_handle_NET_ACTIVE_WINDOW(XPropertyEvent *e, Client *c)
 {
 	Window active = None;
 
-	DPRINT();
+	PTRACE(1);
 	if (c || !e || e->window != scr->root || e->state == PropertyDelete)
 		return;
 	if (get_window(scr->root, _XA_NET_ACTIVE_WINDOW, XA_WINDOW, &active) && active) {
@@ -4292,7 +4343,7 @@ pc_handle_NET_ACTIVE_WINDOW(XPropertyEvent *e, Client *c)
 static void
 cm_handle_NET_ACTIVE_WINDOW(XClientMessageEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c)
 		return;
 	pushtime(&current_time, e->data.l[1]);
@@ -4307,7 +4358,7 @@ static void
 pc_handle_NET_CLIENT_LIST(XPropertyEvent *e, Client *c)
 {
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
 	pc_handle_CLIENT_LIST(e, _XA_NET_CLIENT_LIST, XA_WINDOW);
@@ -4317,7 +4368,7 @@ static void
 pc_handle_NET_CLIENT_LIST_STACKING(XPropertyEvent *e, Client *c)
 {
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
 	pc_handle_CLIENT_LIST(e, _XA_NET_CLIENT_LIST_STACKING, XA_WINDOW);
@@ -4328,7 +4379,7 @@ cm_handle_NET_CLOSE_WINDOW(XClientMessageEvent *e, Client *c)
 {
 	Time time;
 
-	DPRINT();
+	PTRACE(1);
 	if (!c)
 		return;
 	time = e ? e->data.l[0] : CurrentTime;
@@ -4344,7 +4395,7 @@ cm_handle_NET_CLOSE_WINDOW(XClientMessageEvent *e, Client *c)
 static void
 cm_handle_NET_MOVERESIZE_WINDOW(XClientMessageEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || c->managed)
 		return;
 	EPRINTF("_NET_MOVERESIZE_WINDOW for unmanaged window 0x%lx\n", e->window);
@@ -4354,7 +4405,7 @@ cm_handle_NET_MOVERESIZE_WINDOW(XClientMessageEvent *e, Client *c)
 static void
 cm_handle_NET_REQUEST_FRAME_EXTENTS(XClientMessageEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	/* This message, unlike others, is sent before a window is initially mapped
 	   (managed). */
 	if (!c || !c->managed)
@@ -4365,7 +4416,7 @@ cm_handle_NET_REQUEST_FRAME_EXTENTS(XClientMessageEvent *e, Client *c)
 static void
 cm_handle_NET_RESTACK_WINDOW(XClientMessageEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || c->managed)
 		return;
 	EPRINTF("_NET_RESTACK_WINDOW for unmanaged window 0x%lx\n", e->window);
@@ -4375,7 +4426,7 @@ cm_handle_NET_RESTACK_WINDOW(XClientMessageEvent *e, Client *c)
 static void
 pc_handle_NET_STARTUP_ID(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (c->startup_id) {
@@ -4393,7 +4444,7 @@ pc_handle_NET_SUPPORTED(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	handle_wmchange();
 }
 
@@ -4402,7 +4453,7 @@ pc_handle_NET_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	handle_wmchange();
 }
 
@@ -4411,7 +4462,7 @@ pc_handle_NET_WM_ALLOWED_ACTIONS(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4419,7 +4470,7 @@ cm_handle_NET_WM_ALLOWED_ACTIONS(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4427,7 +4478,7 @@ pc_handle_NET_WM_FULLSCREEN_MONITORS(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4435,7 +4486,7 @@ cm_handle_NET_WM_FULLSCREEN_MONITORS(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4443,7 +4494,7 @@ pc_handle_NET_WM_ICON_GEOMETRY(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4451,13 +4502,13 @@ pc_handle_NET_WM_ICON_NAME(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
 cm_handle_NET_WM_MOVERESIZE(XClientMessageEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c)
 		return;
 	EPRINTF("_NET_WM_MOVERSIZE for unmanaged window 0x%lx\n", e->window);
@@ -4469,7 +4520,7 @@ pc_handle_NET_WM_NAME(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4477,7 +4528,7 @@ pc_handle_NET_WM_PID(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 /** @brief handle _NET_WM_STATE property change
@@ -4501,7 +4552,7 @@ pc_handle_NET_WM_STATE(XPropertyEvent *e, Client *c)
 	Atom *atoms = NULL;
 	long i, n;
 
-	DPRINT();
+	PTRACE(1);
 	if (!c)
 		return;
 	if (e && e->state == PropertyDelete) {
@@ -4539,7 +4590,7 @@ pc_handle_NET_WM_STATE(XPropertyEvent *e, Client *c)
 static void
 cm_handle_NET_WM_STATE(XClientMessageEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || c->managed)
 		return;
 	EPRINTF("_NET_WM_STATE sent for unmanaged window 0x%lx\n", e->window);
@@ -4549,7 +4600,7 @@ cm_handle_NET_WM_STATE(XClientMessageEvent *e, Client *c)
 static void
 pc_handle_NET_WM_USER_TIME_WINDOW(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c)
 		return;
 	c->time_win = None;
@@ -4576,7 +4627,7 @@ pc_handle_NET_WM_USER_TIME(XPropertyEvent *e, Client *c)
 {
 	Time time;
 
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->state == PropertyDelete))
 		return;
 	if (get_time(c->time_win ? : c->win, _XA_NET_WM_USER_TIME, XA_CARDINAL, &time)) {
@@ -4596,7 +4647,7 @@ pc_handle_NET_WM_VISIBLE_ICON_NAME(XPropertyEvent *e, Client *c)
 {
 	char *name;
 
-	DPRINT();
+	PTRACE(1);
 	if (!c || c->managed)
 		return;
 	if (e && e->state == PropertyDelete)
@@ -4618,7 +4669,7 @@ pc_handle_NET_WM_VISIBLE_NAME(XPropertyEvent *e, Client *c)
 {
 	char *name;
 
-	DPRINT();
+	PTRACE(1);
 	if (!c || c->managed)
 		return;
 	if (e && e->state == PropertyDelete)
@@ -4635,14 +4686,14 @@ pc_handle_WIN_APP_STATE(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
 pc_handle_WIN_CLIENT_LIST(XPropertyEvent *e, Client *c)
 {
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	if (e && (e->window != scr->root || e->state == PropertyDelete))
 		return;
 	pc_handle_CLIENT_LIST(e, _XA_WIN_CLIENT_LIST, XA_CARDINAL);
@@ -4653,7 +4704,7 @@ pc_handle_WIN_CLIENT_MOVING(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4661,7 +4712,7 @@ pc_handle_WIN_FOCUS(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4669,7 +4720,7 @@ pc_handle_WIN_HINTS(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4677,7 +4728,7 @@ pc_handle_WIN_LAYER(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4685,7 +4736,7 @@ cm_handle_WIN_LAYER(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4693,14 +4744,14 @@ pc_handle_WIN_PROTOCOLS(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	handle_wmchange();
 }
 
 static void
 pc_handle_WIN_STATE(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (e && e->state == PropertyDelete)
@@ -4713,7 +4764,7 @@ cm_handle_WIN_STATE(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4721,7 +4772,7 @@ pc_handle_WIN_SUPPORTING_WM_CHECK(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	handle_wmchange();
 }
 
@@ -4730,7 +4781,7 @@ pc_handle_WIN_WORKSPACE(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
@@ -4738,13 +4789,13 @@ cm_handle_WIN_WORKSPACE(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
 pc_handle_SM_CLIENT_ID(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (c->client_id) {
@@ -4762,7 +4813,7 @@ pc_handle_SM_CLIENT_ID(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_CLASS(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (c->ch.res_name) {
@@ -4785,13 +4836,13 @@ cm_handle_WM_CHANGE_STATE(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
 pc_handle_WM_CLIENT_LEADER(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	c->leader = None;
@@ -4803,7 +4854,7 @@ pc_handle_WM_CLIENT_LEADER(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_CLIENT_MACHINE(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (c->hostname) {
@@ -4823,7 +4874,7 @@ pc_handle_WM_CLIENT_MACHINE(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_COMMAND(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	int count = 0;
 
 	if (!c || (e && e->type != PropertyNotify))
@@ -4845,7 +4896,7 @@ pc_handle_WM_COMMAND(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_HINTS(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (c->wmh) {
@@ -4873,7 +4924,7 @@ pc_handle_WM_HINTS(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_ICON_NAME(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 }
@@ -4881,7 +4932,7 @@ pc_handle_WM_ICON_NAME(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_ICON_SIZE(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 }
@@ -4889,7 +4940,7 @@ pc_handle_WM_ICON_SIZE(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_NAME(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 }
@@ -4897,7 +4948,7 @@ pc_handle_WM_NAME(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_NORMAL_HINTS(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 }
@@ -4905,7 +4956,7 @@ pc_handle_WM_NORMAL_HINTS(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_PROTOCOLS(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 }
@@ -4915,13 +4966,13 @@ cm_handle_WM_PROTOCOLS(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
 pc_handle_WM_SIZE_HINTS(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 }
@@ -4931,13 +4982,13 @@ cm_handle_KDE_WM_CHANGE_STATE(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
 pc_handle_WM_STATE(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (c->wms) {
@@ -4999,13 +5050,13 @@ cm_handle_WM_STATE(XClientMessageEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 static void
 pc_handle_WM_TRANSIENT_FOR(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	c->transient_for = None;
@@ -5017,7 +5068,7 @@ pc_handle_WM_TRANSIENT_FOR(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_WINDOW_ROLE(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (c->role) {
@@ -5032,7 +5083,7 @@ pc_handle_WM_WINDOW_ROLE(XPropertyEvent *e, Client *c)
 static void
 pc_handle_WM_ZOOM_HINTS(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	/* we don't actually process zoom hints */
@@ -5078,7 +5129,7 @@ enum {
 static void
 pc_handle_XEMBED_INFO(XPropertyEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || (e && e->type != PropertyNotify))
 		return;
 	if (c->xei) {
@@ -5109,7 +5160,7 @@ pc_handle_XEMBED_INFO(XPropertyEvent *e, Client *c)
 static void
 cm_handle_XEMBED(XClientMessageEvent *e, Client *c)
 {
-	DPRINT();
+	PTRACE(1);
 	if (!c || !e || e->type != ClientMessage)
 		return;
 	pushtime(&current_time, e->data.l[0]);
@@ -5178,7 +5229,7 @@ cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 	Time time;
 
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 	if (!e || e->format != 32)
 		return;
 	time = e->data.l[0];
@@ -5191,7 +5242,7 @@ cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 		if (owner && owner != scr->icccm_check) {
 			XSaveContext(dpy, owner, ScreenContext, (XPointer) scr);
 			XSelectInput(dpy, owner, StructureNotifyMask | PropertyChangeMask);
-			DPRINTF("window manager changed from 0x%lx to 0x%lx\n", scr->icccm_check, owner);
+			DPRINTF(1, "window manager changed from 0x%lx to 0x%lx\n", scr->icccm_check, owner);
 			scr->icccm_check = owner;
 			handle_wmchange();
 		}
@@ -5199,7 +5250,7 @@ cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 		if (owner && owner != scr->stray_owner) {
 			XSaveContext(dpy, owner, ScreenContext, (XPointer) scr);
 			XSelectInput(dpy, owner, StructureNotifyMask | PropertyChangeMask);
-			DPRINTF("system tray changed from 0x%lx to 0x%lx\n", scr->stray_owner, owner);
+			DPRINTF(1, "system tray changed from 0x%lx to 0x%lx\n", scr->stray_owner, owner);
 			scr->stray_owner = owner;
 			handle_wmchange();
 		}
@@ -5207,7 +5258,7 @@ cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 		if (owner && owner != scr->pager_owner) {
 			XSaveContext(dpy, owner, ScreenContext, (XPointer) scr);
 			XSelectInput(dpy, owner, StructureNotifyMask | PropertyChangeMask);
-			DPRINTF("desktop pager changed from 0x%lx to 0x%lx\n", scr->pager_owner, owner);
+			DPRINTF(1, "desktop pager changed from 0x%lx to 0x%lx\n", scr->pager_owner, owner);
 			scr->pager_owner = owner;
 			handle_wmchange();
 		}
@@ -5215,7 +5266,7 @@ cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 		if (owner && owner != scr->compm_owner) {
 			XSaveContext(dpy, owner, ScreenContext, (XPointer) scr);
 			XSelectInput(dpy, owner, StructureNotifyMask | PropertyChangeMask);
-			DPRINTF("composite manager changed from 0x%lx to 0x%lx\n", scr->compm_owner, owner);
+			DPRINTF(1, "composite manager changed from 0x%lx to 0x%lx\n", scr->compm_owner, owner);
 			scr->compm_owner = owner;
 			handle_wmchange();
 		}
@@ -5223,7 +5274,7 @@ cm_handle_MANAGER(XClientMessageEvent *e, Client *c)
 		if (owner && owner != scr->shelp_owner) {
 			XSaveContext(dpy, owner, ScreenContext, (XPointer) scr);
 			XSelectInput(dpy, owner, StructureNotifyMask | PropertyChangeMask);
-			DPRINTF("startup helper changed from 0x%lx to 0x%lx\n", scr->shelp_owner, owner);
+			DPRINTF(1, "startup helper changed from 0x%lx to 0x%lx\n", scr->shelp_owner, owner);
 			scr->shelp_owner = owner;
 			handle_wmchange();
 		}
@@ -5235,7 +5286,7 @@ pc_handle_TIMESTAMP_PROP(XPropertyEvent *e, Client *c)
 {
 	(void) e;
 	(void) c;
-	DPRINT();
+	PTRACE(1);
 }
 
 void
@@ -5246,7 +5297,7 @@ pc_handle_atom(XPropertyEvent *e, Client *c)
 	if (XFindContext(dpy, e->atom, PropertyContext, (XPointer *) &handle) == Success)
 		(*handle) (e, c);
 	else
-		DPRINTF("no PropertyNotify handler for %s\n", XGetAtomName(dpy, e->atom));
+		DPRINTF(1, "no PropertyNotify handler for %s\n", XGetAtomName(dpy, e->atom));
 }
 
 void
@@ -5258,7 +5309,7 @@ cm_handle_atom(XClientMessageEvent *e, Client *c)
 	    == Success)
 		(*handle) (e, c);
 	else
-		DPRINTF("no ClientMessage handler for %s\n", XGetAtomName(dpy, e->message_type));
+		DPRINTF(1, "no ClientMessage handler for %s\n", XGetAtomName(dpy, e->message_type));
 }
 
 /** @brief handle monitoring events
@@ -5461,7 +5512,7 @@ handle_event(XEvent *e)
 		if (s < nscr)
 			break;
 #endif
-		DPRINTF("lost " SELECTION_ATOM " selection: exiting\n", scr->screen);
+		DPRINTF(1, "lost " SELECTION_ATOM " selection: exiting\n", scr->screen);
 		exit(EXIT_SUCCESS);
 	}
 }
@@ -5908,7 +5959,7 @@ init_proxy(void)
 	char *env;
 
 	if (smcConn) {
-		DPRINTF("already connected\n");
+		DPRINTF(1, "already connected\n");
 		return;
 	}
 	if (!(env = getenv("SESSION_MANAGER"))) {
@@ -5945,11 +5996,11 @@ check_stray(void)
 	if ((win = XGetSelectionOwner(dpy, scr->stray_atom))) {
 		if (win != scr->stray_owner) {
 			XSelectInput(dpy, win, StructureNotifyMask | PropertyChangeMask);
-			DPRINTF("system tray changed from 0x%08lx to 0x%08lx\n", scr->stray_owner, win);
+			DPRINTF(1, "system tray changed from 0x%08lx to 0x%08lx\n", scr->stray_owner, win);
 			scr->stray_owner = win;
 		}
 	} else if (scr->stray_owner) {
-		DPRINTF("system tray removed from 0x%08lx\n", scr->stray_owner);
+		DPRINTF(1, "system tray removed from 0x%08lx\n", scr->stray_owner);
 		scr->stray_owner = None;
 	}
 	return scr->stray_owner;
@@ -5970,9 +6021,9 @@ check_pager(void)
 		win = scr->root;
 	}
 	if (win && win != scr->pager_owner)
-		DPRINTF("desktop pager changed from 0x%08lx to 0x%08lx\n", scr->pager_owner, win);
+		DPRINTF(1, "desktop pager changed from 0x%08lx to 0x%08lx\n", scr->pager_owner, win);
 	if (!win && scr->pager_owner)
-		DPRINTF("desktop pager removed from 0x%08lx\n", scr->pager_owner);
+		DPRINTF(1, "desktop pager removed from 0x%08lx\n", scr->pager_owner);
 	return (scr->pager_owner = win);
 }
 
@@ -5984,9 +6035,9 @@ check_compm(void)
 	if ((win = XGetSelectionOwner(dpy, scr->compm_atom)))
 		XSelectInput(dpy, win, StructureNotifyMask | PropertyChangeMask);
 	if (win && win != scr->compm_owner)
-		DPRINTF("startup helper changed from 0x%08lx to 0x%08lx\n", scr->compm_owner, win);
+		DPRINTF(1, "startup helper changed from 0x%08lx to 0x%08lx\n", scr->compm_owner, win);
 	if (!win && scr->compm_owner)
-		DPRINTF("startup helper removed from 0x%08lx\n", scr->compm_owner);
+		DPRINTF(1, "startup helper removed from 0x%08lx\n", scr->compm_owner);
 	return (scr->compm_owner = win);
 }
 
@@ -6015,9 +6066,9 @@ check_shelp(void)
 	if ((win = XGetSelectionOwner(dpy, scr->shelp_atom)))
 		XSelectInput(dpy, win, StructureNotifyMask | PropertyChangeMask);
 	if (win && win != scr->shelp_owner)
-		DPRINTF("startup helper changed from 0x%08lx to 0x%08lx\n", scr->shelp_owner, win);
+		DPRINTF(1, "startup helper changed from 0x%08lx to 0x%08lx\n", scr->shelp_owner, win);
 	if (!win && scr->shelp_owner)
-		DPRINTF("startup helper removed from 0x%08lx\n", scr->shelp_owner);
+		DPRINTF(1, "startup helper removed from 0x%08lx\n", scr->shelp_owner);
 	return (scr->shelp_owner = win);
 }
 
@@ -6089,24 +6140,24 @@ check_anywm(void)
 static Bool
 check_for_window_manager(void)
 {
-	DPRINTF("checking NetWM/EWMH compliance\n");
+	DPRINTF(1, "checking NetWM/EWMH compliance\n");
 	if (check_netwm())
-		DPRINTF("NetWM/EWMH window 0x%08lx\n", scr->netwm_check);
-	DPRINTF("checking GNOME/WMH compliance\n");
+		DPRINTF(1, "NetWM/EWMH window 0x%08lx\n", scr->netwm_check);
+	DPRINTF(1, "checking GNOME/WMH compliance\n");
 	if (check_winwm())
-		DPRINTF("GNOME/WMH window 0x%08lx\n", scr->winwm_check);
-	DPRINTF("checking WindowMaker compliance\n");
+		DPRINTF(1, "GNOME/WMH window 0x%08lx\n", scr->winwm_check);
+	DPRINTF(1, "checking WindowMaker compliance\n");
 	if (check_netwm())
-		DPRINTF("WindowMaker window 0x%08lx\n", scr->maker_check);
-	DPRINTF("checking OSF/Motif compliance\n");
+		DPRINTF(1, "WindowMaker window 0x%08lx\n", scr->maker_check);
+	DPRINTF(1, "checking OSF/Motif compliance\n");
 	if (check_netwm())
-		DPRINTF("OSF/Motif window 0x%08lx\n", scr->motif_check);
-	DPRINTF("checking ICCCM 2.0 compliance\n");
+		DPRINTF(1, "OSF/Motif window 0x%08lx\n", scr->motif_check);
+	DPRINTF(1, "checking ICCCM 2.0 compliance\n");
 	if (check_netwm())
-		DPRINTF("ICCCM 2.0 window 0x%08lx\n", scr->icccm_check);
-	DPRINTF("checking redirection\n");
+		DPRINTF(1, "ICCCM 2.0 window 0x%08lx\n", scr->icccm_check);
+	DPRINTF(1, "checking redirection\n");
 	if (check_netwm())
-		DPRINTF("Redirection on window 0x%08lx\n", scr->redir_check);
+		DPRINTF(1, "Redirection on window 0x%08lx\n", scr->redir_check);
 	return check_anywm() ? True : False;
 }
 
@@ -6114,9 +6165,9 @@ static void
 wait_for_window_manager(void)
 {
 	if (check_for_window_manager()) {
-		DPRINTF("Have window manager\n");
+		DPRINTF(1, "Have window manager\n");
 	} else {
-		DPRINTF("Waiting for window manager\n");
+		DPRINTF(1, "Waiting for window manager\n");
 		wait_for_condition(&check_anywm);
 	}
 }
@@ -6125,9 +6176,9 @@ static void
 wait_for_system_tray(void)
 {
 	if (check_stray()) {
-		DPRINTF("Have system tray\n");
+		DPRINTF(1, "Have system tray\n");
 	} else {
-		DPRINTF("Waiting for system tray\n");
+		DPRINTF(1, "Waiting for system tray\n");
 		wait_for_condition(&check_stray);
 	}
 }
@@ -6136,9 +6187,9 @@ static void
 wait_for_desktop_pager(void)
 {
 	if (check_pager()) {
-		DPRINTF("Have desktop pager\n");
+		DPRINTF(1, "Have desktop pager\n");
 	} else {
-		DPRINTF("Waiting for desktop pager\n");
+		DPRINTF(1, "Waiting for desktop pager\n");
 		wait_for_condition(&check_pager);
 	}
 }
@@ -6147,9 +6198,9 @@ static void
 wait_for_composite_manager(void)
 {
 	if (check_compm()) {
-		DPRINTF("Have composite manager\n");
+		DPRINTF(1, "Have composite manager\n");
 	} else {
-		DPRINTF("Waiting for composite manager\n");
+		DPRINTF(1, "Waiting for composite manager\n");
 		wait_for_condition(&check_compm);
 	}
 }
@@ -6158,9 +6209,9 @@ static void
 wait_for_audio_server(void)
 {
 	if (check_audio()) {
-		DPRINTF("Have audio server\n");
+		DPRINTF(1, "Have audio server\n");
 	} else {
-		DPRINTF("Waiting for audio server\n");
+		DPRINTF(1, "Waiting for audio server\n");
 		wait_for_condition(&check_audio);
 	}
 }
@@ -6169,9 +6220,9 @@ static void
 wait_for_startup_helper(void)
 {
 	if (check_shelp()) {
-		DPRINTF("Have startup helper\n");
+		DPRINTF(1, "Have startup helper\n");
 	} else {
-		DPRINTF("Waiting for startup helper\n");
+		DPRINTF(1, "Waiting for startup helper\n");
 		wait_for_condition(&check_shelp);
 	}
 }
@@ -6342,22 +6393,22 @@ setup_screensaver(void)
 			if (!strcmp(*ext, "MIT-SCREEN-SAVER"))
 				gotext = True;
 	if (!gotext) {
-		DPRINTF("no MIT-SCREEN-SAVER extension\n");
+		DPRINTF(1, "no MIT-SCREEN-SAVER extension\n");
 		return;
 	}
 	if (!(present = XScreenSaverQueryExtension(dpy, &xssEventBase, &xssErrorBase))) {
-		DPRINTF("MIT-SCREEN-SAVER extension not present\n");
+		DPRINTF(1, "MIT-SCREEN-SAVER extension not present\n");
 		return;
 	} else {
-		DPRINTF("xssEventBase = %d\n", xssEventBase);
-		DPRINTF("xssErrorBase = %d\n", xssErrorBase);
+		DPRINTF(1, "xssEventBase = %d\n", xssEventBase);
+		DPRINTF(1, "xssErrorBase = %d\n", xssErrorBase);
 	}
 	if (!(status = XScreenSaverQueryVersion(dpy, &xssMajorVersion, &xssMinorVersion))) {
-		DPRINTF("cannot query MIT-SCREEN-SAVER version\n");
+		DPRINTF(1, "cannot query MIT-SCREEN-SAVER version\n");
 		return;
 	} else {
-		DPRINTF("xssMajorVersion = %d\n", xssMajorVersion);
-		DPRINTF("xssMinorVersion = %d\n", xssMinorVersion);
+		DPRINTF(1, "xssMajorVersion = %d\n", xssMajorVersion);
+		DPRINTF(1, "xssMinorVersion = %d\n", xssMinorVersion);
 	}
 	for (s = 0, xscr = screens; s < nscr; s++, xscr++) {
 		XScreenSaverQueryInfo(dpy, RootWindow(dpy, s), &xscr->info);
@@ -6406,7 +6457,7 @@ on_sd_prox_manager_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 	(void) proxy;
 	(void) sender_name;
 	(void) user_data;
-	DPRINTF("received manager proxy signal %s( %s )\n", signal_name,
+	DPRINTF(1, "received manager proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
 
 	if (!strcmp(signal_name, "PrepareForSleep")) {
@@ -6421,14 +6472,14 @@ on_sd_prox_session_signal(GDBusProxy *proxy, gchar *sender_name, gchar *signal_n
 	(void) proxy;
 	(void) sender_name;
 	(void) user_data;
-	DPRINTF("received session proxy signal %s( %s )\n", signal_name,
+	DPRINTF(1, "received session proxy signal %s( %s )\n", signal_name,
 		g_variant_get_type_string(parameters));
 #ifdef DO_XLOCKING
 	if (!strcmp(signal_name, "Lock")) {
-		DPRINTF("locking screen due to systemd request\n");
+		DPRINTF(1, "locking screen due to systemd request\n");
 		SystemLockScreen();
 	} else if (!strcmp(signal_name, "Unlock")) {
-		DPRINTF("unlocking screen due to systemd request\n");
+		DPRINTF(1, "unlocking screen due to systemd request\n");
 		UnlockScreen();
 	}
 #endif
@@ -6444,7 +6495,7 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 	(void) proxy;
 	(void) invalidated_properties;
 	(void) user_data;
-	DPRINTF("received session proxy properties changed signal ( %s )\n",
+	DPRINTF(1, "received session proxy properties changed signal ( %s )\n",
 		g_variant_get_type_string(changed_properties));
 
 	g_variant_iter_init(&iter, changed_properties);
@@ -6467,7 +6518,7 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 				continue;
 			}
 			if (strcmp(name, "Active")) {
-				DPRINTF("not looking for %s\n", name);
+				DPRINTF(1, "not looking for %s\n", name);
 				g_variant_unref(key);
 				continue;
 			}
@@ -6484,8 +6535,8 @@ on_sd_prox_session_props_changed(GDBusProxy *proxy, GVariant *changed_properties
 			}
 			if (!g_variant_get_boolean(boxed)) {
 #ifdef DO_XLOCKING
-				DPRINTF("went inactive, locking screen\n");
-				DPRINTF("locking screen due to systemd active\n");
+				DPRINTF(1, "went inactive, locking screen\n");
+				DPRINTF(1, "locking screen due to systemd active\n");
 				SystemLockScreen();
 #endif
 			}
@@ -6505,7 +6556,7 @@ setup_systemd(void)
 	gchar *s;
 	const char *env;
 
-	DPRINT();
+	PTRACE(1);
 	if (!(sd_manager =
 	      g_dbus_proxy_new_for_bus_sync(G_BUS_TYPE_SYSTEM, 0, NULL, "org.freedesktop.login1",
 					    "/org/freedesktop/login1",
@@ -6580,7 +6631,7 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 {
 	XScreenSaverNotifyEvent *ev = (typeof(ev)) xev;
 
-	DPRINT();
+	PTRACE(1);
 
 	if (options.debug > 1) {
 		fprintf(stderr, "==> XScreenSaverNotify:\n");
@@ -6607,12 +6658,12 @@ handle_XScreenSaverNotify(Display *dpy, XEvent *xev)
 		AbortLockScreen();
 		break;
 	case ScreenSaverOn:
-		DPRINTF("auto locking screen to due to screen-saver on\n");
+		DPRINTF(1, "auto locking screen to due to screen-saver on\n");
 		setidlehint(TRUE);
 		AutoLockScreen();
 		break;
 	case ScreenSaverCycle:
-		DPRINTF("auto locking screen to due to screen-saver cycle\n");
+		DPRINTF(1, "auto locking screen to due to screen-saver cycle\n");
 		AutoLockScreen();
 		break;
 	}
@@ -6712,6 +6763,7 @@ static AvailStatus action_can[LOGOUT_ACTION_COUNT] = {
 	[LOGOUT_ACTION_SUSPEND]		= AvailStatusUndef,
 	[LOGOUT_ACTION_HIBERNATE]	= AvailStatusUndef,
 	[LOGOUT_ACTION_HYBRIDSLEEP]	= AvailStatusUndef,
+	[LOGOUT_ACTION_SUSPENDHIBERNATE]= AvailStatusUndef,
 	[LOGOUT_ACTION_SWITCHUSER]	= AvailStatusUndef,
 	[LOGOUT_ACTION_SWITCHDESK]	= AvailStatusUndef,
 	[LOGOUT_ACTION_LOCKSCREEN]	= AvailStatusUndef,
@@ -6742,7 +6794,7 @@ static void redo_source(XdeScreen *xscr);
 static GdkFilterReturn
 event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 {
-	DPRINT();
+	PTRACE(1);
 	if (options.debug > 2) {
 		fprintf(stderr, "==> PropertyNotify:\n");
 		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xproperty.window);
@@ -6753,12 +6805,12 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 		fprintf(stderr, "<== PropertyNotify:\n");
 	}
 	if (xev->xproperty.atom == _XA_XDE_THEME_NAME && xev->xproperty.state == PropertyNewValue) {
-		DPRINT();
+		PTRACE(1);
 		reparse(dpy, xev->xproperty.window);
 		return GDK_FILTER_REMOVE;	/* event handled */
 	}
 	if (xev->xproperty.atom == _XA_XROOTPMAP_ID && xev->xproperty.state == PropertyNewValue) {
-		DPRINT();
+		PTRACE(1);
 		if (options.source & BackgroundSourcePixmap)
 			redo_source(xscr);
 		return GDK_FILTER_REMOVE;	/* event handled */
@@ -6769,7 +6821,7 @@ event_handler_PropertyNotify(Display *dpy, XEvent *xev, XdeScreen *xscr)
 static GdkFilterReturn
 event_handler_ClientMessage(Display *dpy, XEvent *xev)
 {
-	DPRINT();
+	PTRACE(1);
 	if (options.debug > 1) {
 		fprintf(stderr, "==> ClientMessage:\n");
 		fprintf(stderr, "    --> window = 0x%08lx\n", xev->xclient.window);
@@ -6808,11 +6860,11 @@ event_handler_ClientMessage(Display *dpy, XEvent *xev)
 	if (xev->xclient.message_type == _XA_XDE_XLOCK_COMMAND) {
 		switch (xev->xclient.data.l[0]) {
 		case LockCommandLock:
-			DPRINTF("locking screen due to xclient message\n");
+			DPRINTF(1, "locking screen due to xclient message\n");
 			LockScreen(TRUE);
 			return GDK_FILTER_REMOVE;
 		case LockCommandUnlock:
-			DPRINTF("unlocking screen due to xclient message\n");
+			DPRINTF(1, "unlocking screen due to xclient message\n");
 			UnlockScreen();
 			return GDK_FILTER_REMOVE;
 		case LockCommandQuit:
@@ -6845,7 +6897,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 #ifdef DO_XLOCKING
 		if (xssEventBase && xev->type == xssEventBase + ScreenSaverNotify)
 			return handle_XScreenSaverNotify(dpy, xev);
-		DPRINTF("unknown event type %d\n", xev->type);
+		DPRINTF(1, "unknown event type %d\n", xev->type);
 #endif				/* DO_XLOCKING */
 		break;
 	}
@@ -6856,7 +6908,7 @@ root_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 static GdkFilterReturn
 event_handler_SelectionClear(Display *dpy, XEvent *xev, XdeScreen *xscr)
 {
-	DPRINT();
+	PTRACE(1);
 	if (options.debug > 1) {
 		fprintf(stderr, "==> SelectionClear: %p\n", xscr);
 		fprintf(stderr, "    --> send_event = %s\n",
@@ -6883,7 +6935,7 @@ selwin_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
 
-	DPRINT();
+	PTRACE(1);
 	if (!xscr) {
 		EPRINTF("xscr is NULL\n");
 		exit(EXIT_FAILURE);
@@ -6909,7 +6961,7 @@ client_handler(GdkXEvent *xevent, GdkEvent *event, gpointer data)
 
 	(void) event;
 	(void) data;
-	DPRINT();
+	PTRACE(1);
 	switch (xev->type) {
 	case ClientMessage:
 		return event_handler_ClientMessage(dpy, xev);
@@ -7056,7 +7108,7 @@ get_xsession_entry(const char *key, const char *file)
 		g_key_file_free(entry);
 		return (NULL);
 	}
-	DPRINTF("got xsession file: %s (%s)\n", key, file);
+	DPRINTF(1, "got xsession file: %s (%s)\n", key, file);
 	return (entry);
 }
 
@@ -7069,18 +7121,18 @@ bad_xsession(const char *appid, GKeyFile *entry)
 
 	if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
 					   G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
-		DPRINTF("%s: no Name\n", appid);
+		DPRINTF(1, "%s: no Name\n", appid);
 		return TRUE;
 	}
 	g_free(name);
 	if (!(exec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP,
 					   G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
-		DPRINTF("%s: no Exec\n", appid);
+		DPRINTF(1, "%s: no Exec\n", appid);
 		return TRUE;
 	}
 	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
 				   G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
-		DPRINTF("%s: is Hidden\n", appid);
+		DPRINTF(1, "%s: is Hidden\n", appid);
 		return TRUE;
 	}
 #if 0
@@ -7090,7 +7142,7 @@ bad_xsession(const char *appid, GKeyFile *entry)
 
 	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP,
 				   G_KEY_FILE_DESKTOP_KEY_NO_DISPLAY, NULL)) {
-		DPRINTF("%s: is NoDisplay\n", appid);
+		DPRINTF(1, "%s: is NoDisplay\n", appid);
 		return TRUE;
 	}
 #endif
@@ -7111,7 +7163,7 @@ bad_xsession(const char *appid, GKeyFile *entry)
 	g_free(exec);
 	if (binary[0] == '/') {
 		if (access(binary, X_OK)) {
-			DPRINTF("%s: %s: %s\n", appid, binary, strerror(errno));
+			DPRINTF(1, "%s: %s: %s\n", appid, binary, strerror(errno));
 			g_free(binary);
 			return TRUE;
 		}
@@ -7136,12 +7188,12 @@ bad_xsession(const char *appid, GKeyFile *entry)
 				break;
 			}
 			// to much noise
-			// DPRINTF("%s: %s: %s\n", appid, file,
+			// DPRINTF(1, "%s: %s: %s\n", appid, file,
 			// strerror(errno));
 		}
 		free(path);
 		if (!execok) {
-			DPRINTF("%s: %s: not executable\n", appid, binary);
+			DPRINTF(1, "%s: %s: not executable\n", appid, binary);
 			g_free(binary);
 			return TRUE;
 		}
@@ -7194,14 +7246,14 @@ get_xsessions(void)
 		char *key;
 
 		if (!(dir = opendir(*dirs))) {
-			DPRINTF("%s: %s\n", *dirs, strerror(errno));
+			DPRINTF(1, "%s: %s\n", *dirs, strerror(errno));
 			continue;
 		}
 		while ((d = readdir(dir))) {
 			if (d->d_name[0] == '.')
 				continue;
 			if (!(p = strstr(d->d_name, suffix)) || p[suflen]) {
-				DPRINTF("%s: no %s suffix\n", d->d_name, suffix);
+				DPRINTF(1, "%s: no %s suffix\n", d->d_name, suffix);
 				continue;
 			}
 			len = strlen(*dirs) + strlen(d->d_name) + 2;
@@ -7419,11 +7471,11 @@ CanConnect(struct sockaddr *sa)
 		for (i = 0, p = rawbuf, e = rawbuf + len, b = (typeof(b)) sa;
 		     i < salen; i++, p += 2, b++)
 			snprintf(p, e - p, "%02x", *b);
-		DPRINTF("raw socket address for connect: %s\n", rawbuf);
+		DPRINTF(1, "raw socket address for connect: %s\n", rawbuf);
 		free(rawbuf);
 	}
 	if (connect(sock, sa, salen) == -1) {
-		DPRINTF("connect: %s\n", strerror(errno));
+		DPRINTF(1, "connect: %s\n", strerror(errno));
 		close(sock);
 		return False;
 	}
@@ -7443,7 +7495,7 @@ CanConnect(struct sockaddr *sa)
 			int port = ntohs(sin->sin_port);
 
 			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
-			DPRINTF("address is %s port %d\n", ipaddr, port);
+			DPRINTF(1, "address is %s port %d\n", ipaddr, port);
 			break;
 		}
 		case AF_INET6:
@@ -7452,14 +7504,14 @@ CanConnect(struct sockaddr *sa)
 			int port = ntohs(sin6->sin6_port);
 
 			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
-			DPRINTF("address is %s port %d\n", ipaddr, port);
+			DPRINTF(1, "address is %s port %d\n", ipaddr, port);
 			break;
 		}
 		case AF_UNIX:
 		{
 			struct sockaddr_un *sun = (typeof(sun)) & conn;
 
-			DPRINTF("family is AF_UNIX\n");
+			DPRINTF(1, "family is AF_UNIX\n");
 			break;
 		}
 		default:
@@ -7517,7 +7569,7 @@ on_logout_clicked(GtkButton *button, gpointer user_data)
 
 		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 		if ((label = g_value_get_string(&label_v)))
-			DPRINTF("Label selected %s\n", label);
+			DPRINTF(1, "Label selected %s\n", label);
 		g_value_unset(&label_v);
 	}
 	free(options.current);
@@ -7568,7 +7620,7 @@ on_default_clicked(GtkButton *button, gpointer user_data)
 
 		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 		if ((label = g_value_get_string(&label_v)))
-			DPRINTF("Label selected %s\n", label);
+			DPRINTF(1, "Label selected %s\n", label);
 
 		if (!access(file, W_OK) || (!mkdir(cdir, 0755) && !access(file, W_OK))) {
 			if ((f = fopen(file, "w"))) {
@@ -7687,7 +7739,7 @@ on_selection_changed(GtkTreeSelection *selection, gpointer user_data)
 
 		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 		if ((label = g_value_get_string(&label_v)))
-			DPRINTF("Label selected %s\n", label);
+			DPRINTF(1, "Label selected %s\n", label);
 		if (label && !strcmp(label, options.session)) {
 			gtk_widget_set_sensitive(buttons[1], FALSE);
 			// gtk_widget_set_sensitive(buttons[2], FALSE);
@@ -7725,7 +7777,7 @@ on_row_activated(GtkTreeView *sess, GtkTreePath *path, GtkTreeViewColumn *col, g
 		gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 		gtk_tree_model_get_value(model, &iter, XSESS_COL_MANAGED, &manage_v);
 		if ((label = g_value_get_string(&label_v)))
-			DPRINTF("Label selected %s\n", label);
+			DPRINTF(1, "Label selected %s\n", label);
 		manage = g_value_get_boolean(&manage_v);
 		free(options.current);
 		options.current = strdup(label);
@@ -7758,7 +7810,7 @@ on_button_press(GtkWidget *sess, GdkEvent *event, gpointer user_data)
 
 			gtk_tree_model_get_value(model, &iter, XSESS_COL_LABEL, &label_v);
 			if ((label = g_value_get_string(&label_v)))
-				DPRINTF("Label clicked was: %s\n", label);
+				DPRINTF(1, "Label clicked was: %s\n", label);
 			g_value_unset(&label_v);
 		}
 	}
@@ -7829,10 +7881,10 @@ on_grab_broken(GtkWidget *window, GdkEvent *event, gpointer data)
 	(void) window;
 	(void) data;
 	GdkEventGrabBroken *ev = (typeof(ev)) event;
-	DPRINTF("Grab broken!\n");
-	DPRINTF("Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
-	DPRINTF("Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
-	DPRINTF("Grab broken by %s\n", ev->grab_window ? "this application" : "other");
+	DPRINTF(1, "Grab broken!\n");
+	DPRINTF(1, "Grab broken on %s\n", ev->keyboard ? "keyboard" : "pointer");
+	DPRINTF(1, "Grab broken %s\n", ev->implicit ? "implicit" : "explicit");
+	DPRINTF(1, "Grab broken by %s\n", ev->grab_window ? "this application" : "other");
 	return TRUE; /* propagate */
 }
 
@@ -7865,11 +7917,11 @@ grabbed_window(GtkWidget *window, gpointer user_data)
 	if (gdk_keyboard_grab(win, TRUE, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab keyboard!\n");
 	else
-		DPRINTF("Grabbed keyboard\n");
+		DPRINTF(1, "Grabbed keyboard\n");
 	if (gdk_pointer_grab(win, TRUE, mask, win, NULL, GDK_CURRENT_TIME) != GDK_GRAB_SUCCESS)
 		EPRINTF("Could not grab pointer!\n");
 	else
-		DPRINTF("Grabbed pointer\n");
+		DPRINTF(1, "Grabbed pointer\n");
 #if !(defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_STARTWM)||defined(DO_SESSION)) && !defined(DO_LOGOUT)
 	if (!grab_broken_handler)
 		grab_broken_handler = g_signal_connect(G_OBJECT(window), "grab-broken-event", G_CALLBACK(on_grab_broken), NULL);
@@ -7908,12 +7960,12 @@ render_pixbuf_for_mon(cairo_t *cr, GdkPixbuf *pixbuf, double wp, double hp, XdeM
 	double hm = xmon->geom.height;
 	GdkPixbuf *scaled = NULL;
 
-	DPRINT();
+	PTRACE(1);
 	gdk_cairo_rectangle(cr, &xmon->geom);
 	if (wp >= 0.8 * wm && hp >= 0.8 * hm) {
 		/* good size for filling or scaling */
 		/* TODO: check aspect ratio before scaling */
-		DPRINTF("scaling pixbuf from %dx%d to %dx%d\n",
+		DPRINTF(1, "scaling pixbuf from %dx%d to %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width,
@@ -7921,13 +7973,13 @@ render_pixbuf_for_mon(cairo_t *cr, GdkPixbuf *pixbuf, double wp, double hp, XdeM
 		gdk_cairo_set_source_pixbuf(cr, scaled, xmon->geom.x, xmon->geom.y);
 	} else if (wp <= 0.5 * wm && hp <= 0.5 * hm) {
 		/* good size for tiling */
-		DPRINTF("tiling pixbuf at %dx%d into %dx%d\n",
+		DPRINTF(1, "tiling pixbuf at %dx%d into %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		gdk_cairo_set_source_pixbuf(cr, pixbuf, xmon->geom.x, xmon->geom.y);
 		cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_REPEAT);
 	} else {
 		/* somewhere in between: scale down for integer tile */
-		DPRINTF("scaling and tiling pixbuf at %dx%d into %dx%d\n",
+		DPRINTF(1, "scaling and tiling pixbuf at %dx%d into %dx%d\n",
 			(int) wp, (int) hp, xmon->geom.width, xmon->geom.height);
 		scaled = gdk_pixbuf_scale_simple(pixbuf,
 						 xmon->geom.width / 2,
@@ -7949,7 +8001,7 @@ render_pixbuf_for_scr(GdkPixbuf *pixbuf, GdkPixmap *pixmap, XdeScreen *xscr)
 	cairo_t *cr;
 	int m;
 
-	DPRINT();
+	PTRACE(1);
 	cr = gdk_cairo_create(GDK_DRAWABLE(pixmap));
 	for (m = 0; m < xscr->nmon; m++) {
 		XdeMonitor *xmon = xscr->mons + m;
@@ -8220,9 +8272,9 @@ get_selection(Window selwin, char *selection, int s)
 	snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
 	atom = XInternAtom(dpy, selection, False);
 	if (!(owner = XGetSelectionOwner(dpy, atom)))
-		DPRINTF("No owner for %s\n", selection);
+		DPRINTF(1, "No owner for %s\n", selection);
 	if ((owner && options.replace) || (!owner && selwin)) {
-		DPRINTF("Setting owner of %s to 0x%lx from 0x%lx\n", selection, selwin, owner);
+		DPRINTF(1, "Setting owner of %s to 0x%lx from 0x%lx\n", selection, selwin, owner);
 		XSetSelectionOwner(dpy, atom, selwin, CurrentTime);
 		XSync(dpy, False);
 	}
@@ -8273,13 +8325,13 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	}
 
 	if (xscr->scrn != scrn) {
-		DPRINTF("Arrrghhh! screen pointer changed from %p to %p\n", xscr->scrn, scrn);
+		DPRINTF(1, "Arrrghhh! screen pointer changed from %p to %p\n", xscr->scrn, scrn);
 		xscr->scrn = scrn;
 	}
 	width = gdk_screen_get_width(scrn);
 	height = gdk_screen_get_height(scrn);
 	if (xscr->width != width || xscr->height != height) {
-		DPRINTF("Screen %d dimensions changed %dx%d -> %dx%d\n", index,
+		DPRINTF(1, "Screen %d dimensions changed %dx%d -> %dx%d\n", index,
 			xscr->width, xscr->height, width, height);
 		gtk_window_set_default_size(w, width, height);
 		geom = g_strdup_printf("%dx%d+0+0", width, height);
@@ -8294,7 +8346,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 	}
 	nmon = gdk_screen_get_n_monitors(scrn);
 	if (nmon > xscr->nmon) {
-		DPRINTF("Screen %d number of monitors increased from %d to %d\n",
+		DPRINTF(1, "Screen %d number of monitors increased from %d to %d\n",
 			index, xscr->nmon, nmon);
 		xscr->mons = realloc(xscr->mons, nmon * sizeof(*xscr->mons));
 		for (m = xscr->nmon; m <= nmon; m++) {
@@ -8302,7 +8354,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 			memset(mon, 0, sizeof(*mon));
 		}
 	} else if (nmon < xscr->nmon) {
-		DPRINTF("Screen %d number of monitors decreased from %d to %d\n",
+		DPRINTF(1, "Screen %d number of monitors decreased from %d to %d\n",
 			index, xscr->nmon, nmon);
 		for (m = xscr->nmon; m > nmon; m--) {
 			mon = xscr->mons + m - 1;
@@ -8341,7 +8393,7 @@ RefreshScreen(XdeScreen *xscr, GdkScreen *scrn)
 		XdeScreen *_xscr;
 		XdeMonitor *_xmon;
 
-		DPRINTF("Reassigning event box to new container\n");
+		DPRINTF(1, "Reassigning event box to new container\n");
 		gdk_display_get_pointer(disp, &screen, &x, &y, NULL);
 		if (!screen)
 			screen = scrn;
@@ -8514,7 +8566,7 @@ reparse(Display *dpy, Window root)
 	char **list = NULL;
 	int strings = 0;
 
-	DPRINT();
+	PTRACE(1);
 	gtk_rc_reparse_all();
 	if (!options.usexde)
 		return;
@@ -8537,11 +8589,11 @@ reparse(Display *dpy, Window root)
 			if (list)
 				XFreeStringList(list);
 		} else
-			DPRINTF("could not get text list for property\n");
+			DPRINTF(1, "could not get text list for property\n");
 		if (xtp.value)
 			XFree(xtp.value);
 	} else
-		DPRINTF("could not get _XDE_THEME_NAME for root 0x%lx\n", root);
+		DPRINTF(1, "could not get _XDE_THEME_NAME for root 0x%lx\n", root);
 }
 
 /** @brief get a covering window for each screen
@@ -8862,7 +8914,7 @@ GetPane(GtkWidget *cont)
 					// style->color_flags[i] |= GTK_RC_BASE;
 				}
 			} else
-				DPRINTF("No resources.greetColor!\n");
+				DPRINTF(1, "No resources.greetColor!\n");
 		}
 		gtk_widget_modify_style(l_greet, style);
 	}
@@ -9006,7 +9058,7 @@ Bool shutting_down;
 void
 handle_event(Display *dpy, XEvent *xev)
 {
-	DPRINTF("got event %d\n", xev->type);
+	DPRINTF(1, "got event %d\n", xev->type);
 	switch (xev->type) {
 	case KeyPress:
 	case KeyRelease:
@@ -9147,7 +9199,7 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(pass, TRUE);
 			gtk_widget_set_sensitive(buttons[0], TRUE);
 			gtk_widget_set_sensitive(buttons[3], FALSE);
-			DPRINTF("grabbing password entry widget\n");
+			DPRINTF(1, "grabbing password entry widget\n");
 			if (!GTK_IS_WIDGET(pass))
 				EPRINTF("pass is not a widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(pass));
@@ -9159,7 +9211,7 @@ ShowScreen(XdeScreen *xscr)
 			gtk_widget_set_sensitive(buttons[3], FALSE);
 			if (!GTK_IS_WIDGET(user))
 				EPRINTF("user is not a widget\n");
-			DPRINTF("grabbing username entry widget\n");
+			DPRINTF(1, "grabbing username entry widget\n");
 			gtk_widget_grab_default(GTK_WIDGET(user));
 			gtk_widget_grab_focus(GTK_WIDGET(user));
 		}
@@ -9214,7 +9266,7 @@ HideScreens(void)
 void
 HideWindow(void)
 {
-	DPRINT();
+	PTRACE(1);
 
 	HideScreens();
 }
@@ -9676,28 +9728,28 @@ choose(int argc, char *argv[])
 	}
 
 	if (options.session && !g_hash_table_contains(xsessions, options.session)) {
-		DPRINTF("Default %s is not available!\n", options.session);
+		DPRINTF(1, "Default %s is not available!\n", options.session);
 		if (!strcasecmp(options.choice, options.session)) {
 			free(options.choice);
 			options.choice = strdup("choose");
 		}
 	}
 	if (!strcasecmp(options.choice, "default") && !options.session) {
-		DPRINTF("Default is chosen but there is no default\n");
+		DPRINTF(1, "Default is chosen but there is no default\n");
 		free(options.choice);
 		options.choice = strdup("choose");
 	}
 	if (strcasecmp(options.choice, "choose") &&
 	    !g_hash_table_contains(xsessions, options.choice)) {
-		DPRINTF("Choice %s is not available.\n", options.choice);
+		DPRINTF(1, "Choice %s is not available.\n", options.choice);
 		free(options.choice);
 		options.choice = strdup("choose");
 	}
 	if (!strcasecmp(options.choice, "choose"))
 		options.prompt = True;
 
-	DPRINTF("The default was: %s\n", options.session);
-	DPRINTF("Choosing %s...\n", options.choice);
+	DPRINTF(1, "The default was: %s\n", options.session);
+	DPRINTF(1, "Choosing %s...\n", options.choice);
 	if (options.prompt)
 		do_run(argc, argv);
 	if (strcmp(options.current, "logout")) {
@@ -9715,11 +9767,11 @@ do_chooser(int argc, char *argv[])
 	const char *file;
 
 	if (!(file = choose(argc, argv))) {
-		DPRINTF("Logging out...\n");
+		DPRINTF(1, "Logging out...\n");
 		fputs("logout", stdout);
 		return;
 	}
-	DPRINTF("Launching session %s...\n", options.current);
+	DPRINTF(1, "Launching session %s...\n", options.current);
 	if (!options.filename) {
 		char *out = strdup(options.current);
 		size_t i;
@@ -9791,12 +9843,12 @@ do_lock(int argc, char *argv[])
 		snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
 		atom = XInternAtom(dpy, selection, True);
 		if (!atom) {
-			DPRINTF("No '%s' atom on display\n", selection);
+			DPRINTF(1, "No '%s' atom on display\n", selection);
 			continue;
 		}
 		owner = XGetSelectionOwner(dpy, atom);
 		if (!owner) {
-			DPRINTF("No '%s' owner on display\n", selection);
+			DPRINTF(1, "No '%s' owner on display\n", selection);
 			continue;
 		}
 		atom = XInternAtom(dpy, "_XDE_XLOCK_COMMAND", False);
@@ -9825,7 +9877,7 @@ do_lock(int argc, char *argv[])
 	XSync(dpy, True);
 	XCloseDisplay(dpy);
 	if (!found) {
-		DPRINTF("no background instance found\n");
+		DPRINTF(1, "no background instance found\n");
 		options.replace = True;
 		if (fork() == 0)
 			do_run(argc, argv);
@@ -9872,12 +9924,12 @@ do_unlock(int argc, char *argv[])
 		snprintf(selection, 32, "_XDE_XLOCK_S%d", s);
 		atom = XInternAtom(dpy, selection, True);
 		if (!atom) {
-			DPRINTF("No '%s' atom on display\n", selection);
+			DPRINTF(1, "No '%s' atom on display\n", selection);
 			continue;
 		}
 		owner = XGetSelectionOwner(dpy, atom);
 		if (!owner) {
-			DPRINTF("No '%s' owner on display\n", selection);
+			DPRINTF(1, "No '%s' owner on display\n", selection);
 			continue;
 		}
 		atom = XInternAtom(dpy, "_XDE_XLOCK_COMMAND", False);
@@ -10298,7 +10350,7 @@ get_autostart_entry(GHashTable *autostarts, const char *key, const char *file)
 		g_key_file_free(entry);
 		return;
 	}
-	DPRINTF("got autostart file: %s (%s)\n", key, file);
+	DPRINTF(1, "got autostart file: %s (%s)\n", key, file);
 	g_hash_table_replace(autostarts, strdup(key), entry);
 	return;
 }
@@ -10318,17 +10370,17 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 
 	(void) user_data;
 	if (!(name = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_NAME, NULL))) {
-		DPRINTF("%s: no Name\n", appid);
+		DPRINTF(1, "%s: no Name\n", appid);
 		return TRUE;
 	}
 	g_free(name);
 	if (!(exec = g_key_file_get_string(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_EXEC, NULL))) {
 		/* TODO: handle DBus activation */
-		DPRINTF("%s: no Exec\n", appid);
+		DPRINTF(1, "%s: no Exec\n", appid);
 		return TRUE;
 	}
 	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_HIDDEN, NULL)) {
-		DPRINTF("%s: is Hidden\n", appid);
+		DPRINTF(1, "%s: is Hidden\n", appid);
 		return TRUE;
 	}
 #if 0
@@ -10336,7 +10388,7 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 	   does not indicate that it should not be executed as an autostart entry.  Use
 	   Hidden for that. */
 	if (g_key_file_get_boolean(entry, G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_NO_DISPLAY, NULL)) {
-		DPRINTF("%s: is NoDisplay\n", appid);
+		DPRINTF(1, "%s: is NoDisplay\n", appid);
 		return TRUE;
 	}
 #endif
@@ -10352,7 +10404,7 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 		}
 		g_strfreev(list);
 		if (!*desktop) {
-			DPRINTF("%s: %s not in OnlyShowIn\n", appid, options.desktop);
+			DPRINTF(1, "%s: %s not in OnlyShowIn\n", appid, options.desktop);
 			return TRUE;
 		}
 	}
@@ -10368,7 +10420,7 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 		}
 		g_strfreev(list);
 		if (*desktop) {
-			DPRINTF("%s: %s in NotShowIn\n", appid, *desktop);
+			DPRINTF(1, "%s: %s in NotShowIn\n", appid, *desktop);
 			return TRUE;
 		}
 	}
@@ -10388,8 +10440,8 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 	g_free(exec);
 	if (binary[0] == '/') {
 		if (access(binary, X_OK)) {
-			DPRINTF("%s: %s: %s\n", appid, binary, strerror(errno));
-			DPRINTF("%s: not executable\n", appid);
+			DPRINTF(1, "%s: %s: %s\n", appid, binary, strerror(errno));
+			DPRINTF(1, "%s: not executable\n", appid);
 			g_free(binary);
 			return TRUE;
 		}
@@ -10414,12 +10466,12 @@ autostarts_filter(gpointer key, gpointer value, gpointer user_data)
 				break;
 			}
 			// too much noise
-			// DPRINTF("%s: %s: %s\n", appid, file,
+			// DPRINTF(1, "%s: %s: %s\n", appid, file,
 			// strerror(errno);
 		}
 		free(path);
 		if (!execok) {
-			DPRINTF("%s: %s: not in executable in path\n", appid, binary);
+			DPRINTF(1, "%s: %s: not in executable in path\n", appid, binary);
 			g_free(binary);
 			return TRUE;
 		}
@@ -10450,14 +10502,14 @@ get_autostarts(void)
 		struct stat st;
 
 		if (!(dir = opendir(*dirs))) {
-			DPRINTF("%s: %s\n", *dirs, strerror(errno));
+			DPRINTF(1, "%s: %s\n", *dirs, strerror(errno));
 			continue;
 		}
 		while ((d = readdir(dir))) {
 			if (d->d_name[0] == '.')
 				continue;
 			if (!(p = strstr(d->d_name, suffix)) || p[suflen]) {
-				DPRINTF("%s: no %s suffix\n", d->d_name, suffix);
+				DPRINTF(1, "%s: no %s suffix\n", d->d_name, suffix);
 				continue;
 			}
 			len = strlen(*dirs) + strlen(d->d_name) + 2;
@@ -11014,12 +11066,12 @@ get_nc_resource(XrmDatabase xrdb, const char *res_name, const char *res_class,
 	snprintf(clas, sizeof(clas), "%s.%s", res_class, resource);
 	if (XrmGetResource(xrdb, name, clas, &type, &value)) {
 		if (value.addr && *(char *) value.addr) {
-			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			DPRINTF(1, "%s:\t\t%s\n", clas, value.addr);
 			return (const char *) value.addr;
 		} else
-			DPRINTF("%s:\t\t%s\n", clas, value.addr);
+			DPRINTF(1, "%s:\t\t%s\n", clas, value.addr);
 	} else
-		DPRINTF("%s:\t\t%s\n", clas, "ERROR!");
+		DPRINTF(1, "%s:\t\t%s\n", clas, "ERROR!");
 	return (NULL);
 }
 
@@ -11114,7 +11166,7 @@ getXrmFont(const char *val, PangoFontDescription **face)
 		if ((font = pango_fc_font_description_from_pattern(pattern, TRUE))) {
 			pango_font_description_free(*face);
 			*face = font;
-			DPRINTF("Font description is: %s\n",
+			DPRINTF(1, "Font description is: %s\n",
 					pango_font_description_to_string(font));
 			return TRUE;
 		}
@@ -11148,7 +11200,7 @@ getXrmDouble(const char *val, double *floating)
 		*strchr(copy, '.') = radix;
 
 	*floating = strtod(copy, NULL);
-	DPRINTF("Got decimal value %s, translates to %f\n", val, *floating);
+	DPRINTF(1, "Got decimal value %s, translates to %f\n", val, *floating);
 	free(copy);
 	return TRUE;
 }
@@ -11206,7 +11258,7 @@ get_resources(int argc, char *argv[])
 
 	(void) argc;
 	(void) argv;
-	DPRINT();
+	PTRACE(1);
 	if (!(dpy = XOpenDisplay(NULL))) {
 		EPRINTF("could not open display %s\n", getenv("DISPLAY"));
 		exit(EXIT_FAILURE);
@@ -11214,7 +11266,7 @@ get_resources(int argc, char *argv[])
 	root = DefaultRootWindow(dpy);
 	if (!(atom = XInternAtom(dpy, "RESOURCE_MANAGER", True))) {
 		XCloseDisplay(dpy);
-		DPRINTF("no resource manager database allocated\n");
+		DPRINTF(1, "no resource manager database allocated\n");
 		return;
 	}
 	if (!XGetTextProperty(dpy, root, &xtp, atom) || !xtp.value) {
@@ -11223,15 +11275,15 @@ get_resources(int argc, char *argv[])
 		return;
 	}
 	XrmInitialize();
-	// DPRINTF("RESOURCE_MANAGER = %s\n", xtp.value);
+	// DPRINTF(1, "RESOURCE_MANAGER = %s\n", xtp.value);
 	rdb = XrmGetStringDatabase((char *) xtp.value);
 	XFree(xtp.value);
 	if (!rdb) {
-		DPRINTF("no resource manager database allocated\n");
+		DPRINTF(1, "no resource manager database allocated\n");
 		XCloseDisplay(dpy);
 		return;
 	}
-	DPRINTF("combining database from %s\n", APPDFLT);
+	DPRINTF(1, "combining database from %s\n", APPDFLT);
 	XrmCombineFileDatabase(APPDFLT, &rdb, False);
 	if ((val = get_resource(rdb, "debug", "0"))) {
 		getXrmInt(val, &options.debug);
@@ -11241,7 +11293,7 @@ get_resources(int argc, char *argv[])
 			char *endptr = NULL;
 			double width = strtod(val, &endptr);
 
-			DPRINTF("Got decimal value %s, translates to %f\n", val, width);
+			DPRINTF(1, "Got decimal value %s, translates to %f\n", val, width);
 			if (endptr != val && *endptr == '%' && width > 0) {
 				options.width =
 				    (int) ((width / 100.0) * DisplayWidth(dpy, 0));
@@ -11259,7 +11311,7 @@ get_resources(int argc, char *argv[])
 			char *endptr = NULL;
 			double height = strtod(val, &endptr);
 
-			DPRINTF("Got decimal value %s, translates to %f\n", val, height);
+			DPRINTF(1, "Got decimal value %s, translates to %f\n", val, height);
 			if (endptr != val && *endptr == '%' && height > 0) {
 				options.height =
 				    (int) ((height / 100.0) * DisplayHeight(dpy, 0));
@@ -11301,11 +11353,13 @@ get_resources(int argc, char *argv[])
 	if ((val = get_any_resource(rdb, "face", "Sans:size=12:bold"))) {
 		getXrmFont(val, &resources.face);
 	}
+#ifndef DO_LOGOUT
 	// xlogin.greeting:		Welcome to CLIENTHOST
 	if ((val = get_xlogin_resource(rdb, "greeting", NULL))) {
 		getXrmString(val, &resources.greeting);
 		getXrmString(val, &options.welcome);
 	}
+#endif
 	// xlogin.unsecureGreeting:	This is an unsecure session
 	if ((val = get_xlogin_resource(rdb, "unsecureGreeting", NULL))) {
 		getXrmString(val, &resources.unsecureGreeting);
@@ -11418,12 +11472,14 @@ get_resources(int argc, char *argv[])
 	if ((val = get_xlogin_resource(rdb, "borderWidth", "3"))) {
 		getXrmUint(val, &resources.borderWidth);
 	}
-	if ((val = get_xlogin_resource(rdb, "autoLock", "true"))) {
+#ifdef DO_XLOCKING
+	if ((val = get_resource(rdb, "autoLock", "false"))) {
 		getXrmBool(val, &resources.autoLock);
 	}
-	if ((val = get_xlogin_resource(rdb, "systemLock", "true"))) {
+	if ((val = get_resource(rdb, "systemLock", "false"))) {
 		getXrmBool(val, &resources.systemLock);
 	}
+#endif
 
 	// xlogin.login.translations
 
@@ -11447,9 +11503,11 @@ get_resources(int argc, char *argv[])
 	if ((val = get_resource(rdb, "splash", NULL))) {
 		getXrmString(val, &options.backdrop);
 	}
+#if defined DO_XCHOOSER || defined DO_XLOGIN || defined(DO_GREETER)
 	if ((val = get_resource(rdb, "welcome", NULL))) {
 		getXrmString(val, &options.welcome);
 	}
+#endif
 	if ((val = get_resource(rdb, "charset", NULL))) {
 		getXrmString(val, &options.charset);
 	}
@@ -11461,6 +11519,9 @@ get_resources(int argc, char *argv[])
 	}
 	if ((val = get_resource(rdb, "theme.name", NULL))) {
 		getXrmString(val, &options.gtk2_theme);
+	}
+	if ((val = get_resource(rdb, "theme.sound", NULL))) {
+		getXrmString(val, &options.soundtheme);
 	}
 	if ((val = get_resource(rdb, "theme.cursor", NULL))) {
 		getXrmString(val, &options.curs_theme);
@@ -11738,6 +11799,7 @@ set_default_xdgdirs(int argc, char *argv[])
 	int len;
 
 	(void) argc;
+	(void) argv;
 	here = strdup(argv[0]);
 	if (here[0] != '/') {
 		char *cwd = calloc(PATH_MAX + 1, sizeof(*cwd));
@@ -11789,8 +11851,8 @@ set_default_xdgdirs(int argc, char *argv[])
 	}
 	setenv("XDG_CONFIG_DIRS", conf, 1);
 	setenv("XDG_DATA_DIRS", data, 1);
-	DPRINTF("setting XDG_CONFIG_DIRS to '%s'\n", conf);
-	DPRINTF("setting XDG_DATA_DIRS   to '%s'\n", data);
+	DPRINTF(1, "setting XDG_CONFIG_DIRS to '%s'\n", conf);
+	DPRINTF(1, "setting XDG_DATA_DIRS   to '%s'\n", data);
 	free(conf);
 	free(data);
 }
@@ -11893,7 +11955,7 @@ set_default_welcome(void)
 	const char *s;
 	int i, len;
 
-	welcome = calloc(PATH_MAX + 1, sizeof(*welcome));
+	welcome = calloc(PATH_MAX, sizeof(*welcome));
 
 	if ((s = getenv("XDG_CURRENT_DESKTOP")) && *s) {
 		session = strdup(s);
@@ -11912,7 +11974,7 @@ set_default_welcome(void)
 	len = strlen(session);
 	for (i = 0, p = session; i < len; i++, p++)
 		*p = toupper(*p);
-	snprintf(welcome, PATH_MAX, "Logout of <b>%s</b> session?", session);
+	snprintf(welcome, PATH_MAX - 1, "Logout of <b>%s</b> session?", session);
 	defaults.welcome = strdup(welcome);
 	free(session);
 	free(welcome);
@@ -12395,7 +12457,7 @@ TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
 				continue;
 			}
 			if (ifa_addr->sa_family != family) {
-				DPRINTF("interface %s has wrong family\n", ifa->ifa_name);
+				DPRINTF(1, "interface %s has wrong family\n", ifa->ifa_name);
 				continue;
 			}
 			switch (family) {
@@ -12404,7 +12466,7 @@ TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
 				struct sockaddr_in *sin = (typeof(sin)) ifa_addr;
 
 				if (!memcmp(&sin->sin_addr, clientAddress->data, 4)) {
-					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					DPRINTF(1, "interface %s matches\n", ifa->ifa_name);
 					freeifaddrs(ifas);
 					return True;
 				}
@@ -12416,7 +12478,7 @@ TestLocal(ARRAY8Ptr clientAddress, CARD16 connectionType)
 				struct sockaddr_in6 *sin6 = (typeof(sin6)) ifa_addr;
 
 				if (!memcmp(&sin6->sin6_addr, clientAddress->data, 16)) {
-					DPRINTF("interface %s matches\n", ifa->ifa_name);
+					DPRINTF(1, "interface %s matches\n", ifa->ifa_name);
 					freeifaddrs(ifas);
 					return True;
 				}
@@ -12578,7 +12640,7 @@ get_default_file(void)
 		strncat(file, options.session, PATH_MAX);
 		strncat(file, "/autostart", PATH_MAX);
 		if (access(file, R_OK)) {
-			DPRINTF("%s: %s\n", file, strerror(errno));
+			DPRINTF(1, "%s: %s\n", file, strerror(errno));
 			continue;
 		}
 		size += strlen(file) + 1;
@@ -12623,10 +12685,8 @@ get_default_desktops(void)
 }
 
 void
-get_defaults(int argc, char *argv[])
+get_defaults(void)
 {
-	(void) argc;
-	(void) argv;
 	get_default_display();
 	get_default_x11();
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
@@ -12699,9 +12759,11 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"display",	    required_argument,	NULL, 'd'},
+#if defined(DO_SESSION) || defined(DO_STARTWM) || defined(DO_AUTOSTART)
 			{"desktop",	    required_argument,	NULL, 'e'},
 			{"session",	    required_argument,	NULL, 's'},
 			{"startwm",	    required_argument,	NULL, 'm'},
+#endif
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			{"authfile",	    required_argument,	NULL, 'a'},
 #endif
@@ -12779,7 +12841,7 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "d:e:s:x:f:a1w2p:l:4W:c:L:b:S:i:t:XF3:nDvhVCH?");
 #endif				/* defined _GNU_SOURCE */
 		if (c == -1) {
-			DPRINTF("%s: done options processing\n", argv[0]);
+			DPRINTF(1, "%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
@@ -12791,6 +12853,7 @@ main(int argc, char *argv[])
 			options.display = strndup(optarg, 256);
 			setenv("DISPLAY", optarg, 1);
 			break;
+#if defined(DO_SESSION) || defined(DO_STARTWM) || defined(DO_AUTOSTART)
 		case 'e':	/* -e, --desktop DESKTOP */
 			free(options.desktop);
 			options.desktop = strdup(optarg);
@@ -12803,6 +12866,7 @@ main(int argc, char *argv[])
 			free(options.startwm);
 			options.startwm = strdup(optarg);
 			break;
+#endif
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 		case 'a':	/* -a, --authfile */
 			free(options.authfile);
@@ -13033,24 +13097,24 @@ main(int argc, char *argv[])
 			break;
 		case 'D':	/* -D, --debug [level] */
 			if (optarg == NULL) {
-				DPRINTF("%s: increasing debug verbosity\n", argv[0]);
+				DPRINTF(1, "%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
-			DPRINTF("%s: setting debug verbosity to %d\n", argv[0], val);
+			DPRINTF(1, "%s: setting debug verbosity to %d\n", argv[0], val);
 			options.debug = val;
 			break;
 		case 'v':	/* -v, --verbose [level] */
 			if (optarg == NULL) {
-				DPRINTF("%s: increasing output verbosity\n", argv[0]);
+				DPRINTF(1, "%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
-			DPRINTF("%s: setting output verbosity to %d\n", argv[0], val);
+			DPRINTF(1, "%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -13058,18 +13122,12 @@ main(int argc, char *argv[])
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandVersion;
-			options.command = CommandVersion;
+			DPRINTF(1, "Setting command to CommandVersion\n");
+			command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandCopying;
-			options.command = CommandCopying;
+			DPRINTF(1, "Setting command to CommandCopying\n");
+			command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -13079,14 +13137,14 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					EPRINTF("%s: syntax error near '", argv[0]);
 					while (optind < argc) {
 						fprintf(stderr, "%s", argv[optind++]);
 						fprintf(stderr, "%s", (optind < argc) ? " " : "");
 					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument", argv[0]);
+					EPRINTF("%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
@@ -13096,6 +13154,8 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
+	DPRINTF(1, "%s: option index = %d\n", argv[0], optind);
+	DPRINTF(1, "%s: option count = %d\n", argv[0], argc);
 #ifndef DO_XCHOOSER
 #if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 	if (optind < argc) {
@@ -13110,9 +13170,8 @@ main(int argc, char *argv[])
 	}
 #endif
 #endif
-	DPRINTF("%s: option index = %d\n", argv[0], optind);
-	DPRINTF("%s: option count = %d\n", argv[0], argc);
-	get_defaults(argc, argv);
+	get_defaults();
+
 	switch (command) {
 	default:
 	case CommandDefault:
@@ -13123,45 +13182,49 @@ main(int argc, char *argv[])
 		}
 #endif
 #if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
-		DPRINTF("%s: running program\n", argv[0]);
+		DPRINTF(1, "%s: running program\n", argv[0]);
 		run_program(argc, argv);
 #else
-		DPRINTF("%s: running default\n", argv[0]);
+		DPRINTF(1, "%s: running default\n", argv[0]);
 		do_run(argc - optind, &argv[optind]);
 #endif
 		break;
 #ifdef DO_XLOCKING
 	case CommandReplace:
-		DPRINTF("%s: running replace\n", argv[0]);
+		DPRINTF(1, "%s: replacing existing instance\n", argv[0]);
 		do_run(argc, argv);
 		break;
 	case CommandQuit:
-		DPRINTF("%s: running quit\n", argv[0]);
+		if (!options.display) {
+			EPRINTF("%s: cannot ask instance to quit without DISPLAY\n", argv[0]);
+			exit(EXIT_FAILURE);
+		}
+		DPRINTF(1, "%s: asking existing instance to quit\n", argv[0]);
 		do_quit(argc, argv);
 		break;
 	case CommandLock:
-		DPRINTF("%s: running lock\n", argv[0]);
+		DPRINTF(1, "%s: running lock\n", argv[0]);
 		do_lock(argc, argv);
 		break;
 	case CommandUnlock:
-		DPRINTF("%s: running unlock\n", argv[0]);
+		DPRINTF(1, "%s: running unlock\n", argv[0]);
 		do_unlock(argc, argv);
 		break;
 #endif				/* DO_XLOCKING */
 	case CommandHelp:
-		DPRINTF("%s: printing help message\n", argv[0]);
+		DPRINTF(1, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
-		DPRINTF("%s: printing version message\n", argv[0]);
+		DPRINTF(1, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
-		DPRINTF("%s: printing copying message\n", argv[0]);
+		DPRINTF(1, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
 	exit(EXIT_SUCCESS);
 }
 
-// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
+// vim: set sw=8 tw=88 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
