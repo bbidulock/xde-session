@@ -58,8 +58,8 @@ xde_login_LDFLAGS = $(SMLIB_LIBS) $(ICE_LIBS) $(XAU_LIBS) -lpam_misc -lpam $(SYS
 
 xde_logout_CPPFLAGS = -DNAME=\"xde-logout\"
 xde_logout_SOURCES = xde-logout.c
-xde_logout_CFLAGS = $(AM_CFLAGS) $(XVNC_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(SYSTEMD_CFLAGS)
-xde_logout_LDFLAGS = $(SMLIB_LIBS) $(XVNC_LIBS) $(ICE_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
+xde_logout_CFLAGS = $(AM_CFLAGS) $(XVNC_CFLAGS) $(ICE_CFLAGS) $(SMLIB_CFLAGS) $(SYSTEMD_CFLAGS) $(SOUND_CFLAGS)
+xde_logout_LDFLAGS = $(SOUND_LIBS) $(SMLIB_LIBS) $(XVNC_LIBS) $(ICE_LIBS) $(SYSTEMD_LIBS) $(AM_LDFLAGS)
 
 xde_session_CPPFLAGS = -DNAME=\"xde-session\"
 xde_session_SOURCES = xde-session.c
