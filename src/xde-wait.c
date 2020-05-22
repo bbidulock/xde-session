@@ -42,6 +42,9 @@
 
  *****************************************************************************/
 
+/** @section Headers
+  * @{ */
+
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
@@ -60,14 +63,14 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include <sys/stat.h>
-#include <sys/poll.h>
+#include <sys/select.h>
 #include <sys/time.h>
+#include <sys/timerfd.h>
+#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
+#include <sys/poll.h>
 #include <fcntl.h>
-#ifdef _GNU_SOURCE
-#include <getopt.h>
-#endif
 #include <dirent.h>
 #include <time.h>
 #include <signal.h>
@@ -76,11 +79,16 @@
 
 #include <assert.h>
 #include <locale.h>
+#include <langinfo.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <strings.h>
 #include <regex.h>
 #include <wordexp.h>
 #include <execinfo.h>
+#include <math.h>
+#include <dlfcn.h>
+#include <setjmp.h>
 
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
@@ -88,26 +96,62 @@
 #include <X11/Xutil.h>
 #include <X11/Xresource.h>
 
-#define XPRINTF(args...) do { } while (0)
-#define OPRINTF(args...) do { if (options.output > 1) { \
-	fprintf(stdout, "I: "); \
-	fprintf(stdout, args); \
-	fflush(stdout); } } while (0)
-#define DPRINTF(args...) do { if (options.debug) { \
-	fprintf(stderr, "D: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr); } } while (0)
-#define EPRINTF(args...) do { \
-	fprintf(stderr, "E: %12s +%4d : %s() : ", __FILE__, __LINE__, __func__); \
-	fprintf(stderr, args); \
-	fflush(stderr);   } while (0)
-#define DPRINT() do { if (options.debug) { \
-	fprintf(stderr, "D: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
-	fflush(stderr); } } while (0)
-#define PTRACE() do { if (options.debug > 0 || options.output > 2) { \
-	fprintf(stderr, "T: %12s +%4d : %s()\n", __FILE__, __LINE__, __func__); \
+#ifdef _GNU_SOURCE
+#include <getopt.h>
+#endif
+
+/** @} */
+
+/** @section Preamble
+  * @{ */
+
+static const char *
+_timestamp(void)
+{
+	static struct timeval tv = { 0, 0 };
+	static char buf[BUFSIZ];
+	double stamp;
+
+	gettimeofday(&tv, NULL);
+	stamp = (double)tv.tv_sec + (double)((double)tv.tv_usec/1000000.0);
+	snprintf(buf, BUFSIZ-1, "%f", stamp);
+	return buf;
+}
+
+#define XPRINTF(_args...) do { } while (0)
+
+#define OPRINTF(_num, _args...) do { if (options.debug >= _num || options.output > _num) { \
+	fprintf(stdout, NAME ": I: "); \
+	fprintf(stdout, _args); fflush(stdout); } } while (0)
+
+#define DPRINTF(_num, _args...) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": D: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr); } } while (0)
+
+#define EPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": E: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define WPRINTF(_args...) do { \
+	fprintf(stderr, NAME ": W: [%s] %12s +%4d %s(): ", _timestamp(), __FILE__, __LINE__, __func__); \
+	fprintf(stderr, _args); fflush(stderr);   } while (0)
+
+#define PTRACE(_num) do { if (options.debug >= _num) { \
+	fprintf(stderr, NAME ": T: [%s] %12s +%4d %s()\n", _timestamp(), __FILE__, __LINE__, __func__); \
 	fflush(stderr); } } while (0)
 
+void
+dumpstack(const char *file, const int line, const char *func)
+{
+	void *buffer[32];
+	int nptr;
+	char **strings;
+	int i;
+
+	if ((nptr = backtrace(buffer, 32)) && (strings = backtrace_symbols(buffer, nptr)))
+		for (i = 0; i < nptr; i++)
+			fprintf(stderr, NAME ": E: %12s +%4d : %s() : \t%s\n", file, line, func, strings[i]);
+}
 
 #undef EXIT_SUCCESS
 #undef EXIT_FAILURE
@@ -117,18 +161,21 @@
 #define EXIT_FAILURE	1
 #define EXIT_SYNTAXERR	2
 
+
+/** @} */
+
 typedef enum {
 	CommandDefault,
 	CommandWait,
 	CommandHelp,
 	CommandVersion,
 	CommandCopying,
-} Command;
+} CommandType;
 
 typedef struct {
 	int output;
 	int debug;
-	Command command;
+	CommandType command;
 	char *display;
 	int screen;
 	Bool nowait;
@@ -344,7 +391,7 @@ int (*oldiohandler) (Display *) = NULL;
 Bool
 get_display()
 {
-	PTRACE();
+	PTRACE(1);
 	if (!dpy) {
 		if (!(dpy = XOpenDisplay(0))) {
 			EPRINTF("cannot open display\n");
@@ -371,7 +418,7 @@ get_display()
 void
 put_display()
 {
-	PTRACE();
+	PTRACE(1);
 	if (dpy) {
 		XSetErrorHandler(oldhandler);
 		XSetIOErrorHandler(oldiohandler);
@@ -532,7 +579,7 @@ check_nonrecursive(Atom atom, Atom type)
 	unsigned long *data = NULL;
 	Window check = None;
 
-	OPRINTF("non-recursive check for atom 0x%08lx\n", atom);
+	OPRINTF(1, "non-recursive check for atom 0x%08lx\n", atom);
 
 	if (XGetWindowProperty(dpy, root, atom, 0L, 1L, False, type, &real,
 			       &format, &nitems, &after,
@@ -556,7 +603,7 @@ check_supported(Atom protocols, Atom supported)
 	unsigned long *data = NULL;
 	Bool result = False;
 
-	OPRINTF("check for non-compliant NetWM\n");
+	OPRINTF(1, "check for non-compliant NetWM\n");
 
       try_harder:
 	if (XGetWindowProperty(dpy, root, protocols, 0L, num, False,
@@ -565,7 +612,7 @@ check_supported(Atom protocols, Atom supported)
 		if (after) {
 			num += ((after + 1) >> 2);
 			XFree(data);
-			DPRINTF("trying harder with num = %lu\n", num);
+			DPRINTF(1, "trying harder with num = %lu\n", num);
 			goto try_harder;
 		}
 		if (nitems > 0) {
@@ -606,9 +653,9 @@ check_netwm()
 	} while (i++ < 2 && !win);
 	win = win ? : check_netwm_supported();
 	if (win && win != wm.netwm_check)
-		DPRINTF("NetWM/EWMH changed from 0x%08lx to 0x%08lx\n", wm.netwm_check, win);
+		DPRINTF(1, "NetWM/EWMH changed from 0x%08lx to 0x%08lx\n", wm.netwm_check, win);
 	if (!win && wm.netwm_check)
-		DPRINTF("NetWM/EWMH removed from 0x%08lx\n", wm.netwm_check);
+		DPRINTF(1, "NetWM/EWMH removed from 0x%08lx\n", wm.netwm_check);
 	return (wm.netwm_check = win);
 }
 
@@ -632,9 +679,9 @@ check_winwm()
 	} while (i++ < 2 && !win);
 	win = win ? : check_winwm_supported();
 	if (win && win != wm.winwm_check)
-		DPRINTF("WinWM/WMH changed from 0x%08lx to 0x%08lx\n", wm.winwm_check, win);
+		DPRINTF(1, "WinWM/WMH changed from 0x%08lx to 0x%08lx\n", wm.winwm_check, win);
 	if (!win && wm.winwm_check)
-		DPRINTF("WinWM/WMH removed from 0x%08lx\n", wm.winwm_check);
+		DPRINTF(1, "WinWM/WMH removed from 0x%08lx\n", wm.winwm_check);
 	return (wm.winwm_check = win);
 }
 
@@ -649,9 +696,9 @@ check_maker()
 			XSelectInput(dpy, win, StructureNotifyMask | PropertyChangeMask);
 	} while (i++ < 2 && !win);
 	if (win && win != wm.maker_check)
-		DPRINTF("WindowMaker changed from 0x%08lx to 0x%08lx\n", wm.maker_check, win);
+		DPRINTF(1, "WindowMaker changed from 0x%08lx to 0x%08lx\n", wm.maker_check, win);
 	if (!win && wm.maker_check)
-		DPRINTF("WindowMaker removed from 0x%08lx\n", wm.maker_check);
+		DPRINTF(1, "WindowMaker removed from 0x%08lx\n", wm.maker_check);
 	return (wm.maker_check = win);
 }
 
@@ -670,9 +717,9 @@ check_motif()
 		}
 	} while (i++ < 2 && !data);
 	if (win && win != wm.motif_check)
-		DPRINTF("OSF/MOTIF changed from 0x%08lx to 0x%08lx\n", wm.motif_check, win);
+		DPRINTF(1, "OSF/MOTIF changed from 0x%08lx to 0x%08lx\n", wm.motif_check, win);
 	if (!win && wm.motif_check)
-		DPRINTF("OSF/MOTIF removed from 0x%08lx\n", wm.motif_check);
+		DPRINTF(1, "OSF/MOTIF removed from 0x%08lx\n", wm.motif_check);
 	return (wm.motif_check = win);
 }
 
@@ -688,9 +735,9 @@ check_icccm()
 	if ((win = XGetSelectionOwner(dpy, sel)))
 		XSelectInput(dpy, win, StructureNotifyMask | PropertyChangeMask);
 	if (win && win != wm.icccm_check)
-		DPRINTF("ICCCM 2.0 WM changed from 0x%08lx to 0x%08lx\n", wm.icccm_check, win);
+		DPRINTF(1, "ICCCM 2.0 WM changed from 0x%08lx to 0x%08lx\n", wm.icccm_check, win);
 	if (!win && wm.icccm_check)
-		DPRINTF("ICCCM 2.0 WM removed from 0x%08lx\n", wm.icccm_check);
+		DPRINTF(1, "ICCCM 2.0 WM removed from 0x%08lx\n", wm.icccm_check);
 	return (wm.icccm_check = win);
 }
 
@@ -700,14 +747,14 @@ check_redir()
 	XWindowAttributes wa;
 	Window win = None;
 
-	OPRINTF("checking redirection for screen %d\n", screen);
+	OPRINTF(1, "checking redirection for screen %d\n", screen);
 	if (XGetWindowAttributes(dpy, root, &wa))
 		if (wa.all_event_masks & SubstructureRedirectMask)
 			win = root;
 	if (win && win != wm.redir_check)
-		DPRINTF("WM redirection changed from 0x%08lx to 0x%08lx\n", wm.redir_check, win);
+		DPRINTF(1, "WM redirection changed from 0x%08lx to 0x%08lx\n", wm.redir_check, win);
 	if (!win && wm.redir_check)
-		DPRINTF("WM redirection removed from 0x%08lx\n", wm.redir_check);
+		DPRINTF(1, "WM redirection removed from 0x%08lx\n", wm.redir_check);
 	return (wm.redir_check = win);
 }
 
@@ -732,25 +779,25 @@ check_anywm()
 static Bool
 check_window_manager()
 {
-	OPRINTF("checking wm compliance for screen %d\n", screen);
-	OPRINTF("checking redirection\n");
+	OPRINTF(1, "checking wm compliance for screen %d\n", screen);
+	OPRINTF(1, "checking redirection\n");
 	if (check_redir())
-		OPRINTF("redirection on window 0x%08lx\n", wm.redir_check);
-	OPRINTF("checking ICCCM 2.0 compliance\n");
+		OPRINTF(1, "redirection on window 0x%08lx\n", wm.redir_check);
+	OPRINTF(1, "checking ICCCM 2.0 compliance\n");
 	if (check_icccm())
-		OPRINTF("ICCCM 2.0 window 0x%08lx\n", wm.icccm_check);
-	OPRINTF("checking OSF/Motif compliance\n");
+		OPRINTF(1, "ICCCM 2.0 window 0x%08lx\n", wm.icccm_check);
+	OPRINTF(1, "checking OSF/Motif compliance\n");
 	if (check_motif())
-		OPRINTF("OSF/Motif window 0x%08lx\n", wm.motif_check);
-	OPRINTF("checking WindowMaker compliance\n");
+		OPRINTF(1, "OSF/Motif window 0x%08lx\n", wm.motif_check);
+	OPRINTF(1, "checking WindowMaker compliance\n");
 	if (check_maker())
-		OPRINTF("WindowMaker window 0x%08lx\n", wm.maker_check);
-	OPRINTF("checking GNOME/WMH compliance\n");
+		OPRINTF(1, "WindowMaker window 0x%08lx\n", wm.maker_check);
+	OPRINTF(1, "checking GNOME/WMH compliance\n");
 	if (check_winwm())
-		OPRINTF("GNOME/WMH window 0x%08lx\n", wm.winwm_check);
-	OPRINTF("checking NetWM/EWMH compliance\n");
+		OPRINTF(1, "GNOME/WMH window 0x%08lx\n", wm.winwm_check);
+	OPRINTF(1, "checking NetWM/EWMH compliance\n");
 	if (check_netwm())
-		OPRINTF("NetWM/EWMH window 0x%08lx\n", wm.netwm_check);
+		OPRINTF(1, "NetWM/EWMH window 0x%08lx\n", wm.netwm_check);
 	return check_anywm();
 }
 
@@ -766,70 +813,70 @@ handle_wmchange(XEvent *e)
 static Bool
 handle_WINDOWMAKER_NOTICEBOARD(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_MOTIF_WM_INFO(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_NET_SUPPORTING_WM_CHECK(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_NET_SUPPORTED(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_WIN_SUPPORTING_WM_CHECK(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_WIN_PROTOCOLS(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_NET_ACTIVE_WINDOW(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_NET_CLIENT_LIST(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_WIN_CLIENT_LIST(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
 static Bool
 handle_WIN_WORKSPACE(XEvent *e)
 {
-	PTRACE();
+	PTRACE(1);
 	return handle_wmchange(e);
 }
 
@@ -875,7 +922,7 @@ handle_atom(XEvent *e, Atom atom)
 	struct atoms *a;
 	char *name;
 
-	PTRACE();
+	PTRACE(1);
 	for (a = atoms; a->name; a++)
 		if (a->value == atom) {
 			if (a->handler)
@@ -883,7 +930,7 @@ handle_atom(XEvent *e, Atom atom)
 			break;
 		}
 	if ((name = XGetAtomName(dpy, atom))) {
-		DPRINTF("0x%08lx %s atom unhandled!\n", e->xany.window, name);
+		DPRINTF(1, "0x%08lx %s atom unhandled!\n", e->xany.window, name);
 		XFree(name);
 	}
 	return False;
@@ -922,7 +969,7 @@ wait_for_condition(Window (*until) (void))
 	XEvent ev;
 	struct itimerval it;
 
-	PTRACE();
+	PTRACE(1);
 	signal(SIGHUP, sighandler);
 	signal(SIGINT, sighandler);
 	signal(SIGTERM, sighandler);
@@ -944,7 +991,7 @@ wait_for_condition(Window (*until) (void))
 
 		if (signum) {
 			if (signum == SIGALRM) {
-				OPRINTF("waiting for resource timed out!\n");
+				OPRINTF(1, "waiting for resource timed out!\n");
 				return True;
 			}
 			exit(EXIT_SUCCESS);
@@ -980,32 +1027,32 @@ wait_for_condition(Window (*until) (void))
 static Bool
 check_for_window_manager()
 {
-	PTRACE();
-	OPRINTF("checking NetWM/EWMH compliance\n");
+	PTRACE(1);
+	OPRINTF(1, "checking NetWM/EWMH compliance\n");
 	if (check_netwm())
-		OPRINTF("NetWM/EWMH window 0x%08lx\n", wm.netwm_check);
-	OPRINTF("checking GNOME/WMH compliance\n");
+		OPRINTF(1, "NetWM/EWMH window 0x%08lx\n", wm.netwm_check);
+	OPRINTF(1, "checking GNOME/WMH compliance\n");
 	if (check_winwm())
-		OPRINTF("GNOME/WMH window 0x%08lx\n", wm.winwm_check);
-	OPRINTF("checking WindowMaker compliance\n");
+		OPRINTF(1, "GNOME/WMH window 0x%08lx\n", wm.winwm_check);
+	OPRINTF(1, "checking WindowMaker compliance\n");
 	if (check_maker())
-		OPRINTF("WindowMaker window 0x%08lx\n", wm.maker_check);
-	OPRINTF("checking OSF/Motif compliance\n");
+		OPRINTF(1, "WindowMaker window 0x%08lx\n", wm.maker_check);
+	OPRINTF(1, "checking OSF/Motif compliance\n");
 	if (check_motif())
-		OPRINTF("OSF/Motif window 0x%08lx\n", wm.motif_check);
-	OPRINTF("checking ICCCM 2.0 compliance\n");
+		OPRINTF(1, "OSF/Motif window 0x%08lx\n", wm.motif_check);
+	OPRINTF(1, "checking ICCCM 2.0 compliance\n");
 	if (check_icccm())
-		OPRINTF("ICCCM 2.0 window 0x%08lx\n", wm.icccm_check);
-	OPRINTF("checking redirection\n");
+		OPRINTF(1, "ICCCM 2.0 window 0x%08lx\n", wm.icccm_check);
+	OPRINTF(1, "checking redirection\n");
 	if (check_redir())
-		OPRINTF("redirection on window 0x%08lx\n", wm.redir_check);
+		OPRINTF(1, "redirection on window 0x%08lx\n", wm.redir_check);
 	return check_anywm();
 }
 
 static void
 wait_for_window_manager()
 {
-	PTRACE();
+	PTRACE(1);
 	if (check_for_window_manager()) {
 		if (options.info) {
 			fputs("Have a window manager:\n\n", stdout);
@@ -1051,12 +1098,12 @@ check_stray()
 	if ((win = XGetSelectionOwner(dpy, sel))) {
 		if (win != wm.stray_owner) {
 			XSelectInput(dpy, win, StructureNotifyMask | PropertyChangeMask);
-			DPRINTF("system tray changed from 0x%08lx to 0x%08lx\n", wm.stray_owner,
+			DPRINTF(1, "system tray changed from 0x%08lx to 0x%08lx\n", wm.stray_owner,
 				win);
 			wm.stray_owner = win;
 		}
 	} else if (wm.stray_owner) {
-		DPRINTF("system tray removed from 0x%08lx\n", wm.stray_owner);
+		DPRINTF(1, "system tray removed from 0x%08lx\n", wm.stray_owner);
 		wm.stray_owner = None;
 	}
 	return wm.stray_owner;
@@ -1066,7 +1113,7 @@ static Bool
 handle_NET_SYSTEM_TRAY_ORIENTATION(XEvent *e)
 {
 	(void) e;
-	PTRACE();
+	PTRACE(1);
 	check_stray();
 	return True;
 }
@@ -1075,7 +1122,7 @@ static Bool
 handle_NET_SYSTEM_TRAY_VISUAL(XEvent *e)
 {
 	(void) e;
-	PTRACE();
+	PTRACE(1);
 	check_stray();
 	return True;
 }
@@ -1083,7 +1130,7 @@ handle_NET_SYSTEM_TRAY_VISUAL(XEvent *e)
 static void
 wait_for_system_tray()
 {
-	PTRACE();
+	PTRACE(1);
 	if (check_stray()) {
 		if (options.info) {
 			fputs("Have a system tray:\n\n", stdout);
@@ -1119,9 +1166,9 @@ check_pager()
 		win = root;
 	}
 	if (win && win != wm.pager_owner)
-		DPRINTF("desktop pager changed from 0x%08lx to 0x%08lx\n", wm.pager_owner, win);
+		DPRINTF(1, "desktop pager changed from 0x%08lx to 0x%08lx\n", wm.pager_owner, win);
 	if (!win && wm.pager_owner)
-		DPRINTF("desktop pager removed from 0x%08lx\n", wm.pager_owner);
+		DPRINTF(1, "desktop pager removed from 0x%08lx\n", wm.pager_owner);
 	return (wm.pager_owner = win);
 }
 
@@ -1129,7 +1176,7 @@ static Bool
 handle_NET_DESKTOP_LAYOUT(XEvent *e)
 {
 	(void) e;
-	PTRACE();
+	PTRACE(1);
 	check_pager();
 	return True;
 }
@@ -1137,7 +1184,7 @@ handle_NET_DESKTOP_LAYOUT(XEvent *e)
 static void
 wait_for_desktop_pager()
 {
-	PTRACE();
+	PTRACE(1);
 	if (check_pager()) {
 		if (options.info) {
 			fputs("Have a desktop pager:\n\n", stdout);
@@ -1167,16 +1214,16 @@ check_compm()
 	if ((win = XGetSelectionOwner(dpy, sel)))
 		XSelectInput(dpy, win, StructureNotifyMask | PropertyChangeMask);
 	if (win && win != wm.compm_owner)
-		DPRINTF("composite manager changed from 0x%08lx to 0x%08lx\n", wm.compm_owner, win);
+		DPRINTF(1, "composite manager changed from 0x%08lx to 0x%08lx\n", wm.compm_owner, win);
 	if (!win && wm.compm_owner)
-		DPRINTF("composite manager removed from 0x%08lx\n", wm.compm_owner);
+		DPRINTF(1, "composite manager removed from 0x%08lx\n", wm.compm_owner);
 	return (wm.compm_owner = win);
 }
 
 static void
 wait_for_composite_manager()
 {
-	PTRACE();
+	PTRACE(1);
 	if (check_compm()) {
 		if (options.info) {
 			fputs("Have a composite manager:\n\n", stdout);
@@ -1214,7 +1261,7 @@ check_audio()
 static void
 wait_for_audio_server()
 {
-	PTRACE();
+	PTRACE(1);
 	if (check_audio()) {
 		if (options.info) {
 			fputs("Have an audio server:\n\n", stdout);
@@ -1259,7 +1306,7 @@ static Bool
 handle_MANAGER(XEvent *e)
 {
 	(void) e;
-	PTRACE();
+	PTRACE(1);
 	check_compm();
 	check_pager();
 	check_stray();
@@ -1282,7 +1329,7 @@ wait_for_resource()
 		if (options.audio)
 			wait_for_audio_server();
 	} else
-		DPRINTF("No resource wait requested.\n");
+		DPRINTF(1, "No resource wait requested.\n");
 }
 
 
@@ -1501,10 +1548,12 @@ Options:\n\
 }
 
 void
-set_defaults(void)
+set_defaults(int argc, char *argv[])
 {
 	const char *env;
 
+	(void) argc;
+	(void) argv;
 	if ((env = getenv("DISPLAY")))
 		options.display = strdup(env);
 }
@@ -1512,12 +1561,12 @@ set_defaults(void)
 int
 main(int argc, char *argv[])
 {
-	Command command = CommandDefault;
+	CommandType command = CommandDefault;
 	Bool exec_mode = False;
 
 	setlocale(LC_ALL, "");
 
-	set_defaults();
+	set_defaults(argc, argv);
 
 	while (1) {
 		int c, val;
@@ -1563,7 +1612,7 @@ main(int argc, char *argv[])
 		c = getopt(argc, argv, "d:s:wciNWSOUAt:DvhVCH?");
 #endif				/* _GNU_SOURCE */
 		if (c == -1 || exec_mode) {
-			DPRINTF("done options processing\n");
+			DPRINTF(1, "%s: done options processing\n", argv[0]);
 			break;
 		}
 		switch (c) {
@@ -1571,9 +1620,9 @@ main(int argc, char *argv[])
 			goto bad_usage;
 
 		case 'd':	/* -d, --display DISPLAY */
-			setenv("DISPLAY", optarg, True);
 			free(options.display);
-			options.display = strdup(optarg);
+			options.display = strndup(optarg, 256);
+			setenv("DISPLAY", optarg, 1);
 			break;
 		case 's':	/* -s, --screen SCREEN */
 			if ((val = strtoul(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
@@ -1636,26 +1685,26 @@ main(int argc, char *argv[])
 			options.delay = val;
 			break;
 
-		case 'D':	/* -D, --debug [LEVEL] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing debug verbosity\n", argv[0]);
+		case 'D':	/* -D, --debug [level] */
 			if (optarg == NULL) {
+				DPRINTF(1, "%s: increasing debug verbosity\n", argv[0]);
 				options.debug++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			DPRINTF(1, "%s: setting debug verbosity to %d\n", argv[0], val);
 			options.debug = val;
 			break;
-		case 'v':	/* -v, --verbose [LEVEL] */
-			if (options.debug)
-				fprintf(stderr, "%s: increasing output verbosity\n", argv[0]);
+		case 'v':	/* -v, --verbose [level] */
 			if (optarg == NULL) {
+				DPRINTF(1, "%s: increasing output verbosity\n", argv[0]);
 				options.output++;
 				break;
 			}
 			if ((val = strtol(optarg, &endptr, 0)) < 0 || (endptr && *endptr))
 				goto bad_option;
+			DPRINTF(1, "%s: setting output verbosity to %d\n", argv[0], val);
 			options.output = val;
 			break;
 		case 'h':	/* -h, --help */
@@ -1663,18 +1712,12 @@ main(int argc, char *argv[])
 			command = CommandHelp;
 			break;
 		case 'V':	/* -V, --version */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandVersion;
-			options.command = CommandVersion;
+			DPRINTF(1, "Setting command to CommandVersion\n");
+			command = CommandVersion;
 			break;
 		case 'C':	/* -C, --copying */
-			if (options.command != CommandDefault)
-				goto bad_option;
-			if (command == CommandDefault)
-				command = CommandCopying;
-			options.command = CommandCopying;
+			DPRINTF(1, "Setting command to CommandCopying\n");
+			command = CommandCopying;
 			break;
 		case '?':
 		default:
@@ -1684,14 +1727,14 @@ main(int argc, char *argv[])
 		      bad_nonopt:
 			if (options.output || options.debug) {
 				if (optind < argc) {
-					fprintf(stderr, "%s: syntax error near '", argv[0]);
+					EPRINTF("%s: syntax error near '", argv[0]);
 					while (optind < argc) {
 						fprintf(stderr, "%s", argv[optind++]);
 						fprintf(stderr, "%s", (optind < argc) ? " " : "");
 					}
 					fprintf(stderr, "'\n");
 				} else {
-					fprintf(stderr, "%s: missing option or argument", argv[0]);
+					EPRINTF("%s: missing option or argument", argv[0]);
 					fprintf(stderr, "\n");
 				}
 				fflush(stderr);
@@ -1701,6 +1744,8 @@ main(int argc, char *argv[])
 			exit(EXIT_SYNTAXERR);
 		}
 	}
+	DPRINTF(1, "%s: option index = %d\n", argv[0], optind);
+	DPRINTF(1, "%s: option count = %d\n", argv[0], argc);
 	if (exec_mode || optind < argc) {
 		int i;
 
@@ -1719,16 +1764,19 @@ main(int argc, char *argv[])
 		do_wait(argc, argv);
 		break;
 	case CommandHelp:
+		DPRINTF(1, "%s: printing help message\n", argv[0]);
 		help(argc, argv);
 		break;
 	case CommandVersion:
+		DPRINTF(1, "%s: printing version message\n", argv[0]);
 		version(argc, argv);
 		break;
 	case CommandCopying:
+		DPRINTF(1, "%s: printing copying message\n", argv[0]);
 		copying(argc, argv);
 		break;
 	}
 	exit(EXIT_SUCCESS);
 }
 
-// vim: set sw=8 tw=80 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
+// vim: set sw=8 tw=88 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
