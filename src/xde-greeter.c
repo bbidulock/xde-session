@@ -112,6 +112,7 @@
 #endif
 #include <X11/Xdmcp.h>
 #include <X11/Xauth.h>
+#include <X11/ICE/ICEutil.h>
 #include <X11/SM/SMlib.h>
 #include <glib-unix.h>
 #include <glib/gfileutils.h>
@@ -123,6 +124,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
+#include <glib.h>
 
 #include <pwd.h>
 #include <systemd/sd-login.h>
@@ -4921,7 +4923,7 @@ redo_source(XdeScreen *xscr)
 	get_source(xscr);
 }
 
-#ifdef DO_CHOOSER
+#if defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM)
 /** @brief create the selected session
   * @param label - the application id of the XSession
   * @param filename - the desktop entry file name for the XSession
@@ -4942,6 +4944,8 @@ create_session(const char *label, const char *filename)
 	int len, dlen, flen;
 	FILE *f;
 
+	(void) label;
+	(void) filename;
 	len = xhome ? strlen(xhome) : strlen(home) + strlen("/.config");
 	dlen = len + strlen("/xde");
 	flen = dlen + strlen("/default");
@@ -5871,7 +5875,7 @@ GetWindow(Bool noshow)
 	gtk_widget_show_now(cont);
 
 #ifndef DO_LOGOUT
-#ifndef DO_CHOOSER
+#if !(defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM))
 	if (options.username) {
 		gtk_entry_set_text(GTK_ENTRY(user), options.username);
 		gtk_entry_set_text(GTK_ENTRY(pass), "");
@@ -6076,7 +6080,7 @@ ShowScreen(XdeScreen *xscr)
 {
 	if (xscr->wind) {
 		gtk_widget_show_now(GTK_WIDGET(xscr->wind));
-#ifndef DO_CHOOSER
+#if !(defined(DO_CHOOSER)||defined(DO_AUTOSTART)||defined(DO_SESSION)||defined(DO_STARTWM))
 #ifndef DO_LOGOUT
 		if (options.username) {
 			gtk_widget_set_sensitive(user, FALSE);
@@ -10085,6 +10089,11 @@ main(int argc, char *argv[])
 		/* *INDENT-OFF* */
 		static struct option long_options[] = {
 			{"display",	    required_argument,	NULL, 'd'},
+#if defined(DO_SESSION) || defined(DO_STARTWM) || defined(DO_AUTOSTART)
+			{"desktop",	    required_argument,	NULL, 'e'},
+			{"session",	    required_argument,	NULL, 's'},
+			{"startwm",	    required_argument,	NULL, 'm'},
+#endif
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 			{"authfile",	    required_argument,	NULL, 'a'},
 #endif
@@ -10158,6 +10167,20 @@ main(int argc, char *argv[])
 			options.display = strndup(optarg, 256);
 			setenv("DISPLAY", optarg, 1);
 			break;
+#if defined(DO_SESSION) || defined(DO_STARTWM) || defined(DO_AUTOSTART)
+		case 'e':	/* -e, --desktop DESKTOP */
+			free(options.desktop);
+			options.desktop = strdup(optarg);
+			break;
+		case 's':	/* -s, --session SESSION */
+			free(options.session);
+			options.session = strdup(optarg);
+			break;
+		case 'm':	/* -m, --startwm EXECUTE */
+			free(options.startwm);
+			options.startwm = strdup(optarg);
+			break;
+#endif
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 		case 'a':	/* -a, --authfile */
 			free(options.authfile);
@@ -10319,14 +10342,6 @@ main(int argc, char *argv[])
 			options.protect = val;
 			break;
 #endif				/* !defined DO_LOGOUT */
-		case '3':	/* -clientId CLIENTID */
-			free(options.clientId);
-			options.clientId = strdup(optarg);
-			break;
-		case '4':	/* -restore SAVEFILE */
-			free(options.saveFile);
-			options.saveFile = strdup(optarg);
-			break;
 		case '8':	/* --nosetbg */
 			options.setbg = False;
 			break;
@@ -10335,6 +10350,15 @@ main(int argc, char *argv[])
 			break;
 		case 'y':	/* -y, --tray */
 			options.tray = True;
+			break;
+
+		case '3':	/* -clientId CLIENTID */
+			free(options.clientId);
+			options.clientId = strdup(optarg);
+			break;
+		case '4':	/* -restore SAVEFILE */
+			free(options.saveFile);
+			options.saveFile = strdup(optarg);
 			break;
 
 		case 'n':	/* -n, --dry-run */
@@ -10472,4 +10496,4 @@ main(int argc, char *argv[])
 	exit(EXIT_SUCCESS);
 }
 
-// vim: set sw=8 tw=90 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
+// vim: set sw=8 tw=88 com=srO\:/**,mb\:*,ex\:*/,srO\:/*,mb\:*,ex\:*/,b\:TRANS foldmarker=@{,@} foldmethod=marker:
