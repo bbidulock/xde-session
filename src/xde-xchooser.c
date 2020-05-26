@@ -7329,7 +7329,7 @@ xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **r
 	return PAM_SUCCESS;	/* we don't do auth here */
 }
 
-#ifdef DO_XLOGIN
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
 void
 run_login(int argc, char *argv[])
 {
@@ -7556,7 +7556,7 @@ run_login(int argc, char *argv[])
 #endif
 
 }
-#endif				/* DO_XLOGIN */
+#endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) */
 
 #ifdef DO_XCHOOSER
 void
@@ -7564,6 +7564,8 @@ run_chooser(int argc, char *argv[])
 {
 	(void) argc;
 	(void) argv;
+
+	run_login(argc, argv);
 }
 #endif				/* DO_XCHOOSER */
 
