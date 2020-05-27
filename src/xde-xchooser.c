@@ -7637,6 +7637,9 @@ run_login(int argc, char *argv[])
 #if 1
 	/* so login session has permission to send us signals */
 	if (setresuid(-1, -1, pw->pw_uid)) { }
+	/* ungrab keyboard and pointer */
+	gdk_pointer_ungrab(GDK_CURRENT_TIME);
+	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 	/* create new process */
 	pid = fork();
 	if (pid == 0) {
