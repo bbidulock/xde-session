@@ -127,6 +127,7 @@
 #include <glib.h>
 
 #include <pwd.h>
+#include <grp.h>
 #include <systemd/sd-login.h>
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
@@ -6600,6 +6601,7 @@ setup_pam(pam_handle_t *pamh)
 		exit(EXIT_FAILURE);
 	}
 	/* pam_set_item(3) says this item is Linux-specific */
+	DPRINTF(1, "setting PAM_XDISPLAY=%s\n", options.display);
 	if ((err = pam_set_item(pamh, PAM_XDISPLAY, options.display)) != PAM_SUCCESS)
 		EPRINTF("pam_set_item(PAM_XDISPLAY, \"%s\"): %s\n", options.display, pam_strerror(pamh, err));
 	if (options.display[0] == ':') {
@@ -6619,6 +6621,7 @@ setup_pam(pam_handle_t *pamh)
 			tty = strdup(options.display);
 		}
 		if (tty) {
+			DPRINTF(1, "setting PAM_TTY=%s\n", tty);
 			if ((err = pam_set_item(pamh, PAM_TTY, tty)) != PAM_SUCCESS)
 				EPRINTF("pam_set_item(PAM_TTY, \"%s\"): %s\n", tty, pam_strerror(pamh, err));
 			free(tty);
@@ -6629,6 +6632,7 @@ setup_pam(pam_handle_t *pamh)
 		if ((rhost = strdup(options.display))) {
 			if (strrchr(rhost, ':'))
 				*strrchr(rhost, ':') = '\0';
+			DPRINTF(1, "setting PAM_RHOST=%s\n", rhost);
 			if ((err = pam_set_item(pamh, PAM_RHOST, rhost)) != PAM_SUCCESS)
 				EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost, pam_strerror(pamh, err));
 			free(rhost);
@@ -6647,9 +6651,7 @@ pam_conv_cb(int len, const struct pam_message **msg, struct pam_response **resp,
 	return PAM_SUCCESS;	/* we don't do auth */
 }
 
-#ifdef PAM_XAUTHDATA
-void add_xauth_data(pam_handle_t *pamh);
-#endif
+Xauth *add_xauth_data(pam_handle_t *pamh);
 
 /*
  * A greeter is started in a child process that stops immediately and waits to
@@ -6832,6 +6834,7 @@ void
 xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, const char *type)
 {
 	pam_handle_t *pamh = NULL;
+	Xauth *xau;
 	const char *env;
 	pid_t pid;
 	int status = 0;
@@ -6839,7 +6842,7 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 	int result;
 	char *const *var;
 	static char *vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
-		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
+		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", "TERM", NULL
 	};
 
 	switch((pid = fork())) {
@@ -6978,9 +6981,9 @@ xde_open_session(pam_handle_t **pamhp, const char *service, const char *class, c
 				pam_strerror(pamh, result));
 	}
 #endif
-#ifdef PAM_XAUTHDATA
-	add_xauth_data(pamh);
-#endif
+	if (!(xau = add_xauth_data(pamh)))
+		EPRINTF("Could not get X authority data!\n");
+	XauDisposeAuth(xau);
 	DPRINTF(1, "copying PAM environment variables\n");
 	for (var = vars; *var; var++) {
 		if ((env = getenv(*var))) {
@@ -7244,35 +7247,33 @@ authenticate(void)
 
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 
-#ifdef PAM_XAUTHDATA
-void
+Xauth *
 add_xauth_data(pam_handle_t *pamh)
 {
 	char *file, *nam, *p, num[12] = { 0, };
-	Xauth *xau;
+	Xauth *xau = NULL;
 	int namlen, numlen, result;
 	char *typ = "MIT-MAGIC-COOKIE-1";
 	int typlen = strlen(typ);
-	struct pam_xauth_data data;
 	unsigned short family;
 
 #if 0
 	DPRINTF(1, "strapped out for now\n");
-	return;
+	return (xau);
 #endif
 	DPRINTF(1, "determining X auth data\n");
 	if (!(nam = calloc(HOST_NAME_MAX + 1, sizeof(*nam))))
-		return;
+		return (xau);
 	if (!options.display) {
 		EPRINTF("need display name for function\n");
 		free(nam);
-		return;
+		return (xau);
 	}
 	strncpy(nam, options.display, HOST_NAME_MAX);
 	if (!(p = strchr(nam, ':'))) {
 		EPRINTF("no colon (:) in display name %s\n", nam);
 		free(nam);
-		return;
+		return (xau);
 	}
 	*p = '\0';
 	namlen = strnlen(nam, HOST_NAME_MAX);
@@ -7296,9 +7297,10 @@ add_xauth_data(pam_handle_t *pamh)
 	if (!file) {
 		EPRINTF("cannot determine Xauthority file name\n");
 		free(nam);
-		return;
+		return (xau);
 	}
 #if 0
+	/* do not need to worry about locking: we are the only one using it */
 	DPRINTF(1, "locking auth file\n");
 	if ((result = XauLockAuth(file, 1, 5, 0)) != LOCK_SUCCESS) {
 		EPRINTF("could not lock auth file %s\n", file);
@@ -7306,7 +7308,7 @@ add_xauth_data(pam_handle_t *pamh)
 			EPRINTF("lock error %s\n", strerror(errno));
 		if (result == LOCK_TIMEOUT)
 			EPRINTF("could not lock within timeout\n");
-		return;
+		return (xau);
 	}
 #endif
 	DPRINTF(1, "determining X auth data\n");
@@ -7314,11 +7316,15 @@ add_xauth_data(pam_handle_t *pamh)
 	if (!xau) {
 		EPRINTF("cannot obtain useable Xauth entry\n");
 		free(nam);
-		return;
+		return (xau);
 	}
 #if 0
+	/* do not need to worry about locking: we are the only one using it */
 	XauUnlockAuth(file);
 #endif
+
+#ifdef PAM_XAUTHDATA
+	struct pam_xauth_data data;
 
 	data.namelen = xau->name_length;
 	data.name = xau->name;
@@ -7329,11 +7335,34 @@ add_xauth_data(pam_handle_t *pamh)
 	result = pam_set_item(pamh, PAM_XAUTHDATA, &data);
 	if (result != PAM_SUCCESS)
 		EPRINTF("pam_set_item(PAM_XAUTHDATA,\"%p\"): %s\n", &data, pam_strerror(pamh, result));
-	XauDisposeAuth(xau);
+#endif
 	free(nam);
+	return (xau);
+}
+
+void
+set_xauth_data(Xauth *xau)
+{
+	FILE *fp;
+	unsigned short i;
+
+	/* at this point, XAUTHORITY should be set to the user's X authority file */
+	/* slim implementation just calls xauth(1) with add and appropriate arguments */
+
+	fp = popen("/usr/bin/xauth -q", "w");
+	if (!fp) {
+		EPRINTF("Could not execute xauth command: %s\n", strerror(errno));
+		return;
+	}
+	fprintf(fp, "remove %s\n", options.display);
+	fprintf(fp, "add %s . ", options.display);
+	for (i = 0; i < xau->data_length; i++)
+		fprintf(fp, "%02x", (int) xau->data[i]);
+	fprintf(fp, "\nexit\n");
+	pclose(fp);
 	return;
 }
-#endif
+
 
 int
 xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **resp, void *appdata_ptr)
@@ -7352,13 +7381,14 @@ run_login(int argc, char *argv[])
 #if 1
 	pam_handle_t *pamh = NULL;
 	const char *env;
-	// pid_t pid;
+	pid_t pid, wpid;
 	int result;
-	// int status;
+	int status = 0;
 	struct pam_conv conv = { xde_conv_cb, NULL };
 	// FILE *dummy;
 	const char **var;
 	struct passwd *pw;
+	Xauth *xau;
 #endif
 	/* At this point, options.username is set to the authenticated user name.  The
 	   process should establish a pam x11/user session and execute the
@@ -7370,7 +7400,7 @@ run_login(int argc, char *argv[])
 #if 1
 	/* should probably use DisplayManager*exportList for this */
 	static const char *vars[] = { "DISPLAY", "HOME", "LOGNAME", "USER",
-		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", NULL
+		"PATH", "SHELL", "XAUTHORITY", "WINDOWPATH", "TERM", NULL
 	};
 
 	if (!options.username) {
@@ -7389,6 +7419,7 @@ run_login(int argc, char *argv[])
 		setenv("DISPLAY", options.display, 1);
 		pam_misc_setenv(pamh, "DISPLAY", options.display, 0);
 	}
+	/* need this set this way before obtaining X authority data */
 	if (options.authfile) {
 		DPRINTF(1, "setting XAUTHORITY=%s\n", options.authfile);
 		setenv("XAUTHORITY", options.authfile, 1);
@@ -7452,9 +7483,8 @@ run_login(int argc, char *argv[])
 				pam_strerror(pamh, result));
 	}
 #endif
-#ifdef PAM_XAUTHDATA
-	add_xauth_data(pamh);
-#endif
+	if (!(xau = add_xauth_data(pamh)))
+		EPRINTF("Could not establish X authority data!\n");
 	DPRINTF(1, "copying PAM environment variables\n");
 	for (var = vars; *var; var++) {
 		if ((env = getenv(*var))) {
@@ -7519,7 +7549,7 @@ run_login(int argc, char *argv[])
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 
-#if 0
+#if 1
 		char *xauth = calloc(PATH_MAX + 1, sizeof(*xauth));
 
 		if (xauth != NULL) {
@@ -7554,7 +7584,7 @@ run_login(int argc, char *argv[])
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv(DISPLAY=%s): %s\n", options.display, pam_strerror(pamh, result));
 	}
-#if 1
+#if 0
 	/* probably the wrong authfile but xdm does this */
 	if (options.authfile) {
 		DPRINTF(1, "setting %s=%s\n", "XAUTHORITY", options.authfile);
@@ -7596,9 +7626,9 @@ run_login(int argc, char *argv[])
 			EPRINTF("pam_end(): %s\n", pam_strerror(pamh, result));
 		exit(EXIT_FAILURE);
 	}
-#if 0
+#if 1
 	/* so login session has permission to send us signals */
-	setresuid(-1, -1, pw->pw_uid);
+	if (setresuid(-1, -1, pw->pw_uid)) { }
 	/* create new process */
 	pid = fork();
 	if (pid == 0) {
@@ -7621,10 +7651,27 @@ run_login(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 		/* add authorization data to user's XAUTHORITY file */
-		set_xauth_data();
+		set_xauth_data(xau);
+		if (chdir(pw->pw_dir)) { }
+		execle(pw->pw_shell, pw->pw_shell, "-c", "exec /bin/bash -login -i ~/.xinitrc >~/.xsession-errors 2>&1", NULL, environ);
+		/* should not reach here */
+		exit(EXIT_FAILURE);
 	}
 #endif
 	endpwent();
+	XauDisposeAuth(xau);
+	/* need to wait for child here */
+	wpid = -1;
+	while ((wpid = wait(&status)) != pid) ;
+	if (WIFEXITED(status) && WEXITSTATUS(status)) {
+		EPRINTF("Failed to execute login command.\n");
+	} else {
+	}
+	if (setresuid(-1, -1, getuid())) { }
+	result = pam_close_session(pamh, PAM_SILENT);
+	if (result != PAM_SUCCESS)
+		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
+	pam_end(pamh, result);
 #endif
 
 }
