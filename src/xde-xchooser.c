@@ -7365,7 +7365,7 @@ set_xauth_data(Xauth *xau, struct passwd *pw)
 	fprintf(fp, "remove %s\n", options.display);
 	fprintf(fp, "add %s . ", options.display);
 	for (i = 0; i < xau->data_length; i++)
-		fprintf(fp, "%02x", (int) xau->data[i]);
+		fprintf(fp, "%02x", (unsigned int) xau->data[i] & 0x000000ff);
 	fprintf(fp, "\nexit\n");
 	pclose(fp);
 	return;
