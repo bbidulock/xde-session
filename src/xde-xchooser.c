@@ -7640,6 +7640,7 @@ run_login(int argc, char *argv[])
 	/* ungrab keyboard and pointer */
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
+	gtk_widget_hide(top);
 	/* create new process */
 	pid = fork();
 	if (pid == 0) {
@@ -7673,6 +7674,8 @@ run_login(int argc, char *argv[])
 	XauDisposeAuth(xau);
 	/* need to wait for child here */
 	wpid = -1;
+	/* should probably wait for three seconds for login to exit with failure
+	 * before dropping gtk altogether and closing connection to X display. */
 	while ((wpid = wait(&status)) != pid) ;
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
 		EPRINTF("Failed to execute login command.\n");
