@@ -7341,19 +7341,27 @@ add_xauth_data(pam_handle_t *pamh)
 }
 
 void
-set_xauth_data(Xauth *xau)
+set_xauth_data(Xauth *xau, struct passwd *pw)
 {
 	FILE *fp;
+	char *cmd;
 	unsigned short i;
 
 	/* at this point, XAUTHORITY should be set to the user's X authority file */
 	/* slim implementation just calls xauth(1) with add and appropriate arguments */
 
-	fp = popen("/usr/bin/xauth -q", "w");
+	cmd = calloc(PATH_MAX + 1, sizeof(*cmd));
+	strcpy(cmd, "/usr/bin/xauth -f ");
+	strcat(cmd, pw->pw_dir);
+	strcat(cmd, "/.Xauthority -q");
+
+	fp = popen(cmd, "w");
 	if (!fp) {
-		EPRINTF("Could not execute xauth command: %s\n", strerror(errno));
+		EPRINTF("Could not execute xauth command '%s': %s\n", cmd, strerror(errno));
+		free(cmd);
 		return;
 	}
+	free(cmd);
 	fprintf(fp, "remove %s\n", options.display);
 	fprintf(fp, "add %s . ", options.display);
 	for (i = 0; i < xau->data_length; i++)
@@ -7651,7 +7659,7 @@ run_login(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 		/* add authorization data to user's XAUTHORITY file */
-		set_xauth_data(xau);
+		set_xauth_data(xau, pw);
 		if (chdir(pw->pw_dir)) { }
 		execle(pw->pw_shell, pw->pw_shell, "-c", "exec /bin/bash -login -i ~/.xinitrc >~/.xsession-errors 2>&1", NULL, environ);
 		/* should not reach here */
