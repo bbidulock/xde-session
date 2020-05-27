@@ -5577,6 +5577,7 @@ GetPanel(void)
 	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
 #endif
 
+
 	buttons[3] = b = gtk_button_new();
 	gtk_widget_set_can_default(b, TRUE);
 	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
@@ -7422,12 +7423,14 @@ run_login(int argc, char *argv[])
 	if (options.display && options.display[0] != ':' && options.username) {
 		char *rhost;
 
+		DPRINTF(1, "setting PAM_RUSER=\"%s\"\n", options.username);
 		result = pam_set_item(pamh, PAM_RUSER, options.username);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_set_item(PAM_RUSER,\"%s\"): %s\n", options.username,
 				pam_strerror(pamh, result));
 		if ((rhost = strdup(options.display))) {
 			*strchrnul(rhost, ':') = '\0';
+			DPRINTF(1, "setting PAM_RHOST=\"%s\"\n", rhost);
 			result = pam_set_item(pamh, PAM_RHOST, rhost);
 			if (result != PAM_SUCCESS)
 				EPRINTF("pam_set_item(PAM_RHOST,\"%s\"): %s\n", rhost, pam_strerror(pamh, result));
@@ -7435,12 +7438,14 @@ run_login(int argc, char *argv[])
 		}
 	}
 	if (options.tty) {
+		DPRINTF(1, "setting PAM_TTY=\"%s\"\n", options.tty);
 		result = pam_set_item(pamh, PAM_TTY, options.tty);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_set_item(PAM_TTY,\"%s\"): %s\n", options.tty, pam_strerror(pamh, result));
 	}
 #ifdef PAM_XDISPLAY
 	if (options.display) {
+		DPRINTF(1, "setting PAM_XDISPLAY=\"%s\"\n", options.display);
 		result = pam_set_item(pamh, PAM_XDISPLAY, options.display);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_set_item(PAM_XDISPLAY,\"%s\"): %s\n", options.display,
@@ -7451,28 +7456,39 @@ run_login(int argc, char *argv[])
 	add_xauth_data(pamh);
 #endif
 	DPRINTF(1, "copying PAM environment variables\n");
-	for (var = vars; *var; var++)
-		if ((env = getenv(*var)))
+	for (var = vars; *var; var++) {
+		if ((env = getenv(*var))) {
+			DPRINTF(1, "setting %s=%s\n", *var, env);
 			if ((result = pam_misc_setenv(pamh, *var, env, 0)) != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv(%s=%s): %s\n", *var, env, pam_strerror(pamh, result));
+		}
+	}
 	DPRINTF(1, "copying XDM export list environment variables\n");
-	for (var = (const char **)resources.exportList; var && *var; var++)
-		if ((env = getenv(*var)))
+	for (var = (const char **)resources.exportList; var && *var; var++) {
+		if ((env = getenv(*var))) {
+			DPRINTF(1, "setting %s=%s\n", *var, env);
 			if ((result = pam_misc_setenv(pamh, *var, env, 0)) != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		}
+	}
 	if (!(env = getenv("PATH")) || !env[0]) {
-		if (resources.systemPath)
+		if (resources.systemPath) {
+			DPRINTF(1, "setting %s=%s\n", "PATH", resources.systemPath);
 			result = pam_misc_setenv(pamh, "PATH", resources.systemPath, 0);
-		else
+		} else {
+			DPRINTF(1, "setting %s=%s\n", "PATH", "/sbin:/bin:/usr/sbin:/usr/bin");
 			result = pam_misc_setenv(pamh, "PATH", "/sbin:/bin:/usr/sbin:/usr/bin", 0);
+		}
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
 	}
 	DPRINTF(1, "setting PAM environment variables\n");
 
+	DPRINTF(1, "setting %s=%s\n", "USER", options.username);
 	result = pam_misc_setenv(pamh, "USER", options.username, 0);
 	if (result != PAM_SUCCESS)
 		EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+	DPRINTF(1, "setting %s=%s\n", "LOGNAME", options.username);
 	result = pam_misc_setenv(pamh, "LOGNAME", options.username, 0);
 	if (result != PAM_SUCCESS)
 		EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
@@ -7486,6 +7502,7 @@ run_login(int argc, char *argv[])
 		if ((mail = calloc(PATH_MAX + 1, sizeof(*mail)))) {
 			strncpy(mail, "/var/mail/", PATH_MAX);
 			strncat(mail, pw->pw_name, PATH_MAX);
+			DPRINTF(1, "setting %s=%s\n", "MAIL", mail);
 			result = pam_misc_setenv(pamh, "MAIL", mail, 0);
 			if (result != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
@@ -7493,9 +7510,11 @@ run_login(int argc, char *argv[])
 		}
 	}
 	if (pw->pw_dir) {
+		DPRINTF(1, "setting %s=%s\n", "HOME", pw->pw_dir);
 		result = pam_misc_setenv(pamh, "HOME", pw->pw_dir, 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
+		DPRINTF(1, "setting %s=%s\n", "PWD", pw->pw_dir);
 		result = pam_misc_setenv(pamh, "PWD", pw->pw_dir, 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
@@ -7506,6 +7525,7 @@ run_login(int argc, char *argv[])
 		if (xauth != NULL) {
 			strncpy(xauth, pw->pw_dir, PATH_MAX);
 			strncat(xauth, "/.Xauthority", PATH_MAX);
+			DPRINTF(1, "setting %s=%s\n", "XAUTHORITY", xauth);
 			result = pam_misc_setenv(pamh, "XAUTHORITY", xauth, 0);
 			if (result != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv: %s\n", pam_strerror(pamh, result));
@@ -7514,13 +7534,14 @@ run_login(int argc, char *argv[])
 #endif
 	}
 	if (pw->pw_shell && pw->pw_shell[0] != '\0') {
-		/* should probably use * DisplayManager*systemShell for
-		   this */
+		/* should probably use DisplayManager*systemShell for this */
+		DPRINTF(1, "setting %s=%s\n", "SHELL", pw->pw_shell);
 		result = pam_misc_setenv(pamh, "SHELL", pw->pw_shell, 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv(SHELL=%s): %s\n", pw->pw_shell, pam_strerror(pamh, result));
 	} else {
 		setusershell();
+		DPRINTF(1, "setting %s=%s\n", "SHELL", getusershell());
 		result = pam_misc_setenv(pamh, "SHELL", getusershell(), 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv(SHELL=%s): %s\n", getusershell(), pam_strerror(pamh, result));
@@ -7528,6 +7549,7 @@ run_login(int argc, char *argv[])
 	}
 
 	if (options.display) {
+		DPRINTF(1, "setting %s=%s\n", "DISPLAY", options.display);
 		result = pam_misc_setenv(pamh, "DISPLAY", options.display, 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv(DISPLAY=%s): %s\n", options.display, pam_strerror(pamh, result));
@@ -7535,12 +7557,14 @@ run_login(int argc, char *argv[])
 #if 1
 	/* probably the wrong authfile but xdm does this */
 	if (options.authfile) {
+		DPRINTF(1, "setting %s=%s\n", "XAUTHORITY", options.authfile);
 		result = pam_misc_setenv(pamh, "XAUTHORITY", options.authfile, 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv(XAUTHORITY=%s): %s\n", options.authfile, pam_strerror(pamh, result));
 	}
 #endif
 	if (options.vtnr) {
+		DPRINTF(1, "setting %s=%s\n", "WINDOWPATH", options.vtnr);
 		result = pam_misc_setenv(pamh, "WINDOWPATH", options.vtnr, 0);
 		if (result != PAM_SUCCESS)
 			EPRINTF("pam_misc_setenv(WINDOWPATH=%s): %s\n", options.vtnr, pam_strerror(pamh, result));
@@ -7550,6 +7574,7 @@ run_login(int argc, char *argv[])
 
 		if ((rhost = strdup(options.display))) {
 			*strchrnul(rhost, ':') = '\0';
+			DPRINTF(1, "setting %s=%s\n", "REMOTEHOST", rhost);
 			result = pam_misc_setenv(pamh, "REMOTEHOST", rhost, 0);
 			if (result != PAM_SUCCESS)
 				EPRINTF("pam_misc_setenv(REMOTEHOST=%s): %s\n", rhost, pam_strerror(pamh, result));
