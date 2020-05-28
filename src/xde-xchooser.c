@@ -5578,7 +5578,6 @@ GetPanel(void)
 	gtk_box_pack_start(GTK_BOX(bb), b, TRUE, TRUE, 5);
 #endif
 
-
 	buttons[3] = b = gtk_button_new();
 	gtk_widget_set_can_default(b, TRUE);
 	gtk_container_set_border_width(GTK_CONTAINER(b), 3);
@@ -6027,13 +6026,6 @@ on_watch(GIOChannel *chan, GIOCondition cond, gpointer data)
 void
 startup_x11(int argc, char *argv[])
 {
-#if !defined(DO_XLOGIN) && !defined(DO_XCHOOSER) && !defined(DO_GREETER)
-	GdkCursor *cursor= gdk_cursor_new_for_display(disp, GDK_LEFT_PTR);
-	GdkScreen *screen = gdk_display_get_default_screen(disp);
-	GdkWindow *root = gdk_screen_get_root_window(screen);
-	gdk_window_set_cursor(root, cursor);
-#endif
-
 	if (options.usexde) {
 		static const char *suffix = "/.gtkrc-2.0.xde";
 		const char *home;
@@ -6049,10 +6041,18 @@ startup_x11(int argc, char *argv[])
 		gtk_rc_add_default_file(file);
 		free(file);
 	}
+
 	gtk_init(&argc, &argv);
 
 	GdkDisplay *disp = gdk_display_get_default();
 	Display *dpy = GDK_DISPLAY_XDISPLAY(disp);
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	/* these have no cursor set on startup */
+	GdkCursor *cursor= gdk_cursor_new_for_display(disp, GDK_LEFT_PTR);
+	GdkScreen *screen = gdk_display_get_default_screen(disp);
+	GdkWindow *root = gdk_screen_get_root_window(screen);
+	gdk_window_set_cursor(root, cursor);
+#endif
 	GdkAtom atom;
 
 	atom = gdk_atom_intern_static_string("_XDE_THEME_NAME");
