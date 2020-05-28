@@ -31,4 +31,23 @@ xde-session -- TODO file.  2016-06-16
 * [ ] xde-xlock should read DPMS timeouts and give the user the option
       to lock the screen at any of the given levels.
 
+Todo items for xde-xchooser, xde-xlogin, xde-xgreeter:
+
+* [ ] Print error messages from PAM login in the status area.
+
+* [ ] Detect and indicate whether capslock and numlock (even scrolllock)
+      keys are in effect with icons beside the password input window.
+
+* [ ] Detect and clear capslock and numlock (even scrolllock) keys when
+      starting up.
+
+* [ ] Accept some "special" usernames like slim does (e.g. "reboot").
+      Require root password for these user names.
+
+* [ ] These programs need to apply styles and themes from the resource
+      database instead of using ~/.gtkrc-2.0{,.xde} like other programs
+      in this suite that run after the user has logged in (especially
+      xde-xlock).  This needs to be done at startup still.
+
+
 // vim: set ft=asciidoc tw=72 nocin nosi fo+=tcqlorn spell:
