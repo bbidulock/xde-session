@@ -7398,15 +7398,28 @@ xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **r
 }
 
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+
+void
+childexit(GPid pid, gint status, gpointer user_data)
+{
+	(void) pid;
+	(void) status;
+	(void) user_data;
+	if (WIFEXITED(status) && WEXITSTATUS(status)) {
+		EPRINTF("Failed to execute login command.\n");
+	}
+	gtk_main_quit();
+	return;			/* G_SOURCE_REMOVE */
+}
+
 void
 run_login(int argc, char *argv[])
 {
 #if 1
 	pam_handle_t *pamh = NULL;
 	const char *env;
-	pid_t pid, wpid;
+	pid_t pid;
 	int result;
-	int status = 0;
 	struct pam_conv conv = { xde_conv_cb, NULL };
 	// FILE *dummy;
 	const char **var;
@@ -7688,7 +7701,9 @@ run_login(int argc, char *argv[])
 	endpwent();
 	XauDisposeAuth(xau);
 	/* need to wait for child here */
-	wpid = -1;
+#if 0
+	int status = 0;
+	pid_t wpid = -1;
 	/* should probably wait for three seconds for login to exit with failure
 	 * before dropping gtk altogether and closing connection to X display. */
 	while ((wpid = wait(&status)) != pid) ;
@@ -7696,13 +7711,18 @@ run_login(int argc, char *argv[])
 		EPRINTF("Failed to execute login command.\n");
 	} else {
 	}
+#else
+	g_child_watch_add(pid, childexit, NULL);
+	DPRINTF(1, "running main loop...\n");
+	gtk_main();
+	DPRINTF(1, "...running main loop\n");
+#endif
 	if (setresuid(-1, -1, getuid())) { }
 	result = pam_close_session(pamh, PAM_SILENT);
 	if (result != PAM_SUCCESS)
 		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
 	pam_end(pamh, result);
 #endif
-
 }
 #endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) */
 
