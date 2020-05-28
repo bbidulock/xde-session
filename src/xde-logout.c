@@ -5561,10 +5561,10 @@ GetPanel(void)
 
 	gethostname(hostname, sizeof(hostname));
 
-	int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
+	int len = strlen("XDMCP Host Menu from ") + strlen(hostname) + 1;
 	char *title = calloc(len, sizeof(*title));
 
-	strcpy(title, "XDCMP Host Menu from ");
+	strcpy(title, "XDMCP Host Menu from ");
 	strcat(title, hostname);
 
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();

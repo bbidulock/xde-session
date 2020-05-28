@@ -5759,10 +5759,10 @@ GetPanel(void)
 
 	gethostname(hostname, sizeof(hostname));
 
-	int len = strlen("XDCMP Host Menu from ") + strlen(hostname) + 1;
+	int len = strlen("XDMCP Host Menu from ") + strlen(hostname) + 1;
 	char *title = calloc(len, sizeof(*title));
 
-	strcpy(title, "XDCMP Host Menu from ");
+	strcpy(title, "XDMCP Host Menu from ");
 	strcat(title, hostname);
 
 	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
@@ -6707,7 +6707,7 @@ Xauth *add_xauth_data(pam_handle_t *pamh);
  * console.  Aside from that, it serves no purpose.
  *
  * Note that we do not really need a greeter process when the X display is
- * remote (chooser is running and XDCMP is being used): this is because there is
+ * remote (chooser is running and XDMCP is being used): this is because there is
  * no local virtual terminal with which to associate the greeter.
  */
 pid_t
