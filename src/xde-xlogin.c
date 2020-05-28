@@ -3613,12 +3613,6 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 						   echoing */
 		{
 			DPRINTF(1, "PAM_PROMPT_ECHO_OFF: %s\n", (*m)->msg);
-#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
-			if (!options.permitlogin) {
-				DPRINTF(1, "login not permitted\n");
-				return (PAM_CONV_ERR);
-			}
-#endif
 			gtk_label_set_text(GTK_LABEL(l_pword), (*m)->msg);
 			gtk_entry_set_text(GTK_ENTRY(pass), "");
 			gtk_label_set_text(GTK_LABEL(l_lstat), "");
@@ -3635,6 +3629,16 @@ xde_conv(int num_msg, const struct pam_message **msg, struct pam_response **resp
 			DPRINTF(1, "...running main loop\n");
 			if (login_result == LoginResultLogout)
 				return (PAM_CONV_ERR);
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+			if (!options.permitlogin) {
+				DPRINTF(1, "login not permitted\n");
+				return (PAM_CONV_ERR);
+			}
+			if (!options.display || (options.display[0] != ':' && !options.remotelogin)) {
+				DPRINTF(1, "remote login not permitted\n");
+				return (PAM_CONV_ERR);
+			}
+#endif
 			r->resp = strdup(gtk_entry_get_text(GTK_ENTRY(pass)));
 			// DPRINTF(1, "Response is: %s\n", r->resp);
 			break;
@@ -7152,11 +7156,22 @@ authenticate(void)
 	const char *service = "system-login";
 #endif
 
+#if 0
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
 	if (!options.display || (options.display[0] != ':' && !options.remotelogin)) {
+		/*
+		 * XXX: We should not be doing this here for the X chooser: it is
+		 * causing cycling of the remote X server.  We should either desensitize
+		 * the login widgets, or not show them at all.  Also, we should not even
+		 * be calling this function for the X chooser in this case.  For the X
+		 * login and greeter programs, (and maybe even for X chooser too), we
+		 * should go through at least part of the process of logging in before
+		 * refusing the login.  See handling of options.permitlogin.
+		 */
 		EPRINTF("remote login not permitted\n");
 		return (status);
 	}
+#endif
 #endif
 	DPRINTF(1, "starting PAM\n");
 	if ((status = pam_start(service, options.username, &xde_pam_conv, &pamh)) != PAM_SUCCESS) {
@@ -7383,15 +7398,28 @@ xde_conv_cb(int num_msg, const struct pam_message **msg, struct pam_response **r
 }
 
 #if defined(DO_XLOGIN) || defined(DO_XCHOOSER)
+
+void
+childexit(GPid pid, gint status, gpointer user_data)
+{
+	(void) pid;
+	(void) status;
+	(void) user_data;
+	if (WIFEXITED(status) && WEXITSTATUS(status)) {
+		EPRINTF("Failed to execute login command.\n");
+	}
+	gtk_main_quit();
+	return;			/* G_SOURCE_REMOVE */
+}
+
 void
 run_login(int argc, char *argv[])
 {
 #if 1
 	pam_handle_t *pamh = NULL;
 	const char *env;
-	pid_t pid, wpid;
+	pid_t pid;
 	int result;
-	int status = 0;
 	struct pam_conv conv = { xde_conv_cb, NULL };
 	// FILE *dummy;
 	const char **var;
@@ -7673,7 +7701,9 @@ run_login(int argc, char *argv[])
 	endpwent();
 	XauDisposeAuth(xau);
 	/* need to wait for child here */
-	wpid = -1;
+#if 0
+	int status = 0;
+	pid_t wpid = -1;
 	/* should probably wait for three seconds for login to exit with failure
 	 * before dropping gtk altogether and closing connection to X display. */
 	while ((wpid = wait(&status)) != pid) ;
@@ -7681,13 +7711,18 @@ run_login(int argc, char *argv[])
 		EPRINTF("Failed to execute login command.\n");
 	} else {
 	}
+#else
+	g_child_watch_add(pid, childexit, NULL);
+	DPRINTF(1, "running main loop...\n");
+	gtk_main();
+	DPRINTF(1, "...running main loop\n");
+#endif
 	if (setresuid(-1, -1, getuid())) { }
 	result = pam_close_session(pamh, PAM_SILENT);
 	if (result != PAM_SUCCESS)
 		EPRINTF("pam_close_session: %s\n", pam_strerror(pamh, result));
 	pam_end(pamh, result);
 #endif
-
 }
 #endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) */
 
