@@ -1017,6 +1017,44 @@ queue_call(GIOChannel *channel, GIOCondition condition, gpointer data)
 }
 
 void
+reparse_gtk_rc(void)
+{
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	gchar *rc_string;
+#endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER) */
+
+	gtk_rc_reparse_all();
+#if defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER)
+	if (options.gtk2_theme && (rc_string = g_strdup_printf("gtk-theme-name=\"%s\"", options.gtk2_theme))) {
+		DPRINTF(1, "Setting %s\n", rc_string);
+		gtk_rc_parse_string(rc_string);
+		g_free(rc_string);
+	}
+	if (options.icon_theme && (rc_string = g_strdup_printf("gtk-icon-theme-name=\"%s\"", options.icon_theme))) {
+		DPRINTF(1, "Setting %s\n", rc_string);
+		gtk_rc_parse_string(rc_string);
+		g_free(rc_string);
+	}
+	if (options.soundtheme && (rc_string = g_strdup_printf("gtk-sound-theme-name=\"%s\"", options.soundtheme))) {
+		DPRINTF(1, "Setting %s\n", rc_string);
+		gtk_rc_parse_string(rc_string);
+		g_free(rc_string);
+		/* XXX: really only want to enable sounds for local logins unless we can
+		 * figure out how to remote pulseaudio */
+		gtk_rc_parse_string("gtk-enable-event-sounds=1");
+		gtk_rc_parse_string("gtk-enable-input-feedback-sounds=1");
+	}
+	if (options.curs_theme && (rc_string = g_strdup_printf("gtk-cursor-theme-name=\"%s\"", options.curs_theme))) {
+		DPRINTF(1, "Setting %s\n", rc_string);
+		gtk_rc_parse_string(rc_string);
+		g_free(rc_string);
+		gtk_rc_parse_string("gtk-cursor-theme-size=0");
+	}
+	/* FIXME: probably want to set gtk-font-name too. */
+#endif				/* defined(DO_XLOGIN) || defined(DO_XCHOOSER) || defined(DO_GREETER) */
+}
+
+void
 init_canberra(void)
 {
 	GdkDisplay *disp = gdk_display_get_default();
@@ -1038,12 +1076,15 @@ init_canberra(void)
 	ca_proplist_sets(pl, CA_PROP_APPLICATION_LANGUAGE, "C");
 	ca_proplist_sets(pl, CA_PROP_CANBERRA_VOLUME, "0.0");
 	if (!theme_set) {
-		GdkScreen *scrn = gdk_display_get_default_screen(disp);
-		GtkSettings *set = gtk_settings_get_for_screen(scrn);
+		GdkScreen *scrn;
+		GtkSettings *set;
 		GValue theme_v = G_VALUE_INIT;
 		const char *stheme;
 
-		gtk_rc_reparse_all();
+		reparse_gtk_rc();
+
+		scrn = gdk_display_get_default_screen(disp);
+		set = gtk_settings_get_for_screen(scrn);
 
 		g_value_init(&theme_v, G_TYPE_STRING);
 		g_object_get_property(G_OBJECT(set), "gtk-sound-theme-name", &theme_v);
@@ -5309,7 +5350,7 @@ reparse(Display *dpy, Window root)
 	int strings = 0;
 
 	PTRACE(1);
-	gtk_rc_reparse_all();
+	reparse_gtk_rc();
 	if (!options.usexde)
 		return;
 	if (XGetTextProperty(dpy, root, &xtp, _XA_XDE_THEME_NAME)) {
