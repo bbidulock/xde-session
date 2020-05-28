@@ -8,8 +8,9 @@ XDE-XLock*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XLock*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-XLock*welcome:			Welcome to CLIENTHOST!
 XDE-XLock*theme.icon:			gnome-brave
-XDE-XLock*theme.name:			Squared-blue
+XDE-XLock*theme.name:			Mist
 !XDE-XLock*theme.sound:			unexicon
+!XDE-XLock*theme.cursor:		Bluecurve
 XDE-XLock*theme.xde:			false
 XDE-XLock*side:				top
 XDE-XLock*user.default:			unexicon

@@ -8,8 +8,9 @@ XDE-Greeter*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-Greeter*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-Greeter*welcome:			Welcome to CLIENTHOST!
 XDE-Greeter*theme.icon:			gnome-brave
-XDE-Greeter*theme.name:			Squared-blue
+XDE-Greeter*theme.name:			Mist
 XDE-Greeter*theme.sound:		unexicon
+XDE-Greeter*theme.cursor:		Bluecurve
 XDE-Greeter*theme.xde:			false
 XDE-Greeter*side:			top
 XDE-Greeter*user.default:		unexicon
@@ -34,3 +35,4 @@ XDE-Greeter.inputFgColor:		#000000
 XDE-Greeter.inputBgColor:		#ffffff
 XDE-Greeter.failFace:			Liberation Sans:size=16
 XDE-Greeter.failColor:			red
+

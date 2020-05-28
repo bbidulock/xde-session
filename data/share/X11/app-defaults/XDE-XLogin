@@ -8,8 +8,9 @@ XDE-XLogin*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XLogin*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-XLogin*welcome:			Welcome to CLIENTHOST!
 XDE-XLogin*theme.icon:			gnome-brave
-XDE-XLogin*theme.name:			Squared-blue
+XDE-XLogin*theme.name:			Mist
 XDE-XLogin*theme.sound:			unexicon
+XDE-XLogin*theme.cursor:		Bluecurve
 XDE-XLogin*theme.xde:			false
 XDE-XLogin*side:			top
 XDE-XLogin*user.default:		unexicon
@@ -34,3 +35,4 @@ XDE-XLogin.inputFgColor:		#000000
 XDE-XLogin.inputBgColor:		#ffffff
 XDE-XLogin.failFace:			Liberation Sans:size=16
 XDE-XLogin.failColor:			red
+

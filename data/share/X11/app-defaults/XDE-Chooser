@@ -8,8 +8,9 @@ XDE-Chooser*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-Chooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
 !XDE-Chooser*welcome:			Welcome to CLIENTHOST!
 XDE-Chooser*theme.icon:			gnome-brave
-!XDE-Chooser*theme.name:		Squared-blue
+!XDE-Chooser*theme.name:		Mist
 !XDE-Chooser*theme.sound:		unexicon
+!XDE-Chooser*theme.cursor:		Bluecurve
 XDE-Chooser*theme.xde:			false
 XDE-Chooser*side:			left
 XDE-Chooser*user.default:		unexicon
@@ -24,14 +25,14 @@ XDE-Chooser*xsession.default:		adwm
 XDE-Chooser*setbg:			true
 XDE-Chooser*transparent:		false
 
-XDE-Chooser.greetFace:			Liberation Sans:size=16
+XDE-Chooser.greetFace:			Liberation Sans:size=16:bold
 XDE-Chooser.greetColor:			#ffffff
-XDE-Chooser.promptFace:			Liberation Sans:size=16
+XDE-Chooser.promptFace:			Liberation Sans:size=16:bold
 XDE-Chooser.promptColor:		#f5f4fd
 XDE-Chooser.inputFace:			Liberation Sans:size=12
 XDE-Chooser.inputColor:			#000404
 XDE-Chooser.inputFgColor:		#000000
 XDE-Chooser.inputBgColor:		#ffffff
-XDE-Chooser.failFace:			size=16
+XDE-Chooser.failFace:			Liberation Sans:size=16
 XDE-Chooser.failColor:			red
 

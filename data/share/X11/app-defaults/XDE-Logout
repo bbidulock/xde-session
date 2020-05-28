@@ -8,8 +8,9 @@ XDE-Logout*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-Logout*splash:			/usr/share/xde/images/unexicon-splash.jpg
 !XDE-Logout*welcome:			Welcome to CLIENTHOST!
 XDE-Logout*theme.icon:			gnome-brave
-!XDE-Logout*theme.name:			Squared-blue
+!XDE-Logout*theme.name:			Mist
 !XDE-Logout*theme.sound:		unexicon
+!XDE-Logout*theme.cursor:		Bluecurve
 XDE-Logout*theme.xde:			false
 XDE-Logout*side:			left
 XDE-Logout*user.default:		unexicon
@@ -24,14 +25,14 @@ XDE-Logout*xsession.default:		adwm
 XDE-Logout*setbg:			false
 XDE-Logout*transparent:			false
 
-XDE-Logout.greetFace:			Liberation Sans:size=16
+XDE-Logout.greetFace:			Liberation Sans:size=16:bold
 XDE-Logout.greetColor:			#ffffff
-XDE-Logout.promptFace:			Liberation Sans:size=16
+XDE-Logout.promptFace:			Liberation Sans:size=16:bold
 XDE-Logout.promptColor:			#f5f4fd
 XDE-Logout.inputFace:			Liberation Sans:size=12
 XDE-Logout.inputColor:			#000404
 XDE-Logout.inputFgColor:		#000000
 XDE-Logout.inputBgColor:		#ffffff
-XDE-Logout.failFace:			size=16
+XDE-Logout.failFace:			Liberation Sans:size=16
 XDE-Logout.failColor:			red
 

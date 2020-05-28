@@ -8,8 +8,9 @@ XDE-XChooser*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XChooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-XChooser*welcome:			Welcome to CLIENTHOST!
 XDE-XChooser*theme.icon:		gnome-brave
-XDE-XChooser*theme.name:		Squared-blue
+XDE-XChooser*theme.name:		Mist
 XDE-XChooser*theme.sound:		unexicon
+XDE-XChooser*theme.cursor:		Bluecurve
 XDE-XChooser*theme.xde:			false
 XDE-XChooser*side:			left
 XDE-XChooser*user.default:		unexicon
@@ -34,3 +35,4 @@ XDE-XChooser.inputFgColor:		#000000
 XDE-XChooser.inputBgColor:		#ffffff
 XDE-XChooser.failFace:			Liberation Sans:size=16
 XDE-XChooser.failColor:			red
+
