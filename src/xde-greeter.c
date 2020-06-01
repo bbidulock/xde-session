@@ -5474,7 +5474,7 @@ GetPanel(void)
 	gtk_container_add(GTK_CONTAINER(align), login);
 
 	l_uname = gtk_label_new(NULL);
-	gtk_label_set_text(GTK_LABEL(l_uname), resources.namePrompt ? : "Username: ");
+	gtk_label_set_text(GTK_LABEL(l_uname), resources.namePrompt ? : "Username:");
 	gtk_misc_set_alignment(GTK_MISC(l_uname), 1.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l_uname), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(login), l_uname, 0, 1, 0, 1);
@@ -5510,7 +5510,7 @@ GetPanel(void)
 	}
 
 	l_pword = gtk_label_new(NULL);
-	gtk_label_set_text(GTK_LABEL(l_pword), resources.passwdPrompt ? : "Password: ");
+	gtk_label_set_text(GTK_LABEL(l_pword), resources.passwdPrompt ? : "Password:");
 	gtk_misc_set_alignment(GTK_MISC(l_pword), 1.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(l_pword), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(login), l_pword, 0, 1, 1, 2);
@@ -5638,7 +5638,7 @@ GetPanel(void)
 	if (options.xsession) {
 	GtkWidget *xsess = gtk_label_new(NULL);
 
-	gtk_label_set_text(GTK_LABEL(xsess), "XSession:  ");
+	gtk_label_set_text(GTK_LABEL(xsess), "XSession:");
 	gtk_misc_set_alignment(GTK_MISC(xsess), 1.0, 0.5);
 	gtk_misc_set_padding(GTK_MISC(xsess), 5, 2);
 	gtk_table_attach_defaults(GTK_TABLE(login), xsess, 0, 1, 2, 3);
