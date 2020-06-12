@@ -1,14 +1,15 @@
-[xde-session -- release notes.  2020-02-09]: #
+[xde-session -- release notes.  2020-06-12]: #
 
-Pre-Release 1.11
+Pre-Release 1.12
 ================
 
-This is another pre-release of the xde-session package, which provide a
+This is another pre-release of the xde-session package, which provides a
 full session manager for the XDE (X Desktop Environment).
 
-This release is only intended to update the build system and provide
-handling for extra warning flags under gcc 9.2.0.  Some improvements
-made to configuration files.
+This release is updates the build system to support GCC 10.1.  The
+xde-xchooser program was updated to allow direct login to the system
+displaying the chooser.  The next release will include a working
+xde-xlogin program.
 
 As usual, included in the release is an autoconf tarball for building
 the package from source.  See the [NEWS](NEWS) and [TODO](TODO) file in
