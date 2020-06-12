@@ -21,7 +21,7 @@ git tag -n100 -l 1.13
 
 git shortlog -e -n -w80,6,8 1.11...1.13
 
-Brian Bidulock <bidulock@openss7.org> (49):
+Brian Bidulock <bidulock@openss7.org> (50):
       whoops
       add sound theme resource
       add sound theme option and resource
@@ -71,6 +71,7 @@ Brian Bidulock <bidulock@openss7.org> (49):
       rationalize
       turn off debugging
       update release files
+      update release files again
 
 
 Release xde-session-1.11 released 2020-02-09

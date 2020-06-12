@@ -1,5 +1,18 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit cbada5fc26d5be2353350e9291836af2c71e5c2b
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Jun 11 23:05:25 2020 -0600
+
+    update release files again
+
+ AUTHORS      |  2 +-
+ ChangeLog    | 43 +++++++++++++++++++++++++------------------
+ NEWS         |  8 +++++---
+ README.md    |  6 +++---
+ configure.ac |  4 ++--
+ 5 files changed, 36 insertions(+), 27 deletions(-)
+
 commit 0d4a5bd5e18e7601dddce99f281e51c6978c3591
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Thu Jun 11 23:03:50 2020 -0600
@@ -5548,12 +5561,3 @@ Date:   Sat Jan 9 21:19:36 2016 -0700
 
  man/xde-xsession.pod | 13 ++++++++++++-
  1 file changed, 12 insertions(+), 1 deletion(-)
-
-commit 182d327bf775dbda80d3c9ca16f1ea4831998f4a
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:19:32 2016 -0700
-
-    updated manual page
-
- man/xde-xlogin.pod | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
