@@ -1,6 +1,6 @@
-xde-session -- history of user-visible changes.  2020-06-01
+xde-session -- history of user-visible changes.  2020-06-11
 
-Release xde-session-1.13 released 2020-06-01
+Release xde-session-1.13 released 2020-06-11
 --------------------------------------------
 
 git tag -n100 -l 1.13
@@ -21,7 +21,7 @@ git tag -n100 -l 1.13
 
 git shortlog -e -n -w80,6,8 1.11...1.13
 
-Brian Bidulock <bidulock@openss7.org> (47):
+Brian Bidulock <bidulock@openss7.org> (49):
       whoops
       add sound theme resource
       add sound theme option and resource
@@ -69,6 +69,8 @@ Brian Bidulock <bidulock@openss7.org> (47):
       correct spelling
       remove excess spaces
       rationalize
+      turn off debugging
+      update release files
 
 
 Release xde-session-1.11 released 2020-02-09

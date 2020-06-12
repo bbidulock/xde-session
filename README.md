@@ -1,9 +1,9 @@
-[xde-session -- read me first file.  2020-06-01]: #
+[xde-session -- read me first file.  2020-06-11]: #
 
 xde-session
 ===============
 
-Package `xde-session-1.13` was released under GPLv3 license 2020-06-01.
+Package `xde-session-1.13` was released under GPLv3 license 2020-06-11.
 
 This package provides a number of "C"-language tools for working with
 the _X Desktop Environment_.  Most of these tools were previously
@@ -28,7 +28,7 @@ Primary tools included are:
 Release
 -------
 
-This is the `xde-session-1.13` package, released 2020-06-01.  This
+This is the `xde-session-1.13` package, released 2020-06-11.  This
 release, and the latest version, can be obtained from [GitHub][1], using
 a command such as:
 

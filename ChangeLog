@@ -1,5 +1,30 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit 0d4a5bd5e18e7601dddce99f281e51c6978c3591
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Jun 11 23:03:50 2020 -0600
+
+    update release files
+
+ AUTHORS      |    2 +-
+ ChangeLog    | 1672 ++++++++++++++++--------------------------------------
+ NEWS         |  215 +++----
+ README.md    |   20 +-
+ RELEASE.md   |   13 +-
+ configure.ac |   10 +-
+ 6 files changed, 579 insertions(+), 1353 deletions(-)
+
+commit e02d71df4b0bb04b766b76efac167efc8b029f4c
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Jun 11 23:02:10 2020 -0600
+
+    turn off debugging
+
+ data/share/X11/app-defaults/XDE-Greeter  | 2 +-
+ data/share/X11/app-defaults/XDE-XChooser | 2 +-
+ data/share/X11/app-defaults/XDE-XLogin   | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
 commit 3e57f01b603a8cad01353dfb6013b5c059a2febf
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Mon Jun 1 01:17:25 2020 -0600
@@ -5531,22 +5556,4 @@ Date:   Sat Jan 9 21:19:32 2016 -0700
     updated manual page
 
  man/xde-xlogin.pod | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
-commit e642f005702b77d7bd6318ad3053f623070cc75a
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:19:29 2016 -0700
-
-    updated manual page
-
- man/xde-xlock.pod | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
-
-commit 348878718d0db8def35e5b2d497dfcc50200ac19
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:19:18 2016 -0700
-
-    updated manual page
-
- man/xde-xchooser.pod | 12 ++++++++++--
  1 file changed, 10 insertions(+), 2 deletions(-)
