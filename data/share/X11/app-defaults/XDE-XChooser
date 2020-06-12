@@ -3,7 +3,7 @@
 !!!!
 XDE-XChooser*x:				0.35
 XDE-XChooser*y:				0.12
-XDE-XChooser*debug:			2
+XDE-XChooser*debug:			0
 XDE-XChooser*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XChooser*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-XChooser*welcome:			Welcome to CLIENTHOST!

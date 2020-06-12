@@ -3,7 +3,7 @@
 !!!!
 XDE-XLogin*x:				0.35
 XDE-XLogin*y:				0.12
-XDE-XLogin*debug:			2
+XDE-XLogin*debug:			0
 XDE-XLogin*banner:			/usr/share/xde/images/unexicon-banner.png
 XDE-XLogin*splash:			/usr/share/xde/images/unexicon-splash.jpg
 XDE-XLogin*welcome:			Welcome to CLIENTHOST!
