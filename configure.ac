@@ -144,6 +144,7 @@ PKG_CHECK_MODULES([UNIQUE],[unique-1.0])
 PKG_CHECK_MODULES([WNCK],[libwnck-1.0])
 PKG_CHECK_MODULES([CAIRO],[cairo])
 PKG_CHECK_MODULES([SYSTEMD],[libsystemd])
+PKG_CHECK_MODULES([JSONC],[json-c])
 
 AC_ARG_ENABLE([xrandr],
 	AS_HELP_STRING([--disable-xrandr],
