@@ -2369,18 +2369,19 @@ CanConnect(struct sockaddr *sa)
 		return False;
 	}
 	if (options.debug) {
-		struct sockaddr conn;
+		struct sockaddr_storage conn = { };
+		struct sockaddr *addr = (typeof(addr)) &conn;
 		char ipaddr[INET6_ADDRSTRLEN + 1] = { 0, };
 
-		if (getsockname(sock, &conn, &salen) == -1) {
+		if (getsockname(sock, addr, &salen) == -1) {
 			EPRINTF("getsockname: %s\n", strerror(errno));
 			close(sock);
 			return False;
 		}
-		switch (conn.sa_family) {
+		switch (addr->sa_family) {
 		case AF_INET:
 		{
-			struct sockaddr_in *sin = (typeof(sin)) & conn;
+			struct sockaddr_in *sin = (typeof(sin)) addr;
 			int port = ntohs(sin->sin_port);
 
 			inet_ntop(AF_INET, &sin->sin_addr, ipaddr, INET_ADDRSTRLEN);
@@ -2389,7 +2390,7 @@ CanConnect(struct sockaddr *sa)
 		}
 		case AF_INET6:
 		{
-			struct sockaddr_in6 *sin6 = (typeof(sin6)) & conn;
+			struct sockaddr_in6 *sin6 = (typeof(sin6)) addr;
 			int port = ntohs(sin6->sin6_port);
 
 			inet_ntop(AF_INET6, &sin6->sin6_addr, ipaddr, INET6_ADDRSTRLEN);
@@ -2398,13 +2399,13 @@ CanConnect(struct sockaddr *sa)
 		}
 		case AF_UNIX:
 		{
-			struct sockaddr_un *sun = (typeof(sun)) & conn;
+			struct sockaddr_un *sun = (typeof(sun)) addr;
 
 			DPRINTF(1, "family is AF_UNIX\n");
 			break;
 		}
 		default:
-			EPRINTF("bad connected family %d\n", (int) conn.sa_family);
+			EPRINTF("bad connected family %d\n", (int) addr->sa_family);
 			close(sock);
 			return False;
 		}
