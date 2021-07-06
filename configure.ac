@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.71])
 AC_INIT([xde-session],[1.13],[http://github.com/bbidulock/xde-session],[xde-session],[http://github.com/bbidulock/xde-session/issues])
 AC_REVISION([1.13])
 
@@ -36,6 +36,7 @@ AM_SILENT_RULES([yes])
 
 # Checks for programs.
 AC_PROG_SED
+AC_PROG_CXX
 AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_CPP
@@ -89,18 +90,29 @@ AC_SUBST([LIBTOOL_DEPS])
 PKG_PROG_PKG_CONFIG([0.14.0])
 
 # Checks for libraries.
+AS_BOX([Libraries])
+AC_CHECK_LIB([pam], [pam_start])
+AC_CHECK_LIB([pam_misc], [pam_misc_setenv])
 
 # Checks for header files.
 AS_BOX([Header Files])
-AC_HEADER_STDC
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_PATH_X
 AC_PATH_XTRA
-AC_CHECK_HEADERS([fcntl.h locale.h stddef.h stdint.h stdlib.h string.h strings.h sys/ioctl.h sys/time.h syslog.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h langinfo.h netdb.h netinet/in.h stdint.h strings.h sys/ioctl.h sys/socket.h sys/time.h syslog.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AS_BOX([Typedefs, Structures, Compiler])
+AC_CHECK_HEADER_STDBOOL
+AC_TYPE_MODE_T
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UID_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
 
 # Checks for library functions.
 AS_BOX([Library Functions])
@@ -108,7 +120,9 @@ AC_FUNC_FORK
 AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([gethostname memmove select strcasecmp strchr strcspn strdup strerror strncasecmp strndup strpbrk strrchr strspn strstr strtol strtoul])
+AC_FUNC_STRNLEN
+AC_FUNC_STRTOD
+AC_CHECK_FUNCS([alarm atexit endpwent getcwd gethostname gettimeofday getusershell localeconv memmove memset mkdir nl_langinfo setenv setlocale socket strcasecmp strchr strdup strerror strncasecmp strndup strpbrk strrchr strspn strstr strtol strtoul])
 
 AS_BOX([X11 Extension Libraries])
 
@@ -132,7 +146,7 @@ PKG_CHECK_MODULES([CAIRO],[cairo])
 PKG_CHECK_MODULES([SYSTEMD],[libsystemd])
 
 AC_ARG_ENABLE([xrandr],
-	AC_HELP_STRING([--disable-xrandr],
+	AS_HELP_STRING([--disable-xrandr],
 		[Disable XRANDR support @<:@default=auto@:>@]))
 if test "x$enable_xrandr" != xno ; then
 	PKG_CHECK_MODULES([XRANDR],[xrandr],
@@ -144,7 +158,7 @@ AC_MSG_RESULT([${enable_xrandr:-yes}])
 AM_CONDITIONAL([HAVE_XRANDR],[test  "x$enable_xrandr" != "xno"])
 
 AC_ARG_ENABLE([xinerama],
-	AC_HELP_STRING([--disable-xinerama],
+	AS_HELP_STRING([--disable-xinerama],
 		[Disable XINERAMA support @<:@default=auto@:>@]))
 if test "x$enable_xinerama" != xno ; then
 	PKG_CHECK_MODULES([XINERAMA],[xinerama],
@@ -156,7 +170,7 @@ AC_MSG_RESULT([${enable_xinerama:-yes}])
 AM_CONDITIONAL([HAVE_XINERAMA],[test  "x$enable_xinerama" != "xno"])
 
 AC_ARG_ENABLE([xvnc],
-	AC_HELP_STRING([--disable-xvnc],
+	AS_HELP_STRING([--disable-xvnc],
 		[Disable XVNC support @<:@default=auto@:>@]))
 if test "x$enable_xvnc" != xno ; then
 	PKG_CHECK_MODULES([XVNC],[xvnc],
@@ -167,7 +181,7 @@ AC_MSG_CHECKING([for XVNC support])
 AC_MSG_RESULT([${enable_xvnc:-yes}])
 
 AC_ARG_ENABLE([canberra],
-	AC_HELP_STRING([--disable-canberra],
+	AS_HELP_STRING([--disable-canberra],
 		[Disable canberra sound @<:@default=auto@:>@]))
 if test "x$enable_canberra" != xno ; then
 	PKG_CHECK_MODULES([SOUND],[libcanberra-gtk],
@@ -179,7 +193,7 @@ AC_MSG_RESULT([${enable_canberra:-yes}])
 AM_CONDITIONAL([HAVE_CANBERRA_SOUND],[test "x$enable_canberra" != "xno"])
 
 AC_ARG_ENABLE([debug],
-	AC_HELP_STRING([--enable-debug],
+	AS_HELP_STRING([--enable-debug],
 		[Enable debugging support @<:@default=disabled@:>@]))
 if test "x$enable_debug" = xyes ; then
 	AC_DEFINE_UNQUOTED([DEBUG],[],[Define to enable debugging])
