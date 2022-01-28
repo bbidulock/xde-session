@@ -3,11 +3,11 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = src man data
 
-EXTRA_DIST = INSTALL COPYING AUTHORS NEWS README README.md README.md.in THANKS TODO ChangeLog RELEASE RELEASE.md
+EXTRA_DIST = INSTALL COPYING AUTHORS NEWS index.md README README.md README.md.in THANKS TODO ChangeLog RELEASE RELEASE.md
 
 dist_noinst_SCRIPTS = gennews.sh autogen.sh configure.sh rebuild.sh dist.sh
 
-DISTCLEANFILES = ChangeLog AUTHORS NEWS README README.md README.html README.txt RELEASE RELEASE.html RELEASE.txt
+DISTCLEANFILES = ChangeLog AUTHORS NEWS index.md README README.md README.html README.txt RELEASE RELEASE.html RELEASE.txt
 
 dist-hook:
 	$(AM_V_GEN)if test -x "`which git 2>/dev/null`" -a -d "$(srcdir)/.git" ; then \
@@ -54,6 +54,9 @@ NEWS:
 		  PACKAGE="$(PACKAGE)" $(srcdir)/gennews.sh \
 		)>$@ ; \
 	else touch $@ ; fi
+
+index.md: README.md
+	$(AM_V_GEN)(echo -e "---\nlayout: default\n---"; cat $<) >$@
 
 README.md: README.md.in
 	$(AM_V_GEN)sed -r -e 's:\@PACKAGE\@:$(PACKAGE):g;s:\@VERSION\@:$(VERSION):g;s:\@DATE\@:$(DATE):g;s:\@BRANCH\@:$(BRANCH):g' $< >$@
