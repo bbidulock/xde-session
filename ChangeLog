@@ -1,5 +1,153 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit d6ee0ff52bd0ceda3d6d33079ad8402b293ea750
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jan 28 21:51:13 2022 -0700
+
+    update release notes
+
+ RELEASE.md | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+commit 639f8bc44167bb4fc40fd67b605a93b9355f1921
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jan 28 21:51:00 2022 -0700
+
+    update copyright
+
+ src/autostart.c     | 2 +-
+ src/autostart.h     | 2 +-
+ src/display.c       | 2 +-
+ src/display.h       | 2 +-
+ src/manager.c       | 2 +-
+ src/manager.h       | 2 +-
+ src/smclient.c      | 2 +-
+ src/smclient.h      | 2 +-
+ src/test-pipe.c     | 2 +-
+ src/test-root.c     | 2 +-
+ src/xde-autostart.c | 6 +++---
+ src/xde-chooser.c   | 6 +++---
+ src/xde-dockmgr.c   | 6 +++---
+ src/xde-greeter.c   | 8 ++++----
+ src/xde-login.c     | 6 +++---
+ src/xde-logout.c    | 6 +++---
+ src/xde-session.c   | 6 +++---
+ src/xde-sm.c        | 6 +++---
+ src/xde-smproxy.c   | 6 +++---
+ src/xde-smproxy.h   | 2 +-
+ src/xde-startwm.c   | 6 +++---
+ src/xde-traymgr.c   | 6 +++---
+ src/xde-wait.c      | 6 +++---
+ src/xde-wmproxy.c   | 6 +++---
+ src/xde-xchooser.c  | 8 ++++----
+ src/xde-xlock.c     | 8 ++++----
+ src/xde-xlogin.c    | 8 ++++----
+ src/xde-xsession.c  | 6 +++---
+ src/xde-xsession.h  | 2 +-
+ src/xsession.h      | 2 +-
+ src/xsessions.c     | 2 +-
+ 31 files changed, 69 insertions(+), 69 deletions(-)
+
+commit 42b760bb2826c94690a511e447c80a1e2b070b4b
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jan 28 02:39:30 2022 -0700
+
+    reverse scroll wheel on root
+
+ data/xdg/xde/adwm/buttonrc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit 3a7f3ba5a0cb262f9a290aa54f5a2258a0f33246
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jan 28 01:41:45 2022 -0700
+
+    add deployment
+
+ Makefile.am | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+commit 430910dab746bb9b7f88a18b55f92744633c3260
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jan 28 01:41:21 2022 -0700
+
+    add deployment
+
+ _config.yml |   4 +++
+ index.md    | 104 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ logo.svg    |  91 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 199 insertions(+)
+
+commit 56abce052c977c1d22524fe8197afe9abd139b51
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jan 28 01:40:24 2022 -0700
+
+    reformat readme
+
+ README.md    | 53 +++++++++++++++++++++++++++++------------------------
+ README.md.in | 53 +++++++++++++++++++++++++++++------------------------
+ 2 files changed, 58 insertions(+), 48 deletions(-)
+
+commit 5352e2bf7436e126a55c36a56af2f3e9da5092dd
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Jan 27 21:34:45 2022 -0700
+
+    updates to adwm keysrc file
+
+    - fix key conflicts
+    - add preferred application support
+    - swap brightness/contrast controls
+    - add microphone volume and muting controls
+
+ data/xdg/xde/adwm/keysrc | 60 +++++++++++++++++++++++---------------------
+ 1 file changed, 32 insertions(+), 28 deletions(-)
+
+commit 168562b4c2eb1e1a1d566a16f99761f36e869234
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Jan 27 21:13:09 2022 -0700
+
+    update build flags
+
+ configure.sh | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+commit 6823c5050b17c462e193bedd3e5f67d590fa4c1e
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jul 5 21:42:57 2021 -0600
+
+    prepare to use json-c from some programs
+
+ configure.ac    |  1 +
+ src/Makefile.am | 60 ++++++++++++++++++++++++++---------------------------
+ 2 files changed, 31 insertions(+), 30 deletions(-)
+
+commit f3bf3410a4a11c135e0ff919dfce59204484e906
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jul 5 21:33:13 2021 -0600
+
+    update configure.ac
+
+ configure.ac | 32 +++++++++++++++++++++++---------
+ 1 file changed, 23 insertions(+), 9 deletions(-)
+
+commit 5eac03e220c33d4dfe4362ccd2bbb2f19ef99984
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Mon Jul 5 21:32:50 2021 -0600
+
+    fix gcc 11.1 compile issues
+
+ src/xde-xchooser.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+commit 048e9eed4e81992efea38fcef740dc697fa614f3
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Thu Jun 11 23:08:18 2020 -0600
+
+    post release update
+
+ ChangeLog | 22 +++++++++++++---------
+ NEWS      |  3 ++-
+ 2 files changed, 15 insertions(+), 10 deletions(-)
+
 commit cbada5fc26d5be2353350e9291836af2c71e5c2b
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Thu Jun 11 23:05:25 2020 -0600
@@ -5451,113 +5599,3 @@ Date:   Sat Jan 9 21:32:06 2016 -0700
 
  man/xde-xsession.pod | 14 +++++++-------
  1 file changed, 7 insertions(+), 7 deletions(-)
-
-commit b9d255f529a1014257a1f6d87012657b70608f27
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:30:54 2016 -0700
-
-    spelling
-
- man/xde-xlogin.pod | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-commit 6eaced37b96c773f5434e5cd31f23065349871d7
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:30:17 2016 -0700
-
-    spelling
-
- man/xde-xlock.pod | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-commit 3ce6a4c5fd43ce5fd8f6f0e3ce1f6006ada39caf
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:29:51 2016 -0700
-
-    spelling
-
- man/xde-xchooser.pod | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-commit 092802d700c1910af7e27cb31757b9f6dabfc4c7
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:29:09 2016 -0700
-
-    spelling
-
- man/xde-wmproxy.pod | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-commit 29a6e0c9b534264832ef34f8b7459ed57790f2f0
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:27:35 2016 -0700
-
-    spelling
-
- man/xde-smproxy.pod | 32 +++++++++++++++-----------------
- 1 file changed, 15 insertions(+), 17 deletions(-)
-
-commit 56394e2920c08ecc002b31613562d710c045c7cb
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:26:08 2016 -0700
-
-    spelling
-
- man/xde-session.pod | 32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
-
-commit a294f49c0d3117496a0510277b710ddc77725ea5
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:23:41 2016 -0700
-
-    spelling
-
- man/xde-input.pod | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-commit bfb2642cd88ddd10d1ce78f2321c5226c123c10a
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:22:58 2016 -0700
-
-    spelling
-
- man/xde-chooser.pod | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-commit 7cd069cd1b2f64202ca7835c34e4ff6b24356818
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:20:39 2016 -0700
-
-    add manager documentation
-
- man/Makefile.am     |   8 +-
- man/xde-dockmgr.pod | 200 +++++++++++++++++++++++++++++++++++++++++++++++
- man/xde-traymgr.pod | 201 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 407 insertions(+), 2 deletions(-)
-
-commit d31d8083e6b6a258c75d376f70fcc1d59e042a53
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:20:10 2016 -0700
-
-    updated TODO
-
- TODO.in | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
-
-commit be3e5f0f02834d579907d3c75efa213155b66541
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:19:55 2016 -0700
-
-    updated manual page
-
- man/xde-smproxy.pod | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
-
-commit 464c417ac79fad01f1275368cc836368ea164f4b
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:19:36 2016 -0700
-
-    updated manual page
-
- man/xde-xsession.pod | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)

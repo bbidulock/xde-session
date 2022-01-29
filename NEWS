@@ -1,4 +1,40 @@
-xde-session -- history of user-visible changes.  2020-06-11
+xde-session -- history of user-visible changes.  2022-01-28
+
+Release xde-session-1.14 released 2022-01-28
+--------------------------------------------
+
+git tag -n100 -l 1.14
+
+1.14            Pre-Release 1.14
+
+    This is another pre-release of the xde-session package, which provides
+    a full session manager for the XDE (X Desktop Environment).
+
+    This release updates the build system to support GCC 11.1.0; applies
+    autoupdate to configure.ac, prepares to use json-c for some porgrams,
+    updates the adwm keysrc and buttonrc files. The next release may
+    include a working xde-xlogin program.
+
+    As usual, included in the release is an autoconf tarball for building
+    the package from source. See the NEWS and TODO file in the release for
+    more information. Please report problems to the issues list on GitHub.
+
+git shortlog -e -n -w80,6,8 1.13...1.14
+
+Brian Bidulock <bidulock@openss7.org> (12):
+      post release update
+      fix gcc 11.1 compile issues
+      update configure.ac
+      prepare to use json-c from some programs
+      update build flags
+      updates to adwm keysrc file
+      reformat readme
+      add deployment
+      add deployment
+      reverse scroll wheel on root
+      update copyright
+      update release notes
+
 
 Release xde-session-1.13 released 2020-06-11
 --------------------------------------------
@@ -248,39 +284,4 @@ Brian Bidulock <bidulock@openss7.com> (1):
 
 Milk Brewster <github@milkmiruku.com> (1):
       fx DisplayManager*greeter: path typo
-
-
-Release xde-session-1.6 released 2018-04-29
--------------------------------------------
-
-git shortlog -e -n -w80,6,8 1.5...1.6
-
-Brian Bidulock <bidulock@openss7.org> (27):
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      update copyright header
-      correct buffer overflow
-      Merge branch 'master' of github.com:bbidulock/xde-session
-      update release files
 

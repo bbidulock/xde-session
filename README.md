@@ -1,10 +1,10 @@
-[xde-session -- read me first file.  2020-06-11]: #
+[xde-session -- read me first file.  2022-01-28]: #
 
 xde-session
 ===============
 
-Package `xde-session-1.13` was released under GPLv3 license
-2020-06-11.
+Package `xde-session-1.14` was released under GPLv3 license
+2022-01-28.
 
 This package provides a number of "C"-language tools for working with
 the _X Desktop Environment_.  Most of these tools were previously
@@ -29,7 +29,7 @@ Primary tools included are:
 Release
 -------
 
-This is the `xde-session-1.13` package, released 2020-06-11.
+This is the `xde-session-1.14` package, released 2022-01-28.
 This release, and the latest version, can be obtained from [GitHub][1],
 using a command such as:
 
@@ -89,13 +89,13 @@ Report issues on GitHub [here][2].
 
 [1]: https://github.com/bbidulock/xde-session
 [2]: https://github.com/bbidulock/xde-session/issues
-[3]: https://github.com/bbidulock/xde-session/blob/1.13/RELEASE
-[4]: https://github.com/bbidulock/xde-session/blob/1.13/NEWS
-[5]: https://github.com/bbidulock/xde-session/blob/1.13/ChangeLog
-[6]: https://github.com/bbidulock/xde-session/blob/1.13/TODO
-[7]: https://github.com/bbidulock/xde-session/blob/1.13/COMPLIANCE
-[8]: https://github.com/bbidulock/xde-session/blob/1.13/INSTALL
-[9]: https://github.com/bbidulock/xde-session/blob/1.13/LICENSE
-[10]: https://github.com/bbidulock/xde-session/blob/1.13/COPYING
+[3]: https://github.com/bbidulock/xde-session/blob/1.14/RELEASE
+[4]: https://github.com/bbidulock/xde-session/blob/1.14/NEWS
+[5]: https://github.com/bbidulock/xde-session/blob/1.14/ChangeLog
+[6]: https://github.com/bbidulock/xde-session/blob/1.14/TODO
+[7]: https://github.com/bbidulock/xde-session/blob/1.14/COMPLIANCE
+[8]: https://github.com/bbidulock/xde-session/blob/1.14/INSTALL
+[9]: https://github.com/bbidulock/xde-session/blob/1.14/LICENSE
+[10]: https://github.com/bbidulock/xde-session/blob/1.14/COPYING
 
 [ vim: set ft=markdown sw=4 tw=72 nocin nosi fo+=tcqlorn spell: ]: #
