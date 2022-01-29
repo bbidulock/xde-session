@@ -21,7 +21,7 @@ git tag -n100 -l 1.14
 
 git shortlog -e -n -w80,6,8 1.13...1.14
 
-Brian Bidulock <bidulock@openss7.org> (12):
+Brian Bidulock <bidulock@openss7.org> (13):
       post release update
       fix gcc 11.1 compile issues
       update configure.ac
@@ -34,6 +34,7 @@ Brian Bidulock <bidulock@openss7.org> (12):
       reverse scroll wheel on root
       update copyright
       update release notes
+      update release files
 
 
 Release xde-session-1.13 released 2020-06-11

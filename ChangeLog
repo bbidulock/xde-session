@@ -1,5 +1,20 @@
 # created with git log --stat=76 -M -C -500|fmt -sct -w80
 
+commit ec487e1c60b1e8827659c21acbb20172b7065031
+Author: Brian Bidulock <bidulock@openss7.org>
+Date:   Fri Jan 28 21:56:41 2022 -0700
+
+    update release files
+
+ AUTHORS      |   2 +-
+ ChangeLog    | 258 +++++++++++++++++++++++++++++++------------------------
+ NEWS         |  73 ++++++++--------
+ README.md    |  24 +++---
+ configure.ac |  10 +--
+ dist.sh      |   2 +-
+ index.md     |  24 +++---
+ 7 files changed, 216 insertions(+), 177 deletions(-)
+
 commit d6ee0ff52bd0ceda3d6d33079ad8402b293ea750
 Author: Brian Bidulock <bidulock@openss7.org>
 Date:   Fri Jan 28 21:51:13 2022 -0700
@@ -5590,12 +5605,3 @@ Date:   Sun Jan 10 19:53:20 2016 -0700
  man/xde-dockmgr.pod |  4 ++++
  man/xde-traymgr.pod | 38 ++++++++++++++++++++++++++++++++++++++
  2 files changed, 42 insertions(+)
-
-commit f6fe3585ca2a3f1ecfccb495844c48b44be2327a
-Author: Brian Bidulock <bidulock@openss7.org>
-Date:   Sat Jan 9 21:32:06 2016 -0700
-
-    spelling
-
- man/xde-xsession.pod | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
